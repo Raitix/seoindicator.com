@@ -26,19 +26,12 @@ class CreditTransactionFactory extends Factory
      */
     public function definition(): array
     {
-        $amount = $this->faker->randomFloat(2, 1, 100);
-        $type = $this->faker->randomElement([
-            CreditTransaction::TYPE_PURCHASE,
-            CreditTransaction::TYPE_USAGE,
-            CreditTransaction::TYPE_REFUND,
-            CreditTransaction::TYPE_BONUS,
-        ]);
-
         return [
             'user_id' => User::factory(),
-            'amount' => $type === CreditTransaction::TYPE_USAGE ? -$amount : $amount,
-            'balance_after' => $this->faker->randomFloat(2, 0, 1000),
-            'type' => $type,
+            'credit_id' => null,
+            'amount' => $this->faker->randomFloat(2, 1, 100),
+            'balance_after' => $this->faker->randomFloat(2, 0, 500),
+            'type' => 'purchase',
             'description' => $this->faker->sentence(),
             'reference_type' => null,
             'reference_id' => null,
@@ -49,103 +42,123 @@ class CreditTransactionFactory extends Factory
     }
 
     /**
-     * Indicate that this is a purchase transaction.
+     * Create a purchase transaction.
      */
     public function purchase(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => CreditTransaction::TYPE_PURCHASE,
-            'amount' => $this->faker->randomFloat(2, 10, 500),
-            'description' => 'Purchased credits via ' . $this->faker->randomElement(['stripe', 'paypal']),
+            'type' => 'purchase',
+            'amount' => $this->faker->randomFloat(2, 10, 100),
+            'description' => 'Purchased credits via ' . $this->faker->randomElement(['Stripe', 'PayPal']),
             'payment_provider' => $this->faker->randomElement(['stripe', 'paypal']),
             'payment_id' => 'pi_' . $this->faker->uuid(),
         ]);
     }
 
     /**
-     * Indicate that this is a usage transaction.
+     * Create a usage transaction.
      */
     public function usage(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => CreditTransaction::TYPE_USAGE,
-            'amount' => -$this->faker->randomFloat(2, 0.01, 50),
-            'description' => 'Analysis job #' . $this->faker->randomNumber(4),
-            'reference_type' => 'App\\Models\\AnalysisJob',
-            'reference_id' => $this->faker->randomNumber(4),
-            'metadata' => ['model' => 'gpt-4', 'tokens' => $this->faker->numberBetween(100, 10000)],
+            'type' => 'usage',
+            'amount' => -$this->faker->randomFloat(2, 1, 50),
+            'description' => $this->faker->randomElement([
+                'Analysis job #' . $this->faker->randomNumber(4),
+                'Keyword research',
+                'SEO audit',
+                'Report generation',
+            ]),
         ]);
     }
 
     /**
-     * Indicate that this is a refund transaction.
+     * Create a refund transaction.
      */
     public function refund(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => CreditTransaction::TYPE_REFUND,
-            'amount' => $this->faker->randomFloat(2, 1, 50),
-            'description' => 'Refund for failed analysis',
-            'reference_type' => 'App\\Models\\AnalysisJob',
-            'reference_id' => $this->faker->randomNumber(4),
-            'metadata' => ['reason' => 'timeout'],
+            'type' => 'refund',
+            'amount' => $this->faker->randomFloat(2, 5, 50),
+            'description' => 'Refund for failed analysis job #' . $this->faker->randomNumber(4),
         ]);
     }
 
     /**
-     * Indicate that this is a bonus transaction.
+     * Create a bonus transaction.
      */
     public function bonus(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => CreditTransaction::TYPE_BONUS,
-            'amount' => $this->faker->randomFloat(2, 5, 100),
+            'type' => 'bonus',
+            'amount' => $this->faker->randomFloat(2, 5, 25),
             'description' => $this->faker->randomElement([
                 'Welcome bonus',
                 'Referral bonus',
                 'Promotional credit',
+                'Loyalty reward',
             ]),
-            'metadata' => ['campaign' => $this->faker->slug()],
         ]);
     }
 
     /**
-     * Indicate that this transaction was paid via Stripe.
+     * Associate with a specific user.
      */
-    public function stripe(): static
+    public function forUser(User $user): static
     {
         return $this->state(fn (array $attributes) => [
-            'payment_provider' => 'stripe',
-            'payment_id' => 'pi_' . $this->faker->uuid(),
+            'user_id' => $user->id,
         ]);
     }
 
     /**
-     * Indicate that this transaction was paid via PayPal.
+     * Associate with a specific credit record.
      */
-    public function paypal(): static
+    public function forCredit(Credit $credit): static
     {
         return $this->state(fn (array $attributes) => [
-            'payment_provider' => 'paypal',
-            'payment_id' => 'PAY-' . $this->faker->uuid(),
+            'credit_id' => $credit->id,
+            'user_id' => $credit->user_id,
         ]);
     }
 
     /**
-     * Indicate that this transaction has metadata.
+     * Add payment information.
+     */
+    public function withPayment(string $provider = 'stripe', ?string $paymentId = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'payment_provider' => $provider,
+            'payment_id' => $paymentId ?? ('pi_' . $this->faker->uuid()),
+        ]);
+    }
+
+    /**
+     * Add reference information.
+     */
+    public function withReference(string $type = 'App\\Models\\Analysis', ?int $id = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'reference_type' => $type,
+            'reference_id' => $id ?? $this->faker->randomNumber(5),
+        ]);
+    }
+
+    /**
+     * Add metadata.
      */
     public function withMetadata(array $metadata = []): static
     {
         return $this->state(fn (array $attributes) => [
             'metadata' => array_merge([
-                'key' => $this->faker->word(),
-                'value' => $this->faker->sentence(),
+                'created_by' => 'system',
+                'ip_address' => $this->faker->ipv4(),
             ], $metadata),
         ]);
     }
 
     /**
-     * Set a specific amount for the transaction.
+     * Create transaction with specific amount.
      */
     public function withAmount(float $amount): static
     {
@@ -155,12 +168,34 @@ class CreditTransactionFactory extends Factory
     }
 
     /**
-     * Set a specific user for the transaction.
+     * Create transaction with specific balance_after.
      */
-    public function forUser(User $user): static
+    public function withBalanceAfter(float $balance): static
     {
         return $this->state(fn (array $attributes) => [
-            'user_id' => $user->id,
+            'balance_after' => $balance,
+        ]);
+    }
+
+    /**
+     * Create a large transaction.
+     */
+    public function large(float $amount = 500.00): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'amount' => $amount,
+            'description' => 'Large credit purchase',
+        ]);
+    }
+
+    /**
+     * Create a small transaction.
+     */
+    public function small(float $amount = 1.00): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'amount' => $amount,
+            'description' => 'Small usage deduction',
         ]);
     }
 }

@@ -27,16 +27,17 @@ class PasswordResetController extends Controller
         $rateLimitKey = 'password-reset:' . $request->email;
         
         if (cache()->has($rateLimitKey)) {
-            $retryAfter = cache()->get($rateLimitKey . ':ttl', 60);
+            $ttlKey = $rateLimitKey . ':ttl';
+            $retryAfter = cache()->get($ttlKey, 60);
             
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RATE_LIMIT_EXCEEDED',
                     'message' => 'Too many reset attempts. Please try again later.',
-                    'retry_after' => $retryAfter,
+                    'retry_after' => (int) $retryAfter,
                 ],
-            ], 429);
+            ], 429)->withHeaders(['Retry-After' => (string) (int) $retryAfter]);
         }
 
         // We will send the password reset link to this user. Once we have attempted

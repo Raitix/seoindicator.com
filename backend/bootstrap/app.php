@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetProjectContext::class,
             \App\Http\Middleware\RequestTrackingMiddleware::class,
             \App\Http\Middleware\RequestLoggingMiddleware::class,
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

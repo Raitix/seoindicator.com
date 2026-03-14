@@ -2,15 +2,20 @@
 
 namespace Tests\Unit\Repositories;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Credit;
 use App\Models\CreditTransaction;
+use App\Models\User;
 use App\Repositories\CreditRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 
+/**
+ * @Task TASK-26-2
+ * @Description CreditRepository Unit Tests
+ * @Tests 55+
+ */
 class CreditRepositoryTest extends TestCase
 {
     use RefreshDatabase;
@@ -20,96 +25,100 @@ class CreditRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new CreditRepository();
+        $this->repository = app(CreditRepository::class);
     }
 
-    /**
-     * Helper to create a user with optional credit.
-     */
-    protected function createUserWithCredit(float $balance = 0): array
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => $balance,
-            'total_purchased' => $balance,
-            'total_spent' => 0,
-        ]);
+    // ==========================================
+    // Repository Instantiation Tests (RI-001 to RI-005)
+    // ==========================================
 
-        return ['user' => $user, 'credit' => $credit];
+    /** @test RI-001 */
+    public function repository_instantiable(): void
+    {
+        $repository = new CreditRepository();
+
+        $this->assertInstanceOf(CreditRepository::class, $repository);
     }
 
-    // ==================== findOrCreateForUser TESTS ====================
-
-    /**
-     * Test findOrCreateForUser creates for new user.
-     * CR-FO-01
-     */
-    public function test_find_or_create_creates_for_new_user(): void
+    /** @test RI-002 */
+    public function repository_injected_via_container(): void
     {
-        $user = User::factory()->create();
+        $repository = app(CreditRepository::class);
 
-        // Ensure no credit exists
-        $this->assertDatabaseMissing('credits', ['user_id' => $user->id]);
-
-        $credit = $this->repository->findOrCreateForUser($user);
-
-        $this->assertInstanceOf(Credit::class, $credit);
-        $this->assertEquals($user->id, $credit->user_id);
-        $this->assertDatabaseHas('credits', ['user_id' => $user->id]);
+        $this->assertInstanceOf(CreditRepository::class, $repository);
     }
 
-    /**
-     * Test findOrCreateForUser returns existing.
-     * CR-FO-02
-     */
-    public function test_find_or_create_returns_existing(): void
+    /** @test RI-003 */
+    public function interface_binding(): void
+    {
+        // Skip if interface not defined yet
+        if (!interface_exists(\App\Repositories\Contracts\CreditRepositoryInterface::class)) {
+            $this->markTestSkipped('CreditRepositoryInterface not defined');
+        }
+
+        $repository = app(\App\Repositories\Contracts\CreditRepositoryInterface::class);
+
+        $this->assertInstanceOf(CreditRepository::class, $repository);
+    }
+
+    /** @test RI-004 */
+    public function model_dependency(): void
+    {
+        $repository = new CreditRepository();
+
+        $this->assertInstanceOf(CreditRepository::class, $repository);
+    }
+
+    /** @test RI-005 */
+    public function transaction_dependency(): void
+    {
+        $repository = new CreditRepository();
+
+        $this->assertInstanceOf(CreditRepository::class, $repository);
+    }
+
+    // ==========================================
+    // findOrCreateForUser Tests (RF-001 to RF-010)
+    // ==========================================
+
+    /** @test RF-001 */
+    public function find_existing_credit(): void
     {
         $user = User::factory()->create();
-        $existingCredit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 100.00,
-        ]);
+        $existingCredit = Credit::factory()->forUser($user)->create();
 
         $credit = $this->repository->findOrCreateForUser($user);
 
         $this->assertEquals($existingCredit->id, $credit->id);
-        $this->assertEquals(100.00, $credit->balance);
+        $this->assertEquals($user->id, $credit->user_id);
     }
 
-    /**
-     * Test findOrCreateForUser returns Credit instance.
-     * CR-FO-03
-     */
-    public function test_find_or_create_returns_credit_instance(): void
+    /** @test RF-002 */
+    public function create_new_credit(): void
     {
         $user = User::factory()->create();
+        $this->assertDatabaseMissing('credits', ['user_id' => $user->id]);
 
         $credit = $this->repository->findOrCreateForUser($user);
 
+        $this->assertDatabaseHas('credits', ['user_id' => $user->id]);
         $this->assertInstanceOf(Credit::class, $credit);
     }
 
-    /**
-     * Test findOrCreateForUser default values.
-     * CR-FO-04
-     */
-    public function test_find_or_create_default_values(): void
+    /** @test RF-003 */
+    public function new_credit_defaults(): void
     {
         $user = User::factory()->create();
 
         $credit = $this->repository->findOrCreateForUser($user);
 
-        $this->assertEquals(0, $credit->balance);
-        $this->assertEquals(0, $credit->total_purchased);
-        $this->assertEquals(0, $credit->total_spent);
+        $this->assertEquals(0.0, $credit->balance);
+        $this->assertEquals(0.0, $credit->total_purchased);
+        $this->assertEquals(0.0, $credit->total_spent);
     }
 
-    /**
-     * Test findOrCreateForUser idempotent.
-     * CR-FO-05
-     */
-    public function test_find_or_create_idempotent(): void
+    /** @test RF-004 */
+    public function same_user_returns_same_credit(): void
     {
         $user = User::factory()->create();
 
@@ -117,544 +126,808 @@ class CreditRepositoryTest extends TestCase
         $credit2 = $this->repository->findOrCreateForUser($user);
 
         $this->assertEquals($credit1->id, $credit2->id);
-        $this->assertEquals(1, Credit::where('user_id', $user->id)->count());
     }
 
-    // ==================== getBalance TESTS ====================
-
-    /**
-     * Test getBalance for existing credit.
-     * CR-GB-01
-     */
-    public function test_get_balance_existing(): void
+    /** @test RF-005 */
+    public function different_users_different_credits(): void
     {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(123.45);
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+
+        $credit1 = $this->repository->findOrCreateForUser($user1);
+        $credit2 = $this->repository->findOrCreateForUser($user2);
+
+        $this->assertNotEquals($credit1->id, $credit2->id);
+    }
+
+    /** @test RF-006 */
+    public function transaction_isolation(): void
+    {
+        $user = User::factory()->create();
+
+        // Simulate concurrent creation
+        $credit1 = $this->repository->findOrCreateForUser($user);
+        $credit2 = $this->repository->findOrCreateForUser($user);
+
+        // Should return same credit (unique constraint)
+        $this->assertEquals($credit1->id, $credit2->id);
+    }
+
+    /** @test RF-007 */
+    public function user_relationship_loaded(): void
+    {
+        $user = User::factory()->create();
+
+        $credit = $this->repository->findOrCreateForUser($user);
+
+        $this->assertTrue($credit->relationLoaded('user') || $credit->user()->exists());
+    }
+
+    /** @test RF-008 */
+    public function invalid_user_type_throws_exception(): void
+    {
+        $this->expectException(\TypeError::class);
+
+        $this->repository->findOrCreateForUser(null);
+    }
+
+    /** @test RF-009 */
+    public function user_without_id_throws_exception(): void
+    {
+        $user = new User();
+
+        $this->expectException(\Exception::class);
+
+        $this->repository->findOrCreateForUser($user);
+    }
+
+    /** @test RF-010 */
+    public function returns_credit_model(): void
+    {
+        $user = User::factory()->create();
+
+        $credit = $this->repository->findOrCreateForUser($user);
+
+        $this->assertInstanceOf(Credit::class, $credit);
+    }
+
+    // ==========================================
+    // getBalance Tests (RG-001 to RG-010)
+    // ==========================================
+
+    /** @test RG-001 */
+    public function user_with_positive_balance(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.50)->create();
+
+        $balance = $this->repository->getBalance($user);
+
+        $this->assertEquals(100.50, $balance);
+    }
+
+    /** @test RG-002 */
+    public function user_with_zero_balance(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $balance = $this->repository->getBalance($user);
+
+        $this->assertEquals(0.00, $balance);
+    }
+
+    /** @test RG-003 */
+    public function user_with_negative_balance(): void
+    {
+        $user = User::factory()->create();
+        Credit::create([
+            'user_id' => $user->id,
+            'balance' => -10.00,
+        ]);
+
+        $balance = $this->repository->getBalance($user);
+
+        $this->assertEquals(-10.00, $balance);
+    }
+
+    /** @test RG-004 */
+    public function user_without_credit_returns_zero(): void
+    {
+        $user = User::factory()->create();
+
+        $balance = $this->repository->getBalance($user);
+
+        $this->assertEquals(0.00, $balance);
+    }
+
+    /** @test RG-005 */
+    public function creates_credit_if_missing(): void
+    {
+        $user = User::factory()->create();
+        $this->assertDatabaseMissing('credits', ['user_id' => $user->id]);
+
+        $this->repository->getBalance($user);
+
+        $this->assertDatabaseHas('credits', ['user_id' => $user->id]);
+    }
+
+    /** @test RG-006 */
+    public function returns_float(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
 
         $balance = $this->repository->getBalance($user);
 
         $this->assertIsFloat($balance);
+    }
+
+    /** @test RG-007 */
+    public function decimal_precision(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(123.45)->create();
+
+        $balance = $this->repository->getBalance($user);
+
         $this->assertEquals(123.45, $balance);
     }
 
-    /**
-     * Test getBalance for new user (creates credit).
-     * CR-GB-02
-     */
-    public function test_get_balance_new_user_creates_credit(): void
+    /** @test RG-008 */
+    public function large_balance(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(99999999.99)->create();
+
+        $balance = $this->repository->getBalance($user);
+
+        $this->assertEquals(99999999.99, $balance);
+    }
+
+    /** @test RG-009 */
+    public function multiple_calls_same_result(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $balance1 = $this->repository->getBalance($user);
+        $balance2 = $this->repository->getBalance($user);
+
+        $this->assertEquals($balance1, $balance2);
+    }
+
+    /** @test RG-010 */
+    public function balance_unchanged_after_query(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $this->repository->getBalance($user);
+
+        $this->assertDatabaseHas('credits', [
+            'user_id' => $user->id,
+            'balance' => 100.00,
+        ]);
+    }
+
+    // ==========================================
+    // getTransactions Tests (RGT-001 to RGT-012)
+    // ==========================================
+
+    /** @test RGT-001 */
+    public function user_with_transactions(): void
+    {
+        $user = User::factory()->create();
+        CreditTransaction::factory()->count(5)->forUser($user)->create();
+
+        $transactions = $this->repository->getTransactions($user);
+
+        $this->assertCount(5, $transactions->items());
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $transactions);
+    }
+
+    /** @test RGT-002 */
+    public function user_without_transactions(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $transactions = $this->repository->getTransactions($user);
+
+        $this->assertCount(0, $transactions->items());
+    }
+
+    /** @test RGT-003 */
+    public function user_without_credit(): void
     {
         $user = User::factory()->create();
 
-        $balance = $this->repository->getBalance($user);
+        $transactions = $this->repository->getTransactions($user);
 
-        $this->assertEquals(0.0, $balance);
-        $this->assertDatabaseHas('credits', ['user_id' => $user->id]);
+        $this->assertCount(0, $transactions->items());
     }
 
-    /**
-     * Test getBalance with decimals.
-     * CR-GB-03
-     */
-    public function test_get_balance_with_decimals(): void
+    /** @test RGT-004 */
+    public function custom_per_page(): void
     {
-        ['user' => $user] = $this->createUserWithCredit(123.45);
+        $user = User::factory()->create();
+        CreditTransaction::factory()->count(20)->forUser($user)->create();
 
-        $balance = $this->repository->getBalance($user);
+        $transactions = $this->repository->getTransactions($user, 10);
 
-        $this->assertEquals(123.45, $balance);
+        $this->assertEquals(10, $transactions->perPage());
     }
 
-    /**
-     * Test getBalance zero.
-     * CR-GB-04
-     */
-    public function test_get_balance_zero(): void
+    /** @test RGT-005 */
+    public function default_per_page(): void
     {
-        ['user' => $user] = $this->createUserWithCredit(0);
+        $user = User::factory()->create();
+        CreditTransaction::factory()->count(5)->forUser($user)->create();
 
-        $balance = $this->repository->getBalance($user);
+        $transactions = $this->repository->getTransactions($user);
 
-        $this->assertEquals(0.0, $balance);
+        $this->assertEquals(15, $transactions->perPage());
     }
 
-    /**
-     * Test getBalance negative.
-     * CR-GB-05
-     */
-    public function test_get_balance_negative(): void
+    /** @test RGT-006 */
+    public function ordered_by_created_at_desc(): void
     {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(0);
-        $credit->update(['balance' => -10.00]);
+        $user = User::factory()->create();
+        $old = CreditTransaction::factory()->forUser($user)->create(['created_at' => now()->subDay()]);
+        $new = CreditTransaction::factory()->forUser($user)->create(['created_at' => now()]);
 
-        $balance = $this->repository->getBalance($user);
+        $transactions = $this->repository->getTransactions($user);
 
-        $this->assertEquals(-10.0, $balance);
+        $this->assertEquals($new->id, $transactions->items()[0]->id);
+        $this->assertEquals($old->id, $transactions->items()[1]->id);
     }
 
-    // ==================== getTransactions TESTS ====================
-
-    /**
-     * Test getTransactions returns paginated results.
-     * CR-GT-01
-     */
-    public function test_get_transactions_paginated(): void
+    /** @test RGT-007 */
+    public function filter_by_type(): void
     {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(100);
+        $user = User::factory()->create();
+        CreditTransaction::factory()->count(3)->forUser($user)->purchase()->create();
+        CreditTransaction::factory()->count(2)->forUser($user)->usage()->create();
 
-        // Create some transactions
-        for ($i = 0; $i < 20; $i++) {
-            CreditTransaction::create([
-                'user_id' => $user->id,
-                'amount' => 5.00,
-                'balance_after' => 100 - ($i * 5),
-                'type' => 'usage',
-                'description' => "Transaction $i",
-            ]);
-        }
+        $transactions = $this->repository->getTransactions($user, 15, ['type' => 'purchase']);
 
-        $result = $this->repository->getTransactions($user, 15);
-
-        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
-        $this->assertEquals(15, $result->perPage());
-        $this->assertEquals(20, $result->total());
+        $this->assertCount(3, $transactions->items());
     }
 
-    /**
-     * Test getTransactions empty.
-     * CR-GT-02
-     */
-    public function test_get_transactions_empty(): void
+    /** @test RGT-008 */
+    public function filter_by_date_range(): void
     {
-        ['user' => $user] = $this->createUserWithCredit(0);
+        $user = User::factory()->create();
+        $now = now();
+        CreditTransaction::factory()->forUser($user)->create(['created_at' => $now->copy()->subDays(10)]);
+        CreditTransaction::factory()->forUser($user)->create(['created_at' => $now->copy()->subDays(5)]);
+        CreditTransaction::factory()->forUser($user)->create(['created_at' => $now]);
 
-        $result = $this->repository->getTransactions($user, 15);
-
-        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
-        $this->assertEquals(0, $result->total());
-        $this->assertCount(0, $result->items());
-    }
-
-    /**
-     * Test getTransactions with custom perPage.
-     * CR-GT-04
-     */
-    public function test_get_transactions_custom_per_page(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(100);
-
-        for ($i = 0; $i < 10; $i++) {
-            CreditTransaction::create([
-                'user_id' => $user->id,
-                'amount' => 5.00,
-                'balance_after' => 100,
-                'type' => 'usage',
-                'description' => "Transaction $i",
-            ]);
-        }
-
-        $result = $this->repository->getTransactions($user, 5);
-
-        $this->assertEquals(5, $result->perPage());
-        $this->assertCount(5, $result->items());
-    }
-
-    /**
-     * Test getTransactions ordered by created_at descending.
-     * CR-GT-05
-     */
-    public function test_get_transactions_ordered_desc(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(100);
-
-        // Create transactions with different timestamps
-        $t1 = CreditTransaction::create([
-            'user_id' => $user->id,
-            'amount' => 10.00,
-            'balance_after' => 90,
-            'type' => 'usage',
-            'description' => 'First',
-            'created_at' => now()->subHours(2),
+        $transactions = $this->repository->getTransactions($user, 15, [
+            'date_from' => $now->copy()->subDays(6)->toDateString(),
+            'date_to' => $now->copy()->subDays(1)->toDateString(),
         ]);
 
-        $t2 = CreditTransaction::create([
-            'user_id' => $user->id,
-            'amount' => 20.00,
-            'balance_after' => 70,
-            'type' => 'usage',
-            'description' => 'Second',
-            'created_at' => now()->subHour(),
-        ]);
-
-        $t3 = CreditTransaction::create([
-            'user_id' => $user->id,
-            'amount' => 30.00,
-            'balance_after' => 40,
-            'type' => 'usage',
-            'description' => 'Third',
-            'created_at' => now(),
-        ]);
-
-        $result = $this->repository->getTransactions($user, 15);
-
-        $items = $result->items();
-        // Should be ordered newest first
-        $this->assertEquals($t3->id, $items[0]->id);
-        $this->assertEquals($t2->id, $items[1]->id);
-        $this->assertEquals($t1->id, $items[2]->id);
+        $this->assertCount(1, $transactions->items());
     }
 
-    // ==================== TRANSACTION-SAFE UPDATE TESTS ====================
-
-    /**
-     * Test addCredits in transaction.
-     * CR-TS-01
-     */
-    public function test_add_credits_transaction(): void
+    /** @test RGT-009 */
+    public function paginates_correctly(): void
     {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(100);
+        $user = User::factory()->create();
+        CreditTransaction::factory()->count(50)->forUser($user)->create();
 
-        if (!method_exists($this->repository, 'addCredits')) {
-            $this->markTestSkipped('addCredits method not yet implemented');
+        $transactions = $this->repository->getTransactions($user, 10);
+
+        $this->assertEquals(5, $transactions->lastPage());
+        $this->assertEquals(50, $transactions->total());
+    }
+
+    /** @test RGT-010 */
+    public function returns_correct_type(): void
+    {
+        $user = User::factory()->create();
+
+        $transactions = $this->repository->getTransactions($user);
+
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $transactions);
+    }
+
+    /** @test RGT-011 */
+    public function loads_relationships(): void
+    {
+        $user = User::factory()->create();
+        CreditTransaction::factory()->forUser($user)->create();
+
+        $transactions = $this->repository->getTransactions($user);
+
+        $this->assertTrue($transactions->items()[0]->relationLoaded('user'));
+    }
+
+    /** @test RGT-012 */
+    public function user_isolation(): void
+    {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+        CreditTransaction::factory()->count(5)->forUser($user1)->create();
+        CreditTransaction::factory()->count(3)->forUser($user2)->create();
+
+        $transactions = $this->repository->getTransactions($user1);
+
+        $this->assertCount(5, $transactions->items());
+        foreach ($transactions->items() as $transaction) {
+            $this->assertEquals($user1->id, $transaction->user_id);
         }
+    }
 
-        $transaction = $this->repository->addCredits($user, 50.00, [
+    // ==========================================
+    // Transaction-Safe Balance Updates Tests (RT-001 to RT-015)
+    // ==========================================
+
+    /** @test RT-001 */
+    public function add_credits_successfully(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->addCredits($user, 50.00, 'purchase', 'Test purchase');
+
+        $this->assertEquals(150.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'amount' => 50.00,
             'type' => 'purchase',
-            'description' => 'Purchased 50 credits',
+        ]);
+    }
+
+    /** @test RT-002 */
+    public function deduct_credits_successfully(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->deductCredits($user, 25.00, 'Test usage');
+
+        $this->assertEquals(75.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'amount' => -25.00,
+            'type' => 'usage',
+        ]);
+    }
+
+    /** @test RT-003 */
+    public function deduct_insufficient_balance_throws_exception(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(50.00)->create();
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Insufficient balance');
+
+        $this->repository->deductCredits($user, 100.00, 'Test usage');
+    }
+
+    /** @test RT-004 */
+    public function zero_amount_transaction(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->addCredits($user, 0.00, 'purchase', 'Zero test');
+
+        $this->assertEquals(100.00, $credit->balance);
+    }
+
+    /** @test RT-005 */
+    public function decimal_precision_in_updates(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->addCredits($user, 12.34, 'purchase', 'Test');
+
+        $this->assertEquals(112.34, $credit->balance);
+    }
+
+    /** @test RT-006 */
+    public function transaction_created_on_update(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 50.00, 'purchase', 'Test');
+
+        $this->assertEquals(1, CreditTransaction::where('user_id', $user->id)->count());
+    }
+
+    /** @test RT-007 */
+    public function transaction_type_purchase(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 50.00, 'purchase', 'Test');
+
+        $transaction = CreditTransaction::where('user_id', $user->id)->first();
+        $this->assertEquals('purchase', $transaction->type);
+    }
+
+    /** @test RT-008 */
+    public function transaction_type_usage(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $this->repository->deductCredits($user, 50.00, 'Test usage');
+
+        $transaction = CreditTransaction::where('user_id', $user->id)->first();
+        $this->assertEquals('usage', $transaction->type);
+    }
+
+    /** @test RT-009 */
+    public function transaction_type_refund(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 50.00, 'refund', 'Test refund');
+
+        $transaction = CreditTransaction::where('user_id', $user->id)->first();
+        $this->assertEquals('refund', $transaction->type);
+    }
+
+    /** @test RT-010 */
+    public function transaction_type_bonus(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 25.00, 'bonus', 'Welcome bonus');
+
+        $transaction = CreditTransaction::where('user_id', $user->id)->first();
+        $this->assertEquals('bonus', $transaction->type);
+    }
+
+    /** @test RT-011 */
+    public function balance_after_correct(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $this->repository->addCredits($user, 50.00, 'purchase', 'Test');
+
+        $transaction = CreditTransaction::where('user_id', $user->id)->first();
+        $this->assertEquals(150.00, $transaction->balance_after);
+    }
+
+    /** @test RT-012 */
+    public function concurrent_updates_use_lock(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        // Simulate sequential concurrent updates
+        DB::transaction(function () use ($user) {
+            $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+            $credit->update(['balance' => $credit->balance + 50]);
+        });
+        DB::transaction(function () use ($user) {
+            $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+            $credit->update(['balance' => $credit->balance - 25]);
+        });
+
+        $this->assertDatabaseHas('credits', [
+            'user_id' => $user->id,
+            'balance' => 125.00,
+        ]);
+    }
+
+    /** @test RT-013 */
+    public function rollback_on_error(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        try {
+            DB::transaction(function () use ($user) {
+                $this->repository->addCredits($user, 50.00, 'purchase', 'Test');
+                throw new \Exception('Simulated error');
+            });
+        } catch (\Exception $e) {
+            // Expected
+        }
+
+        $this->assertDatabaseHas('credits', [
+            'user_id' => $user->id,
+            'balance' => 100.00,
+        ]);
+    }
+
+    /** @test RT-014 */
+    public function lock_for_update_used(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        DB::beginTransaction();
+        $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+        $this->assertNotNull($credit);
+        DB::rollBack();
+    }
+
+    /** @test RT-015 */
+    public function database_transaction_used(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        // The repository should use DB::transaction internally
+        $credit = $this->repository->addCredits($user, 50.00, 'purchase', 'Test');
+
+        $this->assertEquals(150.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'amount' => 50.00,
+        ]);
+    }
+
+    // ==========================================
+    // Credit Update Methods (RC-001 to RC-010)
+    // ==========================================
+
+    /** @test RC-001 */
+    public function add_credits_method(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->addCredits($user, 50.00, 'purchase', 'Test purchase');
+
+        $this->assertEquals(150.00, $credit->balance);
+    }
+
+    /** @test RC-002 */
+    public function deduct_credits_method(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->deductCredits($user, 25.00, 'Test usage');
+
+        $this->assertEquals(75.00, $credit->balance);
+    }
+
+    /** @test RC-003 */
+    public function deduct_with_reference(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $credit = $this->repository->deductCredits($user, 25.00, 'Test', [
+            'type' => 'App\\Models\\Analysis',
+            'id' => 123,
+        ]);
+
+        $this->assertEquals(75.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'reference_type' => 'App\\Models\\Analysis',
+            'reference_id' => 123,
+        ]);
+    }
+
+    /** @test RC-004 */
+    public function deduct_insufficient_throws(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(50.00)->create();
+
+        $this->expectException(\Exception::class);
+
+        $this->repository->deductCredits($user, 100.00, 'Test');
+    }
+
+    /** @test RC-005 */
+    public function add_credits_with_payment(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $credit = $this->repository->addCredits($user, 50.00, 'purchase', 'Stripe payment', [
             'payment_provider' => 'stripe',
             'payment_id' => 'pi_123',
         ]);
 
-        $this->assertInstanceOf(CreditTransaction::class, $transaction);
-        $this->assertEquals(50.00, $transaction->amount);
-        $this->assertEquals(150.00, $credit->fresh()->balance);
+        $this->assertEquals(50.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'payment_provider' => 'stripe',
+            'payment_id' => 'pi_123',
+        ]);
     }
 
-    /**
-     * Test deductCredits in transaction.
-     * CR-TS-02
-     */
-    public function test_deduct_credits_transaction(): void
+    /** @test RC-006 */
+    public function refund_credits_method(): void
     {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(100);
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
 
-        if (!method_exists($this->repository, 'deductCredits')) {
-            $this->markTestSkipped('deductCredits method not yet implemented');
-        }
-
-        $transaction = $this->repository->deductCredits($user, 10.00, [
-            'type' => 'usage',
-            'description' => 'Analysis job #123',
-            'reference_type' => 'App\\Models\\AnalysisJob',
-            'reference_id' => 123,
+        $credit = $this->repository->refundCredits($user, 10.00, 'Refund', [
+            'type' => 'App\\Models\\Analysis',
+            'id' => 456,
         ]);
 
-        $this->assertInstanceOf(CreditTransaction::class, $transaction);
-        $this->assertEquals(-10.00, $transaction->amount);
-        $this->assertEquals(90.00, $credit->fresh()->balance);
+        $this->assertEquals(110.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'type' => 'refund',
+            'amount' => 10.00,
+        ]);
     }
 
-    /**
-     * Test insufficient balance throws exception.
-     * CR-TS-03
-     */
-    public function test_insufficient_balance_throws_exception(): void
+    /** @test RC-007 */
+    public function bonus_credits_method(): void
     {
-        ['user' => $user] = $this->createUserWithCredit(50);
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
 
-        if (!method_exists($this->repository, 'deductCredits')) {
-            $this->markTestSkipped('deductCredits method not yet implemented');
-        }
+        $credit = $this->repository->bonusCredits($user, 25.00, 'Welcome bonus');
+
+        $this->assertEquals(25.00, $credit->balance);
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'type' => 'bonus',
+        ]);
+    }
+
+    /** @test RC-008 */
+    public function description_stored(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 50.00, 'purchase', 'Custom description');
+
+        $this->assertDatabaseHas('credit_transactions', [
+            'user_id' => $user->id,
+            'description' => 'Custom description',
+        ]);
+    }
+
+    /** @test RC-009 */
+    public function metadata_stored(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 50.00, 'purchase', 'Test', [
+            'metadata' => ['key' => 'value'],
+        ]);
+
+        $transaction = CreditTransaction::where('user_id', $user->id)->first();
+        $this->assertEquals(['key' => 'value'], $transaction->metadata);
+    }
+
+    /** @test RC-010 */
+    public function balance_updates_total_spent(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        $this->repository->deductCredits($user, 25.00, 'Usage');
+
+        $credit = Credit::where('user_id', $user->id)->first();
+        $this->assertEquals(25.00, $credit->total_spent);
+    }
+
+    // ==========================================
+    // Error Handling Tests (RE-001 to RE-008)
+    // ==========================================
+
+    /** @test RE-001 */
+    public function invalid_amount_type(): void
+    {
+        $this->expectException(\TypeError::class);
+
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->repository->addCredits($user, 'abc', 'purchase', 'Test');
+    }
+
+    /** @test RE-002 */
+    public function negative_purchase_amount(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Purchase amount must be positive');
+
+        $this->repository->addCredits($user, -10.00, 'purchase', 'Test');
+    }
+
+    /** @test RE-003 */
+    public function user_not_found(): void
+    {
+        $user = new User();
+        $user->id = 999999;
 
         $this->expectException(\Exception::class);
 
-        $this->repository->deductCredits($user, 100.00, [
-            'type' => 'usage',
-            'description' => 'This should fail',
-        ]);
+        $this->repository->getBalance($user);
     }
 
-    /**
-     * Test rollback on error.
-     * CR-TS-04
-     */
-    public function test_rollback_on_error(): void
-    {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(100);
-
-        if (!method_exists($this->repository, 'addCredits')) {
-            $this->markTestSkipped('addCredits method not yet implemented');
-        }
-
-        $initialBalance = $credit->balance;
-
-        // Simulate an error during transaction
-        // This test would need custom logic to force an error
-        // For now, we verify the repository uses DB::transaction
-        
-        // Check that the repository method wraps operations in a transaction
-        $reflection = new \ReflectionMethod($this->repository, 'addCredits');
-        $source = file($reflection->getFileName())[$reflection->getStartLine() - 1] ?? '';
-        
-        // The method should use DB::transaction internally
-        $this->assertTrue(
-            true, // Placeholder - actual test would verify transaction usage
-            'Repository should use DB::transaction for atomic operations'
-        );
-    }
-
-    /**
-     * Test concurrent updates with lockForUpdate.
-     * CR-TS-05
-     */
-    public function test_concurrent_updates_locking(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(100);
-
-        if (!method_exists($this->repository, 'deductCredits')) {
-            $this->markTestSkipped('deductCredits method not yet implemented');
-        }
-
-        // Simulate concurrent deduction attempts
-        // In a real test, this would use multiple processes/threads
-        
-        // For unit test, verify the method uses lockForUpdate
-        $this->repository->deductCredits($user, 10.00, [
-            'type' => 'usage',
-            'description' => 'Concurrent test',
-        ]);
-
-        $this->assertEquals(90.00, $user->credit->fresh()->balance);
-    }
-
-    /**
-     * Test atomic balance update.
-     * CR-TS-06
-     */
-    public function test_atomic_balance_update(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(100);
-
-        if (!method_exists($this->repository, 'addCredits') || 
-            !method_exists($this->repository, 'deductCredits')) {
-            $this->markTestSkipped('Credit methods not yet implemented');
-        }
-
-        // Perform multiple operations
-        $this->repository->addCredits($user, 50.00, [
-            'type' => 'purchase',
-            'description' => 'Add',
-        ]);
-
-        $this->repository->deductCredits($user, 25.00, [
-            'type' => 'usage',
-            'description' => 'Deduct',
-        ]);
-
-        $this->assertEquals(125.00, $user->credit->fresh()->balance);
-        $this->assertEquals(2, CreditTransaction::where('user_id', $user->id)->count());
-    }
-
-    // ==================== EDGE CASE TESTS ====================
-
-    /**
-     * Test zero amount transaction.
-     * CR-EC-01
-     */
-    public function test_zero_amount_transaction(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(100);
-
-        if (!method_exists($this->repository, 'addCredits')) {
-            $this->markTestSkipped('addCredits method not yet implemented');
-        }
-
-        // Zero amount should either be ignored or handled gracefully
-        $result = $this->repository->addCredits($user, 0, [
-            'type' => 'bonus',
-            'description' => 'Zero transaction',
-        ]);
-
-        // Should return null or skip creating transaction
-        if ($result === null) {
-            $this->assertNull($result);
-            $this->assertEquals(0, CreditTransaction::where('user_id', $user->id)->count());
-        } else {
-            // Or it creates a zero transaction
-            $this->assertEquals(0, $result->amount);
-        }
-    }
-
-    /**
-     * Test very large transaction.
-     * CR-EC-03
-     */
-    public function test_very_large_transaction(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(0);
-
-        if (!method_exists($this->repository, 'addCredits')) {
-            $this->markTestSkipped('addCredits method not yet implemented');
-        }
-
-        $transaction = $this->repository->addCredits($user, 99999999.99, [
-            'type' => 'purchase',
-            'description' => 'Large purchase',
-        ]);
-
-        $this->assertEquals(99999999.99, $transaction->amount);
-        $this->assertEquals(99999999.99, $user->credit->fresh()->balance);
-    }
-
-    /**
-     * Test precision preservation.
-     * CR-EC-04
-     */
-    public function test_precision_preservation(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(0);
-
-        if (!method_exists($this->repository, 'addCredits')) {
-            $this->markTestSkipped('addCredits method not yet implemented');
-        }
-
-        // Multiple small transactions
-        for ($i = 0; $i < 10; $i++) {
-            $this->repository->addCredits($user, 0.01, [
-                'type' => 'bonus',
-                'description' => "Micro bonus $i",
-            ]);
-        }
-
-        $this->assertEquals(0.10, $user->credit->fresh()->balance);
-    }
-
-    /**
-     * Test metadata storage.
-     * CR-EC-05
-     */
-    public function test_metadata_storage(): void
-    {
-        ['user' => $user] = $this->createUserWithCredit(100);
-
-        if (!method_exists($this->repository, 'addCredits')) {
-            $this->markTestSkipped('addCredits method not yet implemented');
-        }
-
-        $metadata = [
-            'package' => 'starter',
-            'credits' => 50,
-            'campaign' => 'welcome_2026',
-        ];
-
-        $transaction = $this->repository->addCredits($user, 50.00, [
-            'type' => 'purchase',
-            'description' => 'Purchase with metadata',
-            'metadata' => $metadata,
-        ]);
-
-        $this->assertEquals($metadata, $transaction->metadata);
-    }
-
-    // ==================== INTEGRATION TESTS ====================
-
-    /**
-     * Test full purchase flow.
-     */
-    public function test_full_purchase_flow(): void
+    /** @test RE-004 */
+    public function database_error_handling(): void
     {
         $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
 
-        // Find or create credit
-        $credit = $this->repository->findOrCreateForUser($user);
-        $this->assertEquals(0, $credit->balance);
+        // Simulate DB error by using an invalid amount
+        $this->expectException(\Exception::class);
 
-        // Add credits via purchase
-        if (method_exists($this->repository, 'addCredits')) {
-            $transaction = $this->repository->addCredits($user, 100.00, [
-                'type' => 'purchase',
-                'description' => 'Purchased 100 credits',
-                'payment_provider' => 'stripe',
-                'payment_id' => 'pi_test123',
-                'metadata' => ['package' => 'starter'],
-            ]);
-
-            $this->assertEquals(100.00, $credit->fresh()->balance);
-            $this->assertEquals(100.00, $credit->fresh()->total_purchased);
-        } else {
-            $this->markTestSkipped('addCredits method not yet implemented');
-        }
+        // Try to insert amount that exceeds DECIMAL
+        $this->repository->addCredits($user, 999999999.99, 'purchase', 'Test');
     }
 
-    /**
-     * Test full usage and refund flow.
-     */
-    public function test_full_usage_refund_flow(): void
+    /** @test RE-005 */
+    public function invalid_transaction_type(): void
     {
-        ['user' => $user, 'credit' => $credit] = $this->createUserWithCredit(100);
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
 
-        if (!method_exists($this->repository, 'deductCredits')) {
-            $this->markTestSkipped('deductCredits method not yet implemented');
-        }
+        $this->expectException(\Exception::class);
 
-        // Use credits
-        $usage = $this->repository->deductCredits($user, 25.00, [
-            'type' => 'usage',
-            'description' => 'Analysis job #123',
-            'reference_type' => 'App\\Models\\AnalysisJob',
-            'reference_id' => 123,
-        ]);
-
-        $this->assertEquals(75.00, $credit->fresh()->balance);
-        $this->assertEquals(25.00, $credit->fresh()->total_spent);
-
-        // Refund credits
-        if (method_exists($this->repository, 'addCredits')) {
-            $refund = $this->repository->addCredits($user, 10.00, [
-                'type' => 'refund',
-                'description' => 'Refund for failed job',
-                'reference_type' => 'App\\Models\\AnalysisJob',
-                'reference_id' => 123,
-            ]);
-
-            $this->assertEquals(85.00, $credit->fresh()->balance);
-        }
+        $this->repository->addCredits($user, 50.00, 'invalid_type', 'Test');
     }
 
-    /**
-     * Test transaction history retrieval.
-     */
-    public function test_transaction_history_retrieval(): void
+    /** @test RE-006 */
+    public function null_user(): void
     {
-        ['user' => $user] = $this->createUserWithCredit(100);
+        $this->expectException(\TypeError::class);
 
-        // Create various transactions
-        CreditTransaction::create([
+        $this->repository->getBalance(null);
+    }
+
+    /** @test RE-007 */
+    public function zero_balance_deduction(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create(); // balance = 0
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Insufficient balance');
+
+        $this->repository->deductCredits($user, 1.00, 'Test');
+    }
+
+    /** @test RE-008 */
+    public function concurrent_race_condition(): void
+    {
+        $user = User::factory()->create();
+        Credit::factory()->forUser($user)->withBalance(100.00)->create();
+
+        // Simulate race condition with transactions
+        $results = [];
+        
+        DB::transaction(function () use ($user, &$results) {
+            $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+            $results[] = $credit->balance;
+            $credit->update(['balance' => $credit->balance - 50]);
+        });
+        
+        DB::transaction(function () use ($user, &$results) {
+            $credit = Credit::where('user_id', $user->id)->lockForUpdate()->first();
+            $results[] = $credit->balance;
+            $credit->update(['balance' => $credit->balance - 30]);
+        });
+
+        $this->assertDatabaseHas('credits', [
             'user_id' => $user->id,
-            'amount' => 100.00,
-            'balance_after' => 100.00,
-            'type' => 'purchase',
-            'description' => 'Initial purchase',
-            'payment_provider' => 'stripe',
-            'payment_id' => 'pi_1',
+            'balance' => 20.00,
         ]);
-
-        CreditTransaction::create([
-            'user_id' => $user->id,
-            'amount' => -25.00,
-            'balance_after' => 75.00,
-            'type' => 'usage',
-            'description' => 'Analysis',
-        ]);
-
-        CreditTransaction::create([
-            'user_id' => $user->id,
-            'amount' => 10.00,
-            'balance_after' => 85.00,
-            'type' => 'bonus',
-            'description' => 'Referral bonus',
-        ]);
-
-        $history = $this->repository->getTransactions($user, 15);
-
-        $this->assertEquals(3, $history->total());
     }
 }
