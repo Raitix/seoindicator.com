@@ -17288,6 +17288,144 @@ interface AIProviderInterface
 - TASK-21-5: API Endpoint
 
 ---
+## PromptTemplate Service (TASK-21-4)
+
+### Service Description
+Prompt template management service for AI SEO suggestions. Provides system prompts, user prompt templates, and expected JSON output schemas for all 10 SEO indicators. Templates are optimized for free AI models with token-efficient system prompts (all under 100 tokens). Supports dynamic variable substitution using `{placeholder}` syntax.
+
+### Component Location
+- **Service:** `backend/app/Services/AI/Prompts/PromptTemplate.php`
+- **Unit Tests:** `backend/tests/Unit/Services/AI/Prompts/PromptTemplateTest.php`
+
+### Core Methods
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `getSystemPrompt()` | `$indicator: string` | `string` | Returns system prompt for the specified indicator |
+| `getUserPrompt()` | `$indicator: string, $context: array` | `string` | Returns user prompt with variable substitution |
+| `getExpectedSchema()` | `$indicator: string` | `array` | Returns expected JSON output structure |
+
+### Supported Indicators (10 Types)
+
+| Indicator | System Prompt (tokens) | User Prompt Variables | Schema Fields |
+|-----------|----------------------|----------------------|---------------|
+| `title` | ~30 | title, content_summary, keyword | score, issues, suggestions, bestPractices |
+| `meta_description` | ~35 | description, content_summary, keyword | score, issues, suggestions, bestPractices |
+| `robots` | ~30 | robots_content, site_url | issues, suggestions, warnings |
+| `sitemap` | ~30 | sitemap_url, page_count, sample_urls | issues, suggestions, coverageAnalysis |
+| `headings` | ~25 | heading_structure | score, hierarchyIssues, suggestions |
+| `image_alt` | ~25 | images | missingAlts, suggestionsPerImage, score |
+| `filenames` | ~25 | file_urls, types | issues, suggestions |
+| `url` | ~25 | url, page_type, keyword | score, issues, suggestions |
+| `links` | ~30 | internal_links, external_links, broken_links | issues, suggestions, brokenLinkFixes |
+| `404` | ~25 | 404_urls, referrers | causes, suggestions, redirectRecommendations |
+
+### Template Structure
+
+Each template in the `TEMPLATES` constant contains:
+
+```php
+private const TEMPLATES = [
+    'indicator_name' => [
+        'system' => 'System prompt text (under 100 tokens)...',
+        'user' => 'User prompt with {variable} placeholders...',
+        'schema' => [
+            'field_name' => 'type description',
+        ],
+    ],
+];
+```
+
+### Variable Substitution
+
+The `substitute()` method handles `{placeholder}` replacement:
+
+| Value Type | Formatting |
+|------------|------------|
+| `null` | Empty string |
+| `array` | JSON encoded |
+| `scalar` | Cast to string |
+| `special chars` | Preserved as-is |
+| `Unicode` | UTF-8 preserved |
+
+### Example Usage
+
+```php
+$template = new PromptTemplate();
+
+// Get system prompt
+$systemPrompt = $template->getSystemPrompt('title');
+// Returns: "You are an SEO expert specializing in title tag optimization..."
+
+// Get user prompt with context
+$userPrompt = $template->getUserPrompt('title', [
+    'title' => 'My Page Title',
+    'content_summary' => 'Page about SEO tools',
+    'keyword' => 'SEO tools'
+]);
+// Variables {title}, {content_summary}, {keyword} are substituted
+
+// Get expected schema
+$schema = $template->getExpectedSchema('title');
+// Returns: ['score' => 'integer 0-100', 'issues' => 'array of strings', ...]
+```
+
+### Token Efficiency
+
+All system prompts are optimized for free AI models:
+
+| Metric | Value |
+|--------|-------|
+| Max system prompt tokens | < 100 |
+| JSON-only response format | Yes |
+| No examples in prompts | Yes (schema only) |
+| Placeholder variables | Yes |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PromptTemplateTest.php` | 75 | 132 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 8 | File existence, methods, return types |
+| Title Indicator | 9 | System prompt, user prompt, schema |
+| Meta Description | 6 | CTA guidance, token efficiency |
+| Robots.txt | 6 | Content, URL, schema fields |
+| Sitemap | 5 | URL, page count, coverage analysis |
+| Headings | 4 | Hierarchy, accessibility |
+| Image Alt | 4 | Missing alts, suggestions per image |
+| Filenames | 4 | Naming conventions |
+| URL | 5 | Slug optimization |
+| Links | 5 | Internal, external, broken links |
+| 404 | 5 | Redirect recommendations, UX |
+| Variable Substitution | 6 | Single, multiple, special chars, Unicode |
+| Edge Cases | 8 | Invalid indicators, XSS, token limits |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| Invalid indicator handling | Returns empty string/array gracefully |
+| XSS prevention | Template values sanitized in controller |
+| Unicode support | UTF-8 encoding preserved |
+| No exceptions thrown | Graceful degradation |
+
+### Production Status
+- **Deployed**: 2026-03-01 (commit 6317d34 via GitHub Actions)
+- **Health Check**: Passing
+- **Tests**: 75/75 passing (132 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-21-1 (AI Service Structure and Interfaces)
+
+### Related Tasks
+- TASK-21-5: AI Suggestion API Endpoint (uses templates)
+
+---
 ## OpenRouter Provider (TASK-21-2)
 
 ### Service Description
