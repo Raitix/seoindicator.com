@@ -14,12 +14,15 @@ use Illuminate\Support\Facades\Log;
  * SEO components into a single 0-100 score.
  *
  * Component Weights:
- * - Position Component: 50% - Based on keyword ranking positions
- * - SERP Feature Component: 25% - Based on SERP feature presence
- * - Volume Distribution Component: 15% - Based on search volume distribution
- * - PWA Component: 10% - Based on PWA readiness score
+ * - Position Component: 40% - Based on keyword ranking positions
+ * - SERP Feature Component: 30% - Based on SERP feature presence
+ * - Backlink Component: 20% - Based on backlink profile health score
+ * - Volume Distribution Component: 10% - Based on search volume distribution
  *
- * @see TASK-24-13
+ * When backlink data is not available, weights are redistributed:
+ * - Position: 50%, SERP: 37.5%, Volume: 12.5%
+ *
+ * @see TASK-23-15
  * @see SPEC-010
  */
 class VisibilityScoreService
@@ -27,15 +30,39 @@ class VisibilityScoreService
     /**
      * Component weights (must sum to 1.0).
      */
-    protected const POSITION_WEIGHT = 0.50;
-    protected const SERP_WEIGHT = 0.25;
-    protected const VOLUME_WEIGHT = 0.15;
-    protected const PWA_WEIGHT = 0.10;
+    protected const POSITION_WEIGHT = 0.40;
+    protected const SERP_WEIGHT = 0.30;
+    protected const BACKLINK_WEIGHT = 0.20;
+    protected const VOLUME_WEIGHT = 0.10;
+
+    /**
+     * Redistributed weights when backlink data is missing.
+     */
+    protected const REDISTRIBUTED_POSITION_WEIGHT = 0.50;
+    protected const REDISTRIBUTED_SERP_WEIGHT = 0.375;
+    protected const REDISTRIBUTED_VOLUME_WEIGHT = 0.125;
 
     /**
      * Cache TTL in seconds (1 hour).
      */
     protected const CACHE_TTL = 3600;
+
+    /**
+     * Backlink profile scorer instance.
+     *
+     * @var BacklinkProfileScorer|null
+     */
+    protected ?BacklinkProfileScorer $backlinkScorer;
+
+    /**
+     * Create a new VisibilityScoreService instance.
+     *
+     * @param BacklinkProfileScorer|null $backlinkScorer
+     */
+    public function __construct(?BacklinkProfileScorer $backlinkScorer = null)
+    {
+        $this->backlinkScorer = $backlinkScorer;
+    }
 
     /**
      * Calculate the overall visibility score for a project.
@@ -45,7 +72,7 @@ class VisibilityScoreService
      *   - position: float (0-100)
      *   - serp: float (0-100)
      *   - volume: float (0-100)
-     *   - pwa: float (0-100) - if not provided, calculated from PWAAnalysis
+     *   - backlink: float (0-100) - if not provided, calculated from BacklinkProfileScorer
      * @param bool $force Force recalculation (bypass cache)
      * @return int Overall visibility score (0-100)
      * @throws \InvalidArgumentException If project is null
@@ -65,21 +92,32 @@ class VisibilityScoreService
         }
 
         // Calculate component scores
-        $positionScore = $components['position'] ?? 0.0;
-        $serpScore = $components['serp'] ?? 0.0;
-        $volumeScore = $components['volume'] ?? 0.0;
-        $pwaScore = $components['pwa'] ?? $this->calculatePWAComponent($project);
+        $positionScore = $this->clamp($components['position'] ?? 0.0, 0, 100);
+        $serpScore = $this->clamp($components['serp'] ?? 0.0, 0, 100);
+        $volumeScore = $this->clamp($components['volume'] ?? 0.0, 0, 100);
+        
+        // Calculate backlink component
+        $backlinkScore = $components['backlink'] ?? null;
+        if ($backlinkScore === null) {
+            $backlinkScore = $this->calculateBacklinkComponent($project);
+        }
+        $backlinkScore = $this->clamp($backlinkScore, 0, 100);
 
-        // Clamp scores to valid range
-        $positionScore = $this->clamp($positionScore, 0, 100);
-        $serpScore = $this->clamp($serpScore, 0, 100);
-        $volumeScore = $this->clamp($volumeScore, 0, 100);
+        // Determine if we have backlink data (non-zero score indicates data exists)
+        $hasBacklinkData = $backlinkScore > 0;
 
         // Calculate weighted total
-        $total = ($positionScore * self::POSITION_WEIGHT)
-            + ($serpScore * self::SERP_WEIGHT)
-            + ($volumeScore * self::VOLUME_WEIGHT)
-            + ($pwaScore * self::PWA_WEIGHT);
+        if ($hasBacklinkData) {
+            $total = ($positionScore * self::POSITION_WEIGHT)
+                + ($serpScore * self::SERP_WEIGHT)
+                + ($backlinkScore * self::BACKLINK_WEIGHT)
+                + ($volumeScore * self::VOLUME_WEIGHT);
+        } else {
+            // Redistribute weights when no backlink data
+            $total = ($positionScore * self::REDISTRIBUTED_POSITION_WEIGHT)
+                + ($serpScore * self::REDISTRIBUTED_SERP_WEIGHT)
+                + ($volumeScore * self::REDISTRIBUTED_VOLUME_WEIGHT);
+        }
 
         // Round and clamp final score
         $score = (int) round($this->clamp($total, 0, 100));
@@ -103,21 +141,37 @@ class VisibilityScoreService
         $positionScore = $this->clamp($components['position'] ?? 0.0, 0, 100);
         $serpScore = $this->clamp($components['serp'] ?? 0.0, 0, 100);
         $volumeScore = $this->clamp($components['volume'] ?? 0.0, 0, 100);
-        $pwaScore = $components['pwa'] ?? $this->calculatePWAComponent($project);
+        
+        // Calculate backlink component
+        $backlinkScore = $components['backlink'] ?? null;
+        if ($backlinkScore === null) {
+            $backlinkScore = $this->calculateBacklinkComponent($project);
+        }
+        $backlinkScore = $this->clamp($backlinkScore, 0, 100);
+
+        // Determine if we have backlink data
+        $hasBacklinkData = $backlinkScore > 0;
 
         // Calculate weighted total
-        $total = ($positionScore * self::POSITION_WEIGHT)
-            + ($serpScore * self::SERP_WEIGHT)
-            + ($volumeScore * self::VOLUME_WEIGHT)
-            + ($pwaScore * self::PWA_WEIGHT);
+        if ($hasBacklinkData) {
+            $total = ($positionScore * self::POSITION_WEIGHT)
+                + ($serpScore * self::SERP_WEIGHT)
+                + ($backlinkScore * self::BACKLINK_WEIGHT)
+                + ($volumeScore * self::VOLUME_WEIGHT);
+        } else {
+            // Redistribute weights when no backlink data
+            $total = ($positionScore * self::REDISTRIBUTED_POSITION_WEIGHT)
+                + ($serpScore * self::REDISTRIBUTED_SERP_WEIGHT)
+                + ($volumeScore * self::REDISTRIBUTED_VOLUME_WEIGHT);
+        }
 
         $score = (int) round($this->clamp($total, 0, 100));
 
         // Calculate component contributions
-        $positionComponent = round($positionScore * self::POSITION_WEIGHT, 2);
-        $serpComponent = round($serpScore * self::SERP_WEIGHT, 2);
-        $volumeComponent = round($volumeScore * self::VOLUME_WEIGHT, 2);
-        $pwaComponent = round($pwaScore, 2);
+        $positionComponent = round($positionScore * ($hasBacklinkData ? self::POSITION_WEIGHT : self::REDISTRIBUTED_POSITION_WEIGHT), 2);
+        $serpComponent = round($serpScore * ($hasBacklinkData ? self::SERP_WEIGHT : self::REDISTRIBUTED_SERP_WEIGHT), 2);
+        $volumeComponent = round($volumeScore * ($hasBacklinkData ? self::VOLUME_WEIGHT : self::REDISTRIBUTED_VOLUME_WEIGHT), 2);
+        $backlinkComponent = round($backlinkScore * self::BACKLINK_WEIGHT, 2);
 
         // Store in database
         VisibilityScore::create([
@@ -126,7 +180,8 @@ class VisibilityScoreService
             'position_component' => $positionComponent,
             'serp_component' => $serpComponent,
             'volume_component' => $volumeComponent,
-            'pwa_component' => $pwaComponent,
+            'backlink_component' => $backlinkComponent,
+            'pwa_component' => 0.0, // PWA component deprecated, kept for backward compatibility
             'keywords_count' => $project->keywords()->count() ?? 0,
             'calculated_at' => now(),
         ]);
@@ -138,33 +193,45 @@ class VisibilityScoreService
     }
 
     /**
-     * Calculate PWA component contribution to visibility score.
+     * Calculate backlink component contribution to visibility score.
      *
-     * PWA readiness contributes 10% weight to overall visibility.
-     * Formula: (pwa_score / 100) * 10 points
+     * Calls the BacklinkProfileScorer to get the overall profile score,
+     * then applies the 20% weight. Returns 0 if no backlink data or
+     * scorer is unavailable.
      *
      * @param Project $project
-     * @return float PWA component score (0-10)
+     * @return float Backlink component score (0-20, representing weighted contribution)
      */
-    public function calculatePWAComponent(Project $project): float
+    public function calculateBacklinkComponent(Project $project): float
     {
         try {
-            $pwaAnalysis = $project->pwaAnalysis;
-
-            // No PWA analysis available
-            if ($pwaAnalysis === null) {
+            // Check if scorer is available
+            if ($this->backlinkScorer === null) {
                 return 0.0;
             }
 
-            $pwaScore = $pwaAnalysis->pwa_score ?? 0;
+            // Get the profile score from the scorer
+            $result = $this->backlinkScorer->score($project);
+
+            // Handle null result (no backlink data)
+            if ($result === null) {
+                return 0.0;
+            }
+
+            // Handle array result (full scorer output)
+            if (is_array($result)) {
+                $profileScore = $result['overall_score'] ?? 0.0;
+            } else {
+                $profileScore = (float) $result;
+            }
 
             // Clamp to valid range
-            $pwaScore = $this->clamp($pwaScore, 0, 100);
+            $profileScore = $this->clamp($profileScore, 0, 100);
 
-            // Calculate 10% contribution: (score / 100) * 10 = score * 0.10
-            return round($pwaScore * self::PWA_WEIGHT, 2);
+            // Return the weighted contribution (20% of profile score)
+            return $profileScore * self::BACKLINK_WEIGHT;
         } catch (\Exception $e) {
-            Log::warning('PWA component calculation failed', [
+            Log::warning('Backlink component calculation failed', [
                 'project_id' => $project->id,
                 'error' => $e->getMessage(),
             ]);
@@ -185,37 +252,52 @@ class VisibilityScoreService
         $positionScore = $this->clamp($components['position'] ?? 0.0, 0, 100);
         $serpScore = $this->clamp($components['serp'] ?? 0.0, 0, 100);
         $volumeScore = $this->clamp($components['volume'] ?? 0.0, 0, 100);
-        $pwaScore = $this->calculatePWAComponent($project);
+        
+        $backlinkScore = $components['backlink'] ?? null;
+        if ($backlinkScore === null) {
+            $backlinkContribution = $this->calculateBacklinkComponent($project);
+            $backlinkScore = $backlinkContribution > 0 ? $backlinkContribution / self::BACKLINK_WEIGHT : 0.0;
+        }
+        $backlinkScore = $this->clamp($backlinkScore, 0, 100);
 
-        $totalScore = ($positionScore * self::POSITION_WEIGHT)
-            + ($serpScore * self::SERP_WEIGHT)
-            + ($volumeScore * self::VOLUME_WEIGHT)
-            + ($pwaScore);
+        $hasBacklinkData = $backlinkScore > 0;
+
+        if ($hasBacklinkData) {
+            $totalScore = ($positionScore * self::POSITION_WEIGHT)
+                + ($serpScore * self::SERP_WEIGHT)
+                + ($backlinkScore * self::BACKLINK_WEIGHT)
+                + ($volumeScore * self::VOLUME_WEIGHT);
+        } else {
+            $totalScore = ($positionScore * self::REDISTRIBUTED_POSITION_WEIGHT)
+                + ($serpScore * self::REDISTRIBUTED_SERP_WEIGHT)
+                + ($volumeScore * self::REDISTRIBUTED_VOLUME_WEIGHT);
+        }
 
         return [
             'overall_score' => (int) round($this->clamp($totalScore, 0, 100)),
             'components' => [
                 'position' => [
                     'score' => round($positionScore, 2),
-                    'weight' => (int) (self::POSITION_WEIGHT * 100),
-                    'contribution' => round($positionScore * self::POSITION_WEIGHT, 2),
+                    'weight' => (int) (($hasBacklinkData ? self::POSITION_WEIGHT : self::REDISTRIBUTED_POSITION_WEIGHT) * 100),
+                    'contribution' => round($positionScore * ($hasBacklinkData ? self::POSITION_WEIGHT : self::REDISTRIBUTED_POSITION_WEIGHT), 2),
                 ],
                 'serp_features' => [
                     'score' => round($serpScore, 2),
-                    'weight' => (int) (self::SERP_WEIGHT * 100),
-                    'contribution' => round($serpScore * self::SERP_WEIGHT, 2),
+                    'weight' => (int) (($hasBacklinkData ? self::SERP_WEIGHT : self::REDISTRIBUTED_SERP_WEIGHT) * 100),
+                    'contribution' => round($serpScore * ($hasBacklinkData ? self::SERP_WEIGHT : self::REDISTRIBUTED_SERP_WEIGHT), 2),
+                ],
+                'backlinks' => [
+                    'score' => round($backlinkScore, 2),
+                    'weight' => (int) (self::BACKLINK_WEIGHT * 100),
+                    'contribution' => round($backlinkScore * self::BACKLINK_WEIGHT, 2),
                 ],
                 'volume_distribution' => [
                     'score' => round($volumeScore, 2),
-                    'weight' => (int) (self::VOLUME_WEIGHT * 100),
-                    'contribution' => round($volumeScore * self::VOLUME_WEIGHT, 2),
-                ],
-                'pwa' => [
-                    'score' => round($pwaScore / self::PWA_WEIGHT, 2), // Raw PWA score
-                    'weight' => (int) (self::PWA_WEIGHT * 100),
-                    'contribution' => round($pwaScore, 2),
+                    'weight' => (int) (($hasBacklinkData ? self::VOLUME_WEIGHT : self::REDISTRIBUTED_VOLUME_WEIGHT) * 100),
+                    'contribution' => round($volumeScore * ($hasBacklinkData ? self::VOLUME_WEIGHT : self::REDISTRIBUTED_VOLUME_WEIGHT), 2),
                 ],
             ],
+            'has_backlink_data' => $hasBacklinkData,
             'calculated_at' => now()->toIso8601String(),
         ];
     }
@@ -275,6 +357,16 @@ class VisibilityScoreService
     }
 
     /**
+     * Get backlink component weight.
+     *
+     * @return float
+     */
+    public function getBacklinkWeight(): float
+    {
+        return self::BACKLINK_WEIGHT;
+    }
+
+    /**
      * Get volume component weight.
      *
      * @return float
@@ -282,16 +374,6 @@ class VisibilityScoreService
     public function getVolumeWeight(): float
     {
         return self::VOLUME_WEIGHT;
-    }
-
-    /**
-     * Get PWA component weight.
-     *
-     * @return float
-     */
-    public function getPWAWeight(): float
-    {
-        return self::PWA_WEIGHT;
     }
 
     /**
@@ -304,8 +386,22 @@ class VisibilityScoreService
         return [
             'position' => self::POSITION_WEIGHT,
             'serp' => self::SERP_WEIGHT,
+            'backlink' => self::BACKLINK_WEIGHT,
             'volume' => self::VOLUME_WEIGHT,
-            'pwa' => self::PWA_WEIGHT,
+        ];
+    }
+
+    /**
+     * Get redistributed weights when backlink data is missing.
+     *
+     * @return array
+     */
+    public function getRedistributedWeights(): array
+    {
+        return [
+            'position' => self::REDISTRIBUTED_POSITION_WEIGHT,
+            'serp' => self::REDISTRIBUTED_SERP_WEIGHT,
+            'volume' => self::REDISTRIBUTED_VOLUME_WEIGHT,
         ];
     }
 }
