@@ -1030,4 +1030,139 @@ if (class_exists(\Stripe\Webhook::class)) {
 
 ---
 
+## Stripe Payment Testing (TASK-26-23)
+
+### Mock Stripe.js Pattern
+```typescript
+jest.mock('@stripe/react-stripe-js', () => ({
+  CardElement: ({ onChange, options }: any) => (
+    <div data-testid="card-element" data-complete={options?.disabled ? 'false' : 'true'}>
+      <input
+        data-testid="card-number-input"
+        placeholder="Card number"
+        onChange={(e) => onChange?.({ 
+          complete: e.target.value.length === 16,
+          error: null,
+          empty: e.target.value.length === 0,
+        })}
+      />
+    </div>
+  ),
+  useElements: () => ({
+    getElement: jest.fn(() => ({ mock: true })),
+  }),
+  useStripe: () => ({
+    confirmCardPayment: jest.fn(),
+    createPaymentMethod: jest.fn(),
+  }),
+}));
+```
+
+### Card Type Detection Tests
+- Visa: starts with 4
+- Mastercard: starts with 55 or 2221-2720
+- Amex: starts with 34 or 37
+- Discover: starts with 6011, 65, 644-649
+
+### Payment Flow Test Categories
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 10+ | Component structure, states |
+| Card Element | 15 | Input handling, validation |
+| Submission | 15 | Success, failure, processing |
+| Validation | 10 | Form fields, real-time |
+| Security | 10 | PCI compliance, CSRF |
+| Edge Cases | 10 | Network, timeouts, unicode |
+| Accessibility | 10 | ARIA, keyboard, screen reader |
+| Integration | 5+ | Full flows |
+
+### Stripe Error Codes to Test
+| Code | Message | Test Scenario |
+|------|---------|---------------|
+| `card_declined` | Card was declined | PF-028 |
+| `insufficient_funds` | Insufficient funds | PF-029 |
+| `expired_card` | Card has expired | PC-023 |
+| `incorrect_cvc` | Invalid security code | PC-024 |
+| `processing_error` | Processing error | PC-025 |
+| `rate_limit` | Too many attempts | PC-027 |
+
+### Security Testing for Payments
+- No card data in localStorage
+- No card data in console logs
+- No card data in DOM (use Stripe Elements)
+- CSRF token in request headers
+- Idempotency key for duplicate prevention
+- HTTPS enforcement
+- PCI compliance via Stripe Elements
+
+### Payment State Machine
+```
+Initial → Card Input → Processing → Success
+                   ↓
+                 Error → Retry → Processing
+```
+
+### Mock Data for Payment Tests
+```typescript
+const mockPackage = {
+  id: 'pkg_pro',
+  name: 'Pro Credit Package',
+  credits: 100,
+  price: 29.99,
+  currency: 'USD',
+  bonus_credits: 10,
+};
+
+const mockPaymentIntent = {
+  id: 'pi_1234567890',
+  client_secret: 'pi_123_secret_abc',
+  amount: 2999,
+  currency: 'usd',
+  status: 'requires_payment_method',
+};
+
+const mockTransaction = {
+  id: 'txn_123456',
+  amount: 29.99,
+  currency: 'USD',
+  credits: 110,
+  status: 'completed',
+  payment_method: 'Visa ****4242',
+  created_at: '2026-03-14T19:30:00Z',
+};
+```
+
+### API Hook Testing Pattern (React Query)
+```typescript
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const createWrapper = () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return ({ children }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
+
+// Test usage
+const { result } = renderHook(() => useCreatePaymentIntent(), {
+  wrapper: createWrapper(),
+});
+
+await act(async () => {
+  await result.current.mutateAsync({ packageId: 'pkg_pro' });
+});
+```
+
+### Test Coverage Targets for Payments
+| Component | Statements | Branches | Functions | Lines |
+|-----------|------------|----------|-----------|-------|
+| PaymentForm | 90% | 85% | 95% | 90% |
+| PaymentMethodSelector | 90% | 85% | 95% | 90% |
+| PaymentConfirmation | 90% | 85% | 95% | 90% |
+| PaymentHistory | 90% | 85% | 95% | 90% |
+| API Hooks | 95% | 90% | 100% | 95% |
+
+---
+
 Last updated: 2026-03-14
