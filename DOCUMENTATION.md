@@ -12232,6 +12232,149 @@ php artisan tinker
 - TASK-27-15: Metric Cards and Overview Section (frontend metric components)
 
 ---
+## Admin Database Tables (TASK-27-1)
+
+### Service Description
+Database migrations for admin dashboard foundation tables: `admin_activity_logs` for auditing admin actions and `system_metrics_cache` for caching aggregated metrics. These tables support the admin dashboard's activity auditing and real-time metrics display functionality.
+
+### Component Location
+- **Migration:** `backend/database/migrations/2026_03_02_170000_create_admin_tables.php`
+- **Tests:** `backend/tests/Unit/Migrations/CreateAdminTablesMigrationTest.php`
+
+### Database Schema
+
+#### admin_activity_logs Table
+
+```sql
+CREATE TABLE admin_activity_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id BIGINT UNSIGNED NULL,
+    action VARCHAR(100) NOT NULL,
+    target_type VARCHAR(100) NULL,
+    target_id BIGINT UNSIGNED NULL,
+    metadata JSON NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    created_at TIMESTAMP NULL,
+    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_admin_activity_logs_admin_user_id (admin_user_id),
+    INDEX idx_admin_activity_logs_action (action),
+    INDEX idx_admin_activity_logs_created_at (created_at),
+    INDEX idx_admin_activity_logs_admin_user_id_created_at (admin_user_id, created_at)
+);
+```
+
+**Column Descriptions:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `admin_user_id` | BIGINT UNSIGNED | FK to users table (nullable, SET NULL on delete) |
+| `action` | VARCHAR(100) | Action performed (e.g., `user.ban`, `credit.adjust`) |
+| `target_type` | VARCHAR(100) | Entity type acted upon (e.g., `User`, `Project`) |
+| `target_id` | BIGINT UNSIGNED | Entity ID acted upon |
+| `metadata` | JSON | Additional context (before/after values, reason) |
+| `ip_address` | VARCHAR(45) | Client IP address (IPv6 compatible) |
+| `user_agent` | TEXT | Client browser user agent |
+| `created_at` | TIMESTAMP | When the action occurred |
+
+#### system_metrics_cache Table
+
+```sql
+CREATE TABLE system_metrics_cache (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    metric_key VARCHAR(100) NOT NULL,
+    metric_value DECIMAL(15,4) NOT NULL,
+    metadata JSON NULL,
+    cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
+    UNIQUE KEY idx_system_metrics_cache_metric_key (metric_key),
+    INDEX idx_system_metrics_cache_expires_at (expires_at)
+);
+```
+
+**Column Descriptions:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `metric_key` | VARCHAR(100) | Unique metric identifier (e.g., `users.total`, `requests.today`) |
+| `metric_value` | DECIMAL(15,4) | Cached metric value (supports high precision) |
+| `metadata` | JSON | Additional context (trend data, breakdown by category) |
+| `cached_at` | TIMESTAMP | When the metric was calculated |
+| `expires_at` | TIMESTAMP | When the cache entry expires |
+
+### Index Strategy
+
+**admin_activity_logs:**
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| PRIMARY | `id` | Primary key lookup |
+| `idx_admin_activity_logs_admin_user_id` | `admin_user_id` | Filter by admin user |
+| `idx_admin_activity_logs_action` | `action` | Filter by action type |
+| `idx_admin_activity_logs_created_at` | `created_at` | Time-based queries |
+| `idx_admin_activity_logs_admin_user_id_created_at` | `admin_user_id, created_at` | Admin activity timeline |
+
+**system_metrics_cache:**
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| PRIMARY | `id` | Primary key lookup |
+| `idx_system_metrics_cache_metric_key` | `metric_key` (UNIQUE) | Fast metric lookup, prevent duplicates |
+| `idx_system_metrics_cache_expires_at` | `expires_at` | Cache cleanup queries |
+
+### Foreign Key Constraints
+
+| Table | Column | References | On Delete |
+|-------|--------|------------|-----------|
+| `admin_activity_logs` | `admin_user_id` | `users.id` | SET NULL |
+
+### Security Considerations
+
+| Measure | Implementation |
+|---------|----------------|
+| SQL Injection Prevention | PDO parameter binding in all queries |
+| XSS Prevention | Metadata stored as-is; sanitized on display |
+| IPv6 Support | VARCHAR(45) accommodates full IPv6 addresses |
+| Soft Delete Support | `admin_user_id` becomes NULL when user deleted |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateAdminTablesMigrationTest.php` | 61 | 91 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Table Structure (AL) | 20 | Column presence, types, nullability |
+| Table Structure (SM) | 18 | Column presence, types, precision |
+| Migration Reversibility (MR) | 10 | Rollback, re-run scenarios |
+| Data Integrity (DI) | 8 | Insert/read, constraints, queries |
+| Security (SE) | 10 | SQL injection, XSS, edge cases |
+
+**Skipped Tests (SQLite Limitations):**
+- AL-011: Foreign key inspection (MySQL/MariaDB only)
+- SM-018: VARCHAR length constraint (SQLite doesn't enforce)
+- MR-005: FK dropped on rollback (MySQL/MariaDB only)
+- MR-009: FK constraint enforced (SQLite doesn't enforce)
+- DI-008: Cascade behavior (MySQL/MariaDB only)
+
+### Production Status
+- **Deployed:** 2026-03-13 (commit `7a70b77edc451311b574d0192b9d32c07f85e36f`)
+- **Tables Created:** `admin_activity_logs`, `system_metrics_cache`
+- **Foreign Keys:** `admin_user_id` → `users.id` (SET NULL) verified
+- **Indexes:** All indexes created and verified
+- **Rollback Test:** Passed (tables dropped correctly)
+- **Status:** Complete
+
+### Dependencies
+- None (foundation task)
+
+### Related Tasks
+- TASK-27-2: AdminAuthorizationMiddleware (uses admin_activity_logs for audit)
+- TASK-27-3: AdminStatsService (uses system_metrics_cache for caching)
+- TASK-27-5: User Stats API (caches metrics in system_metrics_cache)
+- TASK-27-8: Usage Stats API (caches metrics in system_metrics_cache)
+
+---
 ## Request Tracking Middleware (TASK-27-6)
 
 ### Service Description

@@ -1,7 +1,7 @@
 # TASK-27-1: Admin Database Tables Migration
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -267,6 +267,24 @@ php artisan test --filter=CreateAdminTablesMigrationTest
 **Conclusion:** All acceptance criteria verified. Migration is production-ready.
 
 **Handoff:** Ready for DocSystemAnalyst to document.
+
+### 2026-03-14 - DocSystemAnalyst
+**Documentation Complete**
+
+**DOCUMENTATION.md Updated:**
+- Added comprehensive "Admin Database Tables (TASK-27-1)" section
+- Documented both tables: `admin_activity_logs`, `system_metrics_cache`
+- Full schema with SQL CREATE statements
+- Column descriptions with types and purposes
+- Index strategy for both tables
+- Foreign key constraints
+- Security considerations
+- Test coverage (61 tests, 91 assertions)
+- Production deployment info
+
+**Documentation Location:** Line ~12230+ (before Request Tracking Middleware section)
+
+**Handoff:** Task complete. Parent SPEC-027 has remaining tasks.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
