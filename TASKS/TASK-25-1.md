@@ -1,7 +1,7 @@
 # TASK-25-1: Install Laravel Sanctum & Socialite Packages
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`
