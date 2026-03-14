@@ -1,7 +1,7 @@
 # TASK-23-3: GSC Backlink Fetcher Service
 
 ## STATUS
-`To Test Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
