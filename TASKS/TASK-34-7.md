@@ -1,7 +1,7 @@
 # TASK-34-7: Query Job and Scheduling
 
 ## STATUS
-`To Test Prod`
+`To Document`
 
 ## PRIORITY
 `High`
