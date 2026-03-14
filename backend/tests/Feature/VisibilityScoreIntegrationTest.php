@@ -6,8 +6,8 @@ use Tests\TestCase;
 use App\Models\Project;
 use App\Models\VisibilityScore;
 use App\Models\User;
-use App\Services\VisibilityScoreService;
-use App\Services\BacklinkProfileScorer;
+use App\Services\SEO\VisibilityScoreService;
+use App\Services\SEO\BacklinkProfileScorer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -19,7 +19,7 @@ use Mockery;
  * through the full application stack, including database operations,
  * caching, and API endpoints.
  *
- * @see \App\Services\VisibilityScoreService
+ * @see \App\Services\SEO\VisibilityScoreService
  * @see TASK-23-15
  */
 class VisibilityScoreIntegrationTest extends TestCase
@@ -31,6 +31,9 @@ class VisibilityScoreIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Use array cache driver to avoid transaction conflicts
+        Cache::swap(Cache::store('array'));
 
         // Mock BacklinkProfileScorer dependency
         $this->backlinkScorerMock = Mockery::mock(BacklinkProfileScorer::class);
