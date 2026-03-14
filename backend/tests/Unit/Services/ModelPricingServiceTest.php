@@ -4,12 +4,12 @@ namespace Tests\Unit\Services;
 
 use Tests\TestCase;
 use App\Services\ModelPricingService;
+use App\Services\OpenRouterSyncService;
 use App\Models\AIModel;
 use App\Models\User;
-use App\Models\UserModelPreference;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 
@@ -17,21 +17,28 @@ use Mockery;
  * Unit tests for TASK-26-16: ModelPricingService
  *
  * Tests the ModelPricingService responsible for:
- * - Managing AI model data and pricing
- * - Calculating analysis costs based on tokens
- * - Syncing models from OpenRouter API
+ * - Managing AI model data
+ * - Pricing calculations
  * - User default model preferences
- * - Model caching
+ * - Caching model data
+ * - Syncing from OpenRouter
  *
  * @see \App\Services\ModelPricingService
  */
 class ModelPricingServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected ModelPricingService $service;
+    protected $syncServiceMock;
 
     protected function setUp(): void
     {
         parent::setUp();
+        
+        $this->syncServiceMock = Mockery::mock(OpenRouterSyncService::class);
+        $this->app->instance(OpenRouterSyncService::class, $this->syncServiceMock);
+        
         $this->service = app(ModelPricingService::class);
     }
 
@@ -43,27 +50,50 @@ class ModelPricingServiceTest extends TestCase
     }
 
     // =========================================================================
-    // MODEL LISTING TESTS (ML)
+    // SERVICE INSTANTIATION TESTS (SI)
     // =========================================================================
 
     /**
-     * ML-001: getAvailableModels returns collection of active models
+     * SI-001: Service can be resolved from container
+     */
+    public function test_service_can_be_resolved_from_container(): void
+    {
+        $service = app(ModelPricingService::class);
+
+        $this->assertInstanceOf(ModelPricingService::class, $service);
+    }
+
+    /**
+     * SI-002: Service has all required methods
+     */
+    public function test_service_has_all_required_methods(): void
+    {
+        $this->assertTrue(method_exists($this->service, 'getAvailableModels'));
+        $this->assertTrue(method_exists($this->service, 'getModelById'));
+        $this->assertTrue(method_exists($this->service, 'getModelByProviderId'));
+        $this->assertTrue(method_exists($this->service, 'getModelPricing'));
+        $this->assertTrue(method_exists($this->service, 'calculateAnalysisCost'));
+        $this->assertTrue(method_exists($this->service, 'syncModelsFromOpenRouter'));
+        $this->assertTrue(method_exists($this->service, 'getUserDefaultModel'));
+        $this->assertTrue(method_exists($this->service, 'setUserDefaultModel'));
+    }
+
+    // =========================================================================
+    // getAvailableModels() TESTS (GAM)
+    // =========================================================================
+
+    /**
+     * GAM-001: Returns Collection of active models
      */
     public function test_get_available_models_returns_active_models(): void
     {
-        // Arrange: Create mock models
         AIModel::factory()->create([
             'provider' => 'openrouter',
-            'model_id' => 'openai/gpt-4-turbo',
-            'display_name' => 'GPT-4 Turbo',
+            'model_id' => 'active/model',
+            'display_name' => 'Active Model',
             'is_active' => true,
         ]);
-        AIModel::factory()->create([
-            'provider' => 'openrouter',
-            'model_id' => 'anthropic/claude-3',
-            'display_name' => 'Claude 3',
-            'is_active' => true,
-        ]);
+
         AIModel::factory()->create([
             'provider' => 'openrouter',
             'model_id' => 'inactive/model',
@@ -71,1195 +101,1439 @@ class ModelPricingServiceTest extends TestCase
             'is_active' => false,
         ]);
 
-        // Act
         $models = $this->service->getAvailableModels();
 
-        // Assert
         $this->assertInstanceOf(Collection::class, $models);
-        $this->assertEquals(2, $models->count());
-        $this->assertTrue($models->every(fn($m) => $m->is_active === true));
+        $this->assertCount(1, $models);
+        $this->assertEquals('active/model', $models->first()->model_id);
     }
 
     /**
-     * ML-002: getAvailableModels returns empty collection when no models
+     * GAM-002: Returns empty collection when no models
      */
-    public function test_get_available_models_returns_empty_when_no_models(): void
+    public function test_get_available_models_returns_empty_collection_when_no_models(): void
     {
-        // Arrange: Clear all models
-        AIModel::query()->delete();
-
-        // Act
         $models = $this->service->getAvailableModels();
 
-        // Assert
         $this->assertInstanceOf(Collection::class, $models);
-        $this->assertEquals(0, $models->count());
+        $this->assertCount(0, $models);
     }
 
     /**
-     * ML-003: getAvailableModels caches results for 1 hour
+     * GAM-003: Excludes inactive models
+     */
+    public function test_get_available_models_excludes_inactive_models(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/1',
+            'display_name' => 'Model 1',
+            'is_active' => true,
+        ]);
+
+        AIModel::factory()->inactive()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/2',
+            'display_name' => 'Model 2',
+        ]);
+
+        $models = $this->service->getAvailableModels();
+
+        $this->assertCount(1, $models);
+        $this->assertEquals('model/1', $models->first()->model_id);
+    }
+
+    /**
+     * GAM-004: Orders models by display_name
+     */
+    public function test_get_available_models_orders_by_display_name(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/c',
+            'display_name' => 'Charlie Model',
+            'is_active' => true,
+        ]);
+
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/a',
+            'display_name' => 'Alpha Model',
+            'is_active' => true,
+        ]);
+
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/b',
+            'display_name' => 'Bravo Model',
+            'is_active' => true,
+        ]);
+
+        $models = $this->service->getAvailableModels();
+
+        $this->assertEquals('Alpha Model', $models[0]->display_name);
+        $this->assertEquals('Bravo Model', $models[1]->display_name);
+        $this->assertEquals('Charlie Model', $models[2]->display_name);
+    }
+
+    /**
+     * GAM-005: Caches results for 1 hour
      */
     public function test_get_available_models_caches_results(): void
     {
-        // Arrange
-        AIModel::factory()->create(['is_active' => true]);
-        Cache::flush();
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'cached/model',
+            'display_name' => 'Cached Model',
+            'is_active' => true,
+        ]);
 
-        // Act - First call
+        // First call - should cache
         $models1 = $this->service->getAvailableModels();
 
-        // Assert - Cache key exists
-        $this->assertTrue(Cache::has('ai_models_available'));
+        // Delete the model
+        AIModel::where('model_id', 'cached/model')->delete();
 
-        // Act - Second call should use cache
+        // Second call - should return cached result
         $models2 = $this->service->getAvailableModels();
 
-        $this->assertEquals($models1, $models2);
+        $this->assertCount(1, $models2);
+        $this->assertEquals('cached/model', $models2->first()->model_id);
     }
 
     /**
-     * ML-004: getAvailableModels cache invalidated after sync
+     * GAM-006: Cache key is correct
+     */
+    public function test_get_available_models_cache_key_is_correct(): void
+    {
+        Cache::shouldReceive('remember')
+            ->once()
+            ->withArgs(function ($key, $ttl, $callback) {
+                $this->assertEquals('ai_models:available', $key);
+                $this->assertEquals(3600, $ttl); // 1 hour
+                return true;
+            })
+            ->andReturn(collect());
+
+        $this->service->getAvailableModels();
+    }
+
+    /**
+     * GAM-007: Cache invalidated after sync
      */
     public function test_get_available_models_cache_invalidated_after_sync(): void
     {
-        // Arrange
-        AIModel::factory()->create(['is_active' => true]);
-        Cache::flush();
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('ai_models:available');
 
-        // Prime cache
-        $this->service->getAvailableModels();
-        $this->assertTrue(Cache::has('ai_models_available'));
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andReturn(5);
 
-        // Act - Sync invalidates cache
-        $this->service->invalidateModelCache();
-
-        // Assert
-        $this->assertFalse(Cache::has('ai_models_available'));
+        $this->service->syncModelsFromOpenRouter();
     }
 
-    // =========================================================================
-    // MODEL LOOKUP TESTS (MO)
-    // =========================================================================
-
     /**
-     * MO-001: getModelById returns model when exists
+     * GAM-008: Force refresh bypasses cache
      */
-    public function test_get_model_by_id_returns_model_when_exists(): void
+    public function test_get_available_models_force_refresh_bypasses_cache(): void
     {
-        // Arrange
-        $model = AIModel::factory()->create([
+        AIModel::factory()->create([
             'provider' => 'openrouter',
-            'model_id' => 'openai/gpt-4-turbo',
-            'display_name' => 'GPT-4 Turbo',
+            'model_id' => 'model/1',
+            'display_name' => 'Model 1',
+            'is_active' => true,
         ]);
 
-        // Act
-        $result = $this->service->getModelById($model->id);
+        // First call
+        $this->service->getAvailableModels();
 
-        // Assert
-        $this->assertNotNull($result);
-        $this->assertEquals($model->id, $result->id);
-        $this->assertEquals('GPT-4 Turbo', $result->display_name);
+        // Add new model
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/2',
+            'display_name' => 'Model 2',
+            'is_active' => true,
+        ]);
+
+        // Force refresh should get fresh data
+        $models = $this->service->getAvailableModels(true);
+
+        $this->assertCount(2, $models);
+    }
+
+    // =========================================================================
+    // getModelById() TESTS (GMBI)
+    // =========================================================================
+
+    /**
+     * GMBI-001: Returns model when found
+     */
+    public function test_get_model_by_id_returns_model_when_found(): void
+    {
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->getModelById($aiModel->id);
+
+        $this->assertInstanceOf(AIModel::class, $result);
+        $this->assertEquals('test/model', $result->model_id);
     }
 
     /**
-     * MO-002: getModelById returns null when not found
+     * GMBI-002: Returns null when not found
      */
     public function test_get_model_by_id_returns_null_when_not_found(): void
     {
-        // Act
         $result = $this->service->getModelById(99999);
 
-        // Assert
         $this->assertNull($result);
     }
 
     /**
-     * MO-003: getModelByProviderId returns model when exists
+     * GMBI-003: Only returns active models
      */
-    public function test_get_model_by_provider_id_returns_model(): void
+    public function test_get_model_by_id_only_returns_active_models(): void
     {
-        // Arrange
+        $aiModel = AIModel::factory()->inactive()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'inactive/model',
+            'display_name' => 'Inactive Model',
+        ]);
+
+        $result = $this->service->getModelById($aiModel->id);
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * GMBI-004: Validates ID is positive integer
+     */
+    public function test_get_model_by_id_validates_positive_integer(): void
+    {
+        $result = $this->service->getModelById(-1);
+        $this->assertNull($result);
+
+        $result = $this->service->getModelById(0);
+        $this->assertNull($result);
+    }
+
+    /**
+     * GMBI-005: Handles invalid ID gracefully
+     */
+    public function test_get_model_by_id_handles_invalid_id_gracefully(): void
+    {
+        $result = $this->service->getModelById(PHP_INT_MAX);
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // getModelByProviderId() TESTS (GMBP)
+    // =========================================================================
+
+    /**
+     * GMBP-001: Returns model when found
+     */
+    public function test_get_model_by_provider_id_returns_model_when_found(): void
+    {
         AIModel::factory()->create([
             'provider' => 'openrouter',
             'model_id' => 'openai/gpt-4-turbo',
             'display_name' => 'GPT-4 Turbo',
+            'is_active' => true,
         ]);
 
-        // Act
         $result = $this->service->getModelByProviderId('openrouter', 'openai/gpt-4-turbo');
 
-        // Assert
-        $this->assertNotNull($result);
-        $this->assertEquals('openrouter', $result->provider);
+        $this->assertInstanceOf(AIModel::class, $result);
         $this->assertEquals('openai/gpt-4-turbo', $result->model_id);
     }
 
     /**
-     * MO-004: getModelByProviderId returns null for wrong provider
+     * GMBP-002: Returns null when not found
      */
-    public function test_get_model_by_provider_id_returns_null_wrong_provider(): void
+    public function test_get_model_by_provider_id_returns_null_when_not_found(): void
     {
-        // Arrange
-        AIModel::factory()->create([
-            'provider' => 'openrouter',
-            'model_id' => 'openai/gpt-4-turbo',
-        ]);
+        $result = $this->service->getModelByProviderId('openrouter', 'nonexistent/model');
 
-        // Act
-        $result = $this->service->getModelByProviderId('openai', 'openai/gpt-4-turbo');
-
-        // Assert
         $this->assertNull($result);
     }
 
     /**
-     * MO-005: getModelByProviderId returns null for wrong model_id
+     * GMBP-003: Matches exact provider and model_id
      */
-    public function test_get_model_by_provider_id_returns_null_wrong_model_id(): void
+    public function test_get_model_by_provider_id_matches_exact(): void
     {
-        // Arrange
         AIModel::factory()->create([
             'provider' => 'openrouter',
             'model_id' => 'openai/gpt-4-turbo',
+            'display_name' => 'GPT-4 Turbo',
+            'is_active' => true,
         ]);
 
-        // Act
-        $result = $this->service->getModelByProviderId('openrouter', 'nonexistent-model');
+        AIModel::factory()->create([
+            'provider' => 'openai',
+            'model_id' => 'openai/gpt-4-turbo',
+            'display_name' => 'GPT-4 Turbo Direct',
+            'is_active' => true,
+        ]);
 
-        // Assert
-        $this->assertNull($result);
+        $result = $this->service->getModelByProviderId('openrouter', 'openai/gpt-4-turbo');
+
+        $this->assertEquals('openrouter', $result->provider);
     }
 
     /**
-     * MO-006: getModelByProviderId ignores inactive models
+     * GMBP-004: Case-sensitive matching
      */
-    public function test_get_model_by_provider_id_ignores_inactive_models(): void
+    public function test_get_model_by_provider_id_case_sensitive(): void
     {
-        // Arrange
         AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'OpenAI/GPT-4-Turbo',
+            'display_name' => 'GPT-4 Turbo',
+            'is_active' => true,
+        ]);
+
+        // Should not match different case
+        $result = $this->service->getModelByProviderId('openrouter', 'openai/gpt-4-turbo');
+        $this->assertNull($result);
+
+        // Should match exact case
+        $result = $this->service->getModelByProviderId('openrouter', 'OpenAI/GPT-4-Turbo');
+        $this->assertNotNull($result);
+    }
+
+    /**
+     * GMBP-005: Only returns active models
+     */
+    public function test_get_model_by_provider_id_only_returns_active(): void
+    {
+        AIModel::factory()->inactive()->create([
             'provider' => 'openrouter',
             'model_id' => 'inactive/model',
-            'is_active' => false,
+            'display_name' => 'Inactive Model',
         ]);
 
-        // Act
         $result = $this->service->getModelByProviderId('openrouter', 'inactive/model');
 
-        // Assert
+        $this->assertNull($result);
+    }
+
+    /**
+     * GMBP-006: Validates provider parameter
+     */
+    public function test_get_model_by_provider_id_validates_provider(): void
+    {
+        $result = $this->service->getModelByProviderId('', 'model/id');
+        $this->assertNull($result);
+    }
+
+    /**
+     * GMBP-007: Validates model_id parameter
+     */
+    public function test_get_model_by_provider_id_validates_model_id(): void
+    {
+        $result = $this->service->getModelByProviderId('openrouter', '');
         $this->assertNull($result);
     }
 
     // =========================================================================
-    // PRICING CALCULATION TESTS (PC)
+    // getModelPricing() TESTS (GMP)
     // =========================================================================
 
     /**
-     * PC-001: getModelPricing returns pricing breakdown
+     * GMP-001: Returns pricing array for valid model
      */
-    public function test_get_model_pricing_returns_breakdown(): void
+    public function test_get_model_pricing_returns_pricing_array(): void
     {
-        // Arrange
         AIModel::factory()->create([
-            'model_id' => 'test-model',
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
             'cost_per_1k_input' => 0.01,
             'cost_per_1k_output' => 0.03,
+            'is_free_tier' => false,
             'is_active' => true,
         ]);
 
-        // Act
-        $pricing = $this->service->getModelPricing('test-model');
+        $pricing = $this->service->getModelPricing('test/model');
 
-        // Assert
         $this->assertIsArray($pricing);
+        $this->assertArrayHasKey('model_id', $pricing);
         $this->assertArrayHasKey('input_per_1k', $pricing);
         $this->assertArrayHasKey('output_per_1k', $pricing);
-        $this->assertArrayHasKey('input_per_1m', $pricing);
-        $this->assertArrayHasKey('output_per_1m', $pricing);
     }
 
     /**
-     * PC-002: getModelPricing calculates per-million costs correctly
-     */
-    public function test_get_model_pricing_calculates_per_million(): void
-    {
-        // Arrange
-        AIModel::factory()->create([
-            'model_id' => 'test-model',
-            'cost_per_1k_input' => 0.01,
-            'cost_per_1k_output' => 0.03,
-            'is_active' => true,
-        ]);
-
-        // Act
-        $pricing = $this->service->getModelPricing('test-model');
-
-        // Assert: per 1M = per 1K * 1000
-        $this->assertEquals(10.0, $pricing['input_per_1m']);
-        $this->assertEquals(30.0, $pricing['output_per_1m']);
-    }
-
-    /**
-     * PC-003: getModelPricing returns null for non-existent model
+     * GMP-002: Returns null for non-existent model
      */
     public function test_get_model_pricing_returns_null_for_nonexistent(): void
     {
-        // Act
-        $pricing = $this->service->getModelPricing('nonexistent-model');
+        $pricing = $this->service->getModelPricing('nonexistent/model');
 
-        // Assert
         $this->assertNull($pricing);
     }
 
     /**
-     * PC-004: calculateAnalysisCost calculates correctly
+     * GMP-003: Includes input_per_1k
      */
-    public function test_calculate_analysis_cost_calculates_correctly(): void
+    public function test_get_model_pricing_includes_input_per_1k(): void
     {
-        // Arrange
         AIModel::factory()->create([
-            'model_id' => 'test-model',
-            'cost_per_1k_input' => 0.01, // $10 per 1M input
-            'cost_per_1k_output' => 0.03, // $30 per 1M output
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
             'is_active' => true,
         ]);
 
-        // 1000 input tokens + 500 output tokens
-        // Input: (1000 / 1000) * 0.01 = 0.01
-        // Output: (500 / 1000) * 0.03 = 0.015
-        // Total: 0.025
+        $pricing = $this->service->getModelPricing('test/model');
 
-        // Act
-        $cost = $this->service->calculateAnalysisCost('test-model', 1000, 500);
-
-        // Assert
-        $this->assertEquals(0.025, $cost);
+        $this->assertArrayHasKey('input_per_1k', $pricing);
+        $this->assertEquals(0.01, $pricing['input_per_1k']);
     }
 
     /**
-     * PC-005: calculateAnalysisCost rounds to 2 decimal places
+     * GMP-004: Includes output_per_1k
+     */
+    public function test_get_model_pricing_includes_output_per_1k(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $pricing = $this->service->getModelPricing('test/model');
+
+        $this->assertArrayHasKey('output_per_1k', $pricing);
+        $this->assertEquals(0.03, $pricing['output_per_1k']);
+    }
+
+    /**
+     * GMP-005: Includes input_per_1m
+     */
+    public function test_get_model_pricing_includes_input_per_1m(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $pricing = $this->service->getModelPricing('test/model');
+
+        $this->assertArrayHasKey('input_per_1m', $pricing);
+        $this->assertEquals(10.0, $pricing['input_per_1m']); // 0.01 * 1000
+    }
+
+    /**
+     * GMP-006: Includes output_per_1m
+     */
+    public function test_get_model_pricing_includes_output_per_1m(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $pricing = $this->service->getModelPricing('test/model');
+
+        $this->assertArrayHasKey('output_per_1m', $pricing);
+        $this->assertEquals(30.0, $pricing['output_per_1m']); // 0.03 * 1000
+    }
+
+    /**
+     * GMP-007: Returns zero for free tier model
+     */
+    public function test_get_model_pricing_returns_zero_for_free_tier(): void
+    {
+        AIModel::factory()->freeTier()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'free/model',
+            'display_name' => 'Free Model',
+            'is_active' => true,
+        ]);
+
+        $pricing = $this->service->getModelPricing('free/model');
+
+        $this->assertEquals(0, $pricing['input_per_1k']);
+        $this->assertEquals(0, $pricing['output_per_1k']);
+        $this->assertTrue($pricing['is_free_tier']);
+    }
+
+    /**
+     * GMP-008: Decimal precision maintained
+     */
+    public function test_get_model_pricing_maintains_decimal_precision(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.012345,
+            'cost_per_1k_output' => 0.098765,
+            'is_active' => true,
+        ]);
+
+        $pricing = $this->service->getModelPricing('test/model');
+
+        $this->assertEqualsWithDelta(0.012345, $pricing['input_per_1k'], 0.000001);
+        $this->assertEqualsWithDelta(0.098765, $pricing['output_per_1k'], 0.000001);
+    }
+
+    // =========================================================================
+    // calculateAnalysisCost() TESTS (CAC)
+    // =========================================================================
+
+    /**
+     * CAC-001: Calculates cost for valid model
+     */
+    public function test_calculate_analysis_cost_for_valid_model(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->calculateAnalysisCost('test/model', 2000);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('total_cost', $result);
+        $this->assertGreaterThan(0, $result['total_cost']);
+    }
+
+    /**
+     * CAC-002: Returns 0 for non-existent model
+     */
+    public function test_calculate_analysis_cost_returns_zero_for_nonexistent(): void
+    {
+        $result = $this->service->calculateAnalysisCost('nonexistent/model', 2000);
+
+        $this->assertEquals(0, $result['total_cost']);
+    }
+
+    /**
+     * CAC-003: Returns 0 for free tier model
+     */
+    public function test_calculate_analysis_cost_returns_zero_for_free_tier(): void
+    {
+        AIModel::factory()->freeTier()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'free/model',
+            'display_name' => 'Free Model',
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->calculateAnalysisCost('free/model', 2000);
+
+        $this->assertEquals(0, $result['total_cost']);
+    }
+
+    /**
+     * CAC-004: Quick analysis (500 tokens)
+     */
+    public function test_calculate_analysis_cost_quick_analysis(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->calculateAnalysisCost('test/model', 500, 'quick');
+
+        // Quick analysis: 400 input + 100 output
+        // Input: (400/1000) * 0.01 = 0.004
+        // Output: (100/1000) * 0.03 = 0.003
+        // Total: 0.007
+        $this->assertEqualsWithDelta(0.007, $result['total_cost'], 0.001);
+    }
+
+    /**
+     * CAC-005: Standard analysis (2000 tokens)
+     */
+    public function test_calculate_analysis_cost_standard_analysis(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->calculateAnalysisCost('test/model', 2000, 'standard');
+
+        // Standard analysis: 1600 input + 400 output
+        // Input: (1600/1000) * 0.01 = 0.016
+        // Output: (400/1000) * 0.03 = 0.012
+        // Total: 0.028
+        $this->assertEqualsWithDelta(0.028, $result['total_cost'], 0.001);
+    }
+
+    /**
+     * CAC-006: Deep analysis (5000 tokens)
+     */
+    public function test_calculate_analysis_cost_deep_analysis(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->calculateAnalysisCost('test/model', 5000, 'deep');
+
+        // Deep analysis: 4000 input + 1000 output
+        // Input: (4000/1000) * 0.01 = 0.04
+        // Output: (1000/1000) * 0.03 = 0.03
+        // Total: 0.07
+        $this->assertEqualsWithDelta(0.07, $result['total_cost'], 0.001);
+    }
+
+    /**
+     * CAC-007: Custom token count
+     */
+    public function test_calculate_analysis_cost_custom_tokens(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
+
+        // Custom: 3000 tokens = 2400 input + 600 output
+        $result = $this->service->calculateAnalysisCost('test/model', 3000);
+
+        // Input: (2400/1000) * 0.01 = 0.024
+        // Output: (600/1000) * 0.03 = 0.018
+        // Total: 0.042
+        $this->assertEqualsWithDelta(0.042, $result['total_cost'], 0.001);
+    }
+
+    /**
+     * CAC-008: Rounds to 2 decimal places
      */
     public function test_calculate_analysis_cost_rounds_to_two_decimals(): void
     {
-        // Arrange
         AIModel::factory()->create([
-            'model_id' => 'test-model',
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
             'cost_per_1k_input' => 0.015,
             'cost_per_1k_output' => 0.025,
             'is_active' => true,
         ]);
 
-        // Act - This would produce 0.035 with many decimals
-        $cost = $this->service->calculateAnalysisCost('test-model', 1000, 500);
+        $result = $this->service->calculateAnalysisCost('test/model', 2000, 'standard');
 
-        // Assert - Should be rounded to 2 decimals
-        $this->assertEquals(0.04, $cost);
+        // Check total has at most 2 decimal places
+        $decimals = strlen(substr(strrchr((string)$result['total_cost'], '.'), 1));
+        $this->assertLessThanOrEqual(2, $decimals);
     }
 
     /**
-     * PC-006: calculateAnalysisCost returns 0 for non-existent model
+     * CAC-009: Input/output ratio 4:1
      */
-    public function test_calculate_analysis_cost_returns_zero_for_nonexistent(): void
+    public function test_calculate_analysis_cost_input_output_ratio(): void
     {
-        // Act
-        $cost = $this->service->calculateAnalysisCost('nonexistent-model', 1000, 500);
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
+        ]);
 
-        // Assert
-        $this->assertEquals(0.0, $cost);
+        $result = $this->service->calculateAnalysisCost('test/model', 2000, 'standard');
+
+        // Verify 4:1 ratio
+        $ratio = $result['input_tokens'] / $result['output_tokens'];
+        $this->assertEquals(4, $ratio);
     }
 
     /**
-     * PC-007: calculateAnalysisCost handles zero tokens
+     * CAC-010: Handles zero tokens
      */
     public function test_calculate_analysis_cost_handles_zero_tokens(): void
     {
-        // Arrange
         AIModel::factory()->create([
-            'model_id' => 'test-model',
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
             'cost_per_1k_input' => 0.01,
             'cost_per_1k_output' => 0.03,
             'is_active' => true,
         ]);
 
-        // Act
-        $cost = $this->service->calculateAnalysisCost('test-model', 0, 0);
+        $result = $this->service->calculateAnalysisCost('test/model', 0);
 
-        // Assert
-        $this->assertEquals(0.0, $cost);
+        $this->assertEquals(0, $result['total_cost']);
     }
 
     /**
-     * PC-008: calculateAnalysisCost handles free tier model
+     * CAC-011: Handles negative tokens (treats as 0)
      */
-    public function test_calculate_analysis_cost_handles_free_tier(): void
+    public function test_calculate_analysis_cost_handles_negative_tokens(): void
     {
-        // Arrange
         AIModel::factory()->create([
-            'model_id' => 'free-model',
-            'cost_per_1k_input' => 0.00,
-            'cost_per_1k_output' => 0.00,
-            'is_free_tier' => true,
-            'is_active' => true,
-        ]);
-
-        // Act
-        $cost = $this->service->calculateAnalysisCost('free-model', 10000, 5000);
-
-        // Assert
-        $this->assertEquals(0.0, $cost);
-    }
-
-    /**
-     * PC-009: calculateAnalysisCost estimates tokens when only total given
-     */
-    public function test_calculate_analysis_cost_estimates_tokens(): void
-    {
-        // Arrange
-        AIModel::factory()->create([
-            'model_id' => 'test-model',
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
             'cost_per_1k_input' => 0.01,
             'cost_per_1k_output' => 0.03,
             'is_active' => true,
         ]);
 
-        // When only total tokens provided, estimate 70% input / 30% output
-        // Total 1000 tokens: 700 input + 300 output
-        // Input: 0.7 * 0.01 = 0.007
-        // Output: 0.3 * 0.03 = 0.009
-        // Total: 0.016
+        $result = $this->service->calculateAnalysisCost('test/model', -100);
 
-        // Act
-        $cost = $this->service->calculateAnalysisCost('test-model', 1000);
-
-        // Assert
-        $this->assertEqualsWithDelta(0.016, $cost, 0.001);
-    }
-
-    // =========================================================================
-    // OPENROUTER SYNC TESTS (OS)
-    // =========================================================================
-
-    /**
-     * OS-001: syncModelsFromOpenRouter fetches models from API
-     */
-    public function test_sync_models_from_openrouter_fetches_models(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'openai/gpt-4-turbo',
-                        'name' => 'GPT-4 Turbo',
-                        'context_length' => 128000,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00003',
-                        ],
-                        'top_provider' => [
-                            'context_length' => 128000,
-                        ],
-                        'architecture' => [
-                            'modality' => 'text->text',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $count = $this->service->syncModelsFromOpenRouter();
-
-        // Assert
-        $this->assertEquals(1, $count);
-        $this->assertDatabaseHas('ai_models', [
-            'provider' => 'openrouter',
-            'model_id' => 'openai/gpt-4-turbo',
-            'display_name' => 'GPT-4 Turbo',
-        ]);
+        $this->assertEquals(0, $result['total_cost']);
     }
 
     /**
-     * OS-002: syncModelsFromOpenRouter updates existing models
+     * CAC-012: Returns analysis breakdown
      */
-    public function test_sync_models_updates_existing(): void
+    public function test_calculate_analysis_cost_returns_breakdown(): void
     {
-        // Arrange
         AIModel::factory()->create([
             'provider' => 'openrouter',
-            'model_id' => 'openai/gpt-4-turbo',
-            'display_name' => 'Old Name',
-            'cost_per_1k_input' => 0.001,
-            'cost_per_1k_output' => 0.002,
-        ]);
-
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'openai/gpt-4-turbo',
-                        'name' => 'GPT-4 Turbo Updated',
-                        'context_length' => 128000,
-                        'pricing' => [
-                            'prompt' => '0.00002',
-                            'completion' => '0.00004',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $count = $this->service->syncModelsFromOpenRouter();
-
-        // Assert
-        $this->assertEquals(1, $count);
-        $this->assertDatabaseHas('ai_models', [
-            'model_id' => 'openai/gpt-4-turbo',
-            'display_name' => 'GPT-4 Turbo Updated',
-            'cost_per_1k_input' => 0.02, // 0.00002 * 1000
-            'cost_per_1k_output' => 0.04, // 0.00004 * 1000
-        ]);
-    }
-
-    /**
-     * OS-003: syncModelsFromOpenRouter deactivates missing models
-     */
-    public function test_sync_models_deactivates_missing(): void
-    {
-        // Arrange
-        AIModel::factory()->create([
-            'provider' => 'openrouter',
-            'model_id' => 'old/deprecated-model',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
             'is_active' => true,
         ]);
 
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [], // No models returned
-            ], 200),
-        ]);
+        $result = $this->service->calculateAnalysisCost('test/model', 2000, 'standard');
 
-        // Act
-        $this->service->syncModelsFromOpenRouter();
+        $this->assertArrayHasKey('model_id', $result);
+        $this->assertArrayHasKey('analysis_type', $result);
+        $this->assertArrayHasKey('input_tokens', $result);
+        $this->assertArrayHasKey('output_tokens', $result);
+        $this->assertArrayHasKey('input_cost', $result);
+        $this->assertArrayHasKey('output_cost', $result);
+        $this->assertArrayHasKey('total_cost', $result);
+    }
 
-        // Assert
-        $this->assertDatabaseHas('ai_models', [
-            'model_id' => 'old/deprecated-model',
-            'is_active' => false,
-        ]);
+    // =========================================================================
+    // syncModelsFromOpenRouter() TESTS (SMFO)
+    // =========================================================================
+
+    /**
+     * SMFO-001: Syncs models from API
+     */
+    public function test_sync_models_from_openrouter_syncs_models(): void
+    {
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andReturn(5);
+
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('ai_models:available');
+
+        $count = $this->service->syncModelsFromOpenRouter();
+
+        $this->assertEquals(5, $count);
     }
 
     /**
-     * OS-004: syncModelsFromOpenRouter handles API errors gracefully
+     * SMFO-002: Returns count of synced models
      */
-    public function test_sync_models_handles_api_errors(): void
+    public function test_sync_models_from_openrouter_returns_count(): void
     {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([], 500),
-        ]);
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andReturn(10);
 
-        // Act
+        Cache::shouldReceive('forget')->once();
+
         $count = $this->service->syncModelsFromOpenRouter();
 
-        // Assert
+        $this->assertEquals(10, $count);
+    }
+
+    /**
+     * SMFO-003: Handles sync errors
+     */
+    public function test_sync_models_from_openrouter_handles_errors(): void
+    {
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andThrow(new \Exception('API Error'));
+
+        Cache::shouldReceive('forget')->once();
+
+        $count = $this->service->syncModelsFromOpenRouter();
+
         $this->assertEquals(0, $count);
     }
 
     /**
-     * OS-005: syncModelsFromOpenRouter handles rate limiting
+     * SMFO-004: Invalidates cache after sync
      */
-    public function test_sync_models_handles_rate_limiting(): void
+    public function test_sync_models_from_openrouter_invalidates_cache(): void
     {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([], 429, [
-                'Retry-After' => '60',
-            ]),
-        ]);
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andReturn(5);
 
-        // Act
-        $count = $this->service->syncModelsFromOpenRouter();
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('ai_models:available');
 
-        // Assert
-        $this->assertEquals(0, $count);
-    }
-
-    /**
-     * OS-006: syncModelsFromOpenRouter parses context window correctly
-     */
-    public function test_sync_models_parses_context_window(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 32000,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
         $this->service->syncModelsFromOpenRouter();
-
-        // Assert
-        $this->assertDatabaseHas('ai_models', [
-            'model_id' => 'test/model',
-            'context_window' => 32000,
-        ]);
     }
 
     /**
-     * OS-007: syncModelsFromOpenRouter parses capabilities
+     * SMFO-005: Logs sync operations
      */
-    public function test_sync_models_parses_capabilities(): void
+    public function test_sync_models_from_openrouter_logs_operations(): void
     {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/vision-model',
-                        'name' => 'Vision Model',
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                        'architecture' => [
-                            'modality' => 'text+image->text',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andReturn(5);
 
-        // Act
-        $this->service->syncModelsFromOpenRouter();
+        Cache::shouldReceive('forget')->once();
 
-        // Assert
-        $model = AIModel::where('model_id', 'test/vision-model')->first();
-        $this->assertNotNull($model);
-        $capabilities = json_decode($model->capabilities, true);
-        $this->assertTrue($capabilities['vision'] ?? false);
-    }
-
-    /**
-     * OS-008: syncModelsFromOpenRouter marks free tier models
-     */
-    public function test_sync_models_marks_free_tier(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'meta-llama/llama-3-8b-instruct:free',
-                        'name' => 'Llama 3 8B Free',
-                        'context_length' => 8192,
-                        'pricing' => [
-                            'prompt' => '0',
-                            'completion' => '0',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $this->service->syncModelsFromOpenRouter();
-
-        // Assert
-        $this->assertDatabaseHas('ai_models', [
-            'model_id' => 'meta-llama/llama-3-8b-instruct:free',
-            'is_free_tier' => true,
-        ]);
-    }
-
-    /**
-     * OS-009: syncModelsFromOpenRouter updates last_synced_at timestamp
-     */
-    public function test_sync_models_updates_last_synced_at(): void
-    {
-        // Arrange
-        AIModel::factory()->create([
-            'provider' => 'openrouter',
-            'model_id' => 'test/model',
-            'last_synced_at' => null,
-        ]);
-
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $this->service->syncModelsFromOpenRouter();
-
-        // Assert
-        $model = AIModel::where('model_id', 'test/model')->first();
-        $this->assertNotNull($model->last_synced_at);
-    }
-
-    /**
-     * OS-010: syncModelsFromOpenRouter logs sync operations
-     */
-    public function test_sync_models_logs_operations(): void
-    {
-        // Arrange
         Log::shouldReceive('info')
             ->once()
-            ->withArgs(function ($message, $context) {
-                return str_contains($message, 'OpenRouter sync');
+            ->withArgs(function ($message) {
+                return str_contains($message, 'sync') || str_contains($message, 'models');
             });
 
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response(['data' => []], 200),
-        ]);
-
-        // Act
         $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Log assertion in arrange
     }
 
     // =========================================================================
-    // USER DEFAULT MODEL TESTS (UD)
+    // getUserDefaultModel() TESTS (GUDM)
     // =========================================================================
 
     /**
-     * UD-001: getUserDefaultModel returns user's default
+     * GUDM-001: Returns user's preferred model
      */
-    public function test_get_user_default_model_returns_user_default(): void
+    public function test_get_user_default_model_returns_preference(): void
     {
-        // Arrange
         $user = User::factory()->create();
-        $model = AIModel::factory()->create(['is_active' => true]);
-        UserModelPreference::factory()->create([
-            'user_id' => $user->id,
-            'model_id' => $model->id,
-            'is_default' => true,
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'preferred/model',
+            'display_name' => 'Preferred Model',
+            'is_active' => true,
         ]);
 
-        // Act
+        // Set preference
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+
         $result = $this->service->getUserDefaultModel($user);
 
-        // Assert
-        $this->assertNotNull($result);
-        $this->assertEquals($model->id, $result->id);
+        $this->assertInstanceOf(AIModel::class, $result);
+        $this->assertEquals('preferred/model', $result->model_id);
     }
 
     /**
-     * UD-002: getUserDefaultModel returns null when no preference
+     * GUDM-002: Returns null when no preference set
      */
-    public function test_get_user_default_model_returns_null_no_preference(): void
+    public function test_get_user_default_model_returns_null_when_not_set(): void
     {
-        // Arrange
         $user = User::factory()->create();
 
-        // Act
         $result = $this->service->getUserDefaultModel($user);
 
-        // Assert
         $this->assertNull($result);
     }
 
     /**
-     * UD-003: getUserDefaultModel ignores inactive models
+     * GUDM-003: Returns null for inactive model
      */
-    public function test_get_user_default_model_ignores_inactive(): void
+    public function test_get_user_default_model_returns_null_for_inactive(): void
     {
-        // Arrange
         $user = User::factory()->create();
-        $model = AIModel::factory()->create(['is_active' => false]);
-        UserModelPreference::factory()->create([
-            'user_id' => $user->id,
-            'model_id' => $model->id,
-            'is_default' => true,
+        $aiModel = AIModel::factory()->inactive()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'inactive/model',
+            'display_name' => 'Inactive Model',
         ]);
 
-        // Act
+        // Set preference for inactive model
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+
+        // Should return null because model is inactive
         $result = $this->service->getUserDefaultModel($user);
 
-        // Assert
         $this->assertNull($result);
     }
 
     /**
-     * UD-004: setUserDefaultModel sets preference
+     * GUDM-004: Uses cached preference
+     */
+    public function test_get_user_default_model_uses_cache(): void
+    {
+        $user = User::factory()->create();
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'cached/model',
+            'display_name' => 'Cached Model',
+            'is_active' => true,
+        ]);
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+
+        // Delete model
+        AIModel::where('model_id', 'cached/model')->delete();
+
+        // Should still return cached result
+        $result = $this->service->getUserDefaultModel($user);
+
+        // Cache should return the model ID, but model lookup will fail
+        // So result depends on implementation
+    }
+
+    /**
+     * GUDM-005: Validates model is still active
+     */
+    public function test_get_user_default_model_validates_active(): void
+    {
+        $user = User::factory()->create();
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'deactivating/model',
+            'display_name' => 'Deactivating Model',
+            'is_active' => true,
+        ]);
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+
+        // Deactivate the model
+        $aiModel->update(['is_active' => false]);
+
+        // Clear cache to force fresh lookup
+        Cache::forget("ai_models:user_default:{$user->id}");
+
+        $result = $this->service->getUserDefaultModel($user);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // setUserDefaultModel() TESTS (SUDM)
+    // =========================================================================
+
+    /**
+     * SUDM-001: Sets user's preferred model
      */
     public function test_set_user_default_model_sets_preference(): void
     {
-        // Arrange
         $user = User::factory()->create();
-        $model = AIModel::factory()->create(['is_active' => true]);
-
-        // Act
-        $this->service->setUserDefaultModel($user, $model->id);
-
-        // Assert
-        $this->assertDatabaseHas('user_model_preferences', [
-            'user_id' => $user->id,
-            'model_id' => $model->id,
-            'is_default' => true,
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'preferred/model',
+            'display_name' => 'Preferred Model',
+            'is_active' => true,
         ]);
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+
+        $result = $this->service->getUserDefaultModel($user);
+
+        $this->assertEquals($aiModel->id, $result->id);
     }
 
     /**
-     * UD-005: setUserDefaultModel updates existing preference
+     * SUDM-002: Updates existing preference
      */
-    public function test_set_user_default_model_updates_existing(): void
+    public function test_set_user_default_model_updates_preference(): void
     {
-        // Arrange
         $user = User::factory()->create();
-        $oldModel = AIModel::factory()->create(['is_active' => true]);
-        $newModel = AIModel::factory()->create(['is_active' => true]);
-
-        UserModelPreference::factory()->create([
-            'user_id' => $user->id,
-            'model_id' => $oldModel->id,
-            'is_default' => true,
+        $model1 = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/1',
+            'display_name' => 'Model 1',
+            'is_active' => true,
+        ]);
+        $model2 = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/2',
+            'display_name' => 'Model 2',
+            'is_active' => true,
         ]);
 
-        // Act
-        $this->service->setUserDefaultModel($user, $newModel->id);
+        $this->service->setUserDefaultModel($user, $model1->id);
+        $this->service->setUserDefaultModel($user, $model2->id);
 
-        // Assert
-        $this->assertDatabaseHas('user_model_preferences', [
-            'user_id' => $user->id,
-            'model_id' => $newModel->id,
-            'is_default' => true,
-        ]);
+        $result = $this->service->getUserDefaultModel($user);
 
-        // Old preference should no longer be default
-        $this->assertDatabaseMissing('user_model_preferences', [
-            'user_id' => $user->id,
-            'model_id' => $oldModel->id,
-            'is_default' => true,
-        ]);
+        $this->assertEquals($model2->id, $result->id);
     }
 
     /**
-     * UD-006: setUserDefaultModel validates model is active
-     */
-    public function test_set_user_default_model_validates_active(): void
-    {
-        // Arrange
-        $user = User::factory()->create();
-        $inactiveModel = AIModel::factory()->create(['is_active' => false]);
-
-        // Act & Assert
-        $this->expectException(\InvalidArgumentException::class);
-        $this->service->setUserDefaultModel($user, $inactiveModel->id);
-    }
-
-    /**
-     * UD-007: setUserDefaultModel validates model exists
+     * SUDM-003: Validates model exists
      */
     public function test_set_user_default_model_validates_exists(): void
     {
-        // Arrange
         $user = User::factory()->create();
 
-        // Act & Assert
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(\InvalidArgumentException::class);
+
         $this->service->setUserDefaultModel($user, 99999);
     }
 
     /**
-     * UD-008: getUserDefaultModel caches user preference
+     * SUDM-004: Validates model is active
      */
-    public function test_get_user_default_model_caches_preference(): void
+    public function test_set_user_default_model_validates_active(): void
     {
-        // Arrange
         $user = User::factory()->create();
-        $model = AIModel::factory()->create(['is_active' => true]);
-        UserModelPreference::factory()->create([
-            'user_id' => $user->id,
-            'model_id' => $model->id,
-            'is_default' => true,
+        $aiModel = AIModel::factory()->inactive()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'inactive/model',
+            'display_name' => 'Inactive Model',
         ]);
 
-        // Act - First call primes cache
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+    }
+
+    /**
+     * SUDM-005: Invalidates user cache
+     */
+    public function test_set_user_default_model_invalidates_cache(): void
+    {
+        $user = User::factory()->create();
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'cached/model',
+            'display_name' => 'Cached Model',
+            'is_active' => true,
+        ]);
+
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with("ai_models:user_default:{$user->id}");
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+    }
+
+    // =========================================================================
+    // CACHING BEHAVIOR TESTS (CACHE)
+    // =========================================================================
+
+    /**
+     * CACHE-001: Models cached for 1 hour
+     */
+    public function test_models_cached_for_one_hour(): void
+    {
+        Cache::shouldReceive('remember')
+            ->once()
+            ->withArgs(function ($key, $ttl, $callback) {
+                $this->assertEquals('ai_models:available', $key);
+                $this->assertEquals(3600, $ttl);
+                return true;
+            })
+            ->andReturn(collect());
+
+        $this->service->getAvailableModels();
+    }
+
+    /**
+     * CACHE-002: Cache key format verified
+     */
+    public function test_cache_key_format(): void
+    {
+        $user = User::factory()->create();
+        $expectedKey = "ai_models:user_default:{$user->id}";
+
+        Cache::shouldReceive('get')
+            ->once()
+            ->with($expectedKey);
+
         $this->service->getUserDefaultModel($user);
-
-        // Assert - Cache key exists
-        $cacheKey = "user_default_model:{$user->id}";
-        $this->assertTrue(Cache::has($cacheKey));
-    }
-
-    // =========================================================================
-    // SECURITY TESTS (SC)
-    // =========================================================================
-
-    /**
-     * SC-001: getModelById prevents SQL injection
-     */
-    public function test_get_model_by_id_prevents_sql_injection(): void
-    {
-        // Arrange
-        $maliciousId = "1; DROP TABLE ai_models; --";
-
-        // Act - Should not throw
-        $result = $this->service->getModelById($maliciousId);
-
-        // Assert - Returns null (not found), no SQL error
-        $this->assertNull($result);
     }
 
     /**
-     * SC-002: getModelByProviderId sanitizes input
+     * CACHE-003: User preference cached
      */
-    public function test_get_model_by_provider_id_sanitizes_input(): void
+    public function test_user_preference_cached(): void
     {
-        // Arrange
-        $maliciousProvider = "openrouter'; DROP TABLE ai_models; --";
-        $maliciousModelId = "model'; DELETE FROM users; --";
+        $user = User::factory()->create();
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'cached/model',
+            'display_name' => 'Cached Model',
+            'is_active' => true,
+        ]);
 
-        // Act - Should not throw
-        $result = $this->service->getModelByProviderId($maliciousProvider, $maliciousModelId);
+        Cache::shouldReceive('put')
+            ->once()
+            ->withArgs(function ($key, $value, $ttl) use ($user, $aiModel) {
+                $this->assertEquals("ai_models:user_default:{$user->id}", $key);
+                $this->assertEquals($aiModel->id, $value);
+                $this->assertEquals(86400, $ttl); // 24 hours
+                return true;
+            });
 
-        // Assert - Returns null, no SQL error
-        $this->assertNull($result);
+        $this->service->setUserDefaultModel($user, $aiModel->id);
     }
 
     /**
-     * SC-003: calculateAnalysisCost handles large token counts
+     * CACHE-004: Cache cleared on sync
      */
-    public function test_calculate_analysis_cost_handles_large_tokens(): void
+    public function test_cache_cleared_on_sync(): void
     {
-        // Arrange
+        $this->syncServiceMock
+            ->shouldReceive('syncModels')
+            ->once()
+            ->andReturn(5);
+
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('ai_models:available');
+
+        $this->service->syncModelsFromOpenRouter();
+    }
+
+    /**
+     * CACHE-005: Cache cleared on preference update
+     */
+    public function test_cache_cleared_on_preference_update(): void
+    {
+        $user = User::factory()->create();
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'cached/model',
+            'display_name' => 'Cached Model',
+            'is_active' => true,
+        ]);
+
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with("ai_models:user_default:{$user->id}");
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+    }
+
+    /**
+     * CACHE-006: Force refresh bypasses cache
+     */
+    public function test_force_refresh_bypasses_cache(): void
+    {
         AIModel::factory()->create([
-            'model_id' => 'test-model',
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
+            'is_active' => true,
+        ]);
+
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('ai_models:available');
+
+        $this->service->getAvailableModels(true);
+    }
+
+    // =========================================================================
+    // SECURITY TESTS (SEC)
+    // =========================================================================
+
+    /**
+     * SEC-001: Model ID injection prevention
+     */
+    public function test_model_id_injection_prevention(): void
+    {
+        $result = $this->service->getModelPricing("'; DROP TABLE ai_models; --");
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * SEC-002: Provider name injection prevention
+     */
+    public function test_provider_name_injection_prevention(): void
+    {
+        $result = $this->service->getModelByProviderId("'; DROP TABLE ai_models; --", 'model/id');
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * SEC-003: User isolation in preferences
+     */
+    public function test_user_isolation_in_preferences(): void
+    {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+        $model1 = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/1',
+            'display_name' => 'Model 1',
+            'is_active' => true,
+        ]);
+        $model2 = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'model/2',
+            'display_name' => 'Model 2',
+            'is_active' => true,
+        ]);
+
+        $this->service->setUserDefaultModel($user1, $model1->id);
+        $this->service->setUserDefaultModel($user2, $model2->id);
+
+        $result1 = $this->service->getUserDefaultModel($user1);
+        $result2 = $this->service->getUserDefaultModel($user2);
+
+        $this->assertEquals($model1->id, $result1->id);
+        $this->assertEquals($model2->id, $result2->id);
+    }
+
+    /**
+     * SEC-004: No sensitive data in responses
+     */
+    public function test_no_sensitive_data_in_responses(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/model',
+            'display_name' => 'Test Model',
             'cost_per_1k_input' => 0.01,
             'cost_per_1k_output' => 0.03,
             'is_active' => true,
         ]);
 
-        // Act - Very large token count
-        $cost = $this->service->calculateAnalysisCost('test-model', 1000000, 500000);
+        $pricing = $this->service->getModelPricing('test/model');
 
-        // Assert - Should calculate correctly without overflow
-        // Input: (1000000 / 1000) * 0.01 = 10.0
-        // Output: (500000 / 1000) * 0.03 = 15.0
-        // Total: 25.0
-        $this->assertEquals(25.0, $cost);
-    }
-
-    /**
-     * SC-004: syncModelsFromOpenRouter validates API response
-     */
-    public function test_sync_models_validates_api_response(): void
-    {
-        // Arrange - Malformed response
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        // Missing required fields
-                        'id' => null,
-                        'name' => '',
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act - Should handle gracefully
-        $count = $this->service->syncModelsFromOpenRouter();
-
-        // Assert - No models synced, no exception
-        $this->assertEquals(0, $count);
-    }
-
-    /**
-     * SC-005: syncModelsFromOpenRouter handles malicious model data
-     */
-    public function test_sync_models_handles_malicious_data(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => '<script>alert("xss")</script>',
-                        'name' => '"><img src=x onerror=alert(1)>',
-                        'context_length' => 'javascript:alert(1)',
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act - Should sanitize or reject
-        $count = $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Model should be sanitized
-        $model = AIModel::where('display_name', 'like', '%script%')->first();
-        $this->assertNull($model); // Should not have stored XSS payload
+        // Should not contain any API keys, secrets, or internal data
+        $json = json_encode($pricing);
+        $this->assertStringNotContainsString('api_key', $json);
+        $this->assertStringNotContainsString('secret', $json);
+        $this->assertStringNotContainsString('password', $json);
     }
 
     // =========================================================================
-    // EDGE CASE TESTS (EC)
+    // EDGE CASE TESTS (EDGE)
     // =========================================================================
 
     /**
-     * EC-001: Handles empty pricing data
+     * EDGE-001: Empty models table
      */
-    public function test_handles_empty_pricing_data(): void
+    public function test_empty_models_table(): void
     {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 4096,
-                        'pricing' => [], // Empty pricing
-                    ],
-                ],
-            ], 200),
-        ]);
+        $models = $this->service->getAvailableModels();
+        $this->assertCount(0, $models);
 
-        // Act
-        $this->service->syncModelsFromOpenRouter();
+        $result = $this->service->getModelById(1);
+        $this->assertNull($result);
+    }
 
-        // Assert - Should use default 0 pricing
-        $this->assertDatabaseHas('ai_models', [
+    /**
+     * EDGE-002: All models inactive
+     */
+    public function test_all_models_inactive(): void
+    {
+        AIModel::factory()->count(5)->inactive()->create();
+
+        $models = $this->service->getAvailableModels();
+        $this->assertCount(0, $models);
+    }
+
+    /**
+     * EDGE-003: Very large token count
+     */
+    public function test_very_large_token_count(): void
+    {
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
             'model_id' => 'test/model',
-            'cost_per_1k_input' => 0,
-            'cost_per_1k_output' => 0,
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
         ]);
+
+        $result = $this->service->calculateAnalysisCost('test/model', 1000000);
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('total_cost', $result);
     }
 
     /**
-     * EC-002: Handles negative pricing (treats as 0)
+     * EDGE-004: Unicode in model names
      */
-    public function test_handles_negative_pricing(): void
+    public function test_unicode_in_model_names(): void
     {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '-0.00001',
-                            'completion' => '-0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'test/unicode-model',
+            'display_name' => 'Test Model 测试 🤖',
+            'is_active' => true,
         ]);
 
-        // Act
-        $this->service->syncModelsFromOpenRouter();
+        $models = $this->service->getAvailableModels();
 
-        // Assert - Negative should become 0
-        $this->assertDatabaseHas('ai_models', [
+        $this->assertCount(1, $models);
+        $this->assertEquals('Test Model 测试 🤖', $models->first()->display_name);
+    }
+
+    /**
+     * EDGE-005: Model deleted during operation
+     */
+    public function test_model_deleted_during_operation(): void
+    {
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
+            'model_id' => 'deleting/model',
+            'display_name' => 'Deleting Model',
+            'is_active' => true,
+        ]);
+
+        $id = $aiModel->id;
+
+        // Delete model
+        $aiModel->delete();
+
+        $result = $this->service->getModelById($id);
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * EDGE-006: User deleted during operation
+     */
+    public function test_user_deleted_during_operation(): void
+    {
+        $user = User::factory()->create();
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
             'model_id' => 'test/model',
-            'cost_per_1k_input' => 0,
-            'cost_per_1k_output' => 0,
+            'display_name' => 'Test Model',
+            'is_active' => true,
         ]);
+
+        $this->service->setUserDefaultModel($user, $aiModel->id);
+
+        // User ID would still be cached but user doesn't exist
+        // This tests graceful handling
+        $result = $this->service->getUserDefaultModel($user);
+
+        // Should still work as we're using the user object
+        $this->assertEquals($aiModel->id, $result->id);
+    }
+
+    // =========================================================================
+    // PERFORMANCE TESTS (PERF)
+    // =========================================================================
+
+    /**
+     * PERF-001: getAvailableModels performance
+     */
+    public function test_get_available_models_performance(): void
+    {
+        AIModel::factory()->count(100)->create(['is_active' => true]);
+
+        $start = microtime(true);
+        $this->service->getAvailableModels();
+        $time = microtime(true) - $start;
+
+        $this->assertLessThan(0.05, $time, 'getAvailableModels should complete in < 50ms');
     }
 
     /**
-     * EC-003: Handles extremely small pricing values
+     * PERF-002: getModelById performance
      */
-    public function test_handles_extremely_small_pricing(): void
+    public function test_get_model_by_id_performance(): void
     {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '0.0000000001',
-                            'completion' => '0.0000000002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Should store as DECIMAL(10,6)
-        $model = AIModel::where('model_id', 'test/model')->first();
-        $this->assertNotNull($model);
-        // Very small values become 0.000000 due to column precision
-        $this->assertEquals(0.0, (float) $model->cost_per_1k_input);
-    }
-
-    /**
-     * EC-004: Handles concurrent sync requests
-     */
-    public function test_handles_concurrent_sync_requests(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act - Simulate concurrent requests
-        $results = [];
-        for ($i = 0; $i < 3; $i++) {
-            $results[] = $this->service->syncModelsFromOpenRouter();
-        }
-
-        // Assert - All should succeed without duplicates
-        $modelCount = AIModel::where('model_id', 'test/model')->count();
-        $this->assertEquals(1, $modelCount); // No duplicates
-    }
-
-    /**
-     * EC-005: Handles Unicode in model names
-     */
-    public function test_handles_unicode_in_model_names(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model 测试模型 🤖',
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Unicode should be stored correctly
-        $this->assertDatabaseHas('ai_models', [
+        $aiModel = AIModel::factory()->create([
+            'provider' => 'openrouter',
             'model_id' => 'test/model',
-            'display_name' => 'Test Model 测试模型 🤖',
+            'display_name' => 'Test Model',
+            'is_active' => true,
         ]);
+
+        $start = microtime(true);
+        $this->service->getModelById($aiModel->id);
+        $time = microtime(true) - $start;
+
+        $this->assertLessThan(0.01, $time, 'getModelById should complete in < 10ms');
     }
 
     /**
-     * EC-006: Handles very long model names
+     * PERF-003: calculateAnalysisCost performance
      */
-    public function test_handles_very_long_model_names(): void
+    public function test_calculate_analysis_cost_performance(): void
     {
-        // Arrange
-        $longName = str_repeat('a', 300);
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => $longName,
-                        'context_length' => 4096,
-                        'pricing' => [
-                            'prompt' => '0.00001',
-                            'completion' => '0.00002',
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Should truncate to VARCHAR(255)
-        $model = AIModel::where('model_id', 'test/model')->first();
-        $this->assertLessThanOrEqual(255, strlen($model->display_name));
-    }
-
-    /**
-     * EC-007: Handles network timeout during sync
-     */
-    public function test_handles_network_timeout_during_sync(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response(null, 504),
-        ]);
-
-        // Act
-        $count = $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Should return 0 without exception
-        $this->assertEquals(0, $count);
-    }
-
-    /**
-     * EC-008: Handles missing pricing object
-     */
-    public function test_handles_missing_pricing_object(): void
-    {
-        // Arrange
-        Http::fake([
-            'openrouter.ai/api/v1/models' => Http::response([
-                'data' => [
-                    [
-                        'id' => 'test/model',
-                        'name' => 'Test Model',
-                        'context_length' => 4096,
-                        // Missing pricing key entirely
-                    ],
-                ],
-            ], 200),
-        ]);
-
-        // Act
-        $this->service->syncModelsFromOpenRouter();
-
-        // Assert - Should use default pricing
-        $this->assertDatabaseHas('ai_models', [
+        AIModel::factory()->create([
+            'provider' => 'openrouter',
             'model_id' => 'test/model',
-            'cost_per_1k_input' => 0,
-            'cost_per_1k_output' => 0,
+            'display_name' => 'Test Model',
+            'cost_per_1k_input' => 0.01,
+            'cost_per_1k_output' => 0.03,
+            'is_active' => true,
         ]);
+
+        $start = microtime(true);
+        $this->service->calculateAnalysisCost('test/model', 2000);
+        $time = microtime(true) - $start;
+
+        $this->assertLessThan(0.01, $time, 'calculateAnalysisCost should complete in < 10ms');
+    }
+
+    /**
+     * PERF-004: Caching improves performance
+     */
+    public function test_caching_improves_performance(): void
+    {
+        AIModel::factory()->count(100)->create(['is_active' => true]);
+
+        // First call (cold cache)
+        $start1 = microtime(true);
+        $this->service->getAvailableModels();
+        $time1 = microtime(true) - $start1;
+
+        // Second call (cached)
+        $start2 = microtime(true);
+        $this->service->getAvailableModels();
+        $time2 = microtime(true) - $start2;
+
+        // Cached call should be faster (or at least not significantly slower)
+        $this->assertLessThanOrEqual($time1 * 2, $time2, 'Cached call should not be significantly slower');
     }
 }

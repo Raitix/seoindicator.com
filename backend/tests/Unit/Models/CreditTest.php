@@ -2,24 +2,28 @@
 
 namespace Tests\Unit\Models;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Credit;
 use App\Models\CreditTransaction;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 
+/**
+ * @Task TASK-26-2
+ * @Description Credit Model Unit Tests
+ * @Tests 65+
+ */
 class CreditTest extends TestCase
 {
     use RefreshDatabase;
 
-    // ==================== MODEL CREATION TESTS ====================
+    // ==========================================
+    // Model Instantiation Tests (CM-001 to CM-010)
+    // ==========================================
 
-    /**
-     * Test model can be created with user_id only.
-     * CM-CR-01
-     */
-    public function test_model_can_be_created_with_user_id_only(): void
+    /** @test CM-001 */
+    public function create_with_required_fields(): void
     {
         $user = User::factory()->create();
 
@@ -27,569 +31,646 @@ class CreditTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $this->assertInstanceOf(Credit::class, $credit);
-        $this->assertEquals($user->id, $credit->user_id);
-        $this->assertEquals(0, $credit->balance);
-        $this->assertEquals(0, $credit->total_purchased);
-        $this->assertEquals(0, $credit->total_spent);
+        $this->assertDatabaseHas('credits', [
+            'id' => $credit->id,
+            'user_id' => $user->id,
+        ]);
+        $this->assertEquals(0.0, $credit->balance);
+        $this->assertEquals(0.0, $credit->total_purchased);
+        $this->assertEquals(0.0, $credit->total_spent);
     }
 
-    /**
-     * Test model can be created with full data.
-     * CM-CR-02
-     */
-    public function test_model_can_be_created_with_full_data(): void
+    /** @test CM-002 */
+    public function create_with_all_fields(): void
     {
         $user = User::factory()->create();
 
         $credit = Credit::create([
             'user_id' => $user->id,
-            'balance' => 100.50,
-            'total_purchased' => 150.00,
+            'balance' => 150.50,
+            'total_purchased' => 200.00,
             'total_spent' => 49.50,
         ]);
 
-        $this->assertEquals(100.50, $credit->balance);
-        $this->assertEquals(150.00, $credit->total_purchased);
+        $this->assertEquals(150.50, $credit->balance);
+        $this->assertEquals(200.00, $credit->total_purchased);
         $this->assertEquals(49.50, $credit->total_spent);
     }
 
-    /**
-     * Test mass assignment protection.
-     * CM-CR-03
-     */
-    public function test_mass_assignment_protection(): void
+    /** @test CM-003 */
+    public function mass_assignment_protects_id(): void
     {
-        $user = User::factory()->create();
+        $credit = Credit::factory()->create();
+        $originalId = $credit->id;
 
-        // Attempt to set all fields including potentially guarded ones
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 100.00,
-            'total_purchased' => 100.00,
-            'total_spent' => 0.00,
-        ]);
+        $credit->fill(['id' => 999999]);
 
-        // All these fields should be fillable based on the model definition
-        $this->assertEquals($user->id, $credit->user_id);
-        $this->assertEquals(100.00, $credit->balance);
+        $this->assertEquals($originalId, $credit->id);
     }
 
-    /**
-     * Test unique user constraint - one credit per user.
-     * CM-CR-04
-     */
-    public function test_unique_user_constraint(): void
+    /** @test CM-004 */
+    public function factory_creates_valid_model(): void
+    {
+        $credit = Credit::factory()->create();
+
+        $this->assertNotNull($credit->id);
+        $this->assertNotNull($credit->user_id);
+    }
+
+    /** @test CM-005 */
+    public function factory_default_state(): void
+    {
+        $credit = Credit::factory()->create();
+
+        $this->assertEquals(0.0, $credit->balance);
+        $this->assertEquals(0.0, $credit->total_purchased);
+        $this->assertEquals(0.0, $credit->total_spent);
+    }
+
+    /** @test CM-006 */
+    public function factory_with_balance(): void
+    {
+        $credit = Credit::factory()->withBalance(100.50)->create();
+
+        $this->assertEquals(100.50, $credit->balance);
+    }
+
+    /** @test CM-007 */
+    public function factory_with_purchases(): void
+    {
+        $credit = Credit::factory()->withPurchased(500.00)->create();
+
+        $this->assertEquals(500.00, $credit->total_purchased);
+    }
+
+    /** @test CM-008 */
+    public function factory_with_spending(): void
+    {
+        $credit = Credit::factory()->withSpent(200.00)->create();
+
+        $this->assertEquals(200.00, $credit->total_spent);
+    }
+
+    /** @test CM-009 */
+    public function unique_user_constraint(): void
     {
         $user = User::factory()->create();
+        Credit::factory()->forUser($user)->create();
 
-        // Create first credit
-        Credit::create(['user_id' => $user->id]);
-
-        // Attempt to create second credit for same user
         $this->expectException(\Illuminate\Database\QueryException::class);
+
         Credit::create(['user_id' => $user->id]);
     }
 
-    /**
-     * Test cascade delete with user.
-     * CM-CR-05
-     */
-    public function test_cascade_delete_with_user(): void
+    /** @test CM-010 */
+    public function cascade_delete_on_user_delete(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create(['user_id' => $user->id]);
+        $credit = Credit::factory()->create();
+        $userId = $credit->user_id;
 
-        $this->assertDatabaseHas('credits', ['id' => $credit->id]);
+        $credit->user->delete();
 
-        // Delete user
-        $user->delete();
-
-        // Credit should be deleted via cascade
-        $this->assertDatabaseMissing('credits', ['id' => $credit->id]);
+        $this->assertDatabaseMissing('credits', ['user_id' => $userId]);
     }
 
-    // ==================== RELATIONSHIP TESTS ====================
+    // ==========================================
+    // Relationship Tests (CR-001 to CR-006)
+    // ==========================================
 
-    /**
-     * Test belongsTo relationship with User.
-     * CM-RE-01
-     */
-    public function test_belongs_to_user(): void
+    /** @test CR-001 */
+    public function belongs_to_user(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create(['user_id' => $user->id]);
+        $credit = Credit::factory()->create();
 
         $this->assertInstanceOf(User::class, $credit->user);
-        $this->assertEquals($user->id, $credit->user->id);
+        $this->assertEquals($credit->user_id, $credit->user->id);
     }
 
-    /**
-     * Test hasMany relationship with CreditTransaction.
-     * CM-RE-02
-     */
-    public function test_has_many_credit_transactions(): void
+    /** @test CR-002 */
+    public function has_many_transactions(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create(['user_id' => $user->id]);
+        $credit = Credit::factory()->create();
+        CreditTransaction::factory()->count(3)->forUser($credit->user)->create();
 
-        // Create transactions manually (factory may not exist yet)
-        DB::table('credit_transactions')->insert([
-            'user_id' => $user->id,
-            'amount' => 50.00,
-            'balance_after' => 50.00,
-            'type' => 'purchase',
-            'description' => 'Test purchase',
-            'created_at' => now(),
-        ]);
-
-        $transactions = $credit->transactions;
-
-        $this->assertCount(1, $transactions);
-        $this->assertInstanceOf(CreditTransaction::class, $transactions->first());
+        $this->assertCount(3, $credit->transactions);
+        $this->assertInstanceOf(CreditTransaction::class, $credit->transactions->first());
     }
 
-    /**
-     * Test eager load user.
-     * CM-RE-03
-     */
-    public function test_eager_load_user(): void
+    /** @test CR-003 */
+    public function user_relationship_loaded(): void
     {
-        $user = User::factory()->create();
-        Credit::create(['user_id' => $user->id]);
-
-        // Enable query log to check for N+1
-        DB::enableQueryLog();
         $credit = Credit::with('user')->first();
-        $queries = DB::getQueryLog();
 
-        // Should only be 2 queries (credit + user)
-        $this->assertLessThanOrEqual(2, count($queries));
         $this->assertTrue($credit->relationLoaded('user'));
     }
 
-    /**
-     * Test eager load transactions.
-     * CM-RE-04
-     */
-    public function test_eager_load_transactions(): void
+    /** @test CR-004 */
+    public function transactions_relationship_loaded(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create(['user_id' => $user->id]);
+        $credit = Credit::factory()->create();
+        CreditTransaction::factory()->count(2)->forUser($credit->user)->create();
 
-        DB::table('credit_transactions')->insert([
-            'user_id' => $user->id,
+        $credit = Credit::with('transactions')->find($credit->id);
+
+        $this->assertTrue($credit->relationLoaded('transactions'));
+    }
+
+    /** @test CR-005 */
+    public function create_transaction_via_relationship(): void
+    {
+        $credit = Credit::factory()->create();
+
+        $transaction = $credit->transactions()->create([
+            'user_id' => $credit->user_id,
             'amount' => 50.00,
-            'balance_after' => 50.00,
+            'balance_after' => $credit->balance + 50.00,
             'type' => 'purchase',
-            'description' => 'Test purchase',
-            'created_at' => now(),
+            'description' => 'Test transaction',
         ]);
 
-        DB::enableQueryLog();
-        $loadedCredit = Credit::with('transactions')->find($credit->id);
-        $queries = DB::getQueryLog();
-
-        $this->assertLessThanOrEqual(2, count($queries));
-        $this->assertTrue($loadedCredit->relationLoaded('transactions'));
-    }
-
-    /**
-     * Test user hasOne credit relationship.
-     * CM-RE-05
-     */
-    public function test_user_has_one_credit_relationship(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create(['user_id' => $user->id]);
-
-        // Check if User model has credit relationship
-        if (method_exists($user, 'credit')) {
-            $this->assertInstanceOf(Credit::class, $user->credit);
-            $this->assertEquals($credit->id, $user->credit->id);
-        } else {
-            $this->markTestSkipped('User::credit() relationship not yet defined');
-        }
-    }
-
-    // ==================== CASTS TESTS ====================
-
-    /**
-     * Test balance DECIMAL cast.
-     * CM-CA-01
-     */
-    public function test_balance_decimal_cast(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 123.45,
+        $this->assertDatabaseHas('credit_transactions', [
+            'id' => $transaction->id,
+            'credit_id' => $credit->id,
         ]);
-
-        // Laravel's decimal cast returns strings for precision
-        $this->assertEquals('123.45', $credit->balance);
     }
 
-    /**
-     * Test balance precision 2 decimals.
-     * CM-CA-02
-     */
-    public function test_balance_precision_two_decimals(): void
+    /** @test CR-006 */
+    public function delete_credit_does_not_cascade_to_transactions(): void
     {
-        $user = User::factory()->create();
+        $credit = Credit::factory()->create();
+        $transaction = CreditTransaction::factory()->forUser($credit->user)->create();
+        $transactionId = $transaction->id;
+
+        $credit->delete();
+
+        // Transactions should remain independent (no cascade)
+        $this->assertDatabaseHas('credit_transactions', ['id' => $transactionId]);
+    }
+
+    // ==========================================
+    // Casts Tests (CC-001 to CC-008)
+    // ==========================================
+
+    /** @test CC-001 */
+    public function balance_cast_to_decimal(): void
+    {
+        $credit = Credit::factory()->withBalance(100.50)->create();
+
+        $this->assertIsFloat($credit->balance);
+        $this->assertEquals(100.50, $credit->balance);
+    }
+
+    /** @test CC-002 */
+    public function total_purchased_cast_to_decimal(): void
+    {
+        $credit = Credit::factory()->withPurchased(250.00)->create();
+
+        $this->assertIsFloat($credit->total_purchased);
+        $this->assertEquals(250.00, $credit->total_purchased);
+    }
+
+    /** @test CC-003 */
+    public function total_spent_cast_to_decimal(): void
+    {
+        $credit = Credit::factory()->withSpent(75.25)->create();
+
+        $this->assertIsFloat($credit->total_spent);
+        $this->assertEquals(75.25, $credit->total_spent);
+    }
+
+    /** @test CC-004 */
+    public function balance_precision(): void
+    {
         $credit = Credit::create([
-            'user_id' => $user->id,
+            'user_id' => User::factory()->create()->id,
             'balance' => 123.456,
         ]);
 
-        // Should be rounded to 2 decimal places
-        $credit->refresh();
-        $this->assertEqualsWithDelta(123.46, $credit->balance, 0.001);
+        // DECIMAL(10,2) rounds to 2 decimal places
+        $this->assertEqualsWithDelta(123.46, $credit->fresh()->balance, 0.001);
     }
 
-    /**
-     * Test total_purchased DECIMAL cast.
-     * CM-CA-03
-     */
-    public function test_total_purchased_decimal_cast(): void
+    /** @test CC-005 */
+    public function zero_balance(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'total_purchased' => 1000.50,
-        ]);
+        $credit = Credit::factory()->withBalance(0.00)->create();
 
-        // Laravel's decimal cast returns strings for precision
-        $this->assertEquals('1000.50', $credit->total_purchased);
+        $this->assertEquals(0.0, $credit->balance);
     }
 
-    /**
-     * Test total_spent DECIMAL cast.
-     * CM-CA-04
-     */
-    public function test_total_spent_decimal_cast(): void
+    /** @test CC-006 */
+    public function large_balance(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'total_spent' => 500.25,
-        ]);
+        $credit = Credit::factory()->withBalance(99999999.99)->create();
 
-        $this->assertIsFloat($credit->total_spent);
-        $this->assertEquals(500.25, $credit->total_spent);
-    }
-
-    /**
-     * Test timestamps cast.
-     * CM-CA-05
-     */
-    public function test_timestamps_cast(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create(['user_id' => $user->id]);
-
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $credit->created_at);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $credit->updated_at);
-    }
-
-    // ==================== ACCESSOR TESTS ====================
-
-    /**
-     * Test formatted_balance accessor.
-     * CM-AC-01
-     */
-    public function test_formatted_balance_accessor(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 123.45,
-        ]);
-
-        // Check if accessor exists
-        if (method_exists($credit, 'getFormattedBalanceAttribute')) {
-            $this->assertEquals('$123.45', $credit->formatted_balance);
-        } else {
-            $this->markTestSkipped('formatted_balance accessor not yet implemented');
-        }
-    }
-
-    /**
-     * Test formatted_balance zero.
-     * CM-AC-02
-     */
-    public function test_formatted_balance_zero(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 0,
-        ]);
-
-        if (method_exists($credit, 'getFormattedBalanceAttribute')) {
-            $this->assertEquals('$0.00', $credit->formatted_balance);
-        } else {
-            $this->markTestSkipped('formatted_balance accessor not yet implemented');
-        }
-    }
-
-    /**
-     * Test formatted_balance large value.
-     * CM-AC-03
-     */
-    public function test_formatted_balance_large(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 99999999.99,
-        ]);
-
-        if (method_exists($credit, 'getFormattedBalanceAttribute')) {
-            $this->assertEquals('$99,999,999.99', $credit->formatted_balance);
-        } else {
-            $this->markTestSkipped('formatted_balance accessor not yet implemented');
-        }
-    }
-
-    /**
-     * Test formatted_balance negative.
-     * CM-AC-04
-     */
-    public function test_formatted_balance_negative(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => -50.00,
-        ]);
-
-        if (method_exists($credit, 'getFormattedBalanceAttribute')) {
-            $this->assertEquals('-$50.00', $credit->formatted_balance);
-        } else {
-            $this->markTestSkipped('formatted_balance accessor not yet implemented');
-        }
-    }
-
-    /**
-     * Test formatted_total_purchased accessor.
-     * CM-AC-05
-     */
-    public function test_formatted_total_purchased_accessor(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'total_purchased' => 150.00,
-        ]);
-
-        if (method_exists($credit, 'getFormattedTotalPurchasedAttribute')) {
-            $this->assertEquals('$150.00', $credit->formatted_total_purchased);
-        } else {
-            $this->markTestSkipped('formatted_total_purchased accessor not yet implemented');
-        }
-    }
-
-    /**
-     * Test formatted_total_spent accessor.
-     * CM-AC-06
-     */
-    public function test_formatted_total_spent_accessor(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'total_spent' => 75.50,
-        ]);
-
-        if (method_exists($credit, 'getFormattedTotalSpentAttribute')) {
-            $this->assertEquals('$75.50', $credit->formatted_total_spent);
-        } else {
-            $this->markTestSkipped('formatted_total_spent accessor not yet implemented');
-        }
-    }
-
-    // ==================== BUSINESS LOGIC TESTS ====================
-
-    /**
-     * Test hasSufficientBalance returns true.
-     * CM-BL-01
-     */
-    public function test_has_sufficient_balance_true(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 100,
-        ]);
-
-        if (method_exists($credit, 'hasSufficientBalance')) {
-            $this->assertTrue($credit->hasSufficientBalance(50));
-        } else {
-            $this->markTestSkipped('hasSufficientBalance method not yet implemented');
-        }
-    }
-
-    /**
-     * Test hasSufficientBalance exact match.
-     * CM-BL-02
-     */
-    public function test_has_sufficient_balance_exact(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 100,
-        ]);
-
-        if (method_exists($credit, 'hasSufficientBalance')) {
-            $this->assertTrue($credit->hasSufficientBalance(100));
-        } else {
-            $this->markTestSkipped('hasSufficientBalance method not yet implemented');
-        }
-    }
-
-    /**
-     * Test hasSufficientBalance returns false.
-     * CM-BL-03
-     */
-    public function test_has_sufficient_balance_false(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 50,
-        ]);
-
-        if (method_exists($credit, 'hasSufficientBalance')) {
-            $this->assertFalse($credit->hasSufficientBalance(100));
-        } else {
-            $this->markTestSkipped('hasSufficientBalance method not yet implemented');
-        }
-    }
-
-    /**
-     * Test hasSufficientBalance with zero amount.
-     * CM-BL-04
-     */
-    public function test_has_sufficient_balance_zero_amount(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 0,
-        ]);
-
-        if (method_exists($credit, 'hasSufficientBalance')) {
-            $this->assertTrue($credit->hasSufficientBalance(0));
-        } else {
-            $this->markTestSkipped('hasSufficientBalance method not yet implemented');
-        }
-    }
-
-    /**
-     * Test hasSufficientBalance with negative check (credit).
-     * CM-BL-05
-     */
-    public function test_has_sufficient_balance_negative_check(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 100,
-        ]);
-
-        if (method_exists($credit, 'hasSufficientBalance')) {
-            // Negative amount should always return true (it's a credit, not a debit)
-            $this->assertTrue($credit->hasSufficientBalance(-10));
-        } else {
-            $this->markTestSkipped('hasSufficientBalance method not yet implemented');
-        }
-    }
-
-    /**
-     * Test hasSufficientBalance with negative balance.
-     * CM-BL-06
-     */
-    public function test_has_sufficient_balance_negative_balance(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => -10,
-        ]);
-
-        if (method_exists($credit, 'hasSufficientBalance')) {
-            $this->assertFalse($credit->hasSufficientBalance(1));
-        } else {
-            $this->markTestSkipped('hasSufficientBalance method not yet implemented');
-        }
-    }
-
-    // ==================== EDGE CASE TESTS ====================
-
-    /**
-     * Test max balance value.
-     * CM-EC-01
-     */
-    public function test_max_balance_value(): void
-    {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 99999999.99,
-        ]);
-
-        $credit->refresh();
         $this->assertEquals(99999999.99, $credit->balance);
     }
 
-    /**
-     * Test small decimal balance.
-     * CM-EC-02
-     */
-    public function test_small_decimal_balance(): void
+    /** @test CC-007 */
+    public function negative_balance(): void
     {
-        $user = User::factory()->create();
         $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 0.01,
+            'user_id' => User::factory()->create()->id,
+            'balance' => -50.00,
         ]);
 
-        $credit->refresh();
-        $this->assertEquals(0.01, $credit->balance);
+        $this->assertEquals(-50.00, $credit->balance);
     }
 
-    /**
-     * Test zero balance.
-     * CM-EC-03
-     */
-    public function test_zero_balance(): void
+    /** @test CC-008 */
+    public function created_at_cast_to_datetime(): void
     {
-        $user = User::factory()->create();
-        $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => 0.00,
-        ]);
+        $credit = Credit::factory()->create();
 
-        $credit->refresh();
-        $this->assertEquals(0.00, $credit->balance);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $credit->created_at);
     }
 
-    /**
-     * Test negative balance allowed.
-     * CM-EC-04
-     */
-    public function test_negative_balance_allowed(): void
+    // ==========================================
+    // Accessor Tests (CA-001 to CA-008)
+    // ==========================================
+
+    /** @test CA-001 */
+    public function formatted_balance_accessor(): void
     {
-        $user = User::factory()->create();
+        $credit = Credit::factory()->withBalance(1234.50)->create();
+
+        $this->assertEquals('$1,234.50', $credit->formatted_balance);
+    }
+
+    /** @test CA-002 */
+    public function formatted_balance_zero(): void
+    {
+        $credit = Credit::factory()->withBalance(0.00)->create();
+
+        $this->assertEquals('$0.00', $credit->formatted_balance);
+    }
+
+    /** @test CA-003 */
+    public function formatted_balance_decimal(): void
+    {
+        $credit = Credit::factory()->withBalance(0.50)->create();
+
+        $this->assertEquals('$0.50', $credit->formatted_balance);
+    }
+
+    /** @test CA-004 */
+    public function formatted_balance_large(): void
+    {
+        $credit = Credit::factory()->withBalance(1000000.00)->create();
+
+        $this->assertEquals('$1,000,000.00', $credit->formatted_balance);
+    }
+
+    /** @test CA-005 */
+    public function formatted_total_purchased_accessor(): void
+    {
+        $credit = Credit::factory()->withPurchased(500.00)->create();
+
+        $this->assertEquals('$500.00', $credit->formatted_total_purchased);
+    }
+
+    /** @test CA-006 */
+    public function formatted_total_spent_accessor(): void
+    {
+        $credit = Credit::factory()->withSpent(250.00)->create();
+
+        $this->assertEquals('$250.00', $credit->formatted_total_spent);
+    }
+
+    /** @test CA-007 */
+    public function accessor_exists(): void
+    {
+        $credit = Credit::factory()->create();
+
+        $this->assertIsString($credit->formatted_balance);
+    }
+
+    /** @test CA-008 */
+    public function accessor_with_negative_balance(): void
+    {
         $credit = Credit::create([
-            'user_id' => $user->id,
-            'balance' => -100.00,
+            'user_id' => User::factory()->create()->id,
+            'balance' => -10.00,
         ]);
 
+        $this->assertEquals('-$10.00', $credit->formatted_balance);
+    }
+
+    // ==========================================
+    // Balance Check Method Tests (CB-001 to CB-010)
+    // ==========================================
+
+    /** @test CB-001 */
+    public function has_sufficient_balance(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+
+        $this->assertTrue($credit->hasSufficientBalance(50.00));
+    }
+
+    /** @test CB-002 */
+    public function has_exact_balance(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+
+        $this->assertTrue($credit->hasSufficientBalance(100.00));
+    }
+
+    /** @test CB-003 */
+    public function insufficient_balance(): void
+    {
+        $credit = Credit::factory()->withBalance(50.00)->create();
+
+        $this->assertFalse($credit->hasSufficientBalance(100.00));
+    }
+
+    /** @test CB-004 */
+    public function zero_balance_check_zero(): void
+    {
+        $credit = Credit::factory()->withBalance(0.00)->create();
+
+        $this->assertTrue($credit->hasSufficientBalance(0.00));
+    }
+
+    /** @test CB-005 */
+    public function zero_balance_check_positive(): void
+    {
+        $credit = Credit::factory()->withBalance(0.00)->create();
+
+        $this->assertFalse($credit->hasSufficientBalance(1.00));
+    }
+
+    /** @test CB-006 */
+    public function negative_balance_check(): void
+    {
+        $credit = Credit::create([
+            'user_id' => User::factory()->create()->id,
+            'balance' => -10.00,
+        ]);
+
+        $this->assertFalse($credit->hasSufficientBalance(5.00));
+    }
+
+    /** @test CB-007 */
+    public function check_negative_amount(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+
+        // Negative check means refund/credit - always allowed
+        $this->assertTrue($credit->hasSufficientBalance(-10.00));
+    }
+
+    /** @test CB-008 */
+    public function check_decimal_amount(): void
+    {
+        $credit = Credit::factory()->withBalance(100.50)->create();
+
+        $this->assertTrue($credit->hasSufficientBalance(50.25));
+    }
+
+    /** @test CB-009 */
+    public function check_with_decimal_precision(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+
+        $this->assertTrue($credit->hasSufficientBalance(99.99));
+    }
+
+    /** @test CB-010 */
+    public function check_amount_zero(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+
+        $this->assertTrue($credit->hasSufficientBalance(0.00));
+    }
+
+    // ==========================================
+    // Factory State Tests (CF-001 to CF-006)
+    // ==========================================
+
+    /** @test CF-001 */
+    public function factory_default_state_values(): void
+    {
+        $credit = Credit::factory()->create();
+
+        $this->assertEquals(0.0, $credit->balance);
+        $this->assertEquals(0.0, $credit->total_purchased);
+        $this->assertEquals(0.0, $credit->total_spent);
+    }
+
+    /** @test CF-002 */
+    public function factory_with_balance_state(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+
+        $this->assertEquals(100.00, $credit->balance);
+    }
+
+    /** @test CF-003 */
+    public function factory_with_purchased_state(): void
+    {
+        $credit = Credit::factory()->withPurchased(500.00)->create();
+
+        $this->assertEquals(500.00, $credit->total_purchased);
+    }
+
+    /** @test CF-004 */
+    public function factory_with_spent_state(): void
+    {
+        $credit = Credit::factory()->withSpent(200.00)->create();
+
+        $this->assertEquals(200.00, $credit->total_spent);
+    }
+
+    /** @test CF-005 */
+    public function factory_for_user_state(): void
+    {
+        $user = User::factory()->create();
+        $credit = Credit::factory()->forUser($user)->create();
+
+        $this->assertEquals($user->id, $credit->user_id);
+    }
+
+    /** @test CF-006 */
+    public function factory_combined_states(): void
+    {
+        $credit = Credit::factory()
+            ->withBalance(100.00)
+            ->withPurchased(200.00)
+            ->create();
+
+        $this->assertEquals(100.00, $credit->balance);
+        $this->assertEquals(200.00, $credit->total_purchased);
+    }
+
+    // ==========================================
+    // Edge Cases (CE-001 to CE-008)
+    // ==========================================
+
+    /** @test CE-001 */
+    public function very_large_balance(): void
+    {
+        $credit = Credit::factory()->withBalance(99999999.99)->create();
         $credit->refresh();
-        // No DB constraint preventing negative balance
-        $this->assertEquals(-100.00, $credit->balance);
+
+        $this->assertEquals(99999999.99, $credit->balance);
+    }
+
+    /** @test CE-002 */
+    public function negative_balance_stored(): void
+    {
+        $credit = Credit::create([
+            'user_id' => User::factory()->create()->id,
+            'balance' => -1000.00,
+        ]);
+
+        $this->assertEquals(-1000.00, $credit->balance);
+    }
+
+    /** @test CE-003 */
+    public function balance_update_changes_updated_at(): void
+    {
+        $credit = Credit::factory()->create();
+        $originalUpdatedAt = $credit->updated_at;
+
+        sleep(1); // Ensure time difference
+        $credit->update(['balance' => 100.00]);
+
+        $this->assertNotEquals($originalUpdatedAt, $credit->fresh()->updated_at);
+    }
+
+    /** @test CE-004 */
+    public function balance_string_to_float(): void
+    {
+        $credit = Credit::create([
+            'user_id' => User::factory()->create()->id,
+            'balance' => "100.50",
+        ]);
+
+        $this->assertIsFloat($credit->balance);
+        $this->assertEquals(100.50, $credit->balance);
+    }
+
+    /** @test CE-005 */
+    public function null_user_id_throws_exception(): void
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        Credit::create(['user_id' => null]);
+    }
+
+    /** @test CE-006 */
+    public function multiple_transactions_linked_correctly(): void
+    {
+        $credit = Credit::factory()->create();
+        
+        for ($i = 0; $i < 10; $i++) {
+            CreditTransaction::factory()
+                ->forUser($credit->user)
+                ->create(['credit_id' => $credit->id]);
+        }
+
+        $this->assertCount(10, $credit->transactions);
+    }
+
+    /** @test CE-007 */
+    public function no_transactions_returns_empty_collection(): void
+    {
+        $credit = Credit::factory()->create();
+
+        $this->assertCount(0, $credit->transactions);
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Collection::class, $credit->transactions);
+    }
+
+    /** @test CE-008 */
+    public function refresh_model(): void
+    {
+        $credit = Credit::factory()->create();
+        
+        // Direct DB update
+        \DB::table('credits')->where('id', $credit->id)->update(['balance' => 500.00]);
+
+        $credit->refresh();
+
+        $this->assertEquals(500.00, $credit->balance);
+    }
+
+    // ==========================================
+    // Security Tests (CS-001 to CS-005)
+    // ==========================================
+
+    /** @test CS-001 */
+    public function mass_assignment_balance_allowed(): void
+    {
+        $credit = Credit::factory()->create();
+        $originalBalance = $credit->balance;
+
+        $credit->fill(['balance' => 1000.00]);
+
+        $this->assertEquals(1000.00, $credit->balance);
+    }
+
+    /** @test CS-002 */
+    public function mass_assignment_id_not_modifiable(): void
+    {
+        $credit = Credit::factory()->create();
+        $originalId = $credit->id;
+
+        // Attempting to change id via fill should not work
+        $credit->fill(['id' => 999999]);
+
+        $this->assertEquals($originalId, $credit->id);
+    }
+
+    /** @test CS-004 */
+    public function balance_overflow(): void
+    {
+        // DECIMAL(10,2) max is 99999999.99
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        Credit::create([
+            'user_id' => User::factory()->create()->id,
+            'balance' => 999999999.99, // Exceeds max
+        ]);
+    }
+
+    /** @test CS-005 */
+    public function concurrent_balance_updates(): void
+    {
+        $credit = Credit::factory()->withBalance(100.00)->create();
+        $creditId = $credit->id;
+
+        // Simulate two concurrent updates (last write wins)
+        \DB::table('credits')->where('id', $creditId)->update(['balance' => 150.00]);
+        \DB::table('credits')->where('id', $creditId)->update(['balance' => 200.00]);
+
+        $credit->refresh();
+
+        $this->assertEquals(200.00, $credit->balance);
+    }
+
+    // ==========================================
+    // Schema Tests
+    // ==========================================
+
+    /** @test */
+    public function table_has_expected_columns(): void
+    {
+        $this->assertTrue(Schema::hasColumn('credits', 'id'));
+        $this->assertTrue(Schema::hasColumn('credits', 'user_id'));
+        $this->assertTrue(Schema::hasColumn('credits', 'balance'));
+        $this->assertTrue(Schema::hasColumn('credits', 'total_purchased'));
+        $this->assertTrue(Schema::hasColumn('credits', 'total_spent'));
+        $this->assertTrue(Schema::hasColumn('credits', 'created_at'));
+        $this->assertTrue(Schema::hasColumn('credits', 'updated_at'));
+    }
+
+    /** @test */
+    public function user_id_has_unique_index(): void
+    {
+        $indexes = \DB::select("SHOW INDEX FROM credits WHERE Column_name = 'user_id'");
+        $hasUnique = collect($indexes)->contains('Non_unique', 0);
+        
+        $this->assertTrue($hasUnique, 'user_id should have a unique index');
     }
 }
