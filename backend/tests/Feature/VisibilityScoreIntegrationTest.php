@@ -60,7 +60,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
         $score = $service->calculateAndStore($project, [
@@ -98,7 +98,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(null);
+            ->andReturn(['overall_score' => 0.0]);
 
         $service = app(VisibilityScoreService::class);
         $score = $service->calculateAndStore($project, [
@@ -132,7 +132,10 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->twice()
-            ->andReturnValues([75.0, 50.0]);
+            ->andReturnValues([
+                ['overall_score' => 75.0],
+                ['overall_score' => 50.0]
+            ]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -148,8 +151,10 @@ class VisibilityScoreIntegrationTest extends TestCase
             'volume' => 80.0,
         ]);
 
+        // Project 1: Position 80 * 0.40 = 32, SERP 60 * 0.30 = 18, Backlink 75 * 0.20 = 15, Volume 90 * 0.10 = 9 = 74
+        // Project 2: Position 70 * 0.40 = 28, SERP 50 * 0.30 = 15, Backlink 50 * 0.20 = 10, Volume 80 * 0.10 = 8 = 61
         $this->assertEquals(74, $score1);
-        $this->assertEquals(63, $score2);
+        $this->assertEquals(61, $score2);
 
         $this->assertEquals(2, VisibilityScore::count());
     }
@@ -168,7 +173,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -191,7 +196,10 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->twice()
-            ->andReturn(75.0, 80.0);
+            ->andReturn(
+                ['overall_score' => 75.0],
+                ['overall_score' => 80.0]
+            );
 
         $service = app(VisibilityScoreService::class);
 
@@ -217,7 +225,10 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->twice()
-            ->andReturn(75.0, 80.0);
+            ->andReturn(
+                ['overall_score' => 75.0],
+                ['overall_score' => 80.0]
+            );
 
         $service = app(VisibilityScoreService::class);
 
@@ -244,7 +255,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
         $service->calculateAndStore($project, [
@@ -269,7 +280,7 @@ class VisibilityScoreIntegrationTest extends TestCase
 
         $this->backlinkScorerMock
             ->shouldReceive('score')
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -354,7 +365,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(100.0);
+            ->andReturn(['overall_score' => 100.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -378,7 +389,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(25.0);
+            ->andReturn(['overall_score' => 25.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -403,7 +414,7 @@ class VisibilityScoreIntegrationTest extends TestCase
         $this->backlinkScorerMock
             ->shouldReceive('score')
             ->once()
-            ->andReturn(100.0);
+            ->andReturn(['overall_score' => 100.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -457,7 +468,7 @@ class VisibilityScoreIntegrationTest extends TestCase
 
         $this->backlinkScorerMock
             ->shouldReceive('score')
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -484,7 +495,7 @@ class VisibilityScoreIntegrationTest extends TestCase
 
         $this->backlinkScorerMock
             ->shouldReceive('score')
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -505,7 +516,7 @@ class VisibilityScoreIntegrationTest extends TestCase
 
         $this->backlinkScorerMock
             ->shouldReceive('score')
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $service = app(VisibilityScoreService::class);
 
@@ -535,7 +546,7 @@ class VisibilityScoreIntegrationTest extends TestCase
 
         $this->backlinkScorerMock
             ->shouldReceive('score')
-            ->andReturn(75.0);
+            ->andReturn(['overall_score' => 75.0]);
 
         $this->actingAs($user);
 
