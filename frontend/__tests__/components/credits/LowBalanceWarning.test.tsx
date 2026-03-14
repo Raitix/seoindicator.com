@@ -32,6 +32,12 @@ const defaultProps = {
 beforeEach(() => {
   jest.clearAllMocks();
   localStorage.clear();
+  // Spy on localStorage.setItem
+  jest.spyOn(Storage.prototype, 'setItem');
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 // ==================== LBW-001: Rendering ====================
