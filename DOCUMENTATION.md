@@ -33514,8 +33514,125 @@ unlink($filePath); // Delete file
 - TASK-29-1: PdfToolExporter Implementation
 - TASK-29-2: XlsToolExporter Implementation
 - TASK-29-4: Download Token System
-- TASK-29-5: Rate Limiting Integration (pending)
+- TASK-29-5: Rate Limiting Integration ✅
 - TASK-29-6: ExportResultsButton Component (frontend)
+
+---
+## Rate Limiting Integration (TASK-29-5)
+
+### Description
+User-based rate limiting for the `POST /api/v1/tools/export` endpoint. Protects against export abuse while allowing reasonable usage.
+
+### Implementation Location
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ToolExportController.php`
+- **Config:** `backend/config/tools.php`
+
+### Rate Limit Configuration
+
+```php
+// config/tools.php
+'export_rate_limit' => env('TOOL_EXPORT_RATE_LIMIT', 10), // 10/hour
+'export_rate_window' => env('TOOL_EXPORT_RATE_WINDOW', 3600), // 1 hour window
+```
+
+### Rate Limit Logic
+
+| Attribute | Value |
+|-----------|-------|
+| Limit | 10 exports per hour per user |
+| Window | 3600 seconds (1 hour) |
+| Cache Key | `export_rate_limit:{user_id}` |
+| Reset Key | `export_rate_limit_reset:{user_id}` |
+
+### Controller Methods
+
+```php
+// Check rate limit before export
+private function checkRateLimit(): array
+{
+    $key = "export_rate_limit:" . auth()->id();
+    $limit = config('tools.export_rate_limit', 10);
+    $window = config('tools.export_rate_window', 3600);
+    
+    $count = Cache::get($key, 0);
+    // Returns ['allowed' => bool, 'remaining' => int, 'reset_at' => int]
+}
+
+// Increment counter after successful export
+private function incrementRateLimit(): void
+{
+    $key = "export_rate_limit:" . auth()->id();
+    // Atomic increment with window TTL
+}
+
+// Build headers for all responses
+private function buildRateLimitHeaders(int $remaining, int $resetAt): array
+{
+    return [
+        'X-RateLimit-Limit' => config('tools.export_rate_limit', 10),
+        'X-RateLimit-Remaining' => max(0, $remaining),
+        'X-RateLimit-Reset' => $resetAt,
+    ];
+}
+```
+
+### Rate Limit Headers
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests per window (default: 10) |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Unix timestamp when window resets |
+
+### Error Response (429)
+
+When rate limit exceeded:
+```json
+{
+  "message": "Export rate limit exceeded. Try again in X minutes."
+}
+```
+
+- HTTP Status: `429 Too Many Requests`
+- Message includes actual minutes until reset
+- Rate limit headers still included
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| User Isolation | Each user has independent rate limit via `auth()->id()` |
+| Atomic Operations | Cache::increment() for race condition prevention |
+| No Negative Values | `max(0, $remaining)` ensures clean headers |
+| Configurable | Limits can be adjusted via environment variables |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| RateLimitIntegrationTest | 52 | 247 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| RL-BASIC | 10 | Basic rate limiting flow |
+| RL-HEADERS | 8 | Rate limit headers on all responses |
+| RL-USER | 6 | User-based isolation |
+| RL-CONFIG | 5 | Configuration validation |
+| RL-ERROR | 6 | Error handling and messages |
+| RL-EDGE | 8 | Edge cases (zero limit, large IDs) |
+| RL-SECURITY | 5 | Security testing |
+| RL-PERFORMANCE | 4 | Performance benchmarks |
+
+### Production Status
+- **Deployed:** 2026-03-07 (GitHub Actions #22800548406)
+- **Health Check:** Passing (`https://seoindicator.com/api/health` → 200 OK)
+- **Tests:** 52/52 passing (247 assertions, 7.16s)
+- **Status:** Complete
+
+### Dependencies
+- TASK-29-3: ToolExportController (integration point)
+- Laravel Cache facade
 
 ---
 ## Database Schema: SEO Site Audits (FEAT-014)
