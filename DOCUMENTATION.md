@@ -33827,6 +33827,101 @@ CREATE TABLE sites (
 ```
 
 ---
+## Keyword Model and Repository (TASK-1-2)
+
+### Feature Description
+Data layer implementation for keyword tracking. Provides the Keyword model with Eloquent relationships, scopes, and soft-delete support, plus a KeywordRepository for database operations with pagination and webhook event emission.
+
+### Keyword Model
+
+**Location:** `backend/app/Models/Keyword.php`
+
+**Properties:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `$fillable` | array | Mass assignable fields (site_id, user_id, keyword, gsc_query_match, target_url, search_engine, location, device, status, last_checked_at, last_viewed_at) |
+| `$casts` | array | DateTime casts for timestamp fields |
+
+**Constants (Enums):**
+| Constant | Values | Description |
+|----------|--------|-------------|
+| `STATUSES` | `['active', 'paused', 'deleted']` | Keyword lifecycle states |
+| `SEARCH_ENGINES` | `['google']` | Supported search engines (MVP) |
+| `DEVICES` | `['desktop']` | Supported device types (MVP) |
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `site()` | BelongsTo | Site |
+| `user()` | BelongsTo | User |
+| `rankingHistory()` | HasMany | Ranking |
+| `competitorRankings()` | HasMany | CompetitorRanking |
+| `annotations()` | HasMany | Annotation |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `scopeActive($query)` | Filter keywords with status = 'active' |
+| `scopeBySite($query, $siteId)` | Filter keywords by site_id |
+| `scopeNeedsCheck($query)` | Filter keywords needing rank check (last_checked_at is null or > 24h ago) |
+
+**Model Events:**
+- `creating`: Auto-derives `user_id` from `site_id` if not provided
+
+**Soft Delete:**
+- `delete()`: Sets status to 'deleted' (soft delete)
+- `forceDelete()`: Permanently removes from database
+
+### KeywordRepository
+
+**Location:** `backend/app/Repositories/KeywordRepository.php`
+
+**Methods:**
+| Method | Parameters | Return | Description |
+|--------|------------|--------|-------------|
+| `findById()` | `int $id` | `?Keyword` | Find keyword by ID |
+| `findBySite()` | `int $siteId, ?string $status, ?int $perPage, ?int $page` | `Collection|LengthAwarePaginator` | Find keywords by site with optional pagination and status filter |
+| `create()` | `array $data` | `Keyword` | Create keyword (emits webhook event) |
+| `update()` | `int $id, array $data` | `bool` | Update keyword by ID |
+| `delete()` | `int $id, bool $hardDelete` | `bool` | Delete keyword (emits webhook event) |
+| `getActiveCount()` | `int $siteId` | `int` | Count active keywords for site |
+| `getKeywordsNeedingCheck()` | `int $siteId` | `Collection` | Get keywords needing rank check |
+
+**Webhook Events:**
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `keyword.added` | `create()` | userId, keywordId, keyword, siteId, targetUrl, searchEngine, location, device, status |
+| `keyword.removed` | `delete()` | userId, keywordId, keyword, siteId |
+
+### Test Coverage
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| KeywordTest | 28 | 45 |
+| KeywordRepositoryTest | 26 | 44 |
+
+**Test Categories:**
+- Model creation and relationships
+- Scope behavior (active, bySite, needsCheck)
+- Repository CRUD operations
+- Pagination functionality
+- Soft delete behavior
+- User auto-derivation from site
+
+### Production Status
+- **Deployed**: 2026-02-22
+- **Commit**: (initial deployment)
+- **Tests**: 54 tests passing (89 assertions)
+- **Status**: Complete
+
+### Dependencies
+- TASK-1-1 (keywords table schema)
+
+### Related Tasks
+- TASK-1-3: Ranking Model and Repository
+- TASK-1-4: Keywords CRUD API
+- TASK-1-14: Keyword Add/Edit Forms
+
+---
 ## Database Schema: Competitors Tables (TASK-3-1)
 
 ### Competitors Table
