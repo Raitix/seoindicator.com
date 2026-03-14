@@ -27,54 +27,82 @@ class CreditFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'balance' => $this->faker->randomFloat(2, 0, 1000),
-            'total_purchased' => $this->faker->randomFloat(2, 0, 2000),
-            'total_spent' => $this->faker->randomFloat(2, 0, 1000),
+            'balance' => 0.00,
+            'total_purchased' => 0.00,
+            'total_spent' => 0.00,
         ];
     }
 
     /**
-     * Indicate that the credit has zero balance.
-     */
-    public function zeroBalance(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'balance' => 0,
-            'total_purchased' => 0,
-            'total_spent' => 0,
-        ]);
-    }
-
-    /**
-     * Indicate that the credit has a specific balance.
+     * Set a specific balance.
      */
     public function withBalance(float $balance): static
     {
         return $this->state(fn (array $attributes) => [
             'balance' => $balance,
-            'total_purchased' => $balance,
-            'total_spent' => 0,
         ]);
     }
 
     /**
-     * Indicate that the credit has a negative balance.
+     * Set a specific total_purchased.
      */
-    public function negativeBalance(): static
+    public function withPurchased(float $amount): static
     {
         return $this->state(fn (array $attributes) => [
-            'balance' => $this->faker->randomFloat(2, -100, -1),
+            'total_purchased' => $amount,
         ]);
     }
 
     /**
-     * Indicate that the credit has a large balance.
+     * Set a specific total_spent.
      */
-    public function largeBalance(): static
+    public function withSpent(float $amount): static
     {
         return $this->state(fn (array $attributes) => [
-            'balance' => 99999.99,
-            'total_purchased' => 99999.99,
+            'total_spent' => $amount,
+        ]);
+    }
+
+    /**
+     * Associate with a specific user.
+     */
+    public function forUser(User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /**
+     * Create credit with a positive balance.
+     */
+    public function withFunds(float $amount = 100.00): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'balance' => $amount,
+            'total_purchased' => $amount,
+        ]);
+    }
+
+    /**
+     * Create credit with zero balance.
+     */
+    public function empty(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'balance' => 0.00,
+            'total_purchased' => 0.00,
+            'total_spent' => 0.00,
+        ]);
+    }
+
+    /**
+     * Create credit with negative balance.
+     */
+    public function overdrawn(float $amount = -10.00): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'balance' => $amount,
         ]);
     }
 }
