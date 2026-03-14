@@ -1,7 +1,7 @@
 # TASK-34-7: Query Job and Scheduling
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -281,3 +281,38 @@ $mockService->shouldReceive('getActiveProjectsForQuery')->andReturn([...]);
 **PHPUnit Warning:** Deprecated `@test` annotations - should migrate to `#[Test]` attributes for PHPUnit 12.
 
 **Status:** `Testing Locally` → `To Deploy`
+
+---
+
+### DevOps Deployment (2026-03-14 14:59 UTC)
+
+**Status:** Deployed to Production ✅
+
+**Deployment Details:**
+- **Deployment ID:** 20260314T125136Z-db6e5d71
+- **Commit:** e9f963862f7c2c0770b4a1dd03c4e6e8c4603460
+- **Deployed At:** 2026-03-14 12:57 UTC
+- **Duration:** 326 seconds (5.5 minutes)
+
+**Deployed Files:**
+- `backend/app/Jobs/AIVisibility/AIVisibilityQueryJob.php`
+- `backend/app/Jobs/AIVisibility/AggregateAIVisibilityAnalyticsJob.php`
+- `backend/app/Jobs/AIVisibility/CheckAIVisibilityAlertsJob.php`
+- `backend/app/Jobs/AIVisibility/RunAIVisibilityQueriesJob.php`
+- `backend/routes/console.php` (scheduled tasks)
+
+**Verification:**
+- ✅ Frontend build succeeded
+- ✅ Backend deployment succeeded (composer, migrations, cache)
+- ✅ Smoke tests passed (homepage, login page)
+
+**Scheduled Tasks Deployed:**
+| Task | Schedule | Status |
+|------|----------|--------|
+| `RunAIVisibilityQueries` | Weekly Sundays 02:00 | ✅ Deployed |
+| `AggregateAIVisibilityAnalytics` | Daily 03:00 | ✅ Deployed |
+| `CheckAIVisibilityAlerts` | Every 6 hours | ✅ Deployed |
+
+**Handoff:** Ready for ProdTester to validate in production.
+
+**Status:** `To Deploy` → `To Test Prod`
