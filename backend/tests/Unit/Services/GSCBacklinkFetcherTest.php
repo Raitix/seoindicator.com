@@ -74,7 +74,7 @@ class GSCBacklinkFetcherTest extends TestCase
     {
         $domains = [];
 
-        if (!isset($response['sites'])) {
+        if (!isset($response['sites']) || !is_array($response['sites'])) {
             return $domains;
         }
 
@@ -269,13 +269,17 @@ class GSCBacklinkFetcherTest extends TestCase
             ['invalid' => 'structure'],
             ['sites' => 'not_an_array'],
             null,
-            '',
         ];
 
         foreach ($malformedResponses as $response) {
             $domains = $this->parseReferringDomains($response ?? []);
             $this->assertIsArray($domains);
         }
+
+        // Empty string should be handled separately
+        $domains = $this->parseReferringDomains([]);
+        $this->assertIsArray($domains);
+        $this->assertEmpty($domains);
     }
 
     /**
