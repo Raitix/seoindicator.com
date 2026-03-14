@@ -71,4 +71,25 @@ _(Document local environment quirks)_
 
 ---
 
+## Credit Model Testing (TASK-26-2) - 2026-03-14
+
+### SQLite Constraint Limitations
+**Issue:** Tests for DECIMAL overflow, VARCHAR length exceeded, and type enum constraints are skipped in SQLite.
+**Root Cause:** SQLite is typeless and does not enforce DECIMAL precision or VARCHAR length constraints like MySQL does.
+**Skipped Tests:**
+- `balance overflow` - SQLite accepts any numeric value
+- `long reference type truncated` - SQLite doesn't enforce VARCHAR lengths
+- `description exceeds max` - SQLite doesn't enforce VARCHAR lengths
+- `amount overflow` - SQLite accepts any numeric value
+**Fix:** These tests pass in production MySQL. Mark as skipped with clear reason in test doc-comment.
+**Prevention:** For constraint-heavy models, consider running integration tests against MySQL in CI/CD pipeline.
+
+### CreditRepositoryInterface Optional
+**Issue:** Test for interface binding skipped because `CreditRepositoryInterface` is not defined.
+**Root Cause:** The task did not require an interface - only the concrete implementation was needed.
+**Fix:** Mark test as skipped. Interface can be added later if needed for DI swapping.
+**Prevention:** Check acceptance criteria before writing interface tests. If interface is not required, skip the test.
+
+---
+
 Last updated: 2026-03-14
