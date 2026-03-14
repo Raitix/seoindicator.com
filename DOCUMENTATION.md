@@ -11489,6 +11489,181 @@ User-manageable work items from planner recommendations.
 - TASK-36-6: ContentRefreshPlannerService
 
 ---
+## Feature Filter UI (TASK-7-18)
+
+### Component Description
+Frontend filter bar component for the Keywords Dashboard that enables users to filter keywords by SERP feature presence. Provides a dynamic dropdown populated from the metadata API and a checkbox for showing only keywords with SERP features. Integrates seamlessly with existing keyword table filters and URL state management.
+
+### Component Locations
+- **Primary Component:** `frontend/components/keywords/KeywordFilterBar.tsx`
+- **Integration Point:** `frontend/components/keywords/KeywordList.tsx`
+- **API Hook:** `frontend/lib/api/metadata.ts` (`useSERPFeatureOptions` hook)
+- **Query Updates:** `frontend/lib/api/keywords.ts` (updated query params)
+- **Unit Tests:** `frontend/__tests__/components/KeywordFilterBar.test.tsx`
+- **Integration Tests:** `frontend/__tests__/integration/keyword-filter-serp.test.tsx`
+- **Test Documentation:** `TESTS/SPEC-7-18.md`
+
+### Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **SERP Feature Dropdown** | Dynamic filter dropdown with options from `/api/v1/metadata/serp-features` |
+| **"All" Option** | Default option to show all keywords regardless of SERP features |
+| **Feature Presence Checkbox** | "Show Only Keywords With SERP Features" toggle |
+| **Combined Filtering** | Works seamlessly with existing filters (search, status, etc.) |
+| **URL State Management** | Filter state persisted in URL query parameters |
+| **Active Filter Tags** | Visual tags showing applied filters with removal capability |
+| **Clear Filters Button** | Reset all filters with single click |
+
+### Component Props
+
+```typescript
+interface KeywordFilterBarProps {
+  onFilterChange?: (filters: FilterState) => void;
+  initialFilters?: Partial<FilterState>;
+  className?: string;
+}
+
+interface FilterState {
+  serpFeature: string | null;     // Selected SERP feature filter
+  presentOnly: boolean;           // Show only keywords with features
+  search?: string;                // Text search query
+  status?: string;                // Status filter
+  // ... other existing filters
+}
+
+interface SERPFeatureOption {
+  value: string;                  // Feature identifier (e.g., 'featured_snippet')
+  label: string;                  // Display label (e.g., 'Featured Snippet')
+  icon?: string;                  // Optional icon name
+  description?: string;           // Feature description
+  ctrImpact?: number;             // CTR impact percentage
+}
+```
+
+### SERP Feature Options
+
+Loaded dynamically from `GET /api/v1/metadata/serp-features`:
+
+| Value | Label | Description |
+|-------|-------|-------------|
+| `featured_snippet` | Featured Snippet | Appears in position 0 above organic results |
+| `local_pack` | Local Pack | Map pack with 3 local business listings |
+| `image_pack` | Image Pack | Row of images in search results |
+| `video` | Video | Video carousel or thumbnail |
+| `people_also_ask` | People Also Ask | Expandable Q&A section |
+| `knowledge_panel` | Knowledge Panel | Entity information sidebar |
+| `sitelinks` | Sitelinks | Additional site links under main result |
+| `reviews` | Reviews | Star ratings and review snippets |
+| `faq` | FAQ | FAQ rich snippet |
+| `product` | Product | Product listing with price/availability |
+
+### API Endpoints Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/metadata/serp-features` | GET | Fetch available SERP feature options |
+| `/api/v1/sites/{siteId}/keywords?serpFeature=` | GET | Filter keywords by SERP feature |
+| `/api/v1/sites/{siteId}/keywords?present=true` | GET | Show only keywords with features |
+| `/api/v1/sites/{siteId}/keywords?serpFeature=X,Y` | GET | Multiple feature filter (comma-separated) |
+
+### URL State Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `serpFeature` | string | Selected SERP feature value |
+| `present` | boolean | Filter to keywords with SERP features |
+
+**Example URL:**
+```
+/sites/1/keywords?serpFeature=featured_snippet&present=true
+```
+
+### Frontend Behavior
+
+| Area | Implementation |
+|------|----------------|
+| Data fetching | `useSERPFeatureOptions` hook with SWR for caching |
+| Loading state | Skeleton loader while fetching metadata |
+| Error handling | Graceful fallback to hardcoded options |
+| Dropdown interaction | Single-select with "All" as default |
+| Checkbox behavior | Independent toggle, can combine with dropdown |
+| Filter combination | All filters applied together (AND logic) |
+| URL sync | React Router query params, browser history support |
+| Tag display | Active filters shown as removable tags |
+| Keyboard accessibility | Full keyboard navigation support |
+| ARIA labels | Screen reader compatible |
+
+### Test Coverage
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Unit Tests | 23 | ✅ PASS |
+| Integration Tests | 16 | ✅ PASS |
+| **Total** | **39** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 5 | Component structure, dropdown display |
+| Dynamic Options | 4 | Metadata API integration |
+| Filter Application | 6 | Dropdown and checkbox functionality |
+| Combined Filters | 3 | Multiple filters working together |
+| URL State | 4 | Query parameter persistence |
+| Loading States | 2 | Skeleton display during fetch |
+| Error Handling | 2 | Fallback to default options |
+| Keyboard Navigation | 3 | Tab, Enter, Escape support |
+| Accessibility | 3 | ARIA labels, roles |
+| Active Tags | 3 | Tag display and removal |
+| Clear Button | 2 | Reset functionality |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | Input sanitization, no dangerouslySetInnerHTML |
+| SQL Injection | Backend validates serpFeature against whitelist |
+| Invalid Feature | Backend returns 400 with valid options list |
+| Input Validation | Zod schema for filter state |
+
+### Production Validation
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T193115Z-ad1d0cf4` |
+| Commit | `9c2cc384b0e58acfbc7674e4f48d6eb8699a2377` |
+| Production URL | `https://seoindicator.com` |
+| Status | Complete |
+
+**Production Endpoint Verification:**
+| Endpoint | Response | Status |
+|----------|----------|--------|
+| `GET /api/v1/metadata/serp-features` | 200 with 10 options | ✅ |
+| `GET /api/v1/sites/1/keywords?serpFeature=featured_snippet` | 200 OK | ✅ |
+| `GET /api/v1/sites/1/keywords?present=true` | 200 OK | ✅ |
+| `GET /api/v1/sites/1/keywords?serpFeature=featured_snippet&present=true` | 200 OK | ✅ |
+| `GET /api/v1/sites/1/keywords?serpFeature=featured_snippet,local_pack` | 200 OK | ✅ |
+
+**Security Tests:**
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| XSS | `<script>` in serpFeature | 400 VALIDATION_ERROR | 400 | ✅ |
+| SQL Injection | `' OR 1=1` in serpFeature | 400 VALIDATION_ERROR | 400 | ✅ |
+| Invalid Feature | `invalid_feature` | 400 with valid options | 400 | ✅ |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-7-12 | Done ✅ | Backend filter-by-feature parameter |
+
+### Related Tasks
+- TASK-7-12: Backend SERP Feature Filter Parameter
+- TASK-7-1: Keywords Dashboard (parent surface)
+- TASK-7-17: SERP Features Column in Keywords Table
+
+---
 ## Content Decay API Controllers (TASK-36-10)
 
 ### Feature Description
