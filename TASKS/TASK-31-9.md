@@ -1,7 +1,7 @@
 # TASK-31-9: Retry Policy Implementation
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -419,3 +419,35 @@ Starting production deployment via local/self-hosted pipeline.
 
 **Status:** `To Document` - Ready for DocSystemAnalyst
 **Next Agent:** DocSystemAnalyst for documentation update
+
+### [2026-03-14 12:00 GMT+2] DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Updated:**
+- Added new section to `DOCUMENTATION.md` for AI Retry Policy (TASK-31-9)
+- Documented all core functionalities, configuration constants, and error classification
+- Included retry flow diagram and exponential backoff formula
+- Added test coverage summary (84 tests, 148 assertions)
+- Documented production deployment status
+
+**Key Documentation Highlights:**
+1. **Retry Configuration:** MAX_RETRIES=3, BASE_DELAY_MS=1000, MAX_DELAY_MS=10000, JITTER_PERCENT=10%
+2. **Retryable Errors:** 429, 500, 502, 503, 504 + TimeoutException, ServiceUnavailableException, ConnectionException
+3. **Non-Retryable Errors:** 400, 401, 403, 404, 422 (fail fast)
+4. **Rate Limit Handling:** Respects Retry-After header up to 60 seconds max
+5. **Content-Aware Retry:** Truncates 30% for content >50K tokens on retry (attempt 2+)
+6. **Exponential Backoff:** 1s → 2s → 4s with ±10% jitter
+
+**Production Status:**
+- Deployed: 2026-03-13
+- Deployment ID: `20260313T175255Z-94b929bf`
+- Commit: `68aa3573a03b75faa2b0ce27c472c2dad8257236`
+- Tests: 84/84 passing (148 assertions)
+
+**Note:** Not all tasks under SPEC-31 are complete. Remaining tasks:
+- TASK-31-11: To Develop
+- TASK-31-13: To Develop
+- TASK-31-14: Documentation
+
+**Status:** `Done` - Task complete
+**Next Agent:** None (task closed)

@@ -1,6 +1,231 @@
 # DOCUMENTATION.md
 
 ---
+## AI Retry Policy (TASK-31-9)
+
+### Feature Description
+Comprehensive retry policy service for the Unified AI Prompt + Context Management feature (FEAT-031) that implements intelligent retry decisions for AI requests. Provides exponential backoff with jitter, error classification, and rate limit handling for resilient AI API communication.
+
+### Component Locations
+- **Service:** `backend/app/Services/AI/RetryPolicy.php`
+- **DTOs:** `backend/app/Services/AI/DTOs/RetryDecision.php`, `backend/app/Services/AI/DTOs/RetryStrategy.php`
+- **Exceptions:** 
+  - `backend/app/Exceptions/AI/RateLimitException.php`
+  - `backend/app/Exceptions/AI/TimeoutException.php`
+  - `backend/app/Exceptions/AI/ServiceUnavailableException.php`
+- **Tests:** `backend/tests/Unit/Services/AI/RetryPolicyTest.php`
+- **Test Documentation:** `TESTS/TEST-31-9.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `shouldRetry(Exception $e, int $attempt): bool` | Determine if request should be retried |
+| `getDelayMs(int $attempt): int` | Calculate delay before next retry |
+| `getMaxRetries(): int` | Return maximum retry count (3) |
+| `isRetryableError(Exception $e): bool` | Check if error is retryable |
+| `handleRateLimit(RateLimitException $e): RetryDecision` | Handle rate limit with Retry-After header |
+| `getRetryStrategy(string $content, int $attempt): RetryStrategy` | Content-aware retry with truncation |
+
+### Retry Configuration
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `MAX_RETRIES` | 3 | Maximum retry attempts |
+| `BASE_DELAY_MS` | 1000 | Base delay (1 second) |
+| `MAX_DELAY_MS` | 10000 | Maximum delay cap (10 seconds) |
+| `JITTER_PERCENT` | 0.1 (10%) | Random jitter percentage |
+| `MAX_RATE_LIMIT_WAIT_SECONDS` | 60 | Maximum wait for rate limit |
+| `LARGE_CONTENT_THRESHOLD` | 50000 tokens | Threshold for content truncation |
+| `TRUNCATION_RATIO` | 0.7 (70%) | Content retention on truncation |
+
+### Retryable HTTP Codes
+
+| Code | Description |
+|------|-------------|
+| 429 | Rate limited |
+| 500 | Internal server error |
+| 502 | Bad gateway |
+| 503 | Service unavailable |
+| 504 | Gateway timeout |
+
+### Non-Retryable HTTP Codes
+
+| Code | Description |
+|------|-------------|
+| 400 | Bad request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not found |
+| 422 | Validation error |
+
+### Exponential Backoff Formula
+
+```
+delay = min(BASE_DELAY_MS * 2^(attempt-1), MAX_DELAY_MS) ± jitter
+
+Example delays:
+- Attempt 1: 1000ms ± 10% (900-1100ms)
+- Attempt 2: 2000ms ± 10% (1800-2200ms)
+- Attempt 3: 4000ms ± 10% (3600-4400ms)
+- Attempt 4+: 10000ms ± 10% (max capped)
+```
+
+### RetryDecision DTO
+
+```php
+class RetryDecision
+{
+    public bool $shouldRetry;
+    public int $delayMs;
+    public ?string $reason;
+    
+    public static function retry(int $delayMs): self;
+    public static function fail(string $reason): self;
+}
+```
+
+### RetryStrategy DTO
+
+```php
+class RetryStrategy
+{
+    public string $type; // 'standard' | 'with_truncation'
+    public ?int $targetTokens;
+    
+    public static function standard(): self;
+    public static function withTruncation(int $targetTokens): self;
+}
+```
+
+### Rate Limit Handling
+
+```php
+// Respects Retry-After header up to 60 seconds max
+public function handleRateLimit(RateLimitException $e): RetryDecision
+{
+    $retryAfter = $e->getRetryAfter();
+    
+    if ($retryAfter > 60) {
+        return RetryDecision::fail('Rate limit exceeds acceptable wait time');
+    }
+    
+    return RetryDecision::retry($retryAfter * 1000);
+}
+```
+
+### Content-Aware Retry
+
+```php
+// Truncates large content on retry (attempt 2+)
+public function getRetryStrategy(string $content, int $attempt): RetryStrategy
+{
+    $tokens = $this->contextManager->estimateTokens($content);
+    
+    if ($tokens > 50000 && $attempt > 1) {
+        return RetryStrategy::withTruncation(
+            targetTokens: (int) ($tokens * 0.7) // 30% reduction
+        );
+    }
+    
+    return RetryStrategy::standard();
+}
+```
+
+### Retry Flow Diagram
+
+```
+Attempt 1 ──► Failure
+    │
+    ├─► Non-retryable (4xx) ──► Throw immediately
+    │
+    └─► Retryable (5xx, 429, timeout)
+            │
+            └─► Wait 1s ± jitter ──► Attempt 2 ──► Failure
+                                            │
+                                            └─► Wait 2s ± jitter ──► Attempt 3 ──► Failure
+                                                                    │
+                                                                    └─► Wait 4s ± jitter ──► Attempt 4
+                                                                                            │
+                                                                                            └─► Max retries ──► Throw
+```
+
+### Error Classification
+
+| Exception Type | Retryable | Notes |
+|----------------|-----------|-------|
+| `RateLimitException` | ✅ Yes | Respects Retry-After header |
+| `TimeoutException` | ✅ Yes | Network/processing timeout |
+| `ServiceUnavailableException` | ✅ Yes | Temporary service outage |
+| `ConnectionException` | ✅ Yes | Network connectivity issue |
+| `HttpException (429)` | ✅ Yes | Rate limited |
+| `HttpException (5xx)` | ✅ Yes | Server errors |
+| `HttpException (4xx)` | ❌ No | Client errors fail fast |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| No sensitive data in logs | Exception class and retry count only |
+| Graceful degradation | Returns failure decision instead of throwing |
+| Bounded delays | Maximum 10 seconds between retries |
+| Rate limit protection | Max 60 second wait for rate limits |
+
+### Performance Characteristics
+
+| Operation | Performance |
+|-----------|-------------|
+| `shouldRetry()` | < 1ms |
+| `getDelayMs()` | < 1ms |
+| `handleRateLimit()` | < 1ms |
+| 1000 calls | < 100ms |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| RetryPolicyTest | 84 | 148 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 7 | Method existence, instantiation |
+| shouldRetry() | 18 | All retryable/non-retryable scenarios |
+| getDelayMs() | 8 | Exponential backoff with jitter |
+| getMaxRetries() | 3 | Max retry configuration |
+| isRetryableError() | 15 | Error classification |
+| handleRateLimit() | 5 | Rate limit with Retry-After header |
+| getRetryStrategy() | 5 | Content-aware retry strategy |
+| Integration | 4 | Full retry flows |
+| Edge Cases | 7 | Null, empty, unicode, boundary |
+| Security | 3 | Input validation, malformed data |
+| Performance | 3 | Speed benchmarks (<100ms for 1000 calls) |
+| Acceptance Criteria | 6 | All 6 ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-13 |
+| Deployment ID | `20260313T175255Z-94b929bf` |
+| Commit | `68aa3573a03b75faa2b0ce27c472c2dad8257236` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-14 11:50 GMT+2 |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-31-2 | Done ✅ | ContextWindowManager for content-aware retry |
+
+### Related Tasks
+
+- TASK-31-6: OpenRouter Client (uses RetryPolicy)
+- TASK-31-7: AIAnalysisService (uses RetryPolicy)
+- TASK-31-5: AIQueryEngine (uses RetryPolicy)
+
+---
 ## Model Pricing API Endpoint (TASK-26-18)
 
 ### Feature Description
