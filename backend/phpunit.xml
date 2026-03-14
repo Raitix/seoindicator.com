@@ -27,6 +27,7 @@
         </include>
     </source>
     <php>
+        <ini name="memory_limit" value="4G"/>
         <env name="APP_KEY" value="base64:3hv5pBNXsUP3Uk5p/YIcMA2S/o86sngt7A39dHck/SQ="/>
         <env name="DB_TESTING_NO_TRANSACTIONS" value="true"/>
         <env name="APP_ENV" value="testing"/>

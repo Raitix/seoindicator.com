@@ -976,4 +976,58 @@ SEO Tools
 
 ---
 
-Last updated: 2026-03-10
+## Stripe Webhook Handler Testing (TASK-26-10)
+
+### TDD with Missing Dependencies
+- When dependencies don't exist (CreditService, StripeGatewayService), use `markTestSkipped()`
+- Create tests with mocked interfaces that show expected behavior
+- Document which tests need real implementation vs can run with mocks
+- Tests should still verify structure (class exists, method exists)
+
+### Security Testing for Webhooks
+- Always test signature verification with timing-constant comparison
+- Test invalid/missing/expired signatures return 401
+- Test that no sensitive data appears in error responses
+- Test idempotency to prevent double-processing
+- Test 5-second response timeout (Stripe requirement)
+
+### Test Organization for Webhook Handlers
+| Test File | Purpose |
+|-----------|---------|
+| Controller Test | HTTP endpoint, routing, response codes |
+| Service Test | Business logic, event routing, processing |
+| Verifier Test | Security-focused signature verification |
+
+### Stripe Webhook Test Categories
+- Signature verification (valid, invalid, missing, expired)
+- Event routing (payment succeeded, failed, refund)
+- Idempotency (duplicate prevention, concurrent handling)
+- Error handling (missing payment intent, user not found)
+- Edge cases (large payload, zero amount, currency)
+- Security (timing-constant comparison, no sensitive data)
+- HTTP method restrictions (405 for non-POST)
+- Response format (200/400/401/500)
+
+### Mock Patterns for Stripe
+```php
+// Create valid signature
+$timestamp = time();
+$signedPayload = "{$timestamp}.{$payload}";
+$signature = hash_hmac('sha256', $signedPayload, $this->webhookSecret);
+$stripeSignature = "t={$timestamp},v1={$signature}";
+
+// Check for Stripe SDK availability
+if (class_exists(\Stripe\Webhook::class)) {
+    // Use Stripe SDK verification
+}
+```
+
+### Stripe Signature Format
+- Format: `t={timestamp},v1={signature}`
+- Timestamp in seconds since epoch
+- Signature is HMAC-SHA256 of `{timestamp}.{payload}`
+- Must use timing-constant comparison (hash_equals)
+
+---
+
+Last updated: 2026-03-14
