@@ -1,6 +1,159 @@
 # DOCUMENTATION.md
 
 ---
+## Password Reset Flow (TASK-25-4)
+
+### Feature Description
+Password reset flow implementation for the Core Authentication feature (FEAT-025) that enables users to recover access to their accounts through a secure token-based email verification process. Provides forgot password and reset password endpoints with rate limiting, token expiration, and security measures to prevent email enumeration.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/PasswordResetController.php`
+- **Requests:** 
+  - `backend/app/Http/Requests/Auth/ForgotPasswordRequest.php`
+  - `backend/app/Http/Requests/Auth/ResetPasswordRequest.php`
+- **Notification:** `backend/app/Notifications/ResetPasswordNotification.php`
+- **Tests:** `backend/tests/Feature/Controllers/Api/V1/PasswordResetControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-25-4.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/forgot-password` | Request password reset link |
+| POST | `/api/v1/auth/reset-password` | Reset password with token |
+
+### Forgot Password Endpoint
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (always same for security):**
+```json
+{
+  "message": "If the email exists, a reset link has been sent."
+}
+```
+
+**Features:**
+- Email validation (required, valid format)
+- Rate limiting: 1 request per email per 60 seconds
+- Generic success response (no email enumeration)
+- 429 response with `retry_after` field when rate limited
+
+### Reset Password Endpoint
+
+**Request:**
+```json
+{
+  "token": "abc123...",
+  "email": "user@example.com",
+  "password": "newpassword123",
+  "password_confirmation": "newpassword123"
+}
+```
+
+**Success Response:**
+```json
+{
+  "message": "Password reset successful.",
+  "token": "1|xyz789..."
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `token` | Required, string |
+| `email` | Required, email format |
+| `password` | Required, min 8 chars, must contain letters and numbers |
+| `password_confirmation` | Required, must match password |
+
+**Security Actions on Reset:**
+- Validates token (60-minute expiration)
+- Clears `remember_token`
+- Revokes all existing Sanctum tokens
+- Creates new Sanctum token (7-day expiration)
+- Fires `PasswordReset` event
+
+### Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Token Expiration | 60 minutes | Time before reset link expires |
+| Rate Limit | 1 per email per 60s | Prevents abuse |
+| Password Min Length | 8 characters | Minimum password length |
+| Password Requirement | Letters + numbers | Password complexity rule |
+
+### Email Template
+
+**ResetPasswordNotification:**
+- Custom branded email layout
+- Link format: `{FRONTEND_URL}/reset-password/{token}?email={email}`
+- Shows 60-minute expiration time
+- Uses Laravel's built-in token generation
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| No Email Enumeration | Same response for existing/non-existing emails |
+| Rate Limiting | Cache-based, 60-second cooldown per email |
+| Token Single-Use | Laravel invalidates token after use |
+| Session Invalidation | All Sanctum tokens deleted on reset |
+| Remember Token Clear | `remember_token` set to null |
+| Token Expiration | 60-minute TTL |
+| Password Strength | Min 8 chars, letters + numbers required |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| PasswordResetControllerTest | 40 | 95 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Forgot Password (FP-*) | 12 | Email validation, rate limiting, generic response |
+| Reset Password (RP-*) | 18 | Token validation, password rules, session revocation |
+| Token Expiration (TE-*) | 5 | 60-minute TTL verification |
+| Edge Cases (EC-*) | 5 | SQL injection, XSS, boundary conditions |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T170624Z-4d937308` |
+| Commit | `decf565944b350ff066f93238cb2c3d0d8f776a3` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-14 17:09 UTC |
+| Status | Complete |
+
+### Production URLs
+
+| Page | URL |
+|------|-----|
+| Login | `https://seoindicator.com/login` |
+| Forgot Password | `https://seoindicator.com/forgot-password` |
+| Reset Password | `https://seoindicator.com/reset-password` |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-25-3 | Done ✅ | AuthController (shared auth infrastructure) |
+
+### Related Tasks
+
+- TASK-25-1: User Registration
+- TASK-25-2: Email Verification
+- TASK-25-3: Login/Logout
+
+---
 ## AI Retry Policy (TASK-31-9)
 
 ### Feature Description
@@ -3590,6 +3743,209 @@ This approach handles:
 - TASK-34-3: AIQueryEngine (produces responses parsed by MentionParser)
 - TASK-34-5: AIVisibilityService (uses MentionParser for analysis)
 - TASK-34-7: Query Job (uses MentionParser in background processing)
+
+---
+## AIVisibilityService (TASK-34-5)
+
+### Feature Description
+Main orchestration service for the AI Visibility Tracking feature (FEAT-034) that coordinates project management, query execution, analytics retrieval, and alert detection for Generative Engine Optimization (GEO). Implements the service layer pattern with dependency injection, providing a clean API for controllers and queue jobs.
+
+### Component Locations
+- **Service:** `backend/app/Services/AIVisibility/AIVisibilityService.php`
+- **Interface:** `backend/app/Services/AIVisibility/Contracts/AIVisibilityServiceInterface.php`
+- **Exception:** `backend/app/Services/AIVisibility/Exceptions/QueryLimitExceededException.php`
+- **Tests:** `backend/tests/Unit/Services/AIVisibility/AIVisibilityServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-34-5.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `getUserProjects(int $userId, array $filters)` | Get paginated list of user's projects with filters |
+| `getProject(int $projectId, int $userId)` | Get single project with ownership validation |
+| `createProject(int $userId, array $data)` | Create new visibility tracking project |
+| `updateProject(int $projectId, array $data)` | Update project with validation |
+| `deleteProject(int $projectId, int $userId)` | Delete project (soft/hard based on config) |
+| `runQueries(int $projectId)` | Dispatch queries across all platforms |
+| `getAnalytics(int $projectId, string $period)` | Get aggregated analytics with caching |
+| `getCompetitorComparison(int $projectId)` | Get brand vs competitors comparison |
+| `checkAlerts(int $projectId)` | Detect threshold breaches and create alerts |
+| `getQueryLimit(int $userId)` | Get user's monthly query limit by tier |
+| `getQueryUsage(int $userId)` | Get current month's query count |
+| `getRemainingQueries(int $userId)` | Get remaining queries for user |
+| `canRunQueries(int $userId, int $count)` | Check if user can run queries |
+
+### Query Limits by Tier
+
+| Tier | Queries/Month | Config Key |
+|------|---------------|------------|
+| Free | 5 | `ai-visibility.query_limits.free` |
+| Pro | 50 | `ai-visibility.query_limits.pro` |
+| Business | 200 | `ai-visibility.query_limits.business` |
+| Unlimited | ∞ (PHP_INT_MAX) | `ai-visibility.query_limits.unlimited` = `null` |
+
+### Alert Thresholds
+
+| Alert Type | Threshold | Config Key |
+|------------|-----------|------------|
+| Mention Spike | +20% | `ai-visibility.alert_thresholds.mention_spike` |
+| Mention Drop | -20% | `ai-visibility.alert_thresholds.mention_drop` |
+| Competitor Gain | +15% | `ai-visibility.alert_thresholds.competitor_gain` |
+
+### Cache Configuration
+
+| Cache Key | TTL | Description |
+|-----------|-----|-------------|
+| `ai_visibility_analytics_{id}_{period}` | 1 hour | Analytics data (day/week/month) |
+| `ai_visibility_comparison_{id}` | 1 hour | Competitor comparison data |
+
+### Project Data Validation
+
+| Field | Validation Rules |
+|-------|------------------|
+| `brand_name` | Required, string |
+| `keywords` | Optional, array of strings |
+| `competitors` | Optional, array, max 3 items |
+| `query_templates` | Optional, array |
+| `tracking_frequency` | Optional, enum: daily/weekly/monthly |
+| `is_active` | Optional, boolean |
+
+### Analytics Response Structure
+
+```php
+[
+    'mention_rate_by_platform' => [
+        'chatgpt' => 23.5,    // percentage
+        'perplexity' => 18.2,
+    ],
+    'share_of_voice' => 31.2,   // percentage
+    'sentiment_breakdown' => [
+        'positive' => 15,
+        'neutral' => 8,
+        'negative' => 2,
+    ],
+    'trend_direction' => 'up',  // up|down|stable
+    'total_queries' => 25,
+    'brand_mentions' => 12,
+    'competitor_mentions' => ['Ahrefs' => 5, 'SEMrush' => 3],
+    'period_start' => '2026-03-07',
+    'period_end' => '2026-03-14',
+    'last_updated' => '2026-03-14T10:30:00Z',
+]
+```
+
+### Competitor Comparison Response Structure
+
+```php
+[
+    'brand' => [
+        'name' => 'SEOIndicator',
+        'mention_count' => 12,
+        'mention_rate' => 48.0,  // percentage
+        'sentiment' => ['positive' => 8, 'neutral' => 3, 'negative' => 1],
+    ],
+    'competitors' => [
+        ['name' => 'Ahrefs', 'mention_count' => 8, 'mention_rate' => 32.0, 'sentiment' => [...]],
+        ['name' => 'SEMrush', 'mention_count' => 5, 'mention_rate' => 20.0, 'sentiment' => [...]],
+    ],
+    'winner' => 'SEOIndicator',  // or 'tie'
+    'gap_percentage' => 16.0,     // gap to next competitor
+]
+```
+
+### QueryLimitExceededException
+
+```php
+class QueryLimitExceededException extends Exception
+{
+    public int $limit;      // User's monthly limit
+    public int $used;       // Queries used this month
+    public string $tier;    // User's subscription tier
+    public int $remaining;  // Remaining queries (0)
+    
+    public function context(): array;  // For logging
+}
+```
+
+### Service Dependencies
+
+| Dependency | Type | Purpose |
+|------------|------|---------|
+| `AIQueryEngine` | Service | Query AI platforms via OpenRouter |
+| `MentionParser` | Service | Extract brand mentions from responses |
+| `LoggerInterface` | Service | Logging service operations |
+| `AIVisibilityProject` | Model | Project data model |
+| `AIQueryResult` | Model | Query result storage |
+| `AIMentionAnalytics` | Model | Aggregated analytics |
+| `AIVisibilityAlert` | Model | Alert storage |
+
+### Event Dispatching
+
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `ai-visibility.project.created` | Project created | `AIVisibilityProject` |
+| `ai-visibility.project.updated` | Project updated | `AIVisibilityProject` |
+| `ai-visibility.project.deleted` | Project deleted | `int $projectId` |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Ownership validation | `getProject()`, `updateProject()`, `deleteProject()` verify user_id |
+| AuthorizationException | Thrown for unauthorized access attempts |
+| ModelNotFoundException | Thrown for non-existent projects |
+| ValidationException | Thrown for invalid data (max 3 competitors) |
+| Query limit enforcement | `QueryLimitExceededException` when limit exceeded |
+| Cache isolation | Per-project cache keys prevent data leakage |
+
+### Delete Strategy Configuration
+
+```php
+// config/ai-visibility.php
+'delete_strategy' => env('AI_VISIBILITY_DELETE_STRATEGY', 'soft'),  // 'soft' or 'hard'
+```
+
+- **Soft delete:** Moves project to trash, preserves data
+- **Hard delete:** Permanently removes project and related data
+
+### Deployment Information
+
+| Attribute | Value |
+|-----------|-------|
+| Commit | `e9f96386` |
+| Deployment ID | `20260314T123536Z-06a580bb` |
+| Deployment Date | 2026-03-14 |
+| Health Check | ✅ 200 OK |
+| Tests | 120/120 passing (144 assertions) |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AIVisibilityServiceTest | 120 | 144 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 10 | Class existence, interface, DI |
+| createProject() | 15 | Validation, creation, events |
+| updateProject() | 12 | Ownership, partial updates |
+| deleteProject() | 12 | Ownership, soft/hard delete |
+| runQueries() | 18 | Dispatch, limits, tracking |
+| getAnalytics() | 15 | Aggregation, caching, periods |
+| getCompetitorComparison() | 12 | Brand vs competitors |
+| checkAlerts() | 12 | Threshold detection |
+| Query Limits | 10 | Tier limits, usage tracking |
+| Edge Cases | 14 | Unicode, XSS, boundaries |
+
+### Related Tasks
+- TASK-34-1: Database Migrations (tables used by service)
+- TASK-34-2: AIVisibilityProject Model (data layer)
+- TASK-34-3: AIQueryEngine (query execution)
+- TASK-34-4: MentionParser (response parsing)
+- TASK-34-6: Project CRUD API (uses service)
+- TASK-34-7: Query Job (uses service)
 
 ---
 ## Typography and Spacing Design System (TASK-28-2)
