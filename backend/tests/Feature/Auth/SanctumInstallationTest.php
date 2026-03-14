@@ -227,7 +227,7 @@ class SanctumInstallationTest extends TestCase
     #[Test]
     public function auth_middleware_returns_401_for_unauthenticated(): void
     {
-        $response = $this->getJson('/api/v1/user');
+        $response = $this->getJson('/api/v1/auth/user');
         
         $response->assertStatus(401);
     }

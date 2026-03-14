@@ -8380,6 +8380,193 @@ Content-Length: 15000
 - TASK-4-10: Template management API
 
 ---
+## Tier 1 Competitor Data Files (TASK-32-11)
+
+### Task Description
+Comprehensive competitor data files for Tier 1 SEO tools: Ahrefs, SEMrush, Moz, and Ubersuggest. Each file contains structured data for the comparison pages including pricing tiers, feature flags, pros/cons, and use case recommendations. Part of the Competitor Comparison Landing Pages feature (FEAT-032).
+
+### Component Locations
+- **Ahrefs:** `frontend/lib/compare/competitors/ahrefs.ts`
+- **SEMrush:** `frontend/lib/compare/competitors/semrush.ts`
+- **Moz:** `frontend/lib/compare/competitors/moz.ts`
+- **Ubersuggest:** `frontend/lib/compare/competitors/ubersuggest.ts`
+- **Types:** `frontend/lib/compare/types.ts` (CompetitorData interface)
+- **Task Specification:** `TASKS/TASK-32-11.md`
+
+### Data Structure
+
+Each competitor file exports a `CompetitorData` object with the following structure:
+
+```typescript
+interface CompetitorData {
+  id: string;                    // Competitor ID (e.g., 'ahrefs')
+  name: string;                  // Display name (e.g., 'Ahrefs')
+  tagline: string;               // Short tagline
+  logo: string;                  // Logo path or URL
+  url: string;                   // Official website URL
+  rating: number;                // Overall rating (1-5)
+  reviewCount: number;           // Number of reviews
+  description: string;           // Detailed description
+  pricing: PricingTier[];        // Pricing tiers
+  features: FeatureCategory[];   // Feature categories with flags
+  pros: string[];                // Pros list
+  cons: string[];                // Cons list
+  useCases: UseCase[];           // Use case recommendations
+  integrations: string[];        // Integration list
+  alternatives: string[];        // Alternative tools
+}
+```
+
+### Tier 1 Competitors
+
+| Competitor | ID | Market Position | Rating |
+|------------|-----|-----------------|--------|
+| Ahrefs | `ahrefs` | Premium all-in-one SEO suite | 4.8/5 |
+| SEMrush | `semrush` | Enterprise SEO & marketing platform | 4.7/5 |
+| Moz | `moz` | Established SEO toolset with Domain Authority | 4.5/5 |
+| Ubersuggest | `ubersuggest` | Budget-friendly SEO tool | 4.3/5 |
+
+### Pricing Data Summary
+
+#### Ahrefs Pricing
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Lite | $99/mo | $83/mo | 1 user, 5 projects, 5,000 tracked keywords |
+| Standard | $199/mo | $166/mo | 3 users, 10 projects, 10,000 tracked keywords |
+| Advanced | $399/mo | $333/mo | 5 users, 25 projects, 25,000 tracked keywords |
+| Enterprise | $999/mo | $833/mo | Unlimited users, 100 projects, 75,000 tracked keywords |
+
+#### SEMrush Pricing
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Pro | $129.95/mo | $108.33/mo | 1 user, 5 projects, 500 tracked keywords |
+| Guru | $249.95/mo | $208.33/mo | 3 users, 15 projects, 1,500 tracked keywords |
+| Business | $499.95/mo | $416.67/mo | 5 users, 40 projects, 5,000 tracked keywords |
+
+#### Moz Pricing
+| Tier | Monthly | Annual | Key Features |
+|------|---------|--------|--------------|
+| Starter | $99/mo | $79/mo | 1 user, 3 campaigns, 150 tracked keywords |
+| Standard | $179/mo | $143/mo | 3 users, 6 campaigns, 300 tracked keywords |
+| Medium | $299/mo | $239/mo | 5 users, 15 campaigns, 750 tracked keywords |
+| Large | $599/mo | $479/mo | 10 users, 30 campaigns, 1,500 tracked keywords |
+
+#### Ubersuggest Pricing
+| Tier | Monthly | Annual | Lifetime | Key Features |
+|------|---------|--------|----------|--------------|
+| Individual | $29/mo | $290/yr | $290 | 1 project, 100 tracked keywords |
+| Business | $49/mo | $490/yr | $490 | 3 projects, 250 tracked keywords |
+| Enterprise | $99/mo | $990/yr | $990 | 7 projects, 700 tracked keywords |
+
+### Feature Categories
+
+Each competitor includes feature flags for the following categories:
+
+| Category | Description |
+|----------|-------------|
+| Keyword Research | Keyword discovery, difficulty, volume analysis |
+| Backlink Analysis | Link profile, referring domains, anchor text |
+| Rank Tracking | Position monitoring, historical data |
+| Site Audit | Technical SEO scanning, issue detection |
+| Content Analysis | Content optimization, gap analysis |
+| Competitor Analysis | Competitive intelligence, comparison tools |
+| Reporting | Custom reports, white-label options |
+| API Access | API availability, rate limits |
+
+### Pros and Cons Summary
+
+#### Ahrefs
+**Pros:** Industry-leading backlink database, excellent site explorer, fast crawls, intuitive UI
+**Cons:** Premium pricing, no free tier, limited content marketing features
+
+#### SEMrush
+**Pros:** Comprehensive marketing suite, excellent keyword database, PPC data integration, strong reporting
+**Cons:** Expensive for small businesses, steep learning curve, annual commitment for best rates
+
+#### Moz
+**Pros:** Domain Authority metric, beginner-friendly, strong community/resources, white-hat SEO focus
+**Cons:** Smaller backlink database, slower updates, limited technical SEO features
+
+#### Ubersuggest
+**Pros:** Budget-friendly, lifetime deal available, AI content writer, simple interface
+**Cons:** Smaller data sets, limited advanced features, less accurate keyword data
+
+### Use Case Recommendations
+
+Each competitor includes structured use case data for the UseCaseSection component:
+
+| Competitor | Primary Use Cases |
+|------------|-------------------|
+| Ahrefs | Link building professionals, Enterprise SEO teams, Agencies with link-building focus |
+| SEMrush | Digital marketing agencies, Enterprise marketing teams, PPC + SEO combination needs |
+| Moz | SEO beginners, Small business owners, Content-focused SEO |
+| Ubersuggest | Budget-conscious solopreneurs, Small business owners, Content creators starting SEO |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `ahrefs.test.ts` | 15 | ✅ PASS |
+| `semrush.test.ts` | 15 | ✅ PASS |
+| `moz.test.ts` | 15 | ✅ PASS |
+| `ubersuggest.test.ts` | 15 | ✅ PASS |
+| **Total** | **60** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Data Structure | 4 | Required fields, types, validation |
+| Pricing Validation | 3 | Tier structure, price values, feature arrays |
+| Feature Flags | 3 | Boolean values, category coverage |
+| Pros/Cons | 2 | Non-empty arrays, string validation |
+| Use Cases | 2 | Audience/budget tags, description quality |
+| Data Quality | 1 | No duplicates, valid URLs |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| XSS Prevention | All data used via React props (escaped by default) |
+| No Sensitive Data | Public pricing/features only |
+| URL Validation | All URLs validated during tests |
+| Type Safety | TypeScript interfaces enforced |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 60/60 passing |
+| Status | Complete |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| `/compare/seoindicator-vs-ahrefs/` | ✅ Ahrefs data renders correctly |
+| `/compare/seoindicator-vs-semrush/` | ✅ SEMrush data renders correctly |
+| `/compare/seoindicator-vs-moz/` | ✅ Moz data renders correctly |
+| `/compare/seoindicator-vs-ubersuggest/` | ✅ Ubersuggest data renders correctly |
+| Pricing tables | ✅ All tiers display |
+| Feature comparison | ✅ All features show |
+| Pros/Cons lists | ✅ Balanced presentation |
+
+### Dependencies
+- TASK-32-1 (Types) - Done ✅
+- TASK-32-2 (Registry) - Done ✅
+
+### Related Tasks
+- TASK-32-1: Comparison Types (CompetitorData interface)
+- TASK-32-2: Competitor Registry (data loading)
+- TASK-32-3: Comparison Page Route (uses competitor data)
+- TASK-32-4: ComparisonPageContent component
+- TASK-32-5: ComparisonTable component
+- TASK-32-6: PricingComparison component
+- TASK-32-7: ProsConsCard component
+
+---
 ## Content Decay Database Migrations (TASK-36-1)
 
 ### Migration Description
