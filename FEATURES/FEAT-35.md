@@ -1,7 +1,7 @@
 # FEAT-035: Local SEO & Google Business Profile Tracking
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`

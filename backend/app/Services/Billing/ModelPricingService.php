@@ -5,78 +5,122 @@ namespace App\Services\Billing;
 use App\Models\AIModel;
 use App\Models\User;
 use App\Models\UserModelPreference;
+use App\Services\Billing\Contracts\ModelPricingServiceInterface;
+use App\Services\OpenRouterSyncService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Service for managing AI model data, pricing calculations, and OpenRouter sync.
+ * Service for managing AI model pricing and user preferences.
  *
  * TASK-26-16: ModelPricingService
  *
- * @see TEST-26-16 for test documentation
+ * Provides methods for:
+ * - Listing available AI models
+ * - Calculating analysis costs
+ * - Managing user default model preferences
+ * - Syncing models from OpenRouter
  */
-class ModelPricingService
+class ModelPricingService implements ModelPricingServiceInterface
 {
     /**
      * Cache key for available models.
      */
-    protected const CACHE_KEY_MODELS = 'ai_models_available';
+    private const CACHE_KEY_MODELS = 'ai_models:available';
 
     /**
-     * Cache TTL in seconds (1 hour).
+     * Cache key prefix for user default model.
      */
-    protected const CACHE_TTL = 3600;
+    private const CACHE_KEY_USER_DEFAULT = 'ai_models:user_default:';
 
     /**
-     * Get all active AI models.
-     *
-     * @return Collection<AIModel>
+     * Cache TTL for models (1 hour).
      */
-    public function getAvailableModels(): Collection
+    private const CACHE_TTL_MODELS = 3600;
+
+    /**
+     * Cache TTL for user preferences (24 hours).
+     */
+    private const CACHE_TTL_USER_PREF = 86400;
+
+    /**
+     * Token estimates by analysis type.
+     */
+    private const ANALYSIS_TOKENS = [
+        'quick' => ['input' => 400, 'output' => 100, 'total' => 500],
+        'standard' => ['input' => 1600, 'output' => 400, 'total' => 2000],
+        'deep' => ['input' => 4000, 'output' => 1000, 'total' => 5000],
+    ];
+
+    /**
+     * Input/output token ratio (4:1).
+     */
+    private const INPUT_OUTPUT_RATIO = 4;
+
+    /**
+     * Create a new service instance.
+     */
+    public function __construct(
+        protected OpenRouterSyncService $syncService
+    ) {}
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAvailableModels(bool $forceRefresh = false): Collection
     {
-        return Cache::remember(self::CACHE_KEY_MODELS, self::CACHE_TTL, function () {
-            return AIModel::where('is_active', true)->get();
-        });
+        if ($forceRefresh) {
+            Cache::forget(self::CACHE_KEY_MODELS);
+        }
+
+        return Cache::remember(
+            self::CACHE_KEY_MODELS,
+            self::CACHE_TTL_MODELS,
+            fn() => AIModel::active()
+                ->ordered()
+                ->get()
+        );
     }
 
     /**
-     * Get a single model by ID.
-     *
-     * @param int $id
-     * @return AIModel|null
+     * {@inheritdoc}
      */
     public function getModelById(int $id): ?AIModel
     {
-        return AIModel::find($id);
-    }
+        // Validate ID is positive integer
+        if ($id <= 0) {
+            return null;
+        }
 
-    /**
-     * Get a model by provider and model ID.
-     *
-     * @param string $provider
-     * @param string $modelId
-     * @return AIModel|null
-     */
-    public function getModelByProviderId(string $provider, string $modelId): ?AIModel
-    {
-        return AIModel::where('provider', $provider)
-            ->where('model_id', $modelId)
-            ->where('is_active', true)
+        return AIModel::active()
+            ->where('id', $id)
             ->first();
     }
 
     /**
-     * Get pricing breakdown for a model.
-     *
-     * @param string $modelId
-     * @return array|null
+     * {@inheritdoc}
+     */
+    public function getModelByProviderId(string $provider, string $modelId): ?AIModel
+    {
+        // Validate parameters
+        if (empty($provider) || empty($modelId)) {
+            return null;
+        }
+
+        return AIModel::active()
+            ->where('provider', $provider)
+            ->where('model_id', $modelId)
+            ->first();
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function getModelPricing(string $modelId): ?array
     {
-        $model = AIModel::where('model_id', $modelId)
-            ->where('is_active', true)
+        $model = AIModel::active()
+            ->where('model_id', $modelId)
             ->first();
 
         if (!$model) {
@@ -84,197 +128,143 @@ class ModelPricingService
         }
 
         return [
+            'model_id' => $model->model_id,
             'input_per_1k' => (float) $model->cost_per_1k_input,
             'output_per_1k' => (float) $model->cost_per_1k_output,
-            'input_per_1m' => (float) $model->cost_per_1k_input * 1000,
-            'output_per_1m' => (float) $model->cost_per_1k_output * 1000,
+            'input_per_1m' => (float) ($model->cost_per_1k_input * 1000),
+            'output_per_1m' => (float) ($model->cost_per_1k_output * 1000),
+            'is_free_tier' => (bool) $model->is_free_tier,
         ];
     }
 
     /**
-     * Calculate analysis cost based on tokens.
-     *
-     * @param string $modelId
-     * @param int $estimatedTokens Total or input tokens
-     * @param int|null $outputTokens Output tokens (optional, estimated if not provided)
-     * @return float Cost rounded to 2 decimal places
+     * {@inheritdoc}
      */
-    public function calculateAnalysisCost(string $modelId, int $estimatedTokens, ?int $outputTokens = null): float
+    public function calculateAnalysisCost(string $modelId, int $estimatedTokens, string $analysisType = 'standard'): array
     {
-        $pricing = $this->getModelPricing($modelId);
-
-        if (!$pricing) {
-            return 0.0;
+        // Handle non-positive token counts
+        if ($estimatedTokens <= 0) {
+            return $this->emptyCostResult($modelId, $analysisType);
         }
 
-        // If only total tokens provided, estimate 70% input / 30% output
-        if ($outputTokens === null) {
-            $inputTokens = (int) ($estimatedTokens * 0.7);
-            $outputTokens = (int) ($estimatedTokens * 0.3);
-        } else {
-            $inputTokens = $estimatedTokens;
+        // Get the model
+        $model = AIModel::active()
+            ->where('model_id', $modelId)
+            ->first();
+
+        if (!$model) {
+            return $this->emptyCostResult($modelId, $analysisType);
         }
 
-        $inputCost = ($inputTokens / 1000) * $pricing['input_per_1k'];
-        $outputCost = ($outputTokens / 1000) * $pricing['output_per_1k'];
+        // Free tier models have no cost
+        if ($model->is_free_tier) {
+            $tokenData = $this->calculateTokenSplit($estimatedTokens, $analysisType);
+            return [
+                'model_id' => $modelId,
+                'analysis_type' => $analysisType,
+                'input_tokens' => $tokenData['input_tokens'],
+                'output_tokens' => $tokenData['output_tokens'],
+                'input_cost' => 0.0,
+                'output_cost' => 0.0,
+                'total_cost' => 0,
+            ];
+        }
 
-        return round($inputCost + $outputCost, 2);
+        // Calculate token split based on analysis type
+        $tokenData = $this->calculateTokenSplit($estimatedTokens, $analysisType);
+
+        // Calculate costs
+        $inputCost = ($tokenData['input_tokens'] / 1000) * (float) $model->cost_per_1k_input;
+        $outputCost = ($tokenData['output_tokens'] / 1000) * (float) $model->cost_per_1k_output;
+        $totalCost = $inputCost + $outputCost;
+
+        return [
+            'model_id' => $modelId,
+            'analysis_type' => $analysisType,
+            'input_tokens' => $tokenData['input_tokens'],
+            'output_tokens' => $tokenData['output_tokens'],
+            'input_cost' => round($inputCost, 6),
+            'output_cost' => round($outputCost, 6),
+            'total_cost' => round($totalCost, 2), // Rounded to 2 decimal places
+        ];
     }
 
     /**
-     * Sync models from OpenRouter API.
-     *
-     * @return int Number of models synced
+     * {@inheritdoc}
      */
     public function syncModelsFromOpenRouter(): int
     {
         try {
-            $response = Http::timeout(30)
-                ->get('https://openrouter.ai/api/v1/models');
+            $count = $this->syncService->syncModels();
 
-            if (!$response->successful()) {
-                Log::warning('OpenRouter sync failed', [
-                    'status' => $response->status(),
-                ]);
-                return 0;
-            }
+            // Invalidate cache after sync
+            Cache::forget(self::CACHE_KEY_MODELS);
 
-            $data = $response->json('data', []);
-            $syncedCount = 0;
-            $seenModelIds = [];
-
-            foreach ($data as $modelData) {
-                if (empty($modelData['id']) || empty($modelData['name'])) {
-                    continue;
-                }
-
-                $seenModelIds[] = $modelData['id'];
-
-                $pricing = $modelData['pricing'] ?? [];
-                $promptPrice = max(0, (float) ($pricing['prompt'] ?? 0));
-                $completionPrice = max(0, (float) ($pricing['completion'] ?? 0));
-
-                $capabilities = $this->parseCapabilities($modelData);
-
-                $model = AIModel::updateOrCreate(
-                    [
-                        'provider' => 'openrouter',
-                        'model_id' => $modelData['id'],
-                    ],
-                    [
-                        'display_name' => substr($modelData['name'], 0, 255),
-                        'cost_per_1k_input' => $promptPrice * 1000,
-                        'cost_per_1k_output' => $completionPrice * 1000,
-                        'context_window' => (int) ($modelData['context_length'] ?? 4096),
-                        'is_free_tier' => $promptPrice == 0 && $completionPrice == 0,
-                        'capabilities' => !empty($capabilities) ? json_encode($capabilities) : null,
-                        'is_active' => true,
-                        'last_synced_at' => now(),
-                    ]
-                );
-
-                $syncedCount++;
-            }
-
-            // Deactivate models not in API response
-            if (!empty($seenModelIds)) {
-                AIModel::where('provider', 'openrouter')
-                    ->whereNotIn('model_id', $seenModelIds)
-                    ->update(['is_active' => false]);
-            }
-
-            // Invalidate cache
-            $this->invalidateModelCache();
-
-            Log::info('OpenRouter sync completed', [
-                'synced' => $syncedCount,
-                'deactivated' => count($seenModelIds) > 0 ? AIModel::where('provider', 'openrouter')->where('is_active', false)->count() : 0,
+            Log::info('OpenRouter model sync completed', [
+                'synced_count' => $count,
             ]);
 
-            return $syncedCount;
+            return $count;
         } catch (\Exception $e) {
-            Log::error('OpenRouter sync error', [
-                'message' => $e->getMessage(),
+            Log::error('OpenRouter model sync failed', [
+                'error' => $e->getMessage(),
             ]);
+
+            // Still invalidate cache to ensure fresh data on next request
+            Cache::forget(self::CACHE_KEY_MODELS);
+
             return 0;
         }
     }
 
     /**
-     * Parse capabilities from model data.
-     *
-     * @param array $modelData
-     * @return array
-     */
-    protected function parseCapabilities(array $modelData): array
-    {
-        $capabilities = [];
-
-        $modality = $modelData['architecture']['modality'] ?? '';
-        if (str_contains($modality, 'image')) {
-            $capabilities['vision'] = true;
-        }
-
-        return $capabilities;
-    }
-
-    /**
-     * Invalidate the model cache.
-     */
-    public function invalidateModelCache(): void
-    {
-        Cache::forget(self::CACHE_KEY_MODELS);
-    }
-
-    /**
-     * Get user's default model.
-     *
-     * @param User $user
-     * @return AIModel|null
+     * {@inheritdoc}
      */
     public function getUserDefaultModel(User $user): ?AIModel
     {
-        $cacheKey = "user_default_model:{$user->id}";
+        $cacheKey = self::CACHE_KEY_USER_DEFAULT . $user->id;
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($user) {
-            $preference = UserModelPreference::where('user_id', $user->id)
-                ->where('is_default', true)
-                ->first();
+        // Try to get model ID from cache
+        $modelId = Cache::remember(
+            $cacheKey,
+            self::CACHE_TTL_USER_PREF,
+            function () use ($user) {
+                $preference = UserModelPreference::where('user_id', $user->id)
+                    ->where('is_default', true)
+                    ->first();
 
-            if (!$preference) {
-                return null;
+                return $preference?->model_id;
             }
+        );
 
-            $model = AIModel::where('id', $preference->model_id)
-                ->where('is_active', true)
-                ->first();
+        if (!$modelId) {
+            return null;
+        }
 
-            return $model;
-        });
+        // Look up the model and ensure it's still active
+        return AIModel::active()->find($modelId);
     }
 
     /**
-     * Set user's default model.
-     *
-     * @param User $user
-     * @param int $modelId
-     * @throws \InvalidArgumentException If model is not active
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If model doesn't exist
+     * {@inheritdoc}
      */
     public function setUserDefaultModel(User $user, int $modelId): void
     {
-        $model = AIModel::findOrFail($modelId);
+        // Validate model exists and is active
+        $model = AIModel::active()->find($modelId);
 
-        if (!$model->is_active) {
-            throw new \InvalidArgumentException('Cannot set inactive model as default');
+        if (!$model) {
+            throw new \InvalidArgumentException(
+                "Model with ID {$modelId} does not exist or is not active."
+            );
         }
 
-        // Clear any existing default
+        // Clear any existing default for this user
         UserModelPreference::where('user_id', $user->id)
             ->where('is_default', true)
             ->update(['is_default' => false]);
 
-        // Create or update preference
+        // Update existing preference or create new one
         UserModelPreference::updateOrCreate(
             [
                 'user_id' => $user->id,
@@ -285,7 +275,57 @@ class ModelPricingService
             ]
         );
 
-        // Invalidate user default cache
-        Cache::forget("user_default_model:{$user->id}");
+        // Invalidate user's default model cache
+        Cache::forget(self::CACHE_KEY_USER_DEFAULT . $user->id);
+    }
+
+    /**
+     * Calculate token split based on estimated tokens and analysis type.
+     *
+     * @param int $estimatedTokens
+     * @param string $analysisType
+     * @return array
+     */
+    private function calculateTokenSplit(int $estimatedTokens, string $analysisType): array
+    {
+        // Use predefined token counts for standard analysis types
+        if (isset(self::ANALYSIS_TOKENS[$analysisType])) {
+            $ratios = self::ANALYSIS_TOKENS[$analysisType];
+            
+            // Use the predefined input/output split for this analysis type
+            return [
+                'input_tokens' => $ratios['input'],
+                'output_tokens' => $ratios['output'],
+            ];
+        }
+
+        // For custom analysis types, calculate based on 4:1 input/output ratio
+        $inputTokens = (int) ($estimatedTokens * self::INPUT_OUTPUT_RATIO / (self::INPUT_OUTPUT_RATIO + 1));
+        $outputTokens = $estimatedTokens - $inputTokens;
+
+        return [
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+        ];
+    }
+
+    /**
+     * Return an empty cost result for invalid scenarios.
+     *
+     * @param string $modelId
+     * @param string $analysisType
+     * @return array
+     */
+    private function emptyCostResult(string $modelId, string $analysisType): array
+    {
+        return [
+            'model_id' => $modelId,
+            'analysis_type' => $analysisType,
+            'input_tokens' => 0,
+            'output_tokens' => 0,
+            'input_cost' => 0.0,
+            'output_cost' => 0.0,
+            'total_cost' => 0,
+        ];
     }
 }
