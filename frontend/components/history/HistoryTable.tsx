@@ -46,7 +46,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
     running: {
       label: "Running",
       className: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      icon: <Loader2 className="h-3 w-3 animate-spin mr-1" />,
+      icon: <Loader2 className="h-3 w-3 animate-spin mr-1" data-testid="status-spinner" />,
     },
   };
 
@@ -180,8 +180,8 @@ export function HistoryTable({
   // Empty state handled by parent
 
   return (
-    <div className="rounded-lg border border-slate-800 overflow-hidden" data-testid="history-table">
-      <Table>
+    <div className="rounded-lg border border-slate-800 overflow-x-auto" data-testid="table-container">
+      <Table aria-label="Analysis history" data-testid="history-table">
         <TableHeader>
           <TableRow className="border-slate-800 hover:bg-slate-900 bg-slate-900/50">
             <TableHead className="text-slate-400 font-medium">Tool</TableHead>

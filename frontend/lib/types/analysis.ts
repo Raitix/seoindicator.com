@@ -172,6 +172,7 @@ export interface AnalysisDetailsModalProps {
   analysis: AnalysisDetail | null;
   isOpen: boolean;
   onClose: () => void;
+  isLoading?: boolean;
 }
 
 export interface DeleteConfirmationDialogProps {
