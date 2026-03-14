@@ -2,29 +2,23 @@
 
 namespace App\Services\Crawler;
 
+use App\Models\CrawlJob;
+use App\Models\CrawlPage;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 
 /**
- * Basic CrawlerService implementation.
+ * CrawlerService implementation for the Headless Crawler Service.
  *
- * This is a placeholder implementation that will be enhanced by the full
- * implementation from TASK-22-3. It provides basic functionality for
- * the CrawlController to work with.
+ * Manages crawl jobs, tracks progress, and stores crawled content.
+ * Uses database storage for persistence and job tracking.
  *
- * @see TASK-22-11
  * @see TASK-22-3
+ * @see TASK-22-18
  * @see SPEC-022
  */
 class CrawlerService implements CrawlerServiceInterface
 {
-    /**
-     * @var array In-memory storage for testing purposes
-     * In production, this will be replaced with database storage
-     */
-    protected array $jobs = [];
-
     /**
      * @var int|null Current authenticated user ID for authorization
      */
@@ -53,33 +47,23 @@ class CrawlerService implements CrawlerServiceInterface
     public function createJob(int $userId, string $url, array $options = []): array
     {
         $jobId = 'crawl-' . Str::uuid()->toString();
-
         $depth = $options['depth'] ?? 0;
         $estimatedTime = $this->calculateEstimatedTime($depth);
 
-        $job = [
-            'jobId' => $jobId,
-            'status' => 'queued',
-            'url' => $url,
-            'depth' => $depth,
-            'estimatedTime' => $estimatedTime,
-            'message' => 'Crawl job queued for processing',
+        // Create database record
+        $crawlJob = CrawlJob::create([
             'user_id' => $userId,
-            'options' => $options,
-            'pagesCrawled' => 0,
-            'totalSize' => 0,
-            'sizeFormatted' => '0 B',
-            'startedAt' => null,
-            'completedAt' => null,
-            'duration' => null,
-            'contentUrl' => "/api/v1/crawler/jobs/{$jobId}/content",
-            'error' => null,
-            'created_at' => now()->toIso8601String(),
-        ];
+            'job_id' => $jobId,
+            'url' => $url,
+            'status' => CrawlJob::STATUS_QUEUED,
+            'depth' => $depth,
+            'options' => $options['options'] ?? [],
+            'pages_crawled' => 0,
+            'total_size' => 0,
+            'expires_at' => now()->addHours(24),
+        ]);
 
-        $this->jobs[$jobId] = $job;
-
-        return $job;
+        return $this->formatJobResponse($crawlJob);
     }
 
     /**
@@ -93,18 +77,20 @@ class CrawlerService implements CrawlerServiceInterface
      */
     public function getJob(string $jobId): ?array
     {
-        if (!isset($this->jobs[$jobId])) {
+        $query = CrawlJob::where('job_id', $jobId);
+
+        // Apply authorization if user is set
+        if ($this->currentUserId !== null) {
+            $query->where('user_id', $this->currentUserId);
+        }
+
+        $crawlJob = $query->first();
+
+        if (!$crawlJob) {
             return null;
         }
 
-        $job = $this->jobs[$jobId];
-
-        // Authorization check: only return if belongs to current user
-        if ($this->currentUserId !== null && $job['user_id'] !== $this->currentUserId) {
-            return null;
-        }
-
-        return $job;
+        return $this->formatJobResponse($crawlJob);
     }
 
     /**
@@ -117,24 +103,29 @@ class CrawlerService implements CrawlerServiceInterface
      */
     public function cancelJob(string $jobId): ?bool
     {
-        if (!isset($this->jobs[$jobId])) {
-            return null;
+        $query = CrawlJob::where('job_id', $jobId);
+
+        // Apply authorization if user is set
+        if ($this->currentUserId !== null) {
+            $query->where('user_id', $this->currentUserId);
         }
 
-        $job = $this->jobs[$jobId];
+        $crawlJob = $query->first();
 
-        // Authorization check
-        if ($this->currentUserId !== null && $job['user_id'] !== $this->currentUserId) {
+        if (!$crawlJob) {
             return null;
         }
 
         // Can only cancel queued or running jobs
-        if (!in_array($job['status'], ['queued', 'running'])) {
+        if (!$crawlJob->canBeCancelled()) {
             return false;
         }
 
-        $this->jobs[$jobId]['status'] = 'cancelled';
-        $this->jobs[$jobId]['completedAt'] = now()->toIso8601String();
+        $crawlJob->update([
+            'status' => CrawlJob::STATUS_CANCELLED,
+            'cancelled_at' => now(),
+            'completed_at' => now(),
+        ]);
 
         return true;
     }
@@ -149,30 +140,35 @@ class CrawlerService implements CrawlerServiceInterface
      */
     public function getJobContent(string $jobId): ?array
     {
-        if (!isset($this->jobs[$jobId])) {
-            return null;
+        $query = CrawlJob::where('job_id', $jobId);
+
+        // Apply authorization if user is set
+        if ($this->currentUserId !== null) {
+            $query->where('user_id', $this->currentUserId);
         }
 
-        $job = $this->jobs[$jobId];
+        $crawlJob = $query->first();
 
-        // Authorization check
-        if ($this->currentUserId !== null && $job['user_id'] !== $this->currentUserId) {
+        if (!$crawlJob) {
             return null;
         }
 
         // Only return content for completed jobs
-        if ($job['status'] !== 'completed') {
+        if ($crawlJob->status !== CrawlJob::STATUS_COMPLETED) {
             return null;
         }
 
+        $pages = $crawlJob->pages()
+            ->orderBy('depth')
+            ->orderBy('url')
+            ->get()
+            ->map(fn ($page) => $this->formatPageResponse($page))
+            ->toArray();
+
         return [
             'jobId' => $jobId,
-            'pages' => $job['pages'] ?? [],
-            'summary' => $job['summary'] ?? [
-                'totalPages' => 0,
-                'totalSize' => 0,
-                'depthDistribution' => [],
-            ],
+            'pages' => $pages,
+            'summary' => $this->calculateContentSummary($crawlJob, $pages),
         ];
     }
 
@@ -189,37 +185,177 @@ class CrawlerService implements CrawlerServiceInterface
         $perPage = min($filters['perPage'] ?? 15, 100);
         $status = $filters['status'] ?? null;
 
-        // Filter jobs by user
-        $userJobs = array_filter($this->jobs, function ($job) use ($userId, $status) {
-            $matchesUser = ($job['user_id'] ?? null) === $userId;
-            $matchesStatus = !$status || ($job['status'] ?? null) === $status;
-            return $matchesUser && $matchesStatus;
-        });
+        $query = CrawlJob::where('user_id', $userId);
 
-        // Sort by created_at descending
-        usort($userJobs, function ($a, $b) {
-            return strcmp($b['created_at'] ?? '', $a['created_at'] ?? '');
-        });
+        if ($status) {
+            $query->where('status', $status);
+        }
 
-        // Paginate
-        $total = count($userJobs);
-        $offset = ($page - 1) * $perPage;
-        $items = array_slice($userJobs, $offset, $perPage);
+        $query->orderBy('created_at', 'desc');
 
-        // Remove sensitive data
-        $items = array_map(function ($job) {
-            unset($job['user_id']);
-            unset($job['pages']);
-            unset($job['summary']);
-            return $job;
-        }, $items);
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Transform items to response format as objects
+        $items = collect($paginator->items())
+            ->map(fn ($job) => (object) $this->formatJobListResponse($job))
+            ->toArray();
 
         return new LengthAwarePaginator(
-            array_values($items),
-            $total,
-            $perPage,
-            $page
+            $items,
+            $paginator->total(),
+            $paginator->perPage(),
+            $paginator->currentPage()
         );
+    }
+
+    /**
+     * Format a crawl job for list response (includes snake_case keys for compatibility).
+     *
+     * @param CrawlJob $job
+     * @return array
+     */
+    protected function formatJobListResponse(CrawlJob $job): array
+    {
+        return [
+            'job_id' => $job->job_id,
+            'jobId' => $job->job_id,
+            'status' => $job->status,
+            'url' => $job->url,
+            'depth' => $job->depth,
+            'pages_crawled' => $job->pages_crawled,
+            'pagesCrawled' => $job->pages_crawled,
+            'total_size' => $job->total_size,
+            'totalSize' => $job->total_size,
+            'size_formatted' => $job->size_formatted,
+            'sizeFormatted' => $job->size_formatted,
+            'created_at' => $job->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Update the status of a crawl job.
+     *
+     * @param string $jobId The job identifier
+     * @param string $status The new status
+     * @return bool True if updated, false if not found
+     */
+    public function updateStatus(string $jobId, string $status): bool
+    {
+        $crawlJob = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$crawlJob) {
+            return false;
+        }
+
+        $data = ['status' => $status];
+
+        // Set timestamps based on status
+        if ($status === CrawlJob::STATUS_RUNNING) {
+            $data['started_at'] = now();
+        } elseif (in_array($status, [CrawlJob::STATUS_COMPLETED, CrawlJob::STATUS_FAILED])) {
+            $data['completed_at'] = now();
+        }
+
+        $crawlJob->update($data);
+
+        return true;
+    }
+
+    /**
+     * Store a page result for a crawl job.
+     *
+     * @param string $jobId The job identifier
+     * @param array $pageData The page data (url, depth, title, html, text, meta, links, size)
+     * @return CrawlPage|null The created page or null if job not found
+     */
+    public function storePageResult(string $jobId, array $pageData): ?CrawlPage
+    {
+        $crawlJob = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$crawlJob) {
+            return null;
+        }
+
+        return CrawlPage::create([
+            'crawl_job_id' => $crawlJob->id,
+            'url' => $pageData['url'],
+            'depth' => $pageData['depth'] ?? 0,
+            'title' => $pageData['title'] ?? null,
+            'rendered_html' => $pageData['html'] ?? null,
+            'structured_text' => $pageData['text'] ?? null,
+            'meta' => $pageData['meta'] ?? null,
+            'links' => $pageData['links'] ?? null,
+            'size' => $pageData['size'] ?? 0,
+            'crawled_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark a crawl job as failed.
+     *
+     * @param string $jobId The job identifier
+     * @param string $error The error message
+     * @return bool True if updated, false if not found
+     */
+    public function markJobFailed(string $jobId, string $error): bool
+    {
+        $crawlJob = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$crawlJob) {
+            return false;
+        }
+
+        // Truncate error if too long (TEXT field max is 65535 bytes)
+        if (strlen($error) > 65535) {
+            $error = substr($error, 0, 65532) . '...';
+        }
+
+        $crawlJob->update([
+            'status' => CrawlJob::STATUS_FAILED,
+            'error' => $error,
+            'completed_at' => now(),
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Increment the pages crawled count for a job.
+     *
+     * @param string $jobId The job identifier
+     * @return bool True if updated, false if not found
+     */
+    public function incrementPagesCrawled(string $jobId): bool
+    {
+        $crawlJob = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$crawlJob) {
+            return false;
+        }
+
+        $crawlJob->increment('pages_crawled');
+
+        return true;
+    }
+
+    /**
+     * Add to the total size for a job.
+     *
+     * @param string $jobId The job identifier
+     * @param int $size The size to add in bytes
+     * @return bool True if updated, false if not found
+     */
+    public function addTotalSize(string $jobId, int $size): bool
+    {
+        $crawlJob = CrawlJob::where('job_id', $jobId)->first();
+
+        if (!$crawlJob) {
+            return false;
+        }
+
+        $crawlJob->increment('total_size', $size);
+
+        return true;
     }
 
     /**
@@ -235,6 +371,106 @@ class CrawlerService implements CrawlerServiceInterface
     }
 
     /**
+     * Format a crawl job for API response.
+     *
+     * @param CrawlJob $job
+     * @param bool $stripSensitive Whether to remove sensitive data
+     * @return array
+     */
+    protected function formatJobResponse(CrawlJob $job, bool $stripSensitive = false): array
+    {
+        $response = [
+            'jobId' => $job->job_id,
+            'status' => $job->status,
+            'url' => $job->url,
+            'depth' => $job->depth,
+            'estimatedTime' => $this->calculateEstimatedTime($job->depth),
+            'message' => $this->getStatusMessage($job->status),
+            'pagesCrawled' => $job->pages_crawled,
+            'totalSize' => $job->total_size,
+            'sizeFormatted' => $job->size_formatted,
+            'startedAt' => $job->started_at?->toIso8601String(),
+            'completedAt' => $job->completed_at?->toIso8601String(),
+            'duration' => $job->duration,
+            'contentUrl' => $job->content_url,
+            'error' => $job->error,
+            'created_at' => $job->created_at?->toIso8601String(),
+        ];
+
+        if (!$stripSensitive) {
+            $response['user_id'] = $job->user_id;
+            $response['options'] = $job->options;
+        }
+
+        return $response;
+    }
+
+    /**
+     * Format a crawl page for API response.
+     *
+     * @param CrawlPage $page
+     * @return array
+     */
+    protected function formatPageResponse(CrawlPage $page): array
+    {
+        return [
+            'url' => $page->url,
+            'depth' => $page->depth,
+            'title' => $page->title,
+            'text' => $page->structured_text,
+            'meta' => $page->meta,
+            'links' => $page->links,
+            'size' => $page->size,
+            'sizeFormatted' => $page->size_formatted,
+            'error' => $page->error,
+            'crawledAt' => $page->crawled_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Calculate content summary for a job.
+     *
+     * @param CrawlJob $job
+     * @param array $pages
+     * @return array
+     */
+    protected function calculateContentSummary(CrawlJob $job, array $pages): array
+    {
+        $depthDistribution = [];
+        $totalSize = 0;
+
+        foreach ($pages as $page) {
+            $depth = $page['depth'] ?? 0;
+            $depthDistribution[$depth] = ($depthDistribution[$depth] ?? 0) + 1;
+            $totalSize += $page['size'] ?? 0;
+        }
+
+        return [
+            'totalPages' => count($pages),
+            'totalSize' => $totalSize,
+            'depthDistribution' => $depthDistribution,
+        ];
+    }
+
+    /**
+     * Get a human-readable status message.
+     *
+     * @param string $status
+     * @return string
+     */
+    protected function getStatusMessage(string $status): string
+    {
+        return match ($status) {
+            CrawlJob::STATUS_QUEUED => 'Crawl job queued for processing',
+            CrawlJob::STATUS_RUNNING => 'Crawl job is in progress',
+            CrawlJob::STATUS_COMPLETED => 'Crawl job completed successfully',
+            CrawlJob::STATUS_FAILED => 'Crawl job failed',
+            CrawlJob::STATUS_CANCELLED => 'Crawl job was cancelled',
+            default => 'Unknown status',
+        };
+    }
+
+    /**
      * Helper method to add a test job (for testing purposes).
      *
      * @param array $jobData
@@ -243,13 +479,29 @@ class CrawlerService implements CrawlerServiceInterface
     public function addTestJob(array $jobData): string
     {
         $jobId = $jobData['jobId'] ?? ('crawl-' . Str::uuid()->toString());
-        $this->jobs[$jobId] = array_merge([
-            'jobId' => $jobId,
-            'status' => 'queued',
-            'user_id' => null,
-            'created_at' => now()->toIso8601String(),
-        ], $jobData);
+
+        CrawlJob::create([
+            'user_id' => $jobData['user_id'] ?? null,
+            'job_id' => $jobId,
+            'url' => $jobData['url'] ?? 'https://example.com',
+            'status' => $jobData['status'] ?? 'queued',
+            'depth' => $jobData['depth'] ?? 0,
+            'options' => $jobData['options'] ?? [],
+            'pages_crawled' => $jobData['pages_crawled'] ?? 0,
+            'total_size' => $jobData['total_size'] ?? 0,
+            'expires_at' => now()->addHours(24),
+        ]);
+
         return $jobId;
+    }
+
+    /**
+     * Helper method to clear all jobs (for testing purposes).
+     */
+    public function clearJobs(): void
+    {
+        CrawlPage::truncate();
+        CrawlJob::truncate();
     }
 
     /**
@@ -259,14 +511,6 @@ class CrawlerService implements CrawlerServiceInterface
      */
     public function getAllJobs(): array
     {
-        return $this->jobs;
-    }
-
-    /**
-     * Helper method to clear all jobs (for testing purposes).
-     */
-    public function clearJobs(): void
-    {
-        $this->jobs = [];
+        return CrawlJob::all()->map(fn ($job) => $this->formatJobResponse($job))->toArray();
     }
 }

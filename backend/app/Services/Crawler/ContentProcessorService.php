@@ -22,6 +22,11 @@ use Psr\Log\LoggerInterface;
 class ContentProcessorService
 {
     /**
+     * Memory limit for HTML processing (512MB)
+     */
+    private const MEMORY_LIMIT = '512M';
+
+    /**
      * Maximum output size for structured text (500KB)
      */
     private const MAX_OUTPUT_SIZE = 500000;
@@ -52,6 +57,16 @@ class ContentProcessorService
     }
 
     /**
+     * Maximum input HTML size for processing (2MB)
+     */
+    private const MAX_INPUT_SIZE = 2000000;
+
+    /**
+     * Maximum recursion depth for text extraction
+     */
+    private const MAX_RECURSION_DEPTH = 100;
+
+    /**
      * Extract structured text from HTML content.
      *
      * Converts HTML to readable text while preserving:
@@ -74,9 +89,10 @@ class ContentProcessorService
             return '';
         }
 
-        // Set memory limit for processing
-        $previousLimit = ini_get('memory_limit');
-        ini_set('memory_limit', self::MEMORY_LIMIT);
+        // Truncate very large input to prevent memory exhaustion
+        if (strlen($html) > self::MAX_INPUT_SIZE) {
+            $html = substr($html, 0, self::MAX_INPUT_SIZE);
+        }
 
         try {
             $dom = $this->createDomDocument($html);
@@ -99,7 +115,7 @@ class ContentProcessorService
             $this->removeUnwantedElements($dom, $clonedNode);
 
             // Extract text with structure
-            $text = $this->extractTextFromNode($dom, $clonedNode, 0);
+            $text = $this->extractTextFromNode($dom, $clonedNode, 0, 0);
 
             // Normalize whitespace
             $text = $this->normalizeWhitespace($text);
@@ -107,17 +123,15 @@ class ContentProcessorService
             // Limit output size
             $text = $this->limitOutputSize($text);
 
+            // Clean up DOM to free memory
+            unset($clonedNode, $contentNode, $dom);
+
             return $text;
         } catch (\Throwable $e) {
             $this->logWarning('Failed to extract structured text', [
                 'error' => $e->getMessage(),
             ]);
             return '';
-        } finally {
-            // Restore previous memory limit
-            if ($previousLimit !== false) {
-                ini_set('memory_limit', $previousLimit);
-            }
         }
     }
 
@@ -176,6 +190,9 @@ class ContentProcessorService
 
             // Extract charset
             $result['charset'] = $this->extractCharset($xpath, $dom);
+
+            // Clean up DOM to free memory
+            unset($xpath, $dom);
 
             return $result;
         } catch (\Throwable $e) {
@@ -336,10 +353,16 @@ class ContentProcessorService
      * @param DOMDocument $dom
      * @param DOMNode $node
      * @param int $listIndex Counter for ordered lists
+     * @param int $depth Current recursion depth
      * @return string
      */
-    private function extractTextFromNode(DOMDocument $dom, DOMNode $node, int $listIndex = 0): string
+    private function extractTextFromNode(DOMDocument $dom, DOMNode $node, int $listIndex = 0, int $depth = 0): string
     {
+        // Prevent infinite recursion on malformed HTML
+        if ($depth > self::MAX_RECURSION_DEPTH) {
+            return '';
+        }
+
         $text = '';
 
         if ($node->nodeType === XML_TEXT_NODE) {
@@ -350,7 +373,7 @@ class ContentProcessorService
             // For non-element nodes, process children
             if ($node->hasChildNodes()) {
                 foreach ($node->childNodes as $child) {
-                    $text .= $this->extractTextFromNode($dom, $child, $listIndex) . ' ';
+                    $text .= $this->extractTextFromNode($dom, $child, $listIndex, $depth + 1) . ' ';
                 }
             }
             return trim($text);
@@ -362,7 +385,8 @@ class ContentProcessorService
         if (preg_match('/^h([1-6])$/', $tagName, $matches)) {
             $level = (int) $matches[1];
             $prefix = str_repeat('#', $level) . ' ';
-            $content = $this->extractTextFromNode($dom, $node, $listIndex);
+            // Get text content directly from heading to avoid recursion
+            $content = trim($node->textContent);
             return "\n" . $prefix . $content . "\n";
         }
 
@@ -371,7 +395,7 @@ class ContentProcessorService
             $text = "\n";
             foreach ($node->childNodes as $child) {
                 if ($child instanceof DOMElement && strtolower($child->tagName) === 'li') {
-                    $content = $this->extractTextFromNode($dom, $child, $listIndex);
+                    $content = $this->extractTextFromNode($dom, $child, $listIndex, $depth + 1);
                     $text .= "- " . $content . "\n";
                 }
             }
@@ -384,7 +408,7 @@ class ContentProcessorService
             $index = 1;
             foreach ($node->childNodes as $child) {
                 if ($child instanceof DOMElement && strtolower($child->tagName) === 'li') {
-                    $content = $this->extractTextFromNode($dom, $child, $listIndex);
+                    $content = $this->extractTextFromNode($dom, $child, $listIndex, $depth + 1);
                     $text .= $index . ". " . $content . "\n";
                     $index++;
                 }
@@ -412,7 +436,14 @@ class ContentProcessorService
 
         // Handle paragraphs and divs
         if ($tagName === 'p' || $tagName === 'div') {
-            $content = $this->extractTextFromNode($dom, $node, $listIndex);
+            // Process children, not the node itself
+            $content = '';
+            if ($node->hasChildNodes()) {
+                foreach ($node->childNodes as $child) {
+                    $content .= $this->extractTextFromNode($dom, $child, $listIndex, $depth + 1) . ' ';
+                }
+            }
+            $content = trim($content);
             if (!empty($content)) {
                 return "\n" . $content . "\n";
             }
@@ -431,14 +462,21 @@ class ContentProcessorService
 
         // Handle blockquote
         if ($tagName === 'blockquote') {
-            $content = $this->extractTextFromNode($dom, $node, $listIndex);
+            // Process children, not the node itself
+            $content = '';
+            if ($node->hasChildNodes()) {
+                foreach ($node->childNodes as $child) {
+                    $content .= $this->extractTextFromNode($dom, $child, $listIndex, $depth + 1) . ' ';
+                }
+            }
+            $content = trim($content);
             return "\n> " . $content . "\n";
         }
 
         // Handle other elements - process children
         if ($node->hasChildNodes()) {
             foreach ($node->childNodes as $child) {
-                $text .= $this->extractTextFromNode($dom, $child, $listIndex) . ' ';
+                $text .= $this->extractTextFromNode($dom, $child, $listIndex, $depth + 1) . ' ';
             }
         }
 
