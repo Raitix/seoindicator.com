@@ -1,7 +1,7 @@
 # TASK-26-2: Create Credit Model and Repository
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -171,6 +171,12 @@ Create Eloquent models and repository pattern for Credit and CreditTransaction e
 - Security: Mass assignment protection verified ✓
 
 **Ready for DevOps deployment.**
+
+### 2026-03-14 - DevOps
+**Deployment Started:**
+- Status changed to `In Deployment`
+- Running local deployment flow: `scripts/deploy-prod.ps1`
+- Implementation commit: fd565227 (TASK-26-2: Local testing complete)
 
 ---
 _Leave notes for the next agent here_
