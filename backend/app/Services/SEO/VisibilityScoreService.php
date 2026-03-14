@@ -182,7 +182,7 @@ class VisibilityScoreService
             'volume_component' => $volumeComponent,
             'backlink_component' => $backlinkComponent,
             'pwa_component' => 0.0, // PWA component deprecated, kept for backward compatibility
-            'keywords_count' => $project->keywords()->count() ?? 0,
+            'keywords_count' => method_exists($project, 'keywords') ? $project->keywords()->count() : 0,
             'calculated_at' => now(),
         ]);
 
