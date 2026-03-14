@@ -1,7 +1,7 @@
 # TASK-22-7: URL Validation and SSRF Protection
 
 ## STATUS
-`To Test Locally`
+`Testing Locally`
 
 ## PRIORITY
 `High`
