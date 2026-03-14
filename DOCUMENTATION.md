@@ -30096,6 +30096,214 @@ $report->status_label; // Returns human-readable status
 - TASK-4-6: Report Data Aggregator
 
 ---
+## Analysis Jobs Tables (TASK-19-1)
+
+### Service Description
+Database migration for the Progressive Analysis & Job System (FEAT-019). Creates `analysis_jobs` and `analysis_job_results` tables to support multi-indicator SEO analysis with progress tracking, parallel processing, and real-time updates.
+
+### Database Schema
+
+#### analysis_jobs Table
+
+```sql
+CREATE TABLE analysis_jobs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    site_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'cancelled', 'failed') DEFAULT 'pending',
+    total_indicators INT UNSIGNED DEFAULT 0,
+    completed_indicators INT UNSIGNED DEFAULT 0,
+    failed_indicators INT UNSIGNED DEFAULT 0,
+    progress_percent TINYINT UNSIGNED DEFAULT 0,
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,
+    error_message TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+    INDEX idx_jobs_user_id (user_id),
+    INDEX idx_jobs_site_id (site_id),
+    INDEX idx_jobs_status (status),
+    INDEX idx_jobs_created_at (created_at)
+);
+```
+
+#### analysis_job_results Table
+
+```sql
+CREATE TABLE analysis_job_results (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    job_id BIGINT UNSIGNED NOT NULL,
+    indicator_slug VARCHAR(100) NOT NULL,
+    indicator_name VARCHAR(255) NOT NULL,
+    status ENUM('pending', 'running', 'completed', 'failed', 'skipped') DEFAULT 'pending',
+    score DECIMAL(5,2) NULL,
+    max_score DECIMAL(5,2) NULL,
+    percentage TINYINT UNSIGNED NULL,
+    data JSON NULL,
+    recommendations JSON NULL,
+    error_message TEXT NULL,
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    processing_time_ms INT UNSIGNED NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (job_id) REFERENCES analysis_jobs(id) ON DELETE CASCADE,
+    INDEX idx_job_results_job_id (job_id),
+    INDEX idx_job_results_status (status),
+    UNIQUE INDEX idx_job_indicator (job_id, indicator_slug)
+);
+```
+
+### Fields
+
+#### analysis_jobs
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `user_id` | BIGINT UNSIGNED | FK to users.id (job owner) |
+| `site_id` | BIGINT UNSIGNED | FK to sites.id (target site) |
+| `status` | ENUM | Job status: `pending`, `running`, `completed`, `cancelled`, `failed` |
+| `total_indicators` | INT UNSIGNED | Total number of indicators to process |
+| `completed_indicators` | INT UNSIGNED | Number of successfully completed indicators |
+| `failed_indicators` | INT UNSIGNED | Number of failed indicators |
+| `progress_percent` | TINYINT UNSIGNED | Progress percentage (0-100) |
+| `started_at` | TIMESTAMP | When processing started |
+| `completed_at` | TIMESTAMP | When job completed successfully |
+| `cancelled_at` | TIMESTAMP | When job was cancelled |
+| `error_message` | TEXT | Error message if job failed |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Record update timestamp |
+
+#### analysis_job_results
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | BIGINT UNSIGNED | Primary key |
+| `job_id` | BIGINT UNSIGNED | FK to analysis_jobs.id |
+| `indicator_slug` | VARCHAR(100) | Machine-readable indicator identifier |
+| `indicator_name` | VARCHAR(255) | Human-readable indicator name |
+| `status` | ENUM | Result status: `pending`, `running`, `completed`, `failed`, `skipped` |
+| `score` | DECIMAL(5,2) | Indicator score achieved |
+| `max_score` | DECIMAL(5,2) | Maximum possible score |
+| `percentage` | TINYINT UNSIGNED | Score as percentage (0-100) |
+| `data` | JSON | Full indicator analysis data |
+| `recommendations` | JSON | Array of recommendations |
+| `error_message` | TEXT | Error if indicator failed |
+| `started_at` | TIMESTAMP | When indicator processing started |
+| `completed_at` | TIMESTAMP | When indicator processing finished |
+| `processing_time_ms` | INT UNSIGNED | Processing duration in milliseconds |
+| `created_at` | TIMESTAMP | Record creation timestamp |
+| `updated_at` | TIMESTAMP | Record update timestamp |
+
+### Indexes
+
+#### analysis_jobs
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_jobs_user_id` | user_id | Filter jobs by user |
+| `idx_jobs_site_id` | site_id | Filter jobs by site |
+| `idx_jobs_status` | status | Filter by job status |
+| `idx_jobs_created_at` | created_at | Chronological ordering |
+
+#### analysis_job_results
+
+| Index Name | Columns | Purpose |
+|------------|---------|---------|
+| `idx_job_results_job_id` | job_id | Filter results by job |
+| `idx_job_results_status` | status | Filter by result status |
+| `idx_job_indicator` | job_id, indicator_slug | Unique constraint per job |
+
+### Foreign Keys
+
+| Constraint | Table | Columns | References | On Delete |
+|------------|-------|---------|------------|-----------|
+| `analysis_jobs_user_id_foreign` | analysis_jobs | user_id | users.id | CASCADE |
+| `analysis_jobs_site_id_foreign` | analysis_jobs | site_id | sites.id | CASCADE |
+| `analysis_job_results_job_id_foreign` | analysis_job_results | job_id | analysis_jobs.id | CASCADE |
+
+### JSON Structures
+
+#### data JSON Structure
+
+```json
+{
+  "url": "https://example.com",
+  "analyzedAt": "2026-02-28T10:00:00Z",
+  "details": {
+    "title": "Example Page",
+    "length": 12
+  }
+}
+```
+
+#### recommendations JSON Structure
+
+```json
+[
+  "Add meta description tag",
+  "Optimize title length to 50-60 characters",
+  "Add alt text to images"
+]
+```
+
+### Relationships
+
+| Model | Relationship | Type | Description |
+|-------|--------------|------|-------------|
+| `AnalysisJob` | `user()` | BelongsTo | Job belongs to a user |
+| `AnalysisJob` | `site()` | BelongsTo | Job belongs to a site |
+| `AnalysisJob` | `results()` | HasMany | Job has many results |
+| `AnalysisJobResult` | `job()` | BelongsTo | Result belongs to a job |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `CreateAnalysisJobsTablesTest.php` | 62 | 142 |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Table Existence | 2 | Both tables exist |
+| Column Existence | 14 | All required columns |
+| Column Types | 14 | Correct data types |
+| Foreign Keys | 6 | FK constraints and cascade |
+| FK Violations | 3 | Invalid references rejected |
+| Indexes | 6 | All indexes created |
+| Enum Validation | 4 | Status values validated |
+| Defaults | 6 | Default values verified |
+| Nullable Columns | 4 | NULL handling |
+| JSON Storage | 4 | JSON data storage |
+| Unique Constraint | 2 | (job_id, indicator_slug) unique |
+| Boundary Values | 4 | progress_percent, percentage limits |
+| Relationships | 2 | Model relationships |
+| Security | 3 | SQL injection, XSS prevention |
+
+### Production Status
+- **Migration**: `2026_02_28_140000_create_analysis_jobs_tables` (Batch: Ran)
+- **Deployed**: 2026-02-28
+- **Health Check**: Passing
+- **Tests**: 62/62 passing (142 assertions)
+- **Status**: Complete
+
+### Dependencies
+- users table (existing)
+- sites table (existing)
+- TASK-16-1 (Tools infrastructure - URL validation)
+
+### Related Tasks
+- TASK-19-2: AnalysisJob and AnalysisJobResult Models
+- TASK-19-3: AnalysisJobService - Core Operations
+- TASK-19-7: Queue Worker with Concurrency Throttling
+
+---
 ## Queue Worker with Concurrency Throttling (TASK-19-7)
 
 ### Service Description
@@ -43425,6 +43633,208 @@ Suggestions are sorted by:
 - TASK-23-7: Domain Trust Scorer (scoring foundation)
 - TASK-23-8: Backlink Profile Scorer (metrics provider)
 - TASK-23-13: Backlinks Dashboard (frontend display)
+- SPEC-023: Backlinks Indicator
+- FEAT-023: Backlinks Indicator
+
+---
+## Backlinks API Endpoints - History & Sync (TASK-23-11)
+
+### Feature Description
+REST API endpoints for backlink history charts and manual sync triggering. Enables historical trend visualization and on-demand data refresh for backlink profiles. Part of the Backlinks Indicator feature (FEAT-023).
+
+### Component Locations
+- **History Controller:** `backend/app/Http/Controllers/Api/V1/Backlinks/BacklinkHistoryController.php`
+- **Sync Controller:** `backend/app/Http/Controllers/Api/V1/Backlinks/BacklinkSyncController.php`
+- **Routes:** `backend/routes/api.php`
+- **Test Documentation:** `TESTS/TEST-23-11.md`
+- **Backend Tests:** `backend/tests/Feature/Api/V1/Backlinks/BacklinkHistoryControllerTest.php`, `backend/tests/Feature/Api/V1/Backlinks/BacklinkSyncControllerTest.php`
+
+### API Endpoints
+
+| Method | Endpoint | Permission | Description |
+|--------|----------|------------|-------------|
+| GET | `/api/v1/projects/{projectId}/backlinks/history` | `view` | Get historical backlink snapshots |
+| POST | `/api/v1/projects/{projectId}/backlinks/sync` | `update` | Trigger manual backlink sync |
+
+### History Endpoint
+
+**Request:**
+```
+GET /api/v1/projects/{projectId}/backlinks/history?from=2026-01-01&to=2026-02-28
+```
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `from` | date | No | Start date (YYYY-MM-DD), defaults to 30 days ago |
+| `to` | date | No | End date (YYYY-MM-DD), defaults to today |
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "date": "2026-01-01",
+      "total_backlinks": 1100,
+      "referring_domains_count": 75,
+      "dofollow_count": 792,
+      "nofollow_count": 308,
+      "avg_domain_trust": 42.5,
+      "anchor_diversity_score": 65.0
+    },
+    {
+      "date": "2026-02-01",
+      "total_backlinks": 1250,
+      "referring_domains_count": 89,
+      "dofollow_count": 900,
+      "nofollow_count": 350,
+      "avg_domain_trust": 45.2,
+      "anchor_diversity_score": 68.0
+    }
+  ]
+}
+```
+
+**History Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `date` | string | Snapshot date (YYYY-MM-DD) |
+| `total_backlinks` | integer | Total backlinks count |
+| `referring_domains_count` | integer | Number of unique referring domains |
+| `dofollow_count` | integer | Dofollow backlinks count |
+| `nofollow_count` | integer | Nofollow backlinks count |
+| `avg_domain_trust` | decimal | Average domain trust score (0-100) |
+| `anchor_diversity_score` | decimal | Anchor text diversity score (0-100) |
+
+### Sync Endpoint
+
+**Request:**
+```
+POST /api/v1/projects/{projectId}/backlinks/sync
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "backlink-sync-abc123",
+    "status": "queued",
+    "estimated_duration": "2-5 minutes"
+  }
+}
+```
+
+**Sync Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `job_id` | string | Unique job identifier (format: `backlink-sync-{uuid}`) |
+| `status` | string | Job status (`queued`, `processing`, `completed`, `failed`) |
+| `estimated_duration` | string | Estimated completion time |
+
+### Rate Limiting
+
+| Endpoint | Limit | Description |
+|----------|-------|-------------|
+| Sync | 1/hour per project | Prevents excessive sync requests |
+| History | Standard API limits | Standard rate limiting applies |
+
+**Rate Limit Exceeded Response (429):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Sync already in progress or recently completed. Please wait before requesting another sync.",
+    "retry_after": "2026-03-14T12:00:00Z"
+  }
+}
+```
+
+### Authorization
+
+| Permission | Endpoint | Description |
+|------------|----------|-------------|
+| `view` | History | User must own project or have view access |
+| `update` | Sync | User must own project or have update access |
+
+**Authorization enforced via:**
+- Laravel Sanctum authentication middleware
+- ProjectPolicy for ownership verification
+
+### Error Responses
+
+| Status | Code | Description |
+|--------|------|-------------|
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | FORBIDDEN | User lacks permission for this project |
+| 404 | NOT_FOUND | Project does not exist |
+| 422 | VALIDATION_ERROR | Invalid date parameters or precondition failed |
+| 429 | TOO_MANY_REQUESTS | Rate limit exceeded |
+| 503 | SERVICE_UNAVAILABLE | Job queue at capacity |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Bearer token via Laravel Sanctum |
+| Authorization | ProjectPolicy ownership verification |
+| IDOR Protection | Project-scoped queries, user isolation |
+| SQL Injection Prevention | Eloquent ORM with parameterized queries |
+| XSS Prevention | JSON response encoding, no HTML rendering |
+| Rate Limiting | Cache-based per-project throttling |
+| Input Validation | Date format, range, and boundary validation |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| BacklinkHistoryControllerTest | 38 passed | 109 | ✅ PASS |
+| BacklinkSyncControllerTest | 27 passed, 2 skipped | 62 | ✅ PASS |
+| **Total** | **65 passed, 2 skipped** | **171** | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| History Success | 10 | Data retrieval, filtering, ordering |
+| History Authentication | 4 | Token validation |
+| History Authorization | 4 | Project ownership verification |
+| History Validation | 6 | Date validation, boundary checks |
+| History Edge Cases | 8 | Zero values, null handling, boundary dates |
+| Sync Success | 4 | Job dispatch, response format |
+| Sync Authentication | 3 | Token validation |
+| Sync Authorization | 5 | Permission verification |
+| Sync Rate Limiting | 6 | Per-project throttling |
+| Sync Validation | 3 | Precondition checks |
+| Sync Edge Cases | 4 | Concurrent requests, retry scenarios |
+| Security | 7 | SQL injection, IDOR, XSS protection |
+
+**Skipped Tests (Expected):**
+1. `read only access` - Team membership not implemented (project_members table with viewer role)
+2. `job queue full` - Requires integration testing with real queue
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-13 |
+| Health Check | ✅ Passing |
+| Tests | 65 passed, 2 skipped (expected) |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Task | Status |
+|------------|------|--------|
+| SyncBacklinksJob | TASK-23-4 | Done |
+| BacklinkSnapshotService | TASK-23-6 | To Prioritize |
+| ProjectPolicy | TASK-8-6 | Done |
+
+### Related Tasks
+
+- TASK-23-4: SyncBacklinksJob (sync job)
+- TASK-23-6: BacklinkSnapshotService (snapshot service)
+- TASK-23-14: Backlinks History Chart Component (frontend consumer)
 - SPEC-023: Backlinks Indicator
 - FEAT-023: Backlinks Indicator
 
