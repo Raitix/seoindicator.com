@@ -313,3 +313,23 @@ Status updated: `To Deploy` → `To Test Prod`
 **Production Deployment:** ✅ VERIFIED
 
 Status updated: `To Test Prod` → `Done`
+
+### [2026-03-14 19:10 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+**DOCUMENTATION.md Updated:**
+- Added dedicated "Rate Limiting Integration (TASK-29-5)" section
+- Documented rate limit configuration, controller methods, headers, error responses
+- Documented security implementation and test coverage (52 tests, 247 assertions)
+- Updated Related Tasks list to show TASK-29-5 as ✅
+
+**Verification:**
+- Task status confirmed: Done ✅
+- All 6 acceptance criteria verified documented ✅
+- Production deployed: 2026-03-07 (GitHub Actions #22800548406)
+- Test coverage: 52/52 passing
+
+**SPEC-029 Status:** In Progress (remaining tasks: TASK-29-6, etc.)
+**FEAT-029 Status:** In Progress
+
+Completion marker written: `logs/completed/task/TASK-29-5.json`
