@@ -1,6 +1,194 @@
 # DOCUMENTATION.md
 
 ---
+## Model Pricing API Endpoint (TASK-26-18)
+
+### Feature Description
+REST API endpoint for the Billing, Credits & Model Selection feature (FEAT-026) that provides detailed pricing information for AI models. Returns cost breakdown including per-token pricing, analysis type estimates, and free tier availability. Used by frontend to show cost estimates before running AI-powered analyses.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/ModelController.php` - `pricing()` method
+- **Service:** `backend/app/Services/Billing/ModelPricingService.php`
+- **Route:** `backend/routes/api.php` - `GET /api/v1/models/{id}/pricing`
+- **Tests:** `backend/tests/Feature/Api/V1/ModelPricingControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-26-18.md`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/models/{id}/pricing` | Get detailed pricing for a specific AI model |
+
+### Path Parameter
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | AI model ID (must exist in ai_models table) |
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `analysis_type` | string | - | Type of analysis: 'quick', 'standard', 'deep' |
+| `estimated_tokens` | integer | - | Custom token estimate for cost calculation |
+
+### Response Format
+
+**Success (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "model": {
+      "id": 1,
+      "display_name": "GPT-4 Turbo",
+      "provider": "openrouter",
+      "model_id": "openai/gpt-4-turbo"
+    },
+    "pricing": {
+      "cost_per_1m_input": 10.00,
+      "cost_per_1m_output": 30.00,
+      "cost_per_1k_input": 0.01,
+      "cost_per_1k_output": 0.03
+    },
+    "estimates": {
+      "quick_analysis": {
+        "tokens": 500,
+        "cost": 0.01
+      },
+      "standard_analysis": {
+        "tokens": 2000,
+        "cost": 0.05
+      },
+      "deep_analysis": {
+        "tokens": 5000,
+        "cost": 0.12
+      }
+    },
+    "free_tier": {
+      "available": false,
+      "limit": null
+    }
+  }
+}
+```
+
+**Error (404 Not Found):**
+```json
+{
+  "success": false,
+  "message": "Model not found"
+}
+```
+
+**Error (422 Unprocessable Entity):**
+```json
+{
+  "success": false,
+  "message": "Validation error",
+  "errors": {
+    "analysis_type": ["The selected analysis_type is invalid."]
+  }
+}
+```
+
+### Analysis Type Token Estimates
+
+| Analysis Type | Estimated Tokens | Use Case |
+|---------------|-----------------|----------|
+| `quick` | ~500 tokens | Fast analysis, basic insights |
+| `standard` | ~2000 tokens | Normal analysis, detailed results |
+| `deep` | ~5000 tokens | Comprehensive analysis, full reports |
+
+### ModelPricingService Methods
+
+| Method | Description |
+|--------|-------------|
+| `getModelById(int $id): ?AIModel` | Get model by database ID |
+| `getModelPricing(string $modelId): ?array` | Get pricing breakdown by model identifier |
+| `calculateAnalysisCost(string $modelId, int $tokens, ?int $output): float` | Calculate cost for given token count |
+
+### Authentication
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Authentication | Optional (public endpoint) |
+| Authorization | None required |
+| Rate Limiting | Standard API rate limits apply |
+
+### Error Responses
+
+| Code | Condition |
+|------|-----------|
+| 404 | Model not found (invalid ID) |
+| 422 | Invalid query parameters |
+| 405 | Non-GET method |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| SQL Injection | Parameterized queries via Eloquent ORM |
+| XSS | JSON response encoding |
+| Input Validation | Route constraint `id: [0-9]+`, query parameter validation |
+| Rate Limiting | Standard API rate limits |
+
+### Performance Characteristics
+
+| Operation | Performance |
+|-----------|-------------|
+| Response Time | ~118ms average (production) |
+| Cache Strategy | Model pricing cached by service |
+| Threshold | < 500ms for all requests |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ModelPricingControllerTest | 54 | 138 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Basic Endpoint | 9 | 200 status, JSON structure, public access |
+| 404 Error | 3 | Non-existent model handling |
+| Analysis Type | 5 | quick/standard/deep parameter validation |
+| Custom Tokens | 6 | estimated_tokens parameter |
+| Free Tier | 4 | Zero costs, available flag |
+| Cost Calculation | 3 | Correct cost ordering |
+| HTTP Methods | 4 | 405 for non-GET methods |
+| Security | 5 | SQL injection, XSS, no sensitive data |
+| Rate Limiting | 1 | Reasonable requests allowed |
+| Edge Cases | 6 | Unknown params, large tokens, unicode |
+| Performance | 1 | Response time < 500ms |
+| Data Types | 5 | Integer/numeric/boolean validation |
+| Combined | 2 | All parameters together |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-13 |
+| Deployment ID | `20260313T180009Z-daf4cbbf` |
+| Commit | `e5b3ab8678944674553bbda25e19825fe04ae02b` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-14 11:16 GMT+2 |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-26-16 | Done ✅ | ModelPricingService implementation |
+| TASK-26-17 | Done ✅ | Models List API (sibling endpoint) |
+
+### Related Tasks
+
+- TASK-26-16: ModelPricingService (service layer)
+- TASK-26-17: Models List API (list endpoint)
+- TASK-26-19: Credit System API (uses pricing for deductions)
+
+---
 ## Current Deployment Baseline (2026-03-10)
 
 ### Active deployment model
@@ -24763,11 +24951,233 @@ GET    /api/v1/crawler/jobs/{jobId}/export/html  - Export as HTML
 ### Dependencies
 - TASK-22-11 (CrawlController - To Develop)
 - TASK-22-12 (Request Validation - Done)
-- TASK-22-14 (Content Endpoints - In Development)
+- TASK-22-14 (Content Endpoints - Done)
 
 ### Related Tasks
 - TASK-22-11: CrawlController implementation
 - TASK-22-14: Content retrieval endpoints
+- TASK-22-18: Unit tests for services
+- TASK-22-20: Integration tests for full crawl flow
+
+---
+## Content Retrieval Endpoints (TASK-22-14)
+
+Content retrieval API endpoints for the Headless Crawler Service (FEAT-022). Provides paginated content retrieval with filtering, field selection, multiple export formats (JSON, CSV, HTML), and ETag-based caching. Foundation for users to access crawled content.
+
+### Controller
+
+**File:** `backend/app/Http/Controllers/Api/V1/ContentRetrievalController.php`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/crawler/jobs/{jobId}/content` | Get paginated content with filtering |
+| GET | `/api/v1/crawler/jobs/{jobId}/pages/{pageId}` | Get single page by ID |
+| GET | `/api/v1/crawler/jobs/{jobId}/export/json` | Export all pages as JSON |
+| GET | `/api/v1/crawler/jobs/{jobId}/export/csv` | Export as CSV file |
+| GET | `/api/v1/crawler/jobs/{jobId}/export/html` | Export as combined HTML |
+
+### Content Endpoint (GET /content)
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `perPage` | int | 50 | Items per page (max 100) |
+| `depth` | int | - | Filter by depth (0, 1, 2) |
+| `search` | string | - | Search in title/text |
+| `sortBy` | string | `crawledAt` | Sort field (depth, size, crawledAt) |
+| `sortOrder` | string | `desc` | Sort direction (asc, desc) |
+| `include` | string | - | Fields to include (comma-separated) |
+| `exclude` | string | - | Fields to exclude (comma-separated) |
+
+**Response:**
+
+```json
+{
+  "jobId": "crawl-abc123",
+  "pages": [
+    {
+      "id": 1,
+      "url": "https://example.com",
+      "depth": 0,
+      "title": "Example Domain",
+      "renderedHtml": "<!DOCTYPE html>...",
+      "structuredText": "Example Domain\nThis domain is for use...",
+      "meta": {"description": "Example domain for documentation"},
+      "links": [{"href": "https://example.com/about", "text": "About", "internal": true}],
+      "size": 204800,
+      "sizeFormatted": "200 KB",
+      "crawledAt": "2026-03-14T10:00:30Z"
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "perPage": 50,
+    "totalPages": 3,
+    "totalItems": 120
+  },
+  "summary": {
+    "totalPages": 120,
+    "totalSize": 1048576,
+    "depthDistribution": {"0": 1, "1": 50, "2": 69}
+  }
+}
+```
+
+### Field Selection
+
+**Valid Fields:**
+
+| Field | Alias | Description |
+|-------|-------|-------------|
+| `url` | - | Page URL (always included) |
+| `depth` | - | Crawl depth (0, 1, 2) |
+| `title` | - | Page title |
+| `renderedHtml` | `html` | Full rendered HTML |
+| `structuredText` | `text` | Extracted text content |
+| `meta` | - | Meta tags (description, robots, canonical) |
+| `links` | - | Extracted links with internal flag |
+| `size` | - | Content size in bytes |
+| `crawledAt` | - | Crawl timestamp |
+
+**Examples:**
+- `?include=text,meta` - Only structured text and metadata
+- `?exclude=renderedHtml` - Exclude large HTML content
+- `?include=html` - Using alias for renderedHtml
+
+### Export Endpoints
+
+**JSON Export:** `/export/json`
+- Full job data with all pages
+- Content-Type: `application/json`
+- Content-Disposition: `attachment; filename="crawl-{jobId}.json"`
+
+**CSV Export:** `/export/csv`
+- Columns: url, depth, title, meta_description, text_preview, size
+- Content-Type: `text/csv; charset=UTF-8`
+- Full HTML excluded for performance
+
+**HTML Export:** `/export/html`
+- Combined HTML file with table of contents
+- Content-Type: `text/html; charset=UTF-8`
+- Pages separated with dividers
+- Embedded iframe for rendered HTML
+
+### Service Layer
+
+**Service Interface:** `backend/app/Services/Crawler/ContentRetrievalServiceInterface.php`
+
+**Service Implementation:** `backend/app/Services/Crawler/ContentRetrievalService.php`
+
+| Method | Description |
+|--------|-------------|
+| `getContent(jobId, userId, filters, options)` | Get paginated content |
+| `getPage(jobId, pageId, userId, options)` | Get single page |
+| `exportAsJson(jobId, userId)` | Export all pages as JSON |
+| `exportAsCsv(jobId, userId)` | Export as CSV string |
+| `exportAsHtml(jobId, userId)` | Export as combined HTML |
+| `jobBelongsToUser(jobId, userId)` | Check authorization |
+| `isJobComplete(jobId)` | Check if job is completed |
+| `getJobStatus(jobId)` | Get current job status |
+| `clearCache(jobId)` | Invalidate job cache |
+
+### Request Validation
+
+**File:** `backend/app/Http/Requests/ContentRetrievalRequest.php`
+
+**Validation Rules:**
+- `page`: nullable, integer, min:1
+- `perPage`: nullable, integer, min:1, max:100
+- `depth`: nullable, integer, in:0,1,2
+- `search`: nullable, string, max:255
+- `sortBy`: nullable, in:depth,size,crawledAt
+- `sortOrder`: nullable, in:asc,desc
+- `include`: nullable, regex:/^[a-zA-Z,]+$/
+- `exclude`: nullable, regex:/^[a-zA-Z,]+$/
+
+### Caching
+
+**Cache Strategy:**
+- TTL: 1 hour (3600 seconds)
+- ETag support for 304 responses
+- Cache key: `crawler:content:{jobId}:{hash(filters+options)}`
+- X-Cache header: `HIT` or `MISS`
+- Cache-Control: `max-age=3600`
+- Cache invalidated on job deletion
+
+**ETag Implementation:**
+- MD5 hash of content JSON
+- If-None-Match header support
+- Automatic 304 Not Modified response
+
+### Security Measures
+
+| Protection | Implementation |
+|------------|----------------|
+| Authentication | Bearer token required (auth:sanctum) |
+| Authorization | User ownership verified via jobBelongsToUser() |
+| IDOR Prevention | 404 for other users' jobs |
+| SQL Injection | Parameterized queries via Eloquent |
+| XSS Protection | HTML escaping in exports |
+| Field Validation | Whitelist of valid field names |
+
+### HTTP Status Codes
+
+| Code | Condition |
+|------|-----------|
+| 200 | Success |
+| 304 | Not Modified (ETag match) |
+| 401 | Unauthorized (no/invalid token) |
+| 404 | Job/page not found |
+| 409 | Job not complete (still running/queued/failed) |
+| 422 | Validation error |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ContentRetrievalControllerTest.php` | 89 | 252 | ✅ PASS |
+| `ContentStreamingTest.php` | 14 | 28 | ✅ PASS |
+| **Total** | **103** | **280** | ✅ **ALL PASS** |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| CR-001: Basic Retrieval | 7 | Content retrieval for completed jobs |
+| CR-002: Pagination | 9 | Page/perPage validation, max 100 limit |
+| CR-003: Filtering | 8 | Depth filter, search in title/text |
+| CR-004: Field Selection | 9 | Include/exclude, alias resolution |
+| CR-005: Sorting | 8 | sortBy, sortOrder, multiple fields |
+| CR-006: Single Page | 8 | Get page by ID, field selection |
+| CR-007: JSON Export | 8 | Full export, file download |
+| CR-008: CSV Export | 10 | CSV format, column escaping |
+| CR-009: HTML Export | 8 | Combined HTML, table of contents |
+| CR-010: Streaming | 14 | Large response streaming (1MB threshold) |
+| CR-011: Caching | 7 | ETag, 304 response, cache headers |
+| CR-013: Security | 7 | IDOR, SQL injection, XSS prevention |
+
+### Production Status
+
+- **Deployed:** 2026-03-14 (commit fa21eacd)
+- **Deployment ID:** `20260314T085720Z-eaea061e`
+- **Health Check:** Passing
+- **Production URL:** https://seoindicator.com
+- **Status:** Complete
+
+### Dependencies
+
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| TASK-22-11 (CrawlController) | Done | Uses CrawlJob and CrawlPage models |
+| TASK-22-2 (Models) | Done | CrawlJob and CrawlPage fully implemented |
+| TASK-22-1 (Database) | Done | crawl_jobs and crawl_pages tables |
+
+### Related Tasks
+- TASK-22-11: CrawlController implementation
 - TASK-22-18: Unit tests for services
 - TASK-22-20: Integration tests for full crawl flow
 
