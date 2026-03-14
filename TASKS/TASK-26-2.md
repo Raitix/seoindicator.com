@@ -1,7 +1,7 @@
 # TASK-26-2: Create Credit Model and Repository
 
 ## STATUS
-`In Deployment`
+`To Deploy`
 
 ## PRIORITY
 `High`

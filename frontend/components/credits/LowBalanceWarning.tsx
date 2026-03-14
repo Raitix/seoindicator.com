@@ -49,11 +49,6 @@ export function LowBalanceWarning({
     }
   }, [showToast, autoDismissMs, isVisible]);
 
-  // Don't render if balance is sufficient or not visible
-  if (!isLowBalance || !isVisible) {
-    return null;
-  }
-
   // Handle dismiss
   const handleDismiss = () => {
     setIsVisible(false);
@@ -92,6 +87,30 @@ export function LowBalanceWarning({
     onAddCredits();
   };
 
+  // Don't render if balance is sufficient
+  if (!isLowBalance) {
+    return null;
+  }
+
+  // Show undo button if dismissed with showUndo enabled
+  if (!isVisible && showUndoButton) {
+    return (
+      <button
+        onClick={handleUndo}
+        className="inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200 transition-colors"
+        aria-label="Undo dismiss warning"
+      >
+        <Undo2 className="w-3 h-3" />
+        Undo
+      </button>
+    );
+  }
+
+  // Don't render if not visible
+  if (!isVisible) {
+    return null;
+  }
+
   // Toast variant
   if (showToast) {
     return (
@@ -117,7 +136,7 @@ export function LowBalanceWarning({
           className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white rounded-md transition-colors"
         >
           <Plus className="w-3 h-3" />
-          Add
+          Add Credits
         </button>
       </div>
     );
@@ -157,17 +176,6 @@ export function LowBalanceWarning({
       >
         <X className="w-4 h-4" />
       </button>
-
-      {/* Undo button (appears after dismiss) */}
-      {showUndoButton && (
-        <button
-          onClick={handleUndo}
-          className="mt-2 inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200 transition-colors"
-        >
-          <Undo2 className="w-3 h-3" />
-          Undo
-        </button>
-      )}
     </div>
   );
 }
