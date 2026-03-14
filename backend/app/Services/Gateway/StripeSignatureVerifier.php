@@ -135,8 +135,7 @@ class StripeSignatureVerifier
 
         if (!$result['valid']) {
             throw new SignatureVerificationException(
-                $result['error'] ?? 'Signature verification failed',
-                $request->header('Stripe-Signature') ?? ''
+                $result['error'] ?? 'Signature verification failed'
             );
         }
 

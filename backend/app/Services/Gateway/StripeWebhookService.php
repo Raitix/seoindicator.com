@@ -49,19 +49,42 @@ class StripeWebhookService
     public function processWebhook(string $payload): array
     {
         try {
+            // Validate payload is valid JSON first
+            $decoded = json_decode($payload, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('Invalid JSON in Stripe webhook payload', [
+                    'json_error' => json_last_error_msg(),
+                ]);
+                
+                return [
+                    'success' => false,
+                    'event_type' => null,
+                    'message' => 'Failed to process webhook: Invalid JSON payload',
+                ];
+            }
+            
+            if (!is_array($decoded) || empty($decoded)) {
+                return [
+                    'success' => false,
+                    'event_type' => null,
+                    'message' => 'Failed to process webhook: Empty or invalid payload',
+                ];
+            }
+
             // Parse the event
-            $event = StripeEvent::constructFrom(json_decode($payload, true));
+            $event = StripeEvent::constructFrom($decoded);
 
             Log::info('Processing Stripe webhook event', [
-                'event_id' => $event->id,
-                'event_type' => $event->type,
+                'event_id' => $event->id ?? 'unknown',
+                'event_type' => $event->type ?? 'unknown',
             ]);
 
             // Check if we support this event type
             if (!in_array($event->type, self::SUPPORTED_EVENTS)) {
                 Log::debug('Unsupported Stripe webhook event type', [
                     'event_type' => $event->type,
-                    'event_id' => $event->id,
+                    'event_id' => $event->id ?? 'unknown',
                 ]);
 
                 return [
@@ -110,7 +133,7 @@ class StripeWebhookService
         $paymentIntentId = $paymentIntent->id;
         $amount = $paymentIntent->amount / 100; // Convert from cents
         $currency = strtoupper($paymentIntent->currency);
-        $metadata = $paymentIntent->metadata->toArray();
+        $metadata = $paymentIntent->metadata ? $paymentIntent->metadata->toArray() : [];
 
         Log::info('Processing successful payment', [
             'payment_intent_id' => $paymentIntentId,
