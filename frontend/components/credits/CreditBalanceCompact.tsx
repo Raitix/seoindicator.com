@@ -244,7 +244,8 @@ export function CreditBalanceCompact({
         expandable && "cursor-pointer"
       )}
       onClick={expandable ? () => setIsExpanded(!isExpanded) : undefined}
-      tabIndex={expandable ? 0 : undefined}
+      tabIndex={0}
+      aria-label="Credit balance"
     >
       {content}
 
