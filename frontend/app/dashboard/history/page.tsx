@@ -136,7 +136,7 @@ function HistoryContent() {
 
   return (
     <div className="min-h-screen bg-slate-950" data-testid="history-page">
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-4 py-10" data-testid="history-container">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
@@ -160,7 +160,7 @@ function HistoryContent() {
         </div>
 
         {/* Filters */}
-        <div className="mb-6">
+        <div className="mb-6" data-testid="filters-section">
           <HistoryFilters
             filters={filters}
             onFiltersChange={setFilters}
@@ -233,6 +233,7 @@ function HistoryContent() {
           analysis={selectedAnalysis || null}
           isOpen={detailsModalOpen}
           onClose={closeDetailsModal}
+          isLoading={isLoadingDetail}
         />
 
         {/* Delete Confirmation Dialog */}
