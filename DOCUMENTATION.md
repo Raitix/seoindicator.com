@@ -3948,6 +3948,304 @@ class QueryLimitExceededException extends Exception
 - TASK-34-7: Query Job (uses service)
 
 ---
+## AI Visibility Query Jobs (TASK-34-7)
+
+### Feature Description
+Background queue jobs for executing AI visibility queries and scheduled tasks for automated query runs as part of the AI Visibility Tracking feature (FEAT-034). Implements Laravel's queue system with Redis driver for processing brand mention queries across multiple AI platforms, with intelligent caching, retry logic, and scheduled aggregation tasks.
+
+### Component Locations
+- **Jobs Directory:** `backend/app/Jobs/AIVisibility/`
+  - `AIVisibilityQueryJob.php` - Execute single AI visibility queries
+  - `RunAIVisibilityQueriesJob.php` - Batch dispatch for all active projects
+  - `AggregateAIVisibilityAnalyticsJob.php` - Daily analytics aggregation
+  - `CheckAIVisibilityAlertsJob.php` - Alert threshold detection
+- **Scheduled Tasks:** `backend/routes/console.php`
+- **Test Files:**
+  - `backend/tests/Unit/Jobs/AIVisibility/AIVisibilityQueryJobTest.php`
+  - `backend/tests/Unit/Jobs/AIVisibility/RunAIVisibilityQueriesJobTest.php`
+  - `backend/tests/Unit/Jobs/AIVisibility/AggregateAIVisibilityAnalyticsJobTest.php`
+  - `backend/tests/Unit/Jobs/AIVisibility/CheckAIVisibilityAlertsJobTest.php`
+  - `backend/tests/Feature/Console/KernelScheduleTest.php`
+- **Test Documentation:** `TESTS/TEST-34-7.md`
+
+### Queue Job Configuration
+
+| Job | Queue | Tries | Backoff | Purpose |
+|-----|-------|-------|---------|---------|
+| `AIVisibilityQueryJob` | `ai-visibility` | 3 | 60s | Execute single query |
+| `RunAIVisibilityQueriesJob` | `ai-visibility` | 1 | 0s | Dispatch batch queries |
+| `AggregateAIVisibilityAnalyticsJob` | `ai-visibility` | 3 | 300s | Daily aggregation |
+| `CheckAIVisibilityAlertsJob` | `ai-visibility` | 3 | 60s | Alert detection |
+
+### Scheduled Tasks
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| `RunAIVisibilityQueries` | Weekly Sundays 02:00 | Dispatch query jobs for all active projects |
+| `AggregateAIVisibilityAnalytics` | Daily 03:00 | Aggregate query results into analytics table |
+| `CheckAIVisibilityAlerts` | Every 6 hours | Detect threshold breaches and create alerts |
+
+### AIVisibilityQueryJob Implementation
+
+```php
+class AIVisibilityQueryJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    
+    public int $tries = 3;
+    public array $backoff = [60];
+    public string $queue = 'ai-visibility';
+    
+    public function __construct(
+        public int $projectId,
+        public string $platform,
+        public string $query,
+        public bool $useFreeModel = true
+    ) {}
+    
+    public function handle(
+        AIQueryEngine $engine,
+        AIVisibilityServiceInterface $service
+    ): void {
+        // Check cache first (7-day TTL)
+        $cacheKey = $this->generateCacheKey();
+        
+        if ($cached = Cache::get($cacheKey)) {
+            $this->storeResult($cached, cacheHit: true);
+            return;
+        }
+        
+        // Execute query via AIQueryEngine
+        $result = $engine->query(
+            $this->platform,
+            $this->query,
+            $this->useFreeModel
+        );
+        
+        // Store result in database
+        $this->storeResult($result);
+        
+        // Cache for 7 days
+        Cache::put($cacheKey, $result, now()->addDays(7));
+    }
+}
+```
+
+### Cache Strategy
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Cache Key Format** | `ai_visibility:query:{md5(projectId:platform:query)}` |
+| **TTL** | 7 days (604800 seconds) |
+| **Driver** | Redis |
+| **Cache Hit Marker** | `cache_hit = true` in result record |
+| **Invalidation** | Automatic on project update or manual refresh |
+
+### RunAIVisibilityQueriesJob Logic
+
+```php
+class RunAIVisibilityQueriesJob implements ShouldQueue
+{
+    public function handle(AIVisibilityServiceInterface $service): void
+    {
+        // Get all active projects due for query
+        $projects = $service->getActiveProjectsForQuery();
+        
+        foreach ($projects as $project) {
+            // Respect tracking frequency (daily/weekly/monthly)
+            if (!$this->isDueForQuery($project)) {
+                continue;
+            }
+            
+            // Dispatch individual query jobs for each platform
+            foreach ($project->platforms as $platform) {
+                foreach ($project->query_templates as $template) {
+                    AIVisibilityQueryJob::dispatch(
+                        $project->id,
+                        $platform,
+                        $this->renderTemplate($template, $project),
+                        $project->use_free_model
+                    );
+                }
+            }
+            
+            // Update last_queried_at
+            $project->update(['last_queried_at' => now()]);
+        }
+    }
+}
+```
+
+### AggregateAIVisibilityAnalyticsJob Logic
+
+```php
+class AggregateAIVisibilityAnalyticsJob implements ShouldQueue
+{
+    public function handle(): void
+    {
+        $projects = AIVisibilityProject::where('is_active', true)->get();
+        
+        foreach ($projects as $project) {
+            $periodStart = now()->subDay()->startOfDay();
+            $periodEnd = now()->subDay()->endOfDay();
+            
+            // Calculate mention rate
+            $totalQueries = AIQueryResult::where('project_id', $project->id)
+                ->whereBetween('queried_at', [$periodStart, $periodEnd])
+                ->count();
+                
+            $brandMentions = AIQueryResult::where('project_id', $project->id)
+                ->where('brand_mentioned', true)
+                ->whereBetween('queried_at', [$periodStart, $periodEnd])
+                ->count();
+                
+            $mentionRate = $totalQueries > 0 
+                ? round(($brandMentions / $totalQueries) * 100, 2) 
+                : 0;
+            
+            // Store analytics record
+            AIMentionAnalytics::create([
+                'project_id' => $project->id,
+                'platform' => 'all',
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+                'total_queries' => $totalQueries,
+                'brand_mentions' => $brandMentions,
+                'mention_rate' => $mentionRate,
+            ]);
+        }
+    }
+}
+```
+
+### CheckAIVisibilityAlertsJob Logic
+
+```php
+class CheckAIVisibilityAlertsJob implements ShouldQueue
+{
+    public function handle(): void
+    {
+        $projects = AIVisibilityProject::where('is_active', true)->get();
+        
+        foreach ($projects as $project) {
+            // Get current and previous analytics
+            $current = $this->getCurrentAnalytics($project);
+            $previous = $this->getPreviousAnalytics($project);
+            
+            // Check for mention spike
+            if ($current->mention_rate > $previous->mention_rate * 1.20) {
+                $this->createAlert($project, 'mention_spike', $previous, $current);
+            }
+            
+            // Check for mention drop
+            if ($current->mention_rate < $previous->mention_rate * 0.80) {
+                $this->createAlert($project, 'mention_drop', $previous, $current);
+            }
+            
+            // Check competitor gain
+            $this->checkCompetitorGain($project, $current, $previous);
+        }
+    }
+}
+```
+
+### Middleware: WithoutOverlapping
+
+All jobs use the `WithoutOverlapping` middleware to prevent concurrent execution of the same job for the same project:
+
+```php
+public function middleware(): array
+{
+    return [
+        new WithoutOverlapping($this->projectId, 3600) // 1-hour lock
+    ];
+}
+```
+
+### Error Handling
+
+| Error Type | Handling |
+|------------|----------|
+| **API Timeout** | Retry after 60s backoff, max 3 tries |
+| **Rate Limited** | Respect Retry-After header, exponential backoff |
+| **Invalid Response** | Log error, mark as failed, no retry |
+| **Max Tries Exceeded** | Move to dead letter queue |
+
+### Dead Letter Handling
+
+```php
+public function failed(Throwable $exception): void
+{
+    Log::error('AIVisibilityQueryJob failed', [
+        'project_id' => $this->projectId,
+        'platform' => $this->platform,
+        'query' => $this->query,
+        'error' => $exception->getMessage(),
+        'attempts' => $this->attempts(),
+    ]);
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AIVisibilityQueryJobTest | 32 | 63 | ✅ PASS |
+| AggregateAIVisibilityAnalyticsJobTest | 18 | 35 | ✅ PASS |
+| CheckAIVisibilityAlertsJobTest | 22 | 46 | ✅ PASS |
+| RunAIVisibilityQueriesJobTest | 23 | 45 | ✅ PASS |
+| KernelScheduleTest | 19 | 34 | ✅ PASS (1 risky) |
+| **TOTAL** | **114** | **223** | **PASS** |
+
+### Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Job Configuration | 24 | Queue, tries, backoff, middleware |
+| Cache Handling | 18 | Key generation, hit/miss, TTL |
+| Query Execution | 20 | AIQueryEngine mock, result storage |
+| Scheduling | 19 | Cron expressions, dispatch timing |
+| Error Handling | 15 | Exceptions, logging, retry logic |
+| Edge Cases | 18 | Unicode, large datasets, boundaries |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T125136Z-db6e5d71` |
+| Commit | `e9f963862f7c2c0770b4a1dd03c4e6e8c4603460` |
+| Deployed At | 2026-03-14 12:57 UTC |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-14 17:10 UTC |
+| Status | Complete |
+
+### Production Smoke Tests
+
+| Test | Result |
+|------|--------|
+| Homepage | 200 OK |
+| Login Page | 200 OK |
+| API Health | 200 OK |
+| AI Visibility API (401 expected) | 401 Unauthorized ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-34-3 | Done ✅ | AIQueryEngine - Query execution |
+| TASK-34-5 | Done ✅ | AIVisibilityService - Project management |
+| FEAT-019 | Available ✅ | Queue System - Laravel Horizon/Redis |
+
+### Related Tasks
+
+- TASK-34-1: Database Migrations (tables used by jobs)
+- TASK-34-2: AIVisibilityProject Model (data layer)
+- TASK-34-3: AIQueryEngine (query execution)
+- TASK-34-5: AIVisibilityService (orchestration)
+- TASK-34-6: Project CRUD API (triggers manual queries)
+
+---
 ## Typography and Spacing Design System (TASK-28-2)
 
 ### Feature Description

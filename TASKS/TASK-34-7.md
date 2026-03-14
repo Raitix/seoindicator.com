@@ -1,7 +1,7 @@
 # TASK-34-7: Query Job and Scheduling
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
@@ -361,3 +361,37 @@ $mockService->shouldReceive('getActiveProjectsForQuery')->andReturn([...]);
 - ✅ Error handling with logging and retry logic
 
 **Status:** `Testing Prod` → `To Document`
+
+---
+
+### DocSystemAnalyst Documentation Complete (2026-03-14 17:30 UTC)
+
+**Status:** Done ✅
+
+**Documentation Added:**
+- Added comprehensive "AI Visibility Query Jobs (TASK-34-7)" section to DOCUMENTATION.md
+- Documented all 4 queue jobs with configuration, implementation, and logic
+- Documented cache strategy with key format and TTL
+- Documented scheduled tasks with cron expressions
+- Documented error handling and dead letter processing
+- Documented WithoutOverlapping middleware
+- Documented test coverage (114 tests, 223 assertions)
+- Documented production deployment details
+
+**Key Documentation Sections:**
+| Section | Content |
+|---------|---------|
+| Queue Job Configuration | 4 jobs with queue, tries, backoff settings |
+| Scheduled Tasks | Weekly/Daily/6-hour schedules |
+| AIVisibilityQueryJob | Cache check, query execution, result storage |
+| RunAIVisibilityQueriesJob | Batch dispatch logic, frequency tracking |
+| AggregateAIVisibilityAnalyticsJob | Analytics aggregation with mention rate |
+| CheckAIVisibilityAlertsJob | Threshold detection, alert creation |
+| Cache Strategy | Key format, TTL, invalidation |
+| Error Handling | Retry logic, dead letter handling |
+| Test Coverage | 114 tests across 5 test files |
+| Production Status | Deployment ID, commit, validation |
+
+**Git Commit:** To be committed
+
+**Status:** `To Document` → `Done`
