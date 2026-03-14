@@ -50,6 +50,19 @@ if (app()->bound('log')) {
 ```
 **Prevention:** For classes that need to work in both integration and unit tests, make logging conditional or inject a logger dependency.
 
+### Route-to-Controller Test Mismatch (2026-03-14)
+**Issue:** Tests in `CrawlControllerTest` failing with mock errors for `/jobs/{id}/content` endpoint.
+**Root Cause:** The content endpoint is routed to `ContentRetrievalController@content`, not `CrawlController`. Tests were mocking the wrong controller's service.
+**Detection:** Run `php artisan route:list --path=crawler` to verify which controller handles each endpoint.
+**Fix:** Either move content tests to `ContentRetrievalControllerTest` or mock both controllers' services.
+**Prevention:** Always verify route-to-controller mappings before writing controller tests. Check `route:list` output.
+
+### HTTP Status Code Test Expectations (2026-03-14)
+**Issue:** Tests expecting 200 OK for DELETE endpoint, but controller returns 202 Accepted.
+**Root Cause:** Test expectations didn't match REST API conventions for async operations.
+**Fix:** Update test expectations to match SPEC documentation. DELETE operations that trigger async processing should return 202 Accepted, not 200 OK.
+**Prevention:** Use SPEC documentation as the source of truth for HTTP status codes. REST conventions: 202 for async operations, 200 for synchronous completion.
+
 ---
 
 ## Environment Issues
@@ -58,4 +71,4 @@ _(Document local environment quirks)_
 
 ---
 
-Last updated: 2026-02-28
+Last updated: 2026-03-14
