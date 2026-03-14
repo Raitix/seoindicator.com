@@ -130,10 +130,17 @@ class SocialiteInstallationTest extends TestCase
             'Socialite facade should exist'
         );
         
-        // The actual driver resolution test requires configuration
-        // This verifies the facade class is available
-        $this->assertTrue(method_exists(Socialite::class, 'driver'),
-            'Socialite facade should have driver method');
+        // Facades use __callStatic for method routing
+        // Verify the underlying SocialiteManager class exists and has driver method
+        $this->assertTrue(
+            class_exists(\Laravel\Socialite\SocialiteManager::class),
+            'SocialiteManager class should exist'
+        );
+        
+        $this->assertTrue(
+            method_exists(\Laravel\Socialite\SocialiteManager::class, 'driver'),
+            'SocialiteManager should have driver method'
+        );
     }
 
     /**
