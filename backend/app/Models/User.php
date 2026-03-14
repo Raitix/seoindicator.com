@@ -187,6 +187,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the credit transactions for this user (alias).
+     */
+    public function transactions(): HasMany
+    {
+        return $this->creditTransactions();
+    }
+
+    /**
      * Get the AI model preferences for this user.
      */
     public function modelPreferences(): HasMany

@@ -53,6 +53,23 @@ class CreditTransaction extends Model
     public $timestamps = false;
 
     /**
+     * The name of the "updated at" column.
+     *
+     * @var string|null
+     */
+    const UPDATED_AT = null;
+
+    /**
+     * Get the name of the "updated at" column.
+     *
+     * @return string|null
+     */
+    public function getUpdatedAtColumn()
+    {
+        return null;
+    }
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
@@ -124,7 +141,7 @@ class CreditTransaction extends Model
      * @param string $type
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeByType($query, string $type)
+    public function scopeOfType($query, string $type)
     {
         return $query->where('type', $type);
     }
@@ -136,7 +153,7 @@ class CreditTransaction extends Model
      * @param string|null $provider
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeByProvider($query, ?string $provider)
+    public function scopeOfProvider($query, ?string $provider)
     {
         if ($provider === null) {
             return $query->whereNull('payment_provider');
@@ -152,21 +169,47 @@ class CreditTransaction extends Model
      * @param int $userId
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeByUser($query, int $userId)
+    public function scopeForUser($query, int $userId)
     {
         return $query->where('user_id', $userId);
     }
 
     /**
-     * Scope a query to order by most recent first.
+     * Scope a query to order by most recent first and optionally limit.
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int|null $limit
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeRecent($query)
+    public function scopeRecent($query, ?int $limit = null)
     {
-        return $query->orderBy('created_at', 'desc');
+        $query = $query->orderBy('created_at', 'desc');
+        
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+        
+        return $query;
     }
+
+    /**
+     * Scope a query to filter by date range.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $from Start date (Y-m-d)
+     * @param string $to End date (Y-m-d)
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeDateRange($query, string $from, string $to)
+    {
+        return $query->whereDate('created_at', '>=', $from)
+                     ->whereDate('created_at', '<=', $to);
+    }
+
+    // Legacy scope aliases for backward compatibility
+    public function scopeByType($query, string $type) { return $this->scopeOfType($query, $type); }
+    public function scopeByProvider($query, ?string $provider) { return $this->scopeOfProvider($query, $provider); }
+    public function scopeByUser($query, int $userId) { return $this->scopeForUser($query, $userId); }
 
     // ============================================
     // Type Helpers

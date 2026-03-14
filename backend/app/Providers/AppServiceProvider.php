@@ -192,6 +192,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Crawler\ContentRetrievalServiceInterface::class,
             \App\Services\Crawler\ContentRetrievalService::class
         );
+
+        // Model Pricing Service binding (TASK-26-16, SPEC-026)
+        $this->app->bind(
+            \App\Services\Billing\Contracts\ModelPricingServiceInterface::class,
+            \App\Services\Billing\ModelPricingService::class
+        );
     }
 
     /**
