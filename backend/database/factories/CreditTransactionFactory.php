@@ -28,7 +28,6 @@ class CreditTransactionFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'credit_id' => null,
             'amount' => $this->faker->randomFloat(2, 1, 100),
             'balance_after' => $this->faker->randomFloat(2, 0, 500),
             'type' => 'purchase',
@@ -112,12 +111,11 @@ class CreditTransactionFactory extends Factory
     }
 
     /**
-     * Associate with a specific credit record.
+     * Associate with a specific credit record (sets user_id from credit).
      */
     public function forCredit(Credit $credit): static
     {
         return $this->state(fn (array $attributes) => [
-            'credit_id' => $credit->id,
             'user_id' => $credit->user_id,
         ]);
     }

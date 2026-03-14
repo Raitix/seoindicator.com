@@ -6258,6 +6258,171 @@ npm run build:badge
 - TASK-33-17: Badge Impression Controller (tracking)
 - TASK-33-18: Badge Click Controller (tracking)
 - TASK-33-20: Publish Audit UI Component (generates embed code)
+- TASK-33-19: Badge Auto-Refresh Mechanism (keeps badges current)
+
+---
+## Badge Auto-Refresh Mechanism (TASK-33-19)
+
+### Feature Description
+JavaScript-based auto-refresh mechanism for embedded SEO score badges that ensures badges stay current with the latest audit scores. Implements intelligent refresh logic with localStorage tracking, graceful degradation, and motion-aware animations. Part of the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033).
+
+### Component Location
+- **TypeScript Source:** `frontend/lib/scripts/badge.ts`
+- **Tests:** `frontend/__tests__/scripts/badge-autorefresh.test.ts`
+- **Test Documentation:** `TESTS/TEST-33-19.md`
+
+### Core Functionality
+
+| Feature | Description |
+|---------|-------------|
+| Score Update Check | Checks for score updates on badge load |
+| Background Refresh | Auto-refreshes every 24 hours (configurable) |
+| localStorage Tracking | Stores last check time and score locally |
+| Graceful Degradation | Falls back silently if localStorage unavailable |
+| Change Detection | Only refreshes when score has actually changed |
+| Smooth Transitions | CSS animations for score updates |
+| Motion Respect | Honors `prefers-reduced-motion` preference |
+
+### localStorage Schema
+
+```javascript
+// Storage keys (auditable, user-controllable)
+const STORAGE_PREFIX = "seoindicator_";
+
+// Last check timestamp
+localStorage.setItem(`seoindicator_${auditId}_lastCheck`, Date.now());
+
+// Last known score
+localStorage.setItem(`seoindicator_${auditId}_lastScore`, 85);
+```
+
+### Refresh Functions
+
+| Function | Purpose |
+|----------|---------|
+| `isLocalStorageAvailable()` | Feature detection for localStorage support |
+| `storeLastCheckTime(auditId)` | Stores current timestamp for refresh tracking |
+| `storeLastScore(auditId, score)` | Stores last known score for change detection |
+| `getLastCheckTime(auditId)` | Retrieves last check timestamp |
+| `getLastScore(auditId)` | Retrieves last known score |
+| `shouldRefresh(auditId, interval)` | Checks if enough time has passed for refresh |
+| `hasScoreChanged(auditId, newScore)` | Compares current vs stored score |
+| `prefersReducedMotion()` | Checks user's motion preference |
+
+### Configuration
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `DEFAULT_REFRESH_INTERVAL` | 86400000ms (24h) | Time between automatic refreshes |
+| `refreshInterval` | configurable | Custom interval via init options |
+| Data attribute | `data-refresh-interval` | Per-badge custom interval |
+
+### Animation Behavior
+
+**Score Update Animation:**
+```javascript
+// CSS transition applied when score changes
+transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+
+// Animation sequence
+1. Fade out current score
+2. Update score value
+3. Fade in new score with subtle scale
+
+// Motion preference check
+if (prefersReducedMotion()) {
+  // Skip animation, instant update
+}
+```
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| localStorage unavailable | Graceful degradation, no persistence |
+| Network error on refresh | Retry on next interval, preserve last score |
+| Invalid API response | Keep existing score, log error |
+| Page in background | Defer refresh until page visible |
+
+### Performance Considerations
+
+| Optimization | Implementation |
+|--------------|---------------|
+| Non-blocking refresh | Uses `requestIdleCallback` for refresh calls |
+| Timer cleanup | Clear timeout on badge destroy |
+| Background pages | Pauses refresh when page hidden |
+| Memory efficiency | Single timer per badge instance |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `badge-autorefresh.test.ts` | 44 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| AR-CONFIG | 5 | Refresh interval configuration |
+| AR-TIMER | 5 | Timer setup and cleanup |
+| AR-MANUAL | 4 | Manual refresh interaction |
+| AR-ERROR | 4 | Error handling and recovery |
+| AR-EDGE | 8 | Edge cases and boundary conditions |
+| AR-INTEGRATION | 5 | Integration scenarios |
+| AR-DATA | 4 | Data attribute configuration |
+| AR-PERF | 2 | Performance considerations |
+| AR-ACCEPTANCE | 7 | Acceptance criteria verification |
+
+### Acceptance Criteria
+
+| Criteria | Status |
+|----------|--------|
+| Badge checks for score update on load | ✅ PASS |
+| Background refresh every 24 hours (configurable) | ✅ PASS |
+| Uses localStorage to track last check time | ✅ PASS |
+| Graceful degradation if localStorage unavailable | ✅ PASS |
+| Only refreshes if score has changed | ✅ PASS |
+| Smooth transition when score updates | ✅ PASS |
+| Respects reduced motion preferences | ✅ PASS |
+| Unit tests for refresh logic | ✅ PASS (44 tests) |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-13 |
+| Commit | `f16204b4` |
+| Deployment ID | `20260313T210816Z-15b1cc8c` |
+| Production URL | https://seoindicator.com/badge.js |
+| Badge.js Size | 20,856 bytes |
+| Version | 1.0.0 |
+| Health Check | ✅ 200 OK |
+| Tests | 44/44 passing |
+
+### Production Verification
+
+| Check | Result |
+|-------|--------|
+| `STORAGE_PREFIX` constant | ✅ Present |
+| `isLocalStorageAvailable()` | ✅ Present |
+| `storeLastCheckTime()` | ✅ Present |
+| `storeLastScore()` | ✅ Present |
+| `getLastCheckTime()` | ✅ Present |
+| `getLastScore()` | ✅ Present |
+| `shouldRefresh()` | ✅ Present |
+| `hasScoreChanged()` | ✅ Present |
+| `prefersReducedMotion()` | ✅ Present |
+| `DEFAULT_REFRESH_INTERVAL = 864e5` | ✅ Present |
+
+### Dependencies
+
+- TASK-33-16 (badge.js script) - Done ✅
+- TASK-33-5 (badge config endpoint with last_updated timestamp) - Done ✅
+
+### Related Tasks
+
+- TASK-33-16: Badge.js Embed Script (base implementation)
+- TASK-33-5: Badge Config API Endpoint (timestamp source)
 
 ---
 ## Badge Impression Tracking API (TASK-33-17)
