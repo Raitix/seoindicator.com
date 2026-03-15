@@ -463,8 +463,8 @@ class PayPalPaymentTest extends TestCase
                 'cancel_url' => 'https://example.com/cancel',
             ]);
 
-        // Controller returns 500 for timeout exceptions
-        $response->assertStatus(500)
+        // Controller returns 503 for timeout exceptions (Service Unavailable)
+        $response->assertStatus(503)
             ->assertJson([
                 'success' => false,
             ]);
