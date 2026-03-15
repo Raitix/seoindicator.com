@@ -120,3 +120,16 @@ All model tests pass via `php artisan model:show`.
 - Status transitions (pending → running → completed/cancelled/failed)
 
 **Status:** Task complete. Handing off to DocSystemAnalyst.
+
+### [2026-03-15 14:20 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Added comprehensive documentation to `DOCUMENTATION.md`:
+- AnalysisJob model (fillable, casts, relationships, scopes, helpers, accessors)
+- AnalysisJobResult model (fillable, casts, relationships, scopes, helpers)
+- Job status workflow diagram
+- Factory states for both models
+- Test coverage summary (132 tests, 286 assertions)
+- Production deployment status
+
+**Status:** Task closed. Documentation complete.

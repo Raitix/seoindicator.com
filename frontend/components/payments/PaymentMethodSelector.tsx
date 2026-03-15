@@ -94,14 +94,14 @@ function CardItem({
 
   return (
     <div
+      data-testid={`method-${method.id}`}
       role="radio"
       aria-checked={isSelected}
       aria-label={`${getCardBrandName(brand)} ending in ${last4}${isExpired ? " (expired)" : ""}${method.is_default ? " (default)" : ""}`}
       className={cn(
         "relative p-4 rounded-lg border-2 cursor-pointer transition-all",
-        isSelected
-          ? "border-blue-500 bg-blue-500/10"
-          : "border-slate-700 bg-slate-800/50 hover:border-slate-600",
+        isSelected && "selected border-blue-500 bg-blue-500/10",
+        !isSelected && "border-slate-700 bg-slate-800/50 hover:border-slate-600",
         isExpired && "opacity-60"
       )}
       onClick={onSelect}
