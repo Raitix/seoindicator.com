@@ -2,25 +2,61 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Project;
+use App\Rules\ValidCrawlUrl;
+use App\Services\Crawler\RateLimiterService;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Request validation for crawl job creation.
  *
- * Validates URL, depth, and crawl options for the Headless Crawler Service.
+ * Validates URL, depth, project_id, and crawl options for the Headless Crawler Service.
+ * Includes SSRF protection via ValidCrawlUrl rule and rate limiting integration.
  *
- * @see TASK-22-11
+ * @see TASK-22-12
  * @see SPEC-022
  */
 class CrawlRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * Checks:
+     * - User is authenticated
+     * - If project_id provided, user owns the project
+     * - User hasn't exceeded rate limits (handled by middleware)
      */
     public function authorize(): bool
     {
-        return true; // Authorization handled by middleware
+        // User must be authenticated
+        if (!Auth::check()) {
+            return false;
+        }
+
+        // If project_id is provided, verify user owns it
+        $projectId = $this->input('project_id');
+        if ($projectId !== null) {
+            $project = Project::find($projectId);
+            if (!$project || $project->user_id !== Auth::id()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Handle a failed authorization attempt.
+     *
+     * @throws HttpResponseException
+     */
+    protected function failedAuthorization(): void
+    {
+        throw new HttpResponseException(response()->json([
+            'message' => 'You are not authorized to perform this action.',
+        ], 403));
     }
 
     /**
@@ -35,34 +71,12 @@ class CrawlRequest extends FormRequest
                 'required',
                 'string',
                 'max:2083',
-                'url',
-                function ($attribute, $value, $fail) {
-                    // SSRF protection - these will be validated by the service
-                    // but we do basic checks here to fail fast
-                    $blockedPatterns = [
-                        '/^https?:\/\/localhost/i',
-                        '/^https?:\/\/127\./i',
-                        '/^https?:\/\/10\./i',
-                        '/^https?:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./i',
-                        '/^https?:\/\/192\.168\./i',
-                        '/^https?:\/\/169\.254\./i',
-                        '/^https?:\/\/\[::1\]/i',
-                        '/^https?:\/\/\[fe80::/i',
-                        '/\.local$/i',
-                        '/\.internal$/i',
-                        '/^https?:\/\/internal\./i',  // Block subdomains starting with "internal."
-                        '/^file:\/\//i',
-                        '/^ftp:\/\//i',
-                        '/^gopher:\/\//i',
-                    ];
-
-                    foreach ($blockedPatterns as $pattern) {
-                        if (preg_match($pattern, $value)) {
-                            $fail('The URL is not allowed.');
-                            return;
-                        }
-                    }
-                },
+                new ValidCrawlUrl(),
+            ],
+            'project_id' => [
+                'nullable',
+                'integer',
+                'exists:projects,id',
             ],
             'depth' => ['nullable', 'integer', 'min:0', 'max:2'],
             'options' => ['nullable', 'array'],
@@ -72,7 +86,6 @@ class CrawlRequest extends FormRequest
                 'max:500',
                 function ($attribute, $value, $fail) {
                     // Block path traversal patterns in CSS selector
-                    // CSS selectors can contain these characters, but we block obvious path traversal attempts
                     $blockedPatterns = [
                         '/\.\./',           // Parent directory traversal
                         '#/etc/#i',         // Unix system paths
@@ -92,7 +105,12 @@ class CrawlRequest extends FormRequest
                 },
             ],
             'options.waitTime' => ['nullable', 'integer', 'min:0', 'max:30000'],
-            'options.userAgent' => ['nullable', 'string', 'max:500'],
+            'options.userAgent' => [
+                'nullable',
+                'string',
+                'max:500',
+                'regex:/^[a-zA-Z0-9_\-\.\s\/\(\):;,]+$/',
+            ],
             'options.includeImages' => ['nullable', 'boolean'],
             'options.followRedirects' => ['nullable', 'boolean'],
             'options.maxRedirects' => ['nullable', 'integer', 'min:0', 'max:10'],
@@ -110,10 +128,13 @@ class CrawlRequest extends FormRequest
             'url.required' => 'The URL is required.',
             'url.url' => 'Please provide a valid URL.',
             'url.max' => 'The URL must not exceed 2083 characters.',
+            'project_id.integer' => 'The project ID must be a valid number.',
+            'project_id.exists' => 'The selected project does not exist.',
             'depth.min' => 'The depth must be at least 0.',
             'depth.max' => 'The depth must not exceed 2.',
             'options.waitTime.min' => 'The wait time must be at least 0 milliseconds.',
             'options.waitTime.max' => 'The wait time must not exceed 30000 milliseconds.',
+            'options.userAgent.regex' => 'The user agent contains invalid characters.',
             'options.maxRedirects.min' => 'The max redirects must be at least 0.',
             'options.maxRedirects.max' => 'The max redirects must not exceed 10.',
         ];
@@ -135,5 +156,18 @@ class CrawlRequest extends FormRequest
                 'maxRedirects' => 5,
             ], $this->options ?? []),
         ]);
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param \Illuminate\Validation\Validator $validator
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            // Rate limiting is handled by CrawlerRateLimit middleware
+            // This is just for additional validation if needed
+        });
     }
 }
