@@ -278,3 +278,14 @@ _Leave notes for the next agent here_
 - IDN to Punycode conversion working
 
 **Handoff:** Ready for DocSystemAnalyst to document.
+
+### DocSystemAnalyst (2026-03-15 20:49 GMT+2)
+- **Re-verification complete** - Task status: `Done` ✅
+- DOCUMENTATION.md verified at line 29123+ ✅
+- Comprehensive section exists for DepthControllerService and UrlNormalizer
+- Test coverage: 135 tests, 154 assertions - ALL PASSING ✅
+- Production deployed: 2026-03-02 (GitHub Actions #22569359442) ✅
+- Stale lock removed: `TASKS/.locks/TASK-22-8.lock`
+- Completion marker written: `logs/completed/task/TASK-22-8.json`
+- Active-agents entry cleared ✅
+- Parent SPEC-022: In Progress (multiple tasks remaining: TASK-22-6, TASK-22-13, TASK-22-16, TASK-22-17, TASK-22-21)
