@@ -44,7 +44,7 @@ class CreditPackageController extends Controller
         return response()->json([
             'success' => true,
             'data' => $packages,
-        ]);
+        ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     /**

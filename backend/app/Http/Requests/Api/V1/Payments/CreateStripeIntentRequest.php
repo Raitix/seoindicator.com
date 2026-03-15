@@ -42,6 +42,12 @@ class CreateStripeIntentRequest extends FormRequest
                 'min:5',
                 'max:9999.99',
             ],
+            'currency' => [
+                'nullable',
+                'string',
+                'size:3',
+                'in:USD,EUR,GBP',
+            ],
         ];
     }
 
@@ -60,6 +66,8 @@ class CreateStripeIntentRequest extends FormRequest
             'amount.numeric' => 'The amount must be a valid number.',
             'amount.min' => 'The minimum purchase amount is $5.00.',
             'amount.max' => 'The maximum purchase amount is $9,999.99.',
+            'currency.size' => 'The currency must be a 3-letter code.',
+            'currency.in' => 'The selected currency is not supported. Supported currencies: USD, EUR, GBP.',
         ];
     }
 
