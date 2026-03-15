@@ -28,9 +28,10 @@ class OpenRouterSyncService
     /**
      * Sync models from OpenRouter API.
      *
+     * @param bool $deactivateMissing Whether to deactivate models not in API response
      * @return int Number of models synced
      */
-    public function syncModels(): int
+    public function syncModels(bool $deactivateMissing = true): int
     {
         $apiKey = Config::get('services.openrouter.api_key');
 
@@ -76,7 +77,7 @@ class OpenRouterSyncService
                 $syncData = $this->parseModelData($modelData);
 
                 // Update or create the model
-                $model = AIModel::updateOrCreate(
+                AIModel::updateOrCreate(
                     [
                         'provider' => 'openrouter',
                         'model_id' => $modelId,
@@ -84,9 +85,18 @@ class OpenRouterSyncService
                     $syncData
                 );
 
-                if ($model->wasRecentlyCreated || $model->wasChanged()) {
-                    $syncedCount++;
+                $syncedCount++;
+            }
+
+            // Deactivate models not found in API response
+            if ($deactivateMissing) {
+                $query = AIModel::where('provider', 'openrouter');
+                
+                if (!empty($seenModelIds)) {
+                    $query->whereNotIn('model_id', $seenModelIds);
                 }
+                
+                $query->update(['is_active' => false]);
             }
 
             Log::info('OpenRouter sync completed', [
@@ -260,9 +270,7 @@ class OpenRouterSyncService
             $capabilities['tools'] = true;
         }
 
-        // Check for streaming (most models support this)
-        $capabilities['streaming'] = true;
-
+        // Only return capabilities if we detected something specific
         return !empty($capabilities) ? $capabilities : null;
     }
 
