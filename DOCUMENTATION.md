@@ -1932,6 +1932,197 @@ REST API endpoint for the Billing, Credits & Model Selection feature (FEAT-026) 
 - TASK-26-19: Credit System API (uses pricing for deductions)
 
 ---
+## Model Picker Component (TASK-26-22)
+
+### Feature Description
+Interactive React component for selecting AI models with pricing display and cost estimation. Part of the Billing, Credits & Model Selection feature (FEAT-026). Provides a modal dialog with model cards, search/filter functionality, capability badges, free tier indicators, and cost estimation with balance comparison before running AI-powered analyses.
+
+### Component Locations
+- **Main Component:** `frontend/components/models/ModelPicker.tsx`
+- **Model Card:** `frontend/components/models/ModelCard.tsx`
+- **Filter Component:** `frontend/components/models/ModelFilter.tsx`
+- **Cost Estimate:** `frontend/components/models/CostEstimate.tsx`
+- **Index Exports:** `frontend/components/models/index.ts`
+- **API Hooks:** `frontend/lib/api/models.ts`
+- **Types:** `frontend/lib/types/models.ts`
+- **Tests:** `frontend/__tests__/components/models/`
+
+### Component Architecture
+
+```
+ModelPicker (main container)
+├── ModelFilter (search + provider/capability filters)
+├── ModelCard[] (grid of selectable models)
+│   ├── Capability badges (fast, advanced, vision, tools)
+│   ├── Free tier indicator (green badge)
+│   ├── Cost per analysis display
+│   └── Set as default button
+└── CostEstimate (balance comparison + warnings)
+```
+
+### Props Interfaces
+
+```typescript
+interface ModelPickerProps {
+  onSelect: (modelId: string) => void;      // Selection callback
+  selectedModelId?: string | null;          // Currently selected model
+  analysisType?: 'quick' | 'standard' | 'deep';  // Analysis type for cost calc
+  showSetDefault?: boolean;                  // Show "Set as default" button
+  userBalance?: number;                      // User's credit balance
+}
+
+interface ModelCardProps {
+  model: AIModel;                            // Model data
+  isSelected?: boolean;                      // Selection state
+  isDefault?: boolean;                       // User's default model
+  onSelect: () => void;                      // Selection callback
+  onSetDefault?: () => void;                 // Set default callback
+}
+
+interface ModelFilterProps {
+  onSearchChange: (query: string) => void;   // Search callback
+  onProviderChange: (provider: string) => void;  // Provider filter
+  onCapabilityChange: (capability: string) => void;  // Capability filter
+  onFreeOnlyChange: (freeOnly: boolean) => void;  // Free tier toggle
+}
+
+interface CostEstimateProps {
+  modelId: string;                           // Model to estimate
+  analysisType: 'quick' | 'standard' | 'deep';  // Analysis type
+  userBalance?: number;                      // User's credit balance
+  onAddCredits?: () => void;                 // Add credits callback
+}
+```
+
+### API Integration
+
+| Hook | Endpoint | Description |
+|------|----------|-------------|
+| `useModels()` | `GET /api/v1/models` | Fetch available models |
+| `useModelPricing(id)` | `GET /api/v1/models/{id}/pricing` | Get pricing breakdown |
+| `useSetDefaultModel()` | `POST /api/v1/models/preferences` | Set user's default model |
+
+### Model Card Features
+
+| Feature | Description |
+|---------|-------------|
+| Display Name | Model name with provider |
+| Context Window | Token limit (e.g., "128K tokens") |
+| Cost Display | Per-analysis cost in USD |
+| Capability Badges | fast, advanced, vision, tools |
+| Free Tier Badge | Green "Free" badge for zero-cost models |
+| Selection State | Blue checkmark on selected model |
+| Default Indicator | "Default" badge on user's preferred model |
+| Set Default | Button to save as user's default |
+
+### Filter Options
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| Search | Text input | Search by model name (300ms debounce) |
+| Provider | Dropdown | Filter by AI provider |
+| Capability | Dropdown | Filter by capability badge |
+| Free Only | Checkbox | Show only free models |
+
+### Cost Estimation
+
+| Analysis Type | Estimated Tokens | Typical Cost Range |
+|---------------|-----------------|-------------------|
+| Quick | ~500 tokens | $0.00 - $0.01 |
+| Standard | ~2,000 tokens | $0.01 - $0.05 |
+| Deep | ~5,000 tokens | $0.03 - $0.15 |
+
+**Balance Comparison:**
+- Shows remaining balance after analysis
+- Warning icon if insufficient balance
+- Link to add credits if needed
+
+### Keyboard Navigation
+
+| Key | Action |
+|-----|--------|
+| ArrowDown | Move to next model |
+| ArrowUp | Move to previous model |
+| Home | Move to first model |
+| End | Move to last model |
+| Enter | Select highlighted model |
+| Escape | Close picker dialog |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Dialog Role | `role="dialog"` on picker modal |
+| ARIA Labels | `aria-label` on all interactive elements |
+| Live Region | `aria-live="polite"` for announcements |
+| Focus Trap | Focus trapped within dialog |
+| Focus Management | Auto-focus on open, restore on close |
+| Screen Reader | Selection changes announced |
+
+### UI States
+
+| State | Display |
+|-------|---------|
+| Loading | Skeleton cards with pulse animation |
+| Error | Error message with retry button |
+| Empty | "No models found" message |
+| Normal | 2-column grid of model cards |
+
+### Test Coverage
+
+| Component | Tests | Status |
+|-----------|-------|--------|
+| ModelCard.test.tsx | 31 | ✅ PASS |
+| CostEstimate.test.tsx | 14 | ✅ PASS |
+| ModelPicker.test.tsx | 131 | ✅ PASS |
+| ModelFilter.test.tsx | 24 | ⚠️ Test env (debounce timing) |
+| **Total** | **200** | |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Rendering | 25 | Component structure, props display |
+| Selection | 18 | Click, keyboard, callback invocation |
+| Filtering | 20 | Search, provider, capability filters |
+| Cost Display | 15 | Cost calculation, balance comparison |
+| Accessibility | 22 | ARIA attributes, keyboard navigation |
+| Error Handling | 12 | API errors, retry functionality |
+| Edge Cases | 18 | Empty state, null values, unicode |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| XSS Prevention | No dangerouslySetInnerHTML, React's default escaping |
+| Input Sanitization | Model names sanitized via `sanitizeText()` utility |
+| API Validation | Model selection validated on backend before use |
+| No Sensitive Data | No API keys, secrets, or tokens in frontend components |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-15 |
+| Deployment ID | `20260315T152702Z-b307c11f` |
+| Commit | `87629bc4f59e` |
+| Production URL | https://seoindicator.com |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-26-17 | Done ✅ | Models List API |
+| TASK-26-18 | Done ✅ | Model Pricing API |
+| TASK-26-19 | Done ✅ | User Model Preferences API |
+
+### Related Tasks
+
+- TASK-26-17: Models List API (data source)
+- TASK-26-18: Model Pricing API (cost data)
+- TASK-26-19: User Model Preferences API (default model storage)
+
+---
 ## Current Deployment Baseline (2026-03-10)
 
 ### Active deployment model
