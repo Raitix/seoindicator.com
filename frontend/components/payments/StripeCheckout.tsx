@@ -124,9 +124,6 @@ function CheckoutForm({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/payments/return`,
-          payment_method_data: saveCard ? {
-            save_for_future: true,
-          } : undefined,
         },
         redirect: "if_required",
       });
