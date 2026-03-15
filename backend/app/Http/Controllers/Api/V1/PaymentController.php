@@ -60,13 +60,72 @@ class PaymentController extends Controller
      * Delete a payment method.
      *
      * DELETE /api/v1/payments/methods/{id}
+     * 
+     * @param string $id Either database ID or Stripe payment method ID (pm_xxx)
      */
-    public function deleteMethod(int $id): JsonResponse
+    public function deleteMethod(string $id): JsonResponse
     {
         $user = auth()->user();
 
-        // Find the payment method
-        $paymentMethod = PaymentMethod::find($id);
+        // Try to find by Stripe payment method ID first, then by database ID
+        $paymentMethod = null;
+        
+        if (str_starts_with($id, 'pm_')) {
+            // Look up by Stripe payment method ID
+            $paymentMethod = PaymentMethod::where('stripe_payment_method_id', $id)->first();
+            
+            // If not in database, check ownership via gateway
+            if (!$paymentMethod) {
+                $ownerId = $this->stripeGateway->getPaymentMethodOwner($id);
+                
+                if ($ownerId === null) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'NOT_FOUND',
+                            'message' => 'Payment method not found.',
+                        ],
+                    ], 404);
+                }
+                
+                if ($ownerId !== $user->id) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'FORBIDDEN',
+                            'message' => 'Payment method not found.',
+                        ],
+                    ], 404); // 404 to prevent enumeration
+                }
+                
+                // User owns this payment method, delete it from Stripe
+                try {
+                    $this->stripeGateway->deletePaymentMethod($id);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Payment method deleted',
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to delete payment method from Stripe', [
+                        'payment_method_id' => $id,
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'DELETE_FAILED',
+                            'message' => 'Failed to delete payment method.',
+                        ],
+                    ], 500);
+                }
+            }
+        } else {
+            // Look up by database ID
+            $paymentMethod = PaymentMethod::find($id);
+        }
 
         // Check if exists and belongs to user
         if (!$paymentMethod || $paymentMethod->user_id !== $user->id) {
@@ -102,7 +161,7 @@ class PaymentController extends Controller
             // If deleting the default, reassign to next method
             if ($paymentMethod->is_default) {
                 $nextMethod = PaymentMethod::where('user_id', $user->id)
-                    ->where('id', '!=', $id)
+                    ->where('id', '!=', $paymentMethod->id)
                     ->first();
 
                 if ($nextMethod) {
@@ -117,7 +176,7 @@ class PaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Payment method deleted successfully',
+                'message' => 'Payment method deleted',
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

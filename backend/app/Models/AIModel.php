@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * AI Model representation for tracking available LLM models.
+ * AI Model for billing and model selection.
  * 
- * Stores pricing, capabilities, and metadata for AI models
- * synced from providers like OpenRouter.
+ * Stores AI model information including pricing, capabilities,
+ * and free tier availability synced from OpenRouter API.
  *
  * @property int $id
  * @property string $provider
@@ -55,6 +55,19 @@ class AIModel extends Model
     ];
 
     /**
+     * The model's default values for attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'cost_per_1k_input' => 0.000000,
+        'cost_per_1k_output' => 0.000000,
+        'context_window' => 4096,
+        'is_free_tier' => false,
+        'is_active' => true,
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
@@ -71,21 +84,6 @@ class AIModel extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-
-    /**
-     * The model's default values for attributes.
-     *
-     * @var array
-     */
-    protected $attributes = [
-        'cost_per_1k_input' => 0.000000,
-        'cost_per_1k_output' => 0.000000,
-        'context_window' => 4096,
-        'is_free_tier' => false,
-        'is_active' => true,
-    ];
-
-    // ==================== SCOPES ====================
 
     /**
      * Scope a query to only include active models.
@@ -112,100 +110,56 @@ class AIModel extends Model
     }
 
     /**
-     * Scope a query to order by display_name.
+     * Scope a query to order by display name.
      */
-    public function scopeOrdered($query)
+    public function scopeOrdered($query, string $direction = 'asc')
     {
-        return $query->orderBy('display_name');
+        return $query->orderBy('display_name', $direction);
     }
-
-    // ==================== ACCESSORS ====================
 
     /**
      * Get the estimated cost per analysis.
-     * 
-     * Assumes ~2000 input tokens + ~500 output tokens per typical analysis.
+     * Assumes ~2000 input tokens + ~500 output tokens per analysis.
      *
      * @return float
      */
     public function getCostPerAnalysisEstimateAttribute(): float
     {
-        if ($this->is_free_tier) {
-            return 0.0;
-        }
-
-        // Default estimate: 2000 input tokens + 500 output tokens
-        $inputCost = (2000 / 1000) * $this->cost_per_1k_input;
-        $outputCost = (500 / 1000) * $this->cost_per_1k_output;
+        // Default analysis: 2000 input tokens + 500 output tokens
+        $inputCost = (2000 / 1000) * (float) $this->cost_per_1k_input;
+        $outputCost = (500 / 1000) * (float) $this->cost_per_1k_output;
 
         return round($inputCost + $outputCost, 6);
     }
 
     /**
-     * Get formatted pricing array.
+     * Get formatted pricing information.
      *
      * @return array
      */
     public function getFormattedPricingAttribute(): array
     {
         return [
-            'input' => $this->formatCost($this->cost_per_1k_input),
-            'output' => $this->formatCost($this->cost_per_1k_output),
-            'input_per_million' => $this->cost_per_1k_input * 1000,
-            'output_per_million' => $this->cost_per_1k_output * 1000,
+            'input' => '$' . number_format((float) $this->cost_per_1k_input, 6) . ' per 1K tokens',
+            'output' => '$' . number_format((float) $this->cost_per_1k_output, 6) . ' per 1K tokens',
+            'input_per_1m' => round((float) $this->cost_per_1k_input * 1000, 2),
+            'output_per_1m' => round((float) $this->cost_per_1k_output * 1000, 2),
         ];
     }
 
     /**
-     * Format a cost value for display.
-     *
-     * @param float $value
-     * @return string
+     * Check if the model has vision capability.
      */
-    private function formatCost(float $value): string
+    public function hasVision(): bool
     {
-        if ($value == 0) {
-            return 'Free';
-        }
-
-        if ($value < 0.01) {
-            return sprintf('$%.6f', $value);
-        }
-
-        return sprintf('$%.4f', $value);
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Calculate cost for a specific number of tokens.
-     *
-     * @param int $inputTokens
-     * @param int $outputTokens
-     * @return float
-     */
-    public function calculateCost(int $inputTokens, int $outputTokens): float
-    {
-        if ($this->is_free_tier) {
-            return 0.0;
-        }
-
-        $inputCost = ($inputTokens / 1000) * $this->cost_per_1k_input;
-        $outputCost = ($outputTokens / 1000) * $this->cost_per_1k_output;
-
-        return round($inputCost + $outputCost, 6);
+        return !empty($this->capabilities['vision']);
     }
 
     /**
-     * Check if the model has a specific capability.
-     *
-     * @param string $capability
-     * @return bool
+     * Check if the model has tools/function calling capability.
      */
-    public function hasCapability(string $capability): bool
+    public function hasTools(): bool
     {
-        return !empty($this->capabilities) && 
-               isset($this->capabilities[$capability]) && 
-               $this->capabilities[$capability] === true;
+        return !empty($this->capabilities['tools']);
     }
 }

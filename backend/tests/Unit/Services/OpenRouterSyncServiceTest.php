@@ -31,6 +31,10 @@ class OpenRouterSyncServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        
+        // Set up API key for all tests by default
+        Config::set('services.openrouter.api_key', 'test-api-key');
+        
         $this->service = app(OpenRouterSyncService::class);
     }
 

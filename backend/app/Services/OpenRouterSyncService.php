@@ -5,60 +5,47 @@ namespace App\Services;
 use App\Models\AIModel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Config;
 
 /**
  * Service for syncing AI models from OpenRouter API.
  *
- * Fetches model list, pricing, and capabilities from OpenRouter
- * and updates the local ai_models table.
+ * Fetches model information including pricing, context windows,
+ * and capabilities from the OpenRouter API and stores them in the database.
  */
 class OpenRouterSyncService
 {
     /**
      * OpenRouter API base URL.
      */
-    private const API_BASE_URL = 'https://openrouter.ai/api/v1';
+    protected string $apiUrl = 'https://openrouter.ai/api/v1/models';
 
     /**
      * Default context window when not specified.
      */
-    private const DEFAULT_CONTEXT_WINDOW = 4096;
-
-    /**
-     * Default input tokens for cost estimation.
-     */
-    private const DEFAULT_INPUT_TOKENS = 2000;
-
-    /**
-     * Default output tokens for cost estimation.
-     */
-    private const DEFAULT_OUTPUT_TOKENS = 500;
+    protected int $defaultContextWindow = 4096;
 
     /**
      * Sync models from OpenRouter API.
      *
-     * @param bool $deactivateMissing Whether to deactivate models not in API response
      * @return int Number of models synced
      */
-    public function syncModels(bool $deactivateMissing = true): int
+    public function syncModels(): int
     {
-        $apiKey = config('services.openrouter.api_key');
+        $apiKey = Config::get('services.openrouter.api_key');
 
-        // In testing environment, allow sync to proceed without API key
-        // (HTTP fake will intercept the request)
-        if (app()->environment() !== 'testing' && empty($apiKey)) {
-            Log::warning('OpenRouter sync skipped: API key not configured');
+        if (empty($apiKey)) {
+            Log::warning('OpenRouter API key not configured');
             return 0;
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => "Bearer {$apiKey}",
+                'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
             ])
             ->timeout(30)
-            ->get(self::API_BASE_URL . '/models');
+            ->get($this->apiUrl);
 
             if (!$response->successful()) {
                 Log::error('OpenRouter API error', [
@@ -76,30 +63,35 @@ class OpenRouterSyncService
             }
 
             $syncedCount = 0;
-            $syncedModelIds = [];
+            $seenModelIds = [];
 
             foreach ($data['data'] as $modelData) {
-                if ($this->isValidModelData($modelData)) {
-                    $this->syncModel($modelData);
-                    $syncedModelIds[] = $modelData['id'];
+                if (!$this->isValidModelData($modelData)) {
+                    continue;
+                }
+
+                $modelId = $modelData['id'];
+                $seenModelIds[] = $modelId;
+
+                $syncData = $this->parseModelData($modelData);
+
+                // Update or create the model
+                $model = AIModel::updateOrCreate(
+                    [
+                        'provider' => 'openrouter',
+                        'model_id' => $modelId,
+                    ],
+                    $syncData
+                );
+
+                if ($model->wasRecentlyCreated || $model->wasChanged()) {
                     $syncedCount++;
                 }
             }
 
-            // Update last_synced_at for synced models
-            if (!empty($syncedModelIds)) {
-                AIModel::whereIn('model_id', $syncedModelIds)
-                    ->update(['last_synced_at' => now()]);
-            }
-
-            // Deactivate models that were not in the API response
-            if ($deactivateMissing) {
-                $this->deactivateMissingModels($syncedModelIds);
-            }
-
             Log::info('OpenRouter sync completed', [
                 'synced' => $syncedCount,
-                'total_in_response' => count($data['data']),
+                'total' => count($seenModelIds),
             ]);
 
             return $syncedCount;
@@ -107,14 +99,13 @@ class OpenRouterSyncService
         } catch (\Exception $e) {
             Log::error('OpenRouter sync failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
             return 0;
         }
     }
 
     /**
-     * Get pricing information for a specific model.
+     * Get pricing for a specific model.
      *
      * @param string $modelId
      * @return array|null
@@ -130,8 +121,8 @@ class OpenRouterSyncService
         return [
             'input_per_1k' => (float) $model->cost_per_1k_input,
             'output_per_1k' => (float) $model->cost_per_1k_output,
-            'input_per_1m' => (float) ($model->cost_per_1k_input * 1000),
-            'output_per_1m' => (float) ($model->cost_per_1k_output * 1000),
+            'input_per_1m' => round((float) $model->cost_per_1k_input * 1000, 2),
+            'output_per_1m' => round((float) $model->cost_per_1k_output * 1000, 2),
         ];
     }
 
@@ -141,155 +132,102 @@ class OpenRouterSyncService
      * @param array $modelData
      * @return bool
      */
-    private function isValidModelData(array $modelData): bool
+    protected function isValidModelData(array $modelData): bool
     {
-        return !empty($modelData['id']) && is_string($modelData['id']);
-    }
-
-    /**
-     * Sync a single model from API data.
-     *
-     * @param array $modelData
-     * @return AIModel
-     */
-    private function syncModel(array $modelData): AIModel
-    {
-        $pricing = $this->parsePricing($modelData['pricing'] ?? []);
-        $contextWindow = $this->parseContextWindow($modelData);
-        $capabilities = $this->parseCapabilities($modelData);
-        $isFreeTier = $this->isFreeTier($modelData, $pricing);
-        $displayName = $this->sanitizeDisplayName($modelData['name'] ?? $modelData['id']);
-
-        return AIModel::updateOrCreate(
-            [
-                'provider' => 'openrouter',
-                'model_id' => $modelData['id'],
-            ],
-            [
-                'display_name' => $displayName,
-                'cost_per_1k_input' => $pricing['input'],
-                'cost_per_1k_output' => $pricing['output'],
-                'context_window' => $contextWindow,
-                'is_free_tier' => $isFreeTier,
-                'free_tier_limit' => $this->parseFreeTierLimit($modelData),
-                'capabilities' => $capabilities,
-                'is_active' => true,
-            ]
-        );
-    }
-
-    /**
-     * Parse pricing from API response.
-     *
-     * @param array|string|null $pricing
-     * @return array
-     */
-    private function parsePricing($pricing): array
-    {
-        if (!is_array($pricing)) {
-            return ['input' => 0, 'output' => 0];
+        if (!isset($modelData['id']) || empty($modelData['id'])) {
+            return false;
         }
 
-        $promptPrice = $this->parsePrice($pricing['prompt'] ?? null);
-        $completionPrice = $this->parsePrice($pricing['completion'] ?? null);
+        if (!is_string($modelData['id'])) {
+            return false;
+        }
 
-        // OpenRouter returns per-token pricing, convert to per-1k tokens
+        return true;
+    }
+
+    /**
+     * Parse model data from API response.
+     *
+     * @param array $modelData
+     * @return array
+     */
+    protected function parseModelData(array $modelData): array
+    {
+        $pricing = $modelData['pricing'] ?? [];
+        
+        // OpenRouter returns per-token pricing
+        // Convert to per-1k tokens
+        $promptPrice = $this->parsePrice($pricing['prompt'] ?? 0);
+        $completionPrice = $this->parsePrice($pricing['completion'] ?? 0);
+
+        // Cost per 1k tokens = per-token * 1000
+        $costPer1kInput = max(0, $promptPrice * 1000);
+        $costPer1kOutput = max(0, $completionPrice * 1000);
+
+        // Determine free tier status
+        $isFreeTier = $this->isFreeTier($modelData, $costPer1kInput, $costPer1kOutput);
+
+        // Parse capabilities
+        $capabilities = $this->parseCapabilities($modelData);
+
+        // Get context window
+        $contextWindow = $this->parseContextWindow($modelData);
+
+        // Sanitize and truncate display name
+        $displayName = $this->sanitizeDisplayName($modelData['name'] ?? $modelData['id']);
+
         return [
-            'input' => max(0, $promptPrice * 1000),
-            'output' => max(0, $completionPrice * 1000),
+            'provider' => 'openrouter',
+            'model_id' => $modelData['id'],
+            'display_name' => $displayName,
+            'cost_per_1k_input' => round($costPer1kInput, 6),
+            'cost_per_1k_output' => round($costPer1kOutput, 6),
+            'context_window' => $contextWindow,
+            'is_free_tier' => $isFreeTier,
+            'free_tier_limit' => $this->parseFreeTierLimit($modelData),
+            'capabilities' => $capabilities,
+            'is_active' => true,
+            'last_synced_at' => now(),
         ];
     }
 
     /**
-     * Parse a single price value.
+     * Parse price value (handles string or numeric).
      *
      * @param mixed $value
      * @return float
      */
-    private function parsePrice($value): float
+    protected function parsePrice($value): float
     {
-        if ($value === null) {
-            return 0.0;
+        if (is_numeric($value)) {
+            return max(0, (float) $value);
         }
 
-        $price = is_string($value) ? (float) $value : (float) $value;
+        if (is_string($value)) {
+            $parsed = (float) $value;
+            return max(0, $parsed);
+        }
 
-        // Handle negative values (treat as 0)
-        return max(0.0, $price);
+        return 0.0;
     }
 
     /**
-     * Parse context window from API data.
+     * Determine if model is free tier.
      *
      * @param array $modelData
-     * @return int
-     */
-    private function parseContextWindow(array $modelData): int
-    {
-        // Try root level context_length first
-        if (!empty($modelData['context_length'])) {
-            return (int) $modelData['context_length'];
-        }
-
-        // Fallback to top_provider.context_length
-        if (!empty($modelData['top_provider']['context_length'])) {
-            return (int) $modelData['top_provider']['context_length'];
-        }
-
-        return self::DEFAULT_CONTEXT_WINDOW;
-    }
-
-    /**
-     * Parse capabilities from API data.
-     *
-     * @param array $modelData
-     * @return array|null
-     */
-    private function parseCapabilities(array $modelData): ?array
-    {
-        if (!isset($modelData['architecture'])) {
-            return null;
-        }
-
-        $capabilities = [];
-        $architecture = $modelData['architecture'];
-        $modality = $architecture['modality'] ?? '';
-
-        // Detect vision capability from modality
-        if (Str::contains($modality, ['image', 'vision', 'multimodal'])) {
-            $capabilities['vision'] = true;
-        }
-
-        // Detect tools capability (often indicated in description or name)
-        $description = strtolower($modelData['description'] ?? '');
-        $name = strtolower($modelData['name'] ?? '');
-        
-        if (Str::contains($description . ' ' . $name, ['tool', 'function call'])) {
-            $capabilities['tools'] = true;
-        }
-
-        // Add streaming capability (most models support this)
-        $capabilities['streaming'] = true;
-
-        return !empty($capabilities) ? $capabilities : null;
-    }
-
-    /**
-     * Determine if a model is free tier.
-     *
-     * @param array $modelData
-     * @param array $pricing
+     * @param float $costPer1kInput
+     * @param float $costPer1kOutput
      * @return bool
      */
-    private function isFreeTier(array $modelData, array $pricing): bool
+    protected function isFreeTier(array $modelData, float $costPer1kInput, float $costPer1kOutput): bool
     {
         // Check for :free suffix in model ID
-        if (Str::endsWith($modelData['id'], ':free')) {
+        if (str_ends_with($modelData['id'], ':free')) {
             return true;
         }
 
-        // Check if both input and output prices are 0
-        if ($pricing['input'] == 0 && $pricing['output'] == 0) {
+        // Check if both costs are zero
+        if ($costPer1kInput <= 0 && $costPer1kOutput <= 0) {
             return true;
         }
 
@@ -297,16 +235,73 @@ class OpenRouterSyncService
     }
 
     /**
-     * Parse free tier limit from API data.
+     * Parse capabilities from model data.
+     *
+     * @param array $modelData
+     * @return array|null
+     */
+    protected function parseCapabilities(array $modelData): ?array
+    {
+        $capabilities = [];
+
+        // Check for vision capability from modality
+        $architecture = $modelData['architecture'] ?? [];
+        $modality = $architecture['modality'] ?? '';
+
+        if (str_contains($modality, 'image')) {
+            $capabilities['vision'] = true;
+        }
+
+        // Check for tools capability (often indicated by model name or description)
+        $name = strtolower($modelData['id'] ?? '');
+        $description = strtolower($modelData['description'] ?? '');
+        
+        if (str_contains($name, 'tools') || str_contains($description, 'tool')) {
+            $capabilities['tools'] = true;
+        }
+
+        // Check for streaming (most models support this)
+        $capabilities['streaming'] = true;
+
+        return !empty($capabilities) ? $capabilities : null;
+    }
+
+    /**
+     * Parse context window from model data.
+     *
+     * @param array $modelData
+     * @return int
+     */
+    protected function parseContextWindow(array $modelData): int
+    {
+        // Check for context_length at root level
+        if (isset($modelData['context_length']) && is_numeric($modelData['context_length'])) {
+            return (int) $modelData['context_length'];
+        }
+
+        // Check for context_length in top_provider
+        $topProvider = $modelData['top_provider'] ?? [];
+        if (isset($topProvider['context_length']) && is_numeric($topProvider['context_length'])) {
+            return (int) $topProvider['context_length'];
+        }
+
+        return $this->defaultContextWindow;
+    }
+
+    /**
+     * Parse free tier limit from model data.
      *
      * @param array $modelData
      * @return int|null
      */
-    private function parseFreeTierLimit(array $modelData): ?int
+    protected function parseFreeTierLimit(array $modelData): ?int
     {
-        // Check for explicit free tier limit
-        if (!empty($modelData['per_request_limits']['prompt_tokens'])) {
-            return (int) $modelData['per_request_limits']['prompt_tokens'];
+        // OpenRouter doesn't always provide explicit free tier limits
+        // Check per_request_limits for hints
+        $perRequestLimits = $modelData['per_request_limits'] ?? [];
+        
+        if (isset($perRequestLimits['prompt_tokens'])) {
+            return (int) $perRequestLimits['prompt_tokens'];
         }
 
         return null;
@@ -318,27 +313,22 @@ class OpenRouterSyncService
      * @param string $name
      * @return string
      */
-    private function sanitizeDisplayName(string $name): string
+    protected function sanitizeDisplayName(string $name): string
     {
-        // Remove any script tags or dangerous content
+        // Remove any HTML/script tags for XSS prevention
         $name = strip_tags($name);
-        $name = htmlspecialchars($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
+        
+        // Remove any dangerous characters
+        $name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        
+        // Decode back since we just wanted to strip tags, not encode
+        $name = html_entity_decode($name, ENT_QUOTES, 'UTF-8');
+        
         // Truncate to max length
-        return Str::limit($name, 255, '');
-    }
+        if (strlen($name) > 255) {
+            $name = substr($name, 0, 255);
+        }
 
-    /**
-     * Deactivate models that are no longer in the API.
-     *
-     * @param array $activeModelIds
-     * @return int Number of deactivated models
-     */
-    public function deactivateMissingModels(array $activeModelIds): int
-    {
-        return AIModel::where('provider', 'openrouter')
-            ->whereNotIn('model_id', $activeModelIds)
-            ->where('is_active', true)
-            ->update(['is_active' => false]);
+        return $name;
     }
 }

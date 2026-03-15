@@ -495,13 +495,14 @@ class CreditAggregationServiceTest extends TestCase
         CreditTransaction::factory()->create([
             'user_id' => $user->id,
             'type' => 'usage',
-            'amount' => -50, // Refund or correction
+            'amount' => -50, // Refund or correction (stored as negative)
         ]);
 
         $stats = $this->service->getStats();
 
-        // Should handle negative amounts appropriately
-        $this->assertLessThanOrEqual(0, $stats['spend']['total']);
+        // Should convert negative amounts to positive using abs()
+        // Spend should always be a positive number representing usage
+        $this->assertEquals(50, $stats['spend']['total']);
     }
 
     /** @test */

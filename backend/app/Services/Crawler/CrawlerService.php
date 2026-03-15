@@ -25,6 +25,11 @@ class CrawlerService implements CrawlerServiceInterface
     protected ?int $currentUserId = null;
 
     /**
+     * @var RateLimiterService|null Rate limiter service
+     */
+    protected ?RateLimiterService $rateLimiter = null;
+
+    /**
      * Set the current user for authorization.
      *
      * @param int $userId
@@ -33,6 +38,18 @@ class CrawlerService implements CrawlerServiceInterface
     public function forUser(int $userId): self
     {
         $this->currentUserId = $userId;
+        return $this;
+    }
+
+    /**
+     * Set the rate limiter service.
+     *
+     * @param RateLimiterService $rateLimiter
+     * @return self
+     */
+    public function withRateLimiter(RateLimiterService $rateLimiter): self
+    {
+        $this->rateLimiter = $rateLimiter;
         return $this;
     }
 
@@ -62,6 +79,18 @@ class CrawlerService implements CrawlerServiceInterface
             'total_size' => 0,
             'expires_at' => now()->addHours(24),
         ]);
+
+        // Increment rate limit count for the user
+        if ($this->rateLimiter !== null) {
+            $this->rateLimiter->incrementUserCount($userId);
+            $this->rateLimiter->incrementConcurrentCount($userId);
+
+            // Extract and record domain if available
+            $parsedUrl = parse_url($url);
+            if (isset($parsedUrl['host'])) {
+                $this->rateLimiter->incrementDomainCount($parsedUrl['host']);
+            }
+        }
 
         return $this->formatJobResponse($crawlJob);
     }

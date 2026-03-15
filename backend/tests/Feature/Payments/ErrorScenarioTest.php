@@ -3,6 +3,7 @@
 namespace Tests\Feature\Payments;
 
 use App\Models\Credit;
+use App\Models\CreditPackage;
 use App\Models\CreditTransaction;
 use App\Models\User;
 use App\Services\Billing\Contracts\PaymentGatewayInterface;
@@ -29,6 +30,24 @@ use Tests\TestCase;
 class ErrorScenarioTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected CreditPackage $package;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Create a credit package for testing
+        $this->package = CreditPackage::create([
+            'name' => 'Basic',
+            'credits' => 10.00,
+            'price_usd' => 10.00,
+            'bonus_percent' => 0,
+            'is_popular' => false,
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+    }
 
     protected function tearDown(): void
     {
@@ -62,7 +81,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(400)
@@ -95,7 +114,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(400)
@@ -123,7 +142,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(400)
@@ -151,7 +170,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(400)
@@ -179,7 +198,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(400)
@@ -210,7 +229,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(503)
@@ -237,7 +256,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/paypal/order', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(503)
@@ -263,7 +282,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(503);
@@ -411,7 +430,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => -10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(422)
@@ -426,7 +445,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 0,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(422)
@@ -441,7 +460,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 100000.00, // Exceeds maximum
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertStatus(422)
@@ -456,7 +475,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
                 'currency' => 'XYZ', // Invalid currency
             ]);
 
@@ -632,7 +651,7 @@ class ErrorScenarioTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
     }
 
@@ -679,7 +698,7 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         // Message should be user-friendly, not technical
@@ -701,9 +720,10 @@ class ErrorScenarioTest extends TestCase
         $response = $this->actingAs($user)
             ->postJson('/api/v1/payments/stripe/intent', [
                 'amount' => 10.00,
-                'package_id' => 1,
+                'package_id' => $this->package->id,
             ]);
 
         $response->assertJsonPath('message', 'Payment service is temporarily unavailable. Please try again in a moment.');
     }
 }
+

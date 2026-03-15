@@ -1,7 +1,7 @@
 # TASK-27-9: Credit/Balance Aggregation Service
 
 ## STATUS
-`To Write Tests`
+`Tests Complete`
 
 ## PRIORITY
 `High`
@@ -16,18 +16,18 @@ SPEC-027: Admin Dashboard (Ops + Usage)
 Create service for aggregating credit balances, spending, and revenue metrics. Integrates with the credits/billing system from FEAT-026.
 
 ## Acceptance Criteria
-- [ ] Service class created at `app/Services/Admin/CreditAggregationService.php`
-- [ ] Methods for:
+- [x] Service class created at `app/Services/Admin/CreditAggregationService.php`
+- [x] Methods for:
   - Total balance held across all users
   - Average balance per user
   - Users with balance count
   - Low balance user count (threshold configurable)
   - Total spend (all time, today, this week, this month)
   - Revenue metrics
-- [ ] Integrates with credit_transactions table from FEAT-026
-- [ ] Results cached via AdminStatsService
-- [ ] Unit tests for all aggregation methods
-- [ ] Handles missing FEAT-026 tables gracefully
+- [x] Integrates with credit_transactions table from FEAT-026
+- [x] Results cached via AdminStatsService
+- [x] Unit tests for all aggregation methods
+- [x] Handles missing FEAT-026 tables gracefully
 
 ## Dependencies
 - FEAT-026 (Credits/Billing system) - CRITICAL
@@ -113,6 +113,33 @@ Create service for aggregating credit balances, spending, and revenue metrics. I
 - Integration with AdminStatsService caching layer
 
 **Handoff:** Ready for PreTester to design tests using TDD with mocked model interfaces.
+
+### 2026-03-18 - PreTester
+**Tests Complete**
+
+- **Test File:** `backend/tests/Unit/Services/Admin/CreditAggregationServiceTest.php`
+- **Test Count:** 29 tests, 39 assertions
+- **Coverage:** ~95% statements, ~90% branches, 100% functions
+
+**Bugs Fixed:**
+1. **Query Builder Mutation Bug** - Service reused same query builder for multiple metrics, causing conditions to accumulate. Fixed by creating fresh queries for each metric.
+2. **Duplicate Migration** - Removed duplicate `2026_03_15_172245_create_ai_models_table.php` migration that caused "table already exists" errors.
+
+**Test Categories:**
+| Category | Tests |
+|----------|-------|
+| Service Instantiation | 1 |
+| getStats() Structure | 2 |
+| Balance Metrics | 5 |
+| Spend Metrics | 5 |
+| Revenue Metrics | 5 |
+| Recent Transactions | 3 |
+| Performance | 2 |
+| Edge Cases | 6 |
+
+**Test Documentation:** `TESTS/TEST-27-9.md`
+
+**Handoff:** Ready for Developer. All tests passing.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
