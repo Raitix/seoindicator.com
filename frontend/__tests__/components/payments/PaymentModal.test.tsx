@@ -173,19 +173,26 @@ describe('PaymentModal', () => {
       render(<PaymentModal {...defaultProps} currentStep={1} />);
       
       const steps = screen.getAllByTestId(/step-/);
-      expect(steps[0]).toHaveClass('completed');
-      expect(steps[1]).toHaveClass('active');
-      expect(steps[2]).not.toHaveClass('active');
+      // Step 0 is completed (has green classes)
+      expect(steps[0]).toHaveClass('bg-green-500/20');
+      expect(steps[0]).toHaveClass('text-green-400');
+      // Step 1 is active (has blue classes)
+      expect(steps[1]).toHaveClass('bg-blue-500/20');
+      expect(steps[1]).toHaveClass('text-blue-400');
+      // Step 2 is not active (has slate classes)
+      expect(steps[2]).toHaveClass('bg-slate-800');
     });
 
     it('transitions between steps', async () => {
       const { rerender } = render(<PaymentModal {...defaultProps} currentStep={0} />);
       
-      expect(screen.getByTestId('step-0')).toHaveClass('active');
+      // Step 0 is active at start
+      expect(screen.getByTestId('step-0')).toHaveClass('bg-blue-500/20');
       
       rerender(<PaymentModal {...defaultProps} currentStep={1} />);
       
-      expect(screen.getByTestId('step-1')).toHaveClass('active');
+      // Step 1 is now active
+      expect(screen.getByTestId('step-1')).toHaveClass('bg-blue-500/20');
     });
   });
 });
