@@ -1,7 +1,7 @@
 # SPEC-029: Export Results (PDF/XLS) - Technical Specification
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`
@@ -471,6 +471,24 @@ class ToolExportController extends Controller
 
 ## Comments
 _Agent log_
+
+### [2026-03-15 12:37 GMT+2] Agent: DocSystemAnalyst
+**Specification Complete - All Tasks Done**
+
+All 10 tasks verified complete:
+- TASK-29-1: PdfToolExporter Implementation ✅
+- TASK-29-2: XlsToolExporter Implementation ✅
+- TASK-29-3: ToolExportService & Controller ✅
+- TASK-29-4: Download Token System ✅
+- TASK-29-5: Rate Limiting Integration ✅
+- TASK-29-6: ExportResultsButton Component ✅
+- TASK-29-7: ExportModal Component ✅
+- TASK-29-8: Tool Page Integration ✅
+- TASK-29-9: Backend Unit Tests ✅
+- TASK-29-10: Frontend Component Tests ✅
+
+Status updated: `To Prioritize` → `Done`
+Parent FEAT-29: Done ✅
 
 ### [2026-03-04 12:15 GMT+2] Agent: SpecSystemAnalyst
 Broke down SPEC-029 into 10 tasks across 4 phases:

@@ -423,8 +423,7 @@ describe('ModelPicker Component', () => {
 
     it('MP-DEFAULT-02: should call setDefault API on click', async () => {
       const setDefault = vi.fn().mockResolvedValue({ success: true });
-      const { useSetDefaultModel } = require('@/lib/api/models');
-      useSetDefaultModel.mockReturnValue({
+      mockUseSetDefaultModel.mockReturnValue({
         setDefault,
         isPending: false,
         error: null,
@@ -435,11 +434,16 @@ describe('ModelPicker Component', () => {
       const trigger = screen.getByTestId('picker-trigger');
       await user.click(trigger);
 
+      // Wait for dialog to open and models to render
       await waitFor(() => {
-        expect(screen.getByTestId('set-default-btn')).toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      await user.click(screen.getByTestId('set-default-btn'));
+      // Model 2 is not the default, so should have set default button
+      const setDefaultBtns = await screen.findAllByTestId('set-default-btn');
+      expect(setDefaultBtns.length).toBeGreaterThan(0);
+
+      await user.click(setDefaultBtns[0]);
       expect(setDefault).toHaveBeenCalled();
     });
   });
@@ -515,14 +519,13 @@ describe('ModelPicker Component', () => {
 
   describe('MP-EDGE: Edge Cases', () => {
     it('MP-EDGE-01: should handle empty models list', async () => {
-      const { useModels } = require('@/lib/api/models');
-      useModels.mockReturnValue({
+      mockUseModels.mockReturnValue({
         models: [],
         meta: { total: 0, free_tier_count: 0 },
         isLoading: false,
         isValidating: false,
         error: null,
-        refetch: vi.fn(),
+        refetch: mockRefetch,
       });
 
       render(<ModelPicker onSelect={() => {}} />, { wrapper: createWrapper() });

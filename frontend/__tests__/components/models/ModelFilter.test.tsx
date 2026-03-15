@@ -18,6 +18,8 @@ vi.mock('lucide-react', () => ({
   X: () => <span data-testid="x-icon">X</span>,
   Filter: () => <span data-testid="filter-icon">Filter</span>,
   ChevronDown: () => <span data-testid="chevron-down-icon">ChevronDown</span>,
+  ChevronUp: () => <span data-testid="chevron-up-icon">ChevronUp</span>,
+  Check: () => <span data-testid="check-icon">Check</span>,
 }));
 
 describe('ModelFilter Component', () => {

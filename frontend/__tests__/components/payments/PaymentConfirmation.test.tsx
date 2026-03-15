@@ -9,11 +9,12 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentConfirmation } from '@/components/payments/PaymentConfirmation';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   CheckCircle: () => <span data-testid="check-circle-icon">CheckCircle</span>,
   XCircle: () => <span data-testid="x-circle-icon">XCircle</span>,
   Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loader2</span>,
@@ -26,16 +27,16 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock router
-const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
 }));
 
 // Mock confetti
-jest.mock('canvas-confetti', () => ({
-  default: jest.fn(),
+vi.mock('canvas-confetti', () => ({
+  default: vi.fn(),
 }));
 
 // Test data
@@ -53,13 +54,13 @@ const mockTransaction = {
 const defaultProps = {
   status: 'success' as const,
   transaction: mockTransaction,
-  onRetry: jest.fn(),
-  onBackToDashboard: jest.fn(),
+  onRetry: vi.fn(),
+  onBackToDashboard: vi.fn(),
 };
 
 describe('PaymentConfirmation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -379,7 +380,7 @@ describe('PaymentConfirmation', () => {
 
     it('PC-037: Retry click redirects', async () => {
       const user = userEvent.setup();
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       
       render(<PaymentConfirmation {...defaultProps} status="error" onRetry={onRetry} />);
       
@@ -396,7 +397,7 @@ describe('PaymentConfirmation', () => {
 
     it('PC-039: Retry count limit', async () => {
       const user = userEvent.setup();
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       
       render(<PaymentConfirmation 
         {...defaultProps} 
@@ -423,7 +424,7 @@ describe('PaymentConfirmation', () => {
 
     it('PC-041: Retry preserves package data', async () => {
       const user = userEvent.setup();
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       
       render(<PaymentConfirmation 
         {...defaultProps} 
@@ -452,7 +453,7 @@ describe('PaymentConfirmation', () => {
 
     it('PC-043: Cancel retry goes to dashboard', async () => {
       const user = userEvent.setup();
-      const onBackToDashboard = jest.fn();
+      const onBackToDashboard = vi.fn();
       
       render(<PaymentConfirmation 
         {...defaultProps} 
@@ -467,7 +468,7 @@ describe('PaymentConfirmation', () => {
 
     it('PC-044: Retry analytics tracked', async () => {
       const user = userEvent.setup();
-      const trackEvent = jest.fn();
+      const trackEvent = vi.fn();
       
       render(<PaymentConfirmation 
         {...defaultProps} 
@@ -767,3 +768,4 @@ interface PaymentConfirmationProps {
   savedCards?: Array<{ id: string; last4: string }>;
   trackEvent?: (event: string, data: any) => void;
 }
+
