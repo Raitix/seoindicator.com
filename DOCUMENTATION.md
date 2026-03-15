@@ -41208,6 +41208,177 @@ Schedule::job(new ProcessWebhookRetriesJob())->everyMinute();
 Or use Laravel Horizon/supervisor for queue processing.
 
 ---
+## Event Emitters Integration (TASK-6-16)
+
+### Service Description
+Implements webhook event emission from existing services. The `EmitsWebhookEvents` trait provides a standardized way to emit webhook events when significant actions occur in the application. Part of the Webhooks & Event System feature (FEAT-006).
+
+### Component Locations
+- **Trait:** `backend/app/Services/Traits/EmitsWebhookEvents.php`
+- **Tests:** `backend/tests/Unit/Services/Traits/EmitsWebhookEventsTest.php`, `backend/tests/Unit/Repositories/KeywordEventTest.php`, `backend/tests/Unit/Services/RankCheckerServiceEventTest.php`
+- **Test Documentation:** `TESTS/TEST-6-16.md`
+
+### Events Emitted
+
+| Event | Trigger Location | Method |
+|-------|------------------|--------|
+| `ranking.changed` | RankCheckerService::checkAndStore() | `emitRankingChangedEvent()` |
+| `keyword.added` | KeywordRepository::create() | `emitKeywordAddedEvent()` |
+| `keyword.removed` | KeywordRepository::delete() | `emitKeywordRemovedEvent()` |
+| `report.completed` | ReportScheduler | `emitReportCompletedEvent()` |
+| `alert.triggered` | AlertService (pending) | `emitAlertTriggeredEvent()` |
+
+### EmitsWebhookEvents Trait Methods
+
+| Method | Description |
+|--------|-------------|
+| `emitWebhookEvent(int $userId, string $eventType, array $data): int` | Core emission method |
+| `emitRankingChangedEvent(...)` | Emit ranking.changed event |
+| `emitKeywordAddedEvent(...)` | Emit keyword.added event |
+| `emitKeywordRemovedEvent(...)` | Emit keyword.removed event |
+| `emitReportCompletedEvent(...)` | Emit report.completed event |
+| `emitAlertTriggeredEvent(...)` | Emit alert.triggered event |
+| `calculatePositionChange(?int $old, ?int $new): ?int` | Calculate position delta |
+| `hasPositionChanged(?int $old, ?int $new): bool` | Check if position changed |
+
+### Event Payload Structures
+
+**ranking.changed:**
+```json
+{
+  "keyword_id": 1,
+  "keyword": "seo tools",
+  "site_id": 1,
+  "old_position": 7,
+  "new_position": 5,
+  "change": -2,
+  "url_found": "https://example.com/seo-tools",
+  "checked_at": "2026-02-28T10:00:00Z",
+  "serp_features": { "featured_snippet": false, "local_pack": true }
+}
+```
+
+**keyword.added:**
+```json
+{
+  "keyword_id": 1,
+  "keyword": "seo tools",
+  "site_id": 1,
+  "target_url": "https://example.com/seo-tools",
+  "search_engine": "google",
+  "location": "us",
+  "device": "desktop",
+  "status": "active"
+}
+```
+
+**keyword.removed:**
+```json
+{
+  "keyword_id": 1,
+  "keyword": "seo tools",
+  "site_id": 1,
+  "removed_at": "2026-02-28T10:00:00Z"
+}
+```
+
+**report.completed:**
+```json
+{
+  "report_id": 1,
+  "site_id": 1,
+  "scheduled_report_id": 5,
+  "type": "weekly",
+  "format": "pdf",
+  "download_url": "/api/v1/reports/1/download",
+  "file_size": 1024000,
+  "date_range": { "start": "2026-02-21", "end": "2026-02-28" },
+  "generated_at": "2026-02-28T10:00:00Z"
+}
+```
+
+**alert.triggered:**
+```json
+{
+  "alert_id": 1,
+  "alert_name": "Position Drop Alert",
+  "keyword_id": 1,
+  "keyword": "seo tools",
+  "site_id": 1,
+  "condition": "position_drop",
+  "threshold": 5,
+  "previous_value": 5,
+  "current_value": 15,
+  "triggered_at": "2026-02-28T10:00:00Z"
+}
+```
+
+### Position Change Calculation
+
+| Scenario | Old Position | New Position | Change | Meaning |
+|----------|--------------|--------------|--------|---------|
+| Improved | 10 | 5 | -5 | Moved up 5 positions |
+| Declined | 5 | 10 | +5 | Moved down 5 positions |
+| First ranking | null | 15 | null | No previous position |
+| Dropped out | 50 | null | null | No longer ranked |
+| No change | 5 | 5 | 0 | Same position |
+
+### Integration Pattern
+
+```php
+// In RankCheckerService after storing ranking
+if ($this->hasPositionChanged($previousPosition, $currentPosition)) {
+    $this->emitRankingChangedEvent(
+        userId: $keyword->user_id,
+        keywordId: $keyword->id,
+        keyword: $keyword->keyword,
+        siteId: $keyword->site_id,
+        oldPosition: $previousPosition,
+        newPosition: $currentPosition,
+        urlFound: $urlFound,
+        checkedAt: $checkedAt,
+        serpFeatures: $serpFeatures
+    );
+}
+```
+
+### Error Handling
+
+- Event emission failures are logged but do NOT fail the main operation
+- Dispatcher exceptions are caught and logged with context
+- Returns 0 on failure, allowing calling code to optionally track failed emissions
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `EmitsWebhookEventsTest` | 9 | 21 | ✅ PASS |
+| `KeywordEventTest` | 7 | 17 | ✅ PASS |
+| `RankCheckerServiceEventTest` | 4 | 6 | ✅ PASS |
+| **Total** | **20** | **44** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Tests | 20/20 passing (44 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-14 | Done ✅ | Webhook dispatcher service |
+
+### Related Tasks
+
+- TASK-6-12: Webhooks Tables (database schema)
+- TASK-6-13: Webhook Management API (CRUD endpoints)
+- TASK-6-14: Webhook Dispatcher Service (HTTP delivery)
+- TASK-6-15: Webhook Retry Logic (retry mechanism)
+
+---
 ## Database Schema: GSC Query Match Column (TASK-12-3)
 
 ### Schema Change
