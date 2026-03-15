@@ -4,6 +4,7 @@ namespace App\Services\Billing;
 
 use App\Models\User;
 use App\Models\CreditTransaction;
+use App\Models\PaymentMethod;
 use App\Services\Billing\Contracts\PaymentGatewayInterface;
 use App\Services\Billing\DTOs\PaymentResult;
 use App\Services\Billing\Exceptions\StripePaymentException;

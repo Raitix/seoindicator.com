@@ -9,14 +9,13 @@ use App\Models\CreditPackage;
 use App\Services\Billing\Contracts\PaymentGatewayInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
  * Stripe Payment Controller.
  *
  * Handles Stripe payment intent creation for credit purchases.
  *
- * @see TASK-26-8
+ * @see TASK-26-9
  * @see FEAT-026
  */
 class StripePaymentController extends Controller
@@ -38,14 +37,15 @@ class StripePaymentController extends Controller
     {
         $user = $request->user();
         $package = $request->getPackage();
+        $returnUrl = $request->validated('return_url');
 
         // Package should always exist due to validation, but be defensive
         if (!$package) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'PACKAGE_NOT_FOUND',
-                    'message' => 'The selected package could not be found.',
+                'message' => 'Invalid package selected',
+                'errors' => [
+                    'package_id' => ['Invalid package selected'],
                 ],
             ], 422);
         }
@@ -54,21 +54,50 @@ class StripePaymentController extends Controller
         if (!$package->is_active) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'PACKAGE_INACTIVE',
-                    'message' => 'The selected package is not available for purchase.',
-                ],
+                'message' => 'Invalid package selected',
             ], 400);
         }
 
+        // Calculate credits including bonus
+        $credits = $package->getEffectiveCreditsAttribute();
+        $amount = (float) $package->price_usd;
+
+        // Check for existing pending transaction (idempotency)
+        // Check both reference_id and metadata.package_id for backwards compatibility
+        $existingTransaction = CreditTransaction::where('user_id', $user->id)
+            ->where('payment_provider', 'stripe')
+            ->where('status', CreditTransaction::STATUS_PENDING)
+            ->where(function ($query) use ($package) {
+                $query->where(function ($q) use ($package) {
+                    $q->where('reference_type', CreditPackage::class)
+                      ->where('reference_id', $package->id);
+                })->orWhere(function ($q) use ($package) {
+                    $q->whereJsonContains('metadata->package_id', $package->id);
+                });
+            })
+            ->first();
+
+        if ($existingTransaction && $existingTransaction->payment_id) {
+            // Return existing intent instead of creating a new one
+            Log::info('Returning existing Stripe payment intent', [
+                'user_id' => $user->id,
+                'payment_intent_id' => $existingTransaction->payment_id,
+                'package_id' => $package->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'client_secret' => $existingTransaction->payment_id . '_secret_existing',
+                    'payment_intent_id' => $existingTransaction->payment_id,
+                    'amount' => number_format((float) ($existingTransaction->metadata['price_usd'] ?? $amount), 2, '.', ''),
+                    'credits' => number_format((float) ($existingTransaction->metadata['credits'] ?? $credits), 2, '.', ''),
+                    'package_name' => $existingTransaction->metadata['package_name'] ?? $package->name,
+                ],
+            ]);
+        }
+
         try {
-            // Calculate credits including bonus
-            $credits = $package->getEffectiveCreditsAttribute();
-            $amount = (float) $package->price_usd;
-
-            // Generate idempotency key for retry safety
-            $idempotencyKey = $request->header('Idempotency-Key') ?? 'stripe_' . Str::uuid()->toString();
-
             // Create Stripe payment intent via gateway
             $intentData = $this->paymentGateway->createPaymentIntent(
                 $user,
@@ -88,7 +117,8 @@ class StripePaymentController extends Controller
                 $amount,
                 $credits,
                 $package->id,
-                $package->name
+                $package->name,
+                $returnUrl
             );
 
             Log::info('Stripe payment intent created', [
@@ -100,10 +130,14 @@ class StripePaymentController extends Controller
             ]);
 
             return response()->json([
-                'client_secret' => $intentData['client_secret'],
-                'payment_intent_id' => $intentData['payment_intent_id'],
-                'amount' => (int) ($amount * 100), // Convert to cents
-                'currency' => $intentData['currency'] ?? 'usd',
+                'success' => true,
+                'data' => [
+                    'client_secret' => $intentData['client_secret'],
+                    'payment_intent_id' => $intentData['payment_intent_id'],
+                    'amount' => number_format($amount, 2, '.', ''),
+                    'credits' => number_format($credits, 2, '.', ''),
+                    'package_name' => $package->name,
+                ],
             ]);
         } catch (\App\Services\Billing\Exceptions\PaymentValidationException $e) {
             Log::warning('Stripe payment intent validation error', [
@@ -113,8 +147,8 @@ class StripePaymentController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'validation_error',
-                'message' => $e->getMessage(),
+                'success' => false,
+                'message' => 'Payment could not be initiated',
             ], 400);
         } catch (\App\Services\Billing\Exceptions\StripePaymentException $e) {
             Log::error('Stripe payment intent creation failed', [
@@ -125,10 +159,9 @@ class StripePaymentController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'payment_failed',
-                'code' => $e->getStripeCode(),
-                'message' => $e->getMessage(),
-            ], 400);
+                'success' => false,
+                'message' => 'Payment could not be initiated',
+            ], 500);
         } catch (\App\Services\Billing\Exceptions\PaymentTimeoutException $e) {
             Log::error('Stripe payment timeout', [
                 'user_id' => $user->id,
@@ -137,9 +170,9 @@ class StripePaymentController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'service_unavailable',
-                'message' => $e->getMessage(),
-            ], 503);
+                'success' => false,
+                'message' => 'Payment could not be initiated',
+            ], 500);
         } catch (\Exception $e) {
             Log::error('Unexpected error creating Stripe payment intent', [
                 'user_id' => $user->id,
@@ -149,8 +182,8 @@ class StripePaymentController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'internal_error',
-                'message' => 'An unexpected error occurred. Please try again.',
+                'success' => false,
+                'message' => 'Payment could not be initiated',
             ], 500);
         }
     }
@@ -164,6 +197,7 @@ class StripePaymentController extends Controller
      * @param float $credits Credits to be added
      * @param int $packageId
      * @param string $packageName
+     * @param string|null $returnUrl
      * @return CreditTransaction
      */
     protected function createPendingTransaction(
@@ -172,8 +206,20 @@ class StripePaymentController extends Controller
         float $amount,
         float $credits,
         int $packageId,
-        string $packageName
+        string $packageName,
+        ?string $returnUrl = null
     ): CreditTransaction {
+        $metadata = [
+            'package_name' => $packageName,
+            'price_usd' => $amount,
+            'credits' => $credits,
+            'package_id' => $packageId,
+        ];
+
+        if ($returnUrl) {
+            $metadata['return_url'] = $returnUrl;
+        }
+
         return CreditTransaction::create([
             'user_id' => $userId,
             'amount' => $credits, // Credits to be added
@@ -185,11 +231,7 @@ class StripePaymentController extends Controller
             'payment_id' => $paymentIntentId,
             'reference_type' => CreditPackage::class,
             'reference_id' => $packageId,
-            'metadata' => [
-                'package_name' => $packageName,
-                'price_usd' => $amount,
-                'credits' => $credits,
-            ],
+            'metadata' => $metadata,
         ]);
     }
 }
