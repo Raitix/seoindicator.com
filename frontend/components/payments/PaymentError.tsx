@@ -8,9 +8,13 @@ import { AlertCircle, RefreshCw, HelpCircle, ExternalLink } from "lucide-react";
 // ==================== Types ====================
 
 export interface PaymentErrorProps {
-  error: string;
+  errorType?: 'card_declined' | 'insufficient_funds' | 'network_error' | 'timeout' | 'fraud' | 'expired_card' | 'incorrect_cvc' | 'processing_error' | 'rate_limit' | 'unknown';
+  error?: string;
+  errorMessage?: string;
   errorCode?: string;
+  errorDetails?: { type?: string; message?: string };
   onRetry?: () => void;
+  onCancel?: () => void;
   onDismiss?: () => void;
   retryAfter?: number;
   showContactSupport?: boolean;
@@ -19,24 +23,63 @@ export interface PaymentErrorProps {
 
 // ==================== Error Messages ====================
 
-const ERROR_MESSAGES: Record<string, string> = {
-  card_declined: "Your card was declined. Please try a different payment method.",
-  insufficient_funds: "Insufficient funds. Please check your balance or try a different card.",
-  expired_card: "Your card has expired. Please use a different payment method.",
-  incorrect_cvc: "The security code is incorrect. Please check and try again.",
-  processing_error: "A processing error occurred. Please try again.",
-  rate_limit: "Too many attempts. Please wait before trying again.",
-  timeout: "The payment timed out. Please try again.",
-  fraud: "Payment blocked for security reasons. Please contact support.",
-  network: "Network error. Please check your connection and try again.",
+const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
+  card_declined: {
+    title: "Card Declined",
+    message: "Your card was declined. Please try a different payment method.",
+  },
+  insufficient_funds: {
+    title: "Insufficient Funds",
+    message: "Insufficient funds. Please check your balance or try a different card.",
+  },
+  expired_card: {
+    title: "Card Expired",
+    message: "Your card has expired. Please use a different payment method.",
+  },
+  incorrect_cvc: {
+    title: "Incorrect Security Code",
+    message: "The security code is incorrect. Please check and try again.",
+  },
+  processing_error: {
+    title: "Processing Error",
+    message: "A processing error occurred. Please try again.",
+  },
+  rate_limit: {
+    title: "Too Many Attempts",
+    message: "Too many attempts. Please wait before trying again.",
+  },
+  timeout: {
+    title: "Payment Timed Out",
+    message: "The payment timed out. Please try again.",
+  },
+  fraud: {
+    title: "Payment Blocked",
+    message: "Payment blocked for security reasons. Please contact support.",
+  },
+  network_error: {
+    title: "Network Error",
+    message: "Network error. Please check your connection and try again.",
+  },
+  network: {
+    title: "Network Error",
+    message: "Network error. Please check your connection and try again.",
+  },
+  unknown: {
+    title: "Payment Failed",
+    message: "An error occurred while processing your payment.",
+  },
 };
 
 // ==================== Main Component ====================
 
 export function PaymentError({
+  errorType = 'unknown',
   error,
+  errorMessage,
   errorCode,
+  errorDetails,
   onRetry,
+  onCancel,
   onDismiss,
   retryAfter,
   showContactSupport = true,
@@ -44,6 +87,13 @@ export function PaymentError({
 }: PaymentErrorProps) {
   const [countdown, setCountdown] = React.useState(retryAfter || 0);
   const [retryCount, setRetryCount] = React.useState(0);
+
+  // Log error in development
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && errorDetails) {
+      console.error('[PaymentError]', errorDetails);
+    }
+  }, [errorDetails]);
 
   // Countdown timer
   React.useEffect(() => {
@@ -53,16 +103,26 @@ export function PaymentError({
     }
   }, [retryAfter, countdown]);
 
-  const getErrorMessage = () => {
-    if (errorCode && ERROR_MESSAGES[errorCode]) {
-      return ERROR_MESSAGES[errorCode];
-    }
-    return error || "An error occurred while processing your payment.";
+  const getErrorInfo = () => {
+    const key = errorType || 'unknown';
+    return ERROR_MESSAGES[key] || ERROR_MESSAGES.unknown;
   };
+
+  const errorInfo = getErrorInfo();
+  
+  // Use provided errorMessage, error, or default from error type
+  const displayMessage = errorMessage || error || errorInfo.message;
+
+  // Mask sensitive card data in message
+  const maskedMessage = displayMessage?.replace(/\d{13,16}/g, '****');
 
   const handleRetry = () => {
     setRetryCount((c) => c + 1);
     onRetry?.();
+  };
+
+  const handleDismiss = () => {
+    (onCancel || onDismiss)?.();
   };
 
   const canRetry = !retryAfter || countdown === 0;
@@ -77,7 +137,11 @@ export function PaymentError({
     >
       {/* Icon */}
       <div className="flex items-start gap-4">
-        <div className="shrink-0 w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+        <div 
+          className="shrink-0 w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center"
+          data-testid="error-icon"
+          aria-label="Error"
+        >
           <AlertCircle className="w-6 h-6 text-red-400" />
         </div>
 
@@ -87,7 +151,7 @@ export function PaymentError({
 
           {/* Message */}
           <p className="text-slate-400 text-sm mt-2">
-            {getErrorMessage()}
+            {maskedMessage}
           </p>
 
           {/* Error Code */}
@@ -121,9 +185,9 @@ export function PaymentError({
           </Button>
         )}
 
-        {onDismiss && (
+        {handleDismiss && (
           <Button
-            onClick={onDismiss}
+            onClick={handleDismiss}
             variant="ghost"
             className="w-full text-slate-400"
           >

@@ -192,6 +192,9 @@ function CheckoutForm({
     }).format(price);
   };
 
+  // Use payment intent amount from server for security (prevents client-side manipulation)
+  const displayAmount = paymentIntent.amount;
+
   return (
     <form
       data-testid="stripe-checkout-form"
@@ -214,7 +217,7 @@ function CheckoutForm({
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-white">
-              {formatPrice(creditPackage.price)}
+              {formatPrice(displayAmount)}
             </p>
           </div>
         </div>
@@ -291,7 +294,7 @@ function CheckoutForm({
             Processing...
           </>
         ) : (
-          `Pay ${formatPrice(creditPackage.price)}`
+          `Pay ${formatPrice(displayAmount)}`
         )}
       </Button>
 

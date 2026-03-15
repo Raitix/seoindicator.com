@@ -110,7 +110,9 @@ describe('Payment Security Tests', () => {
       
       // Should show amount from payment intent, not package
       // (This would be enforced server-side in real implementation)
-      expect(screen.getByText(/\$25\.00/)).toBeInTheDocument();
+      // Use getAllByText since $25.00 appears in both summary and button
+      const amounts = screen.getAllByText(/\$25\.00/);
+      expect(amounts.length).toBeGreaterThan(0);
     });
 
     it('does not trust frontend payment status alone', async () => {

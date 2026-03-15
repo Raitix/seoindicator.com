@@ -278,7 +278,8 @@ describe('StripeCheckout', () => {
 
     it('formats large amounts correctly', () => {
       const largePackage = { ...mockPackage, price: 1000 };
-      render(<StripeCheckout {...defaultProps} creditPackage={largePackage} />);
+      const largePaymentIntent = { ...mockPaymentIntent, amount: 1000 };
+      render(<StripeCheckout {...defaultProps} creditPackage={largePackage} paymentIntent={largePaymentIntent} />);
       
       expect(screen.getByText('$1,000.00')).toBeInTheDocument();
     });

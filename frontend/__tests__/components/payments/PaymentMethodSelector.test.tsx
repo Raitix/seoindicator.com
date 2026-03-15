@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentMethodSelector } from '@/components/payments/PaymentMethodSelector';
@@ -22,6 +22,30 @@ vi.mock('lucide-react', () => ({
   Star: () => <span data-testid="star-icon">Star</span>,
   AlertTriangle: () => <span data-testid="alert-icon">AlertTriangle</span>,
   Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loader2</span>,
+  MoreVertical: () => <span data-testid="more-vertical-icon">MoreVertical</span>,
+  AlertCircle: () => <span data-testid="alert-circle-icon">AlertCircle</span>,
+}));
+
+// Mock API hooks
+vi.mock('@/lib/api/payments', () => ({
+  usePaymentMethods: () => ({
+    methods: [],
+    isLoading: false,
+    error: null,
+    mutate: vi.fn(),
+  }),
+  useDeletePaymentMethod: () => ({
+    deleteMethod: vi.fn(),
+    isLoading: false,
+  }),
+  useSetDefaultPaymentMethod: () => ({
+    setDefault: vi.fn(),
+    isLoading: false,
+  }),
+  getCardBrandIcon: (brand: string) => `/icons/cards/${brand}.svg`,
+  getCardBrandName: (brand: string) => brand.charAt(0).toUpperCase() + brand.slice(1),
+  isCardExpired: () => false,
+  isCardExpiringSoon: () => false,
 }));
 
 // Mock fetch
@@ -147,8 +171,9 @@ describe('PaymentMethodSelector', () => {
     it('PMS-011: Expiry date shown', () => {
       render(<PaymentMethodSelector {...defaultProps} />);
       
-      expect(screen.getByText('12/25')).toBeInTheDocument();
-      expect(screen.getByText('06/26')).toBeInTheDocument();
+      // Component shows "Expires 12/2025" format
+      expect(screen.getByText(/Expires.*12\/2025/)).toBeInTheDocument();
+      expect(screen.getByText(/Expires.*06\/2026/)).toBeInTheDocument();
     });
 
     it('PMS-012: Default badge shown', () => {
