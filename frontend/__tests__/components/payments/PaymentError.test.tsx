@@ -92,7 +92,8 @@ describe('PaymentError', () => {
     it('shows error code when available', () => {
       render(<PaymentError {...defaultProps} errorCode="err_abc123" />);
       
-      expect(screen.getByText('err_abc123')).toBeInTheDocument();
+      // The component shows "Error code: err_abc123"
+      expect(screen.getByText(/err_abc123/)).toBeInTheDocument();
     });
 
     it('hides sensitive card details from error', () => {
@@ -110,7 +111,11 @@ describe('PaymentError', () => {
 
   describe('PE-012 to PE-014: Logging & Cancel', () => {
     it('logs error in development mode', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const originalEnv = process.env.NODE_ENV;
+      // @ts-ignore
+      process.env.NODE_ENV = 'development';
+      
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       render(
         <PaymentError 
@@ -122,6 +127,8 @@ describe('PaymentError', () => {
       expect(consoleSpy).toHaveBeenCalled();
       
       consoleSpy.mockRestore();
+      // @ts-ignore
+      process.env.NODE_ENV = originalEnv;
     });
 
     it('shows cancel option', () => {
