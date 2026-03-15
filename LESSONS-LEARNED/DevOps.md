@@ -338,3 +338,16 @@ Last updated: 2026-03-07
 - **Tests:** 44 passed (170 assertions) - ALL PASS
 - **Note:** Part of SPEC-019 (Analysis Job Queue System). Backend service for managing SEO analysis job lifecycle.
 
+### TASK-27-4 (User Stats Aggregation Queries)
+- **Date:** 2026-03-15
+- **Method:** Already deployed (code was in origin/main)
+- **Commit:** 7e574bbc (included in deployment 20260315T152702Z-b307c11f)
+- **Result:** Successful
+- **Health Check:** 200 OK, production smoke passed
+- **What was deployed:**
+  - `backend/app/Repositories/UserStatsRepository.php` - User stats aggregation repository
+  - Repository methods: `getTotalUserCount()`, `getActiveUsersCount()`, `getNewRegistrationsToday()`, `getNewRegistrationsThisWeek()`, `getNewRegistrationsThisMonth()`, `getGrowthRates()`, `getUsersByPlan()`, `getFullStats()`, `getCachedFullStats()`, `clearCache()`
+  - Migration: `last_login_at` and `plan` columns with indexes
+  - 62 tests passing (111 assertions)
+- **Note:** Code was already committed and pushed by LocalTester. The latest production deployment included this code. No additional deployment needed.
+
