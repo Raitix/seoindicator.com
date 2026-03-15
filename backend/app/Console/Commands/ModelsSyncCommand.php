@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AIModel;
 use App\Services\OpenRouterSyncService;
 use Illuminate\Console\Command;
 
@@ -12,7 +13,7 @@ use Illuminate\Console\Command;
  *   php artisan models:sync
  *   php artisan models:sync --force
  *   php artisan models:sync --provider=openrouter
- *   php artisan models:sync --quiet
+ *   php artisan models:sync -q (quiet mode - built-in Laravel option)
  */
 class ModelsSyncCommand extends Command
 {
@@ -23,8 +24,7 @@ class ModelsSyncCommand extends Command
      */
     protected $signature = 'models:sync
         {--force : Deactivate models not found in API}
-        {--provider=openrouter : Provider to sync}
-        {--quiet : Suppress output}';
+        {--provider=openrouter : Provider to sync}';
 
     /**
      * The console command description.
@@ -38,42 +38,24 @@ class ModelsSyncCommand extends Command
      */
     public function handle(OpenRouterSyncService $syncService): int
     {
-        if (!$this->option('quiet')) {
-            $this->info('Starting AI models sync from OpenRouter...');
-        }
+        $this->info('Starting AI models sync from OpenRouter...');
 
         try {
-            $count = $syncService->syncModels();
+            // By default, do NOT deactivate missing models
+            // Only deactivate when --force is explicitly passed
+            $deactivateMissing = (bool) $this->option('force');
+            
+            // Sync models
+            $count = $syncService->syncModels(deactivateMissing: $deactivateMissing);
 
-            if (!$this->option('quiet')) {
-                $this->info("Successfully synced {$count} models.");
-            }
-
-            // Handle --force flag for deactivating missing models
-            if ($this->option('force')) {
-                $this->deactivateMissingModels($this->option('provider'));
-            }
+            $this->info("Successfully synced {$count} models.");
 
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            if (!$this->option('quiet')) {
-                $this->error('Failed to sync models: ' . $e->getMessage());
-            }
+            $this->error('Failed to sync models: ' . $e->getMessage());
 
             return Command::SUCCESS; // Return success to not break scheduled jobs
         }
-    }
-
-    /**
-     * Deactivate models that were not synced (not found in API).
-     *
-     * @param string $provider
-     */
-    protected function deactivateMissingModels(string $provider): void
-    {
-        // This would be implemented if we need to track which models were seen
-        // during sync and deactivate those that weren't
-        // For now, the sync service handles this internally
     }
 }

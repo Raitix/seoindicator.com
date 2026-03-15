@@ -136,8 +136,10 @@ class CrawlWorker implements ShouldQueue
     ): void {
         $this->startTime = microtime(true);
 
-        // Set memory limit
-        ini_set('memory_limit', $this->memoryLimit . 'M');
+        // Set memory limit (use @ to suppress warnings if current usage exceeds limit)
+        // In production, this ensures we have enough memory for crawling
+        // In tests, this may fail silently if memory is already allocated
+        @ini_set('memory_limit', $this->memoryLimit . 'M');
 
         // Retrieve the job
         $crawlJob = $crawler->getCrawlJob($this->jobId);

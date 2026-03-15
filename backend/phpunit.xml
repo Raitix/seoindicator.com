@@ -54,5 +54,7 @@
         <env name="PAYPAL_WEBHOOK_ID" value="test-webhook-id"/>
         <env name="PAYPAL_RETURN_URL" value="http://localhost:3000/payment/success"/>
         <env name="PAYPAL_CANCEL_URL" value="http://localhost:3000/payment/cancel"/>
+        <!-- OpenRouter Configuration (Development/Test Values) -->
+        <env name="OPENROUTER_API_KEY" value="test-api-key"/>
     </php>
 </phpunit>
