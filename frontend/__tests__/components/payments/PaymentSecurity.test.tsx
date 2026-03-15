@@ -7,18 +7,19 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { StripeCheckout } from '@/components/payments/StripeCheckout';
 
 // Mock Stripe
-jest.mock('@stripe/react-stripe-js', () => ({
+vi.mock('@stripe/react-stripe-js', () => ({
   Elements: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   PaymentElement: () => <div data-testid="payment-element" />,
-  useStripe: () => ({ confirmPayment: jest.fn() }),
-  useElements: () => ({ submit: jest.fn() }),
+  useStripe: () => ({ confirmPayment: vi.fn() }),
+  useElements: () => ({ submit: vi.fn() }),
 }));
 
-jest.mock('@stripe/stripe-js', () => ({
+vi.mock('@stripe/stripe-js', () => ({
   loadStripe: jest.fn(() => Promise.resolve({})),
 }));
 
@@ -40,9 +41,9 @@ describe('Payment Security Tests', () => {
   const defaultProps = {
     creditPackage: mockPackage,
     paymentIntent: mockPaymentIntent,
-    onSuccess: jest.fn(),
-    onError: jest.fn(),
-    onCancel: jest.fn()
+    onSuccess: vi.fn(),
+    onError: vi.fn(),
+    onCancel: vi.fn()
   };
 
   describe('SEC-001 to SEC-003: Card Data Protection', () => {
@@ -116,7 +117,7 @@ describe('Payment Security Tests', () => {
       // Payment success should be confirmed via webhook/backend
       // The frontend should wait for server confirmation
       
-      const onSuccess = jest.fn();
+      const onSuccess = vi.fn();
       render(<StripeCheckout {...defaultProps} onSuccess={onSuccess} />);
       
       // Even if Stripe returns success, we verify via webhook
@@ -233,3 +234,4 @@ describe('PCI Compliance Checklist', () => {
     expect(true).toBe(true); // Document TLS requirement
   });
 });
+

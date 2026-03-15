@@ -1,7 +1,7 @@
 # TASK-21-9: Implement Vercel AI Provider
 
 ## STATUS
-`To Deploy`
+`Deploying`
 
 ## PRIORITY
 `Medium`

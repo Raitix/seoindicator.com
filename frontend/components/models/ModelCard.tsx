@@ -13,7 +13,7 @@ import { Check, Star, Zap, Eye, Wrench, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import type { AIModel, ModelCapability } from '@/lib/types/models';
-import { formatCost, formatContextWindow } from '@/lib/api/models';
+import { formatCost, formatContextWindow, sanitizeText } from '@/lib/api/models';
 
 // ==================== Types ====================
 
@@ -110,9 +110,9 @@ export function ModelCard({
             <h3
               data-testid="model-name"
               className="font-semibold text-base truncate"
-              title={model.display_name}
+              title={sanitizeText(model.display_name)}
             >
-              {model.display_name}
+              {sanitizeText(model.display_name)}
             </h3>
             {model.is_free_tier && (
               <Badge
@@ -128,7 +128,7 @@ export function ModelCard({
             data-testid="model-provider"
             className="text-sm text-muted-foreground capitalize"
           >
-            {model.provider}
+            {sanitizeText(model.provider)}
           </p>
         </div>
       </div>

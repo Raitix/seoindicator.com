@@ -9,11 +9,12 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentMethodSelector } from '@/components/payments/PaymentMethodSelector';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   CreditCard: () => <span data-testid="credit-card-icon">CreditCard</span>,
   Plus: () => <span data-testid="plus-icon">Plus</span>,
   Check: () => <span data-testid="check-icon">Check</span>,
@@ -24,7 +25,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock fetch
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Test data
@@ -56,13 +57,13 @@ const mockMethods = [
 const defaultProps = {
   methods: mockMethods,
   selectedId: null,
-  onMethodSelect: jest.fn(),
-  onAddNew: jest.fn(),
+  onMethodSelect: vi.fn(),
+  onAddNew: vi.fn(),
 };
 
 describe('PaymentMethodSelector', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
@@ -235,7 +236,7 @@ describe('PaymentMethodSelector', () => {
   describe('Selection Behavior', () => {
     it('PMS-019: Select existing method', async () => {
       const user = userEvent.setup();
-      const onMethodSelect = jest.fn();
+      const onMethodSelect = vi.fn();
       
       render(<PaymentMethodSelector {...defaultProps} onMethodSelect={onMethodSelect} />);
       
@@ -246,7 +247,7 @@ describe('PaymentMethodSelector', () => {
 
     it('PMS-020: Select new card triggers callback', async () => {
       const user = userEvent.setup();
-      const onAddNew = jest.fn();
+      const onAddNew = vi.fn();
       
       render(<PaymentMethodSelector {...defaultProps} onAddNew={onAddNew} />);
       
@@ -257,7 +258,7 @@ describe('PaymentMethodSelector', () => {
 
     it('PMS-021: Deselect method', async () => {
       const user = userEvent.setup();
-      const onMethodSelect = jest.fn();
+      const onMethodSelect = vi.fn();
       
       render(<PaymentMethodSelector 
         {...defaultProps} 
@@ -272,7 +273,7 @@ describe('PaymentMethodSelector', () => {
 
     it('PMS-022: Only one method selected at a time', async () => {
       const user = userEvent.setup();
-      const onMethodSelect = jest.fn();
+      const onMethodSelect = vi.fn();
       
       render(<PaymentMethodSelector {...defaultProps} onMethodSelect={onMethodSelect} />);
       
@@ -306,7 +307,7 @@ describe('PaymentMethodSelector', () => {
 
     it('PMS-025: Keyboard selection with Enter', async () => {
       const user = userEvent.setup();
-      const onMethodSelect = jest.fn();
+      const onMethodSelect = vi.fn();
       
       render(<PaymentMethodSelector {...defaultProps} onMethodSelect={onMethodSelect} />);
       
@@ -348,7 +349,7 @@ describe('PaymentMethodSelector', () => {
 
     it('PMS-028: Selection change callback', async () => {
       const user = userEvent.setup();
-      const onSelectionChange = jest.fn();
+      const onSelectionChange = vi.fn();
       
       render(<PaymentMethodSelector 
         {...defaultProps} 
@@ -496,7 +497,7 @@ describe('PaymentMethodSelector', () => {
 
     it('PMS-037: Refresh methods', async () => {
       const user = userEvent.setup();
-      const onRefresh = jest.fn();
+      const onRefresh = vi.fn();
       
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -744,3 +745,4 @@ interface PaymentMethodSelectorProps {
   allowEdit?: boolean;
   onSelectionChange?: (id: string | null) => void;
 }
+

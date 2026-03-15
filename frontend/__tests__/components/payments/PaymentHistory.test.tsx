@@ -9,11 +9,12 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentHistory } from '@/components/payments/PaymentHistory';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Download: () => <span data-testid="download-icon">Download</span>,
   Receipt: () => <span data-testid="receipt-icon">Receipt</span>,
   Filter: () => <span data-testid="filter-icon">Filter</span>,
@@ -27,7 +28,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock fetch
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Test data
@@ -47,13 +48,13 @@ const defaultProps = {
   transactions: mockTransactions,
   isLoading: false,
   error: null,
-  onPageChange: jest.fn(),
-  onFilter: jest.fn(),
+  onPageChange: vi.fn(),
+  onFilter: vi.fn(),
 };
 
 describe('PaymentHistory', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
@@ -208,7 +209,7 @@ describe('PaymentHistory', () => {
   describe('Filtering', () => {
     it('PH-021: Filter by status completed', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -220,7 +221,7 @@ describe('PaymentHistory', () => {
 
     it('PH-022: Filter by status failed', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -232,7 +233,7 @@ describe('PaymentHistory', () => {
 
     it('PH-023: Filter by date range', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -249,7 +250,7 @@ describe('PaymentHistory', () => {
 
     it('PH-024: Filter by type purchase', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -261,7 +262,7 @@ describe('PaymentHistory', () => {
 
     it('PH-025: Filter by type refund', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -273,7 +274,7 @@ describe('PaymentHistory', () => {
 
     it('PH-026: Filter by amount range', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -290,7 +291,7 @@ describe('PaymentHistory', () => {
 
     it('PH-027: Search transactions', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -305,7 +306,7 @@ describe('PaymentHistory', () => {
 
     it('PH-028: Clear filters button', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} activeFilters={{ status: 'completed' }} />);
       
@@ -316,7 +317,7 @@ describe('PaymentHistory', () => {
 
     it('PH-029: Filter persistence in URL', () => {
       // Simulate URL with filter params
-      const mockPushState = jest.fn();
+      const mockPushState = vi.fn();
       window.history.pushState = mockPushState;
       
       render(<PaymentHistory {...defaultProps} activeFilters={{ status: 'completed' }} />);
@@ -327,7 +328,7 @@ describe('PaymentHistory', () => {
 
     it('PH-030: Combined filters', async () => {
       const user = userEvent.setup();
-      const onFilter = jest.fn();
+      const onFilter = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onFilter={onFilter} />);
       
@@ -353,7 +354,7 @@ describe('PaymentHistory', () => {
 
     it('PH-032: Page size selector', async () => {
       const user = userEvent.setup();
-      const onPageChange = jest.fn();
+      const onPageChange = vi.fn();
       
       render(<PaymentHistory {...defaultProps} total={50} onPageChange={onPageChange} />);
       
@@ -364,7 +365,7 @@ describe('PaymentHistory', () => {
 
     it('PH-033: Page navigation next', async () => {
       const user = userEvent.setup();
-      const onPageChange = jest.fn();
+      const onPageChange = vi.fn();
       
       render(<PaymentHistory {...defaultProps} total={50} currentPage={1} onPageChange={onPageChange} />);
       
@@ -383,7 +384,7 @@ describe('PaymentHistory', () => {
 
     it('PH-035: First/last page navigation', async () => {
       const user = userEvent.setup();
-      const onPageChange = jest.fn();
+      const onPageChange = vi.fn();
       
       render(<PaymentHistory {...defaultProps} total={100} currentPage={3} onPageChange={onPageChange} />);
       
@@ -409,7 +410,7 @@ describe('PaymentHistory', () => {
 
     it('PH-038: Pagination with filters', async () => {
       const user = userEvent.setup();
-      const onPageChange = jest.fn();
+      const onPageChange = vi.fn();
       
       render(<PaymentHistory 
         {...defaultProps} 
@@ -498,7 +499,7 @@ describe('PaymentHistory', () => {
 
     it('PH-044: Print statement', async () => {
       const user = userEvent.setup();
-      const mockPrint = jest.fn();
+      const mockPrint = vi.fn();
       window.print = mockPrint;
       
       render(<PaymentHistory {...defaultProps} />);
@@ -511,7 +512,7 @@ describe('PaymentHistory', () => {
     it('PH-045: Copy transaction ID', async () => {
       const user = userEvent.setup();
       
-      const mockClipboard = { writeText: jest.fn() };
+      const mockClipboard = { writeText: vi.fn() };
       Object.assign(navigator, { clipboard: mockClipboard });
       
       render(<PaymentHistory {...defaultProps} />);
@@ -539,7 +540,7 @@ describe('PaymentHistory', () => {
 
     it('PH-047: Sortable headers', async () => {
       const user = userEvent.setup();
-      const onSort = jest.fn();
+      const onSort = vi.fn();
       
       render(<PaymentHistory {...defaultProps} onSort={onSort} />);
       
@@ -751,3 +752,4 @@ interface PaymentHistoryProps {
   onSort?: (field: string, direction: 'asc' | 'desc') => void;
   activeFilters?: Record<string, any>;
 }
+
