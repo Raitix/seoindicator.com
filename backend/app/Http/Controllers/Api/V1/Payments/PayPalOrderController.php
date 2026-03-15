@@ -106,6 +106,18 @@ class PayPalOrderController extends Controller
                     'package_name' => $package->name,
                 ],
             ]);
+        } catch (\App\Services\Billing\Exceptions\PaymentTimeoutException $e) {
+            Log::warning('PayPal order timeout', [
+                'user_id' => $user->id,
+                'package_id' => $package->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'service_unavailable',
+                'message' => $e->getUserMessage(),
+            ], 503);
         } catch (\App\Services\Billing\Exceptions\PaymentValidationException $e) {
             Log::warning('PayPal order validation error', [
                 'user_id' => $user->id,

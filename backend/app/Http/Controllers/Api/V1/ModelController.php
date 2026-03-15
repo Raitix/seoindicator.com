@@ -260,6 +260,75 @@ class ModelController extends Controller
     }
 
     /**
+     * Get pricing information for all models.
+     *
+     * TASK-26-18: Model Pricing API Endpoint
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function allPricing(Request $request): JsonResponse
+    {
+        // Get all models
+        $models = $this->modelPricingService->getAvailableModels();
+
+        // Transform to pricing response
+        $data = $models->map(function ($model) {
+            return [
+                'model_id' => $model->id,
+                'display_name' => $model->display_name,
+                'provider' => $model->provider,
+                'input_cost_per_1k' => (float) $model->cost_per_1k_input,
+                'output_cost_per_1k' => (float) $model->cost_per_1k_output,
+                'estimated_cost_per_analysis' => $this->calculateCost($model, 2000),
+            ];
+        })->values()->toArray();
+
+        return response()->json([
+            'success' => true,
+            'models' => $data,
+        ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    /**
+     * Get details for a specific model.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function show(int $id): JsonResponse
+    {
+        $model = $this->modelPricingService->getModelById($id);
+
+        if (!$model) {
+            return response()->json([
+                'success' => false,
+                'error' => 'model_not_found',
+                'message' => 'The requested model could not be found.',
+            ], 404);
+        }
+
+        $capabilities = $model->capabilities ?? [];
+        if (is_string($capabilities)) {
+            $capabilities = json_decode($capabilities, true) ?? [];
+        }
+
+        return response()->json([
+            'id' => $model->id,
+            'provider' => $model->provider,
+            'model_id' => $model->model_id,
+            'display_name' => $model->display_name,
+            'context_window' => (int) $model->context_window,
+            'is_free_tier' => (bool) $model->is_free_tier,
+            'capabilities' => $capabilities,
+            'pricing' => [
+                'input_per_1k' => (float) $model->cost_per_1k_input,
+                'output_per_1k' => (float) $model->cost_per_1k_output,
+            ],
+        ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
+    }
+
+    /**
      * Build the pricing response data.
      *
      * @param mixed $model
