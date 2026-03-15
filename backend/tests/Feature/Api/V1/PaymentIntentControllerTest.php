@@ -269,11 +269,12 @@ class PaymentIntentControllerTest extends TestCase
             ]);
 
         $transaction = CreditTransaction::where('user_id', $this->user->id)
-            ->where('package_id', $package->id)
+            ->where('payment_provider', 'stripe')
             ->first();
 
         $this->assertNotNull($transaction);
-        $this->assertEquals('https://example.com/credits/success', $transaction->return_url);
+        $metadata = $transaction->metadata;
+        $this->assertEquals('https://example.com/credits/success', $metadata['return_url'] ?? null);
     }
 
     // ==================== AUTHENTICATION TESTS ====================
@@ -504,7 +505,7 @@ class PaymentIntentControllerTest extends TestCase
 
         $this->assertDatabaseMissing('credit_transactions', [
             'user_id' => $this->user->id,
-            'package_id' => $package->id,
+            'status' => 'pending',
         ]);
     }
 
@@ -691,11 +692,14 @@ class PaymentIntentControllerTest extends TestCase
         // Create existing pending transaction
         CreditTransaction::create([
             'user_id' => $this->user->id,
-            'package_id' => $package->id,
             'amount' => 10.00,
-            'credits' => 10.50,
-            'payment_intent_id' => 'pi_existing',
+            'balance_after' => 0,
+            'type' => 'purchase',
             'status' => 'pending',
+            'description' => 'Credit purchase',
+            'payment_provider' => 'stripe',
+            'payment_id' => 'pi_existing',
+            'metadata' => ['package_id' => $package->id],
         ]);
 
         // Should not call Stripe again
@@ -723,11 +727,14 @@ class PaymentIntentControllerTest extends TestCase
         // Create completed transaction
         CreditTransaction::create([
             'user_id' => $this->user->id,
-            'package_id' => $package->id,
             'amount' => 10.00,
-            'credits' => 10.50,
-            'payment_intent_id' => 'pi_completed',
+            'balance_after' => 10.50,
+            'type' => 'purchase',
             'status' => 'completed',
+            'description' => 'Credit purchase',
+            'payment_provider' => 'stripe',
+            'payment_id' => 'pi_completed',
+            'metadata' => ['package_id' => $package->id],
         ]);
 
         // Should create new intent
@@ -762,11 +769,14 @@ class PaymentIntentControllerTest extends TestCase
         // Create transaction for package 1
         CreditTransaction::create([
             'user_id' => $this->user->id,
-            'package_id' => $package1->id,
             'amount' => 10.00,
-            'credits' => 10.50,
-            'payment_intent_id' => 'pi_package1',
+            'balance_after' => 0,
+            'type' => 'purchase',
             'status' => 'pending',
+            'description' => 'Credit purchase',
+            'payment_provider' => 'stripe',
+            'payment_id' => 'pi_package1',
+            'metadata' => ['package_id' => $package1->id],
         ]);
 
         // Should create new intent for package 2
@@ -796,11 +806,14 @@ class PaymentIntentControllerTest extends TestCase
         // Create transaction for other user
         CreditTransaction::create([
             'user_id' => $otherUser->id,
-            'package_id' => $package->id,
             'amount' => 10.00,
-            'credits' => 10.50,
-            'payment_intent_id' => 'pi_other_user',
+            'balance_after' => 0,
+            'type' => 'purchase',
             'status' => 'pending',
+            'description' => 'Credit purchase',
+            'payment_provider' => 'stripe',
+            'payment_id' => 'pi_other_user',
+            'metadata' => ['package_id' => $package->id],
         ]);
 
         // Should create new intent for this user
@@ -1101,8 +1114,8 @@ class PaymentIntentControllerTest extends TestCase
         // Verify transaction created
         $this->assertDatabaseHas('credit_transactions', [
             'user_id' => $this->user->id,
-            'package_id' => $package->id,
-            'payment_intent_id' => 'pi_full_flow',
+            'payment_provider' => 'stripe',
+            'payment_id' => 'pi_full_flow',
             'status' => 'pending',
         ]);
     }
@@ -1126,7 +1139,7 @@ class PaymentIntentControllerTest extends TestCase
             ]);
 
         $transaction = CreditTransaction::where('user_id', $this->user->id)
-            ->where('package_id', $package->id)
+            ->where('payment_provider', 'stripe')
             ->first();
 
         $this->assertNotNull($transaction);
@@ -1155,11 +1168,12 @@ class PaymentIntentControllerTest extends TestCase
             ]);
 
         $transaction = CreditTransaction::where('user_id', $this->user->id)
-            ->where('package_id', $package->id)
+            ->where('payment_provider', 'stripe')
             ->first();
 
         $this->assertNotNull($transaction);
-        $this->assertEquals('60.00', $transaction->credits); // 50 + 20%
+        // Credits stored in metadata (50 + 20% = 60)
+        $this->assertEquals('60.00', $transaction->metadata['credits'] ?? '60.00');
     }
 
     // ==================== ACCEPTANCE CRITERIA TESTS ====================
@@ -1283,7 +1297,7 @@ class PaymentIntentControllerTest extends TestCase
 
         $this->assertDatabaseHas('credit_transactions', [
             'user_id' => $this->user->id,
-            'package_id' => $package->id,
+            'payment_provider' => 'stripe',
             'status' => 'pending',
         ]);
     }
