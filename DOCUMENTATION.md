@@ -146,6 +146,155 @@ class ToolResult
 - TASK-16-8: Social Media Preview Tool (uses this infrastructure)
 
 ---
+## AnalysisJob and AnalysisJobResult Models (TASK-19-2)
+
+### Feature Description
+Eloquent models for the Progressive Analysis & Job System feature (FEAT-019) that represent SEO analysis jobs and their individual indicator results. Provides relationships, status scopes, progress accessors, and JSON casting for the job tracking system.
+
+### Component Locations
+- **AnalysisJob Model:** `backend/app/Models/AnalysisJob.php`
+- **AnalysisJobResult Model:** `backend/app/Models/AnalysisJobResult.php`
+- **Factories:**
+  - `backend/database/factories/AnalysisJobFactory.php`
+  - `backend/database/factories/AnalysisJobResultFactory.php`
+- **Tests:** `backend/tests/Unit/Models/AnalysisJobTest.php`, `backend/tests/Unit/Models/AnalysisJobResultTest.php`
+- **Test Documentation:** `TESTS/TEST-19-2.md`
+
+### AnalysisJob Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `analysis_jobs` |
+| Fillable | `user_id`, `site_id`, `status`, `total_indicators`, `completed_indicators`, `failed_indicators`, `progress_percent`, `started_at`, `completed_at`, `cancelled_at`, `error_message` |
+| Casts | `started_at`, `completed_at`, `cancelled_at` → `datetime`; `total_indicators`, `completed_indicators`, `failed_indicators`, `progress_percent` → `integer` |
+| Default Attributes | `status` → `pending`, `total_indicators` → `0`, `completed_indicators` → `0`, `failed_indicators` → `0` |
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `user()` | `belongsTo` | `User` |
+| `site()` | `belongsTo` | `Site` |
+| `results()` | `hasMany` | `AnalysisJobResult` |
+
+**Status Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `pending()` | Jobs with status `pending` |
+| `running()` | Jobs with status `running` |
+| `completed()` | Jobs with status `completed` |
+| `cancelled()` | Jobs with status `cancelled` |
+| `failed()` | Jobs with status `failed` |
+
+**Status Helpers:**
+| Method | Returns |
+|--------|---------|
+| `isPending()` | `bool` |
+| `isRunning()` | `bool` |
+| `isCompleted()` | `bool` |
+| `isCancelled()` | `bool` |
+| `isFailed()` | `bool` |
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `progress_percent` | Returns stored value if set, otherwise calculates `(completed_indicators / total_indicators) * 100` |
+| `duration_seconds` | Time elapsed from `started_at` to `completed_at` (or now if still running) |
+| `duration_human` | Human-readable duration (e.g., "45s", "2m 30s") |
+
+### AnalysisJobResult Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `analysis_job_results` |
+| Fillable | `job_id`, `indicator_slug`, `indicator_name`, `status`, `score`, `max_score`, `percentage`, `data`, `recommendations`, `error_message`, `started_at`, `completed_at`, `processing_time_ms` |
+| Casts | `started_at`, `completed_at` → `datetime`; `score`, `max_score`, `percentage` → `decimal:2`; `processing_time_ms` → `integer`; `data`, `recommendations` → `array` |
+| Default Attributes | `status` → `pending` |
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `job()` | `belongsTo` | `AnalysisJob` |
+
+**Status Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `pending()` | Results with status `pending` |
+| `running()` | Results with status `running` |
+| `completed()` | Results with status `completed` |
+| `skipped()` | Results with status `skipped` |
+| `failed()` | Results with status `failed` |
+
+**Status Helpers:**
+| Method | Returns |
+|--------|---------|
+| `isPending()` | `bool` |
+| `isRunning()` | `bool` |
+| `isCompleted()` | `bool` |
+| `isSkipped()` | `bool` |
+| `isFailed()` | `bool` |
+
+### Job Status Workflow
+
+```
+pending → running → completed
+   │         │
+   │         └──→ failed
+   │
+   └──────→ cancelled
+```
+
+### Factory States
+
+**AnalysisJobFactory:**
+| State | Description |
+|-------|-------------|
+| `pending()` | Default state with `pending` status |
+| `running()` | Sets status to `running`, sets `started_at` |
+| `completed()` | Sets status to `completed`, calculates progress |
+| `failed()` | Sets status to `failed`, adds error message |
+| `cancelled()` | Sets status to `cancelled`, sets `cancelled_at` |
+
+**AnalysisJobResultFactory:**
+| State | Description |
+|-------|-------------|
+| `pending()` | Default state with `pending` status |
+| `running()` | Sets status to `running`, sets `started_at` |
+| `completed()` | Sets status to `completed`, adds score/data |
+| `failed()` | Sets status to `failed`, adds error message |
+| `skipped()` | Sets status to `skipped` |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AnalysisJobTest | 36 | - | ✅ PASS |
+| AnalysisJobResultTest | 34 | - | ✅ PASS |
+| CreateAnalysisJobsTablesTest | 62 | - | ✅ PASS |
+| **Total** | **132** | **286** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Commit | `050e963` |
+| Health Check | ✅ 200 OK |
+| Tests | 132/132 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-19-1 | Done ✅ | Database Migration - Analysis Jobs Tables |
+
+### Related Tasks
+
+- TASK-19-3: AnalysisJobService (uses models)
+- TASK-19-4: Job CRUD API (exposes models)
+- TASK-19-5: IndicatorProcessor (creates results)
+
+---
 ## AnalysisJobService - Core Operations (TASK-19-3)
 
 ### Feature Description
@@ -330,6 +479,432 @@ pending → running → completed
 - TASK-19-5: IndicatorProcessor Base Class (processes indicators)
 - TASK-19-7: Queue Worker with Concurrency Throttling (consumes pending jobs)
 - TASK-19-8: Progress Tracking and Updates (uses updateProgress)
+
+---
+## Job CRUD API Endpoints (TASK-19-4)
+
+### Feature Description
+REST API endpoints for the Progressive Analysis & Job System feature (FEAT-019) that provide job management operations including creation, listing, retrieval, and cancellation. Supports filtering by status with pagination, enforces authentication and authorization, and includes rate limiting for abuse prevention.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AnalysisJobController.php`
+- **Resources:**
+  - `backend/app/Http/Resources/Api/V1/AnalysisJobResource.php`
+  - `backend/app/Http/Resources/Api/V1/AnalysisJobResultResource.php`
+- **Routes:** `backend/routes/api.php`
+- **Tests:** `backend/tests/Feature/Controllers/Api/V1/AnalysisJobControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-19-4.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/v1/sites/{siteId}/analysis/jobs` | Create new analysis job | 10/hour |
+| GET | `/api/v1/sites/{siteId}/analysis/jobs` | List jobs for site | 60/min |
+| GET | `/api/v1/analysis/jobs/{jobId}` | Get job progress with results | 60/min |
+| DELETE | `/api/v1/analysis/jobs/{jobId}` | Cancel pending/running job | 60/min |
+| GET | `/api/v1/analysis/indicators` | Get available indicators | 60/min |
+
+### Create Job Endpoint
+
+**Request:**
+```
+POST /api/v1/sites/{siteId}/analysis/jobs
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "indicators": ["meta_tags", "headings", "images"]
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `indicators` | Required, array, min 1 item, each must be valid indicator slug |
+
+**Success Response (201):**
+```json
+{
+  "data": {
+    "id": 1,
+    "status": "pending",
+    "totalIndicators": 3,
+    "completedIndicators": 0,
+    "failedIndicators": 0,
+    "progressPercent": 0,
+    "startedAt": null,
+    "completedAt": null,
+    "results": []
+  }
+}
+```
+
+### List Jobs Endpoint
+
+**Request:**
+```
+GET /api/v1/sites/{siteId}/analysis/jobs?status=running&page=1&perPage=20
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | - | Filter by status (pending, running, completed, failed, cancelled) |
+| `page` | int | 1 | Page number |
+| `perPage` | int | 20 | Items per page (max 100) |
+
+**Success Response (200):**
+```json
+{
+  "data": [...],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 10,
+    "last_page": 1
+  }
+}
+```
+
+### Get Job Progress Endpoint
+
+**Request:**
+```
+GET /api/v1/analysis/jobs/{jobId}
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "status": "running",
+    "totalIndicators": 3,
+    "completedIndicators": 1,
+    "failedIndicators": 0,
+    "progressPercent": 33,
+    "startedAt": "2026-02-28T13:00:00Z",
+    "completedAt": null,
+    "results": [
+      {
+        "indicatorSlug": "meta_tags",
+        "indicatorName": "Meta Tags",
+        "status": "completed",
+        "score": 85.50,
+        "maxScore": 100.00,
+        "percentage": 85.5,
+        "processingTimeMs": 1250
+      }
+    ]
+  }
+}
+```
+
+### Cancel Job Endpoint
+
+**Request:**
+```
+DELETE /api/v1/analysis/jobs/{jobId}
+Authorization: Bearer {token}
+```
+
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "status": "cancelled",
+    "cancelledAt": "2026-02-28T13:05:00Z"
+  }
+}
+```
+
+**Error Response (400) - Invalid State:**
+```json
+{
+  "message": "Cannot cancel job that is already completed"
+}
+```
+
+### Authorization Rules
+
+| Action | Authorization |
+|--------|--------------|
+| Create job | User must own the site |
+| List jobs | User must own the site |
+| Get job | User must own the job |
+| Cancel job | User must own the job |
+
+### Error Responses
+
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated |
+| 403 | Unauthorized (wrong user) |
+| 404 | Job/Site not found |
+| 400 | Invalid state transition (cancel completed job) |
+| 422 | Validation error |
+| 429 | Rate limit exceeded (includes Retry-After header) |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum token authentication |
+| Authorization | Site/job ownership checks |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Input validation, output encoding |
+| Rate Limiting | Service layer rate limits (2 concurrent, 10/hour, 5/site/hour) |
+
+### Resource Transformation
+
+**AnalysisJobResource (camelCase keys):**
+| Field | Source | Description |
+|-------|--------|-------------|
+| `id` | `id` | Job ID |
+| `status` | `status` | Job status |
+| `totalIndicators` | `total_indicators` | Total indicators to process |
+| `completedIndicators` | `completed_indicators` | Completed indicator count |
+| `failedIndicators` | `failed_indicators` | Failed indicator count |
+| `progressPercent` | `progress_percent` | Progress percentage |
+| `startedAt` | `started_at` | Job start timestamp |
+| `completedAt` | `completed_at` | Job completion timestamp |
+| `results` | `results` relationship | Array of result resources |
+
+**AnalysisJobResultResource (camelCase keys):**
+| Field | Source | Description |
+|-------|--------|-------------|
+| `indicatorSlug` | `indicator_slug` | Indicator identifier |
+| `indicatorName` | `indicator_name` | Display name |
+| `status` | `status` | Result status |
+| `score` | `score` | Achievement score |
+| `maxScore` | `max_score` | Maximum possible score |
+| `percentage` | `percentage` | Score percentage |
+| `processingTimeMs` | `processing_time_ms` | Processing duration |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AnalysisJobControllerTest | 43 | 112 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Authentication | 5 | 401 for unauthenticated |
+| Authorization | 5 | 403 for wrong user |
+| Create Job | 8 | Validation, indicators, rate limit |
+| List Jobs | 6 | Pagination, filtering |
+| Get Job | 5 | Progress, results |
+| Cancel Job | 5 | Valid/invalid states |
+| Security | 5 | SQL injection, XSS, IDOR |
+| Edge Cases | 5 | Invalid IDs, non-existent jobs |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Commit | `735ff5c` |
+| GitHub Actions Workflow | 22520461291 |
+| Health Check | ✅ 200 OK |
+| Tests | 43/43 passing (112 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-19-1 | Done ✅ | Database Migration - Analysis Jobs Tables |
+| TASK-19-2 | Done ✅ | AnalysisJob and AnalysisJobResult Models |
+| TASK-19-3 | Done ✅ | AnalysisJobService |
+
+### Related Tasks
+
+- TASK-19-3: AnalysisJobService (service layer)
+- TASK-19-5: IndicatorProcessor Base Class (processes indicators)
+- TASK-19-7: Queue Worker (consumes pending jobs)
+- TASK-19-9: SSE Stream Endpoint (real-time updates)
+
+---
+## SSRF Protection Integration (TASK-19-15)
+
+### Feature Description
+Enhanced SSRF protection for the Progressive Analysis & Job System feature (FEAT-019) that extends the base URL validation service with DNS rebinding protection, redirect validation, and comprehensive security logging. Protects the analysis system's URL fetching from Server-Side Request Forgery attacks.
+
+### Component Locations
+- **URL Validation Service:** `backend/app/Services/URLValidationService.php`
+- **Indicator Processor:** `backend/app/Services/Analysis/Indicators/IndicatorProcessor.php`
+- **Tests:** `backend/tests/Unit/Services/SsrfProtectionTest.php`
+- **Test Documentation:** `TESTS/TEST-19-15.md`
+
+### Security Features
+
+| Feature | Implementation |
+|---------|----------------|
+| DNS Rebinding Protection | Resolves DNS before connection, verifies resolved IP is not blocked |
+| Redirect Validation | Re-checks URL after each redirect via `on_redirect` callback |
+| IPv4-mapped IPv6 Detection | Blocks `::ffff:x.x.x.x` style addresses |
+| URL-encoded Host Blocking | Decodes URL-encoded hosts before checking |
+| Security Audit Logging | All blocked requests logged to `security.log` channel |
+| Whitelist Support | Can exempt specific hosts from blocking |
+
+### Blocked IP Ranges
+
+| Range | CIDR | Description |
+|-------|------|-------------|
+| Localhost | 127.0.0.0/8, ::1 | Loopback addresses |
+| Private (Class A) | 10.0.0.0/8 | Private network |
+| Private (Class B) | 172.16.0.0/12 | Private network |
+| Private (Class C) | 192.168.0.0/16 | Private network |
+| Link-local | 169.254.0.0/16 | Link-local addresses |
+| Link-local IPv6 | fe80::/10 | IPv6 link-local |
+| Unique local | fc00::/7 | IPv6 private addresses |
+| Cloud Metadata | 169.254.169.254 | AWS/GCP/Azure metadata |
+
+### Blocked Hostnames
+
+| Hostname | Reason |
+|----------|--------|
+| `localhost` | Local system |
+| `localhost.localdomain` | Local system alias |
+| `metadata.google.internal` | GCP metadata |
+| `kubernetes.default` | Kubernetes internal |
+
+### Protocol Restrictions
+
+| Protocol | Allowed |
+|----------|---------|
+| http | ✅ Yes |
+| https | ✅ Yes |
+| file:// | ❌ No |
+| ftp:// | ❌ No |
+| gopher:// | ❌ No |
+| ldap:// | ❌ No |
+| Others | ❌ No |
+
+### Alternative IP Notation Blocking
+
+| Notation | Example | Blocked |
+|----------|---------|---------|
+| Decimal | 2130706433 (127.0.0.1) | ✅ Yes |
+| Hexadecimal | 0x7f000001 (127.0.0.1) | ✅ Yes |
+| Octal | 0177.0.0.1 (127.0.0.1) | ✅ Yes |
+| Shorthand | 127.1 (127.0.0.1) | ✅ Yes |
+| IPv4-mapped IPv6 | ::ffff:127.0.0.1 | ✅ Yes |
+
+### Request Limits
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Max response size | 10 MB | Maximum response body size |
+| Timeout | 30 seconds | Maximum request duration |
+| Max redirects | 5 | Maximum redirect hops |
+
+### Whitelist Configuration
+
+```php
+// Add host to whitelist
+$urlValidationService->addToWhitelist('internal.example.com');
+
+// Remove host from whitelist
+$urlValidationService->removeFromWhitelist('internal.example.com');
+
+// Get current whitelist
+$whitelist = $urlValidationService->getWhitelist();
+```
+
+### Custom Blocking
+
+```php
+// Add custom blocked host
+$urlValidationService->addBlockedHost('malicious.example.com');
+
+// Add custom blocked IP range
+$urlValidationService->addBlockedIP('10.100.0.0/16');
+```
+
+### Security Logging
+
+All blocked requests are logged to the `security.log` channel with:
+
+| Field | Description |
+|-------|-------------|
+| URL | The blocked URL |
+| IP | Resolved IP address |
+| Reason | Block reason (private_ip, localhost, etc.) |
+| Timestamp | When blocked |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| SsrfProtectionTest | 98 | 129 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Localhost Blocking | 12 | IPv4, IPv6, hostname variations |
+| Private IP Ranges | 15 | RFC 1918 ranges, IPv6 private |
+| Link-Local | 8 | 169.254.x.x, fe80::/10 |
+| Cloud Metadata | 10 | AWS, GCP, Azure, Kubernetes |
+| Protocol Restrictions | 8 | Only http/https allowed |
+| Alternative IP Notation | 10 | Decimal, hex, octal, shorthand |
+| IPv6 Handling | 8 | Full IPv6 support |
+| DNS Rebinding Prevention | 8 | Redirect validation |
+| Whitelist Functionality | 7 | Add/remove/list operations |
+| Custom Blocking | 5 | Custom hosts and IPs |
+| Security Logging | 7 | Log format and content |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Deployment ID | 22521789691 |
+| Commit | 351f933 |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-02-28 15:44 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Attack Vector | Response | Status |
+|---------------|----------|--------|
+| Localhost IP (127.0.0.1) | 403 URL_BLOCKED | ✅ |
+| Private IP (192.168.1.1) | 403 URL_BLOCKED | ✅ |
+| Cloud Metadata (169.254.169.254) | 403 URL_BLOCKED | ✅ |
+| file:// protocol | 400 INVALID_URL | ✅ |
+| localhost hostname | 403 URL_BLOCKED | ✅ |
+| metadata.google.internal | 403 URL_BLOCKED | ✅ |
+| IPv6 localhost (::1) | 403 URL_BLOCKED | ✅ |
+| Decimal IP (2130706433) | 403 URL_BLOCKED | ✅ |
+| Hex IP (0x7f000001) | 403 URL_BLOCKED | ✅ |
+| Octal IP (0177.0.0.1) | 403 URL_BLOCKED | ✅ |
+| kubernetes.default | 403 URL_BLOCKED | ✅ |
+| Link-local IP (169.254.100.100) | 403 URL_BLOCKED | ✅ |
+
+### Security Review
+
+**Approved by:** SecurityAuditor  
+**Review Date:** 2026-02-28 15:35 GMT+2  
+**Verdict:** All SSRF attack vectors properly blocked. Security requirements met.
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-16-1 | Done ✅ | Tools infrastructure - URL validation service |
+| TASK-19-5 | Done ✅ | IndicatorProcessor (uses redirect validation) |
+
+### Related Tasks
+
+- TASK-16-1: Tools Infrastructure (base URL validation service)
+- TASK-19-5: IndicatorProcessor Base Class (integrates redirect validation)
+- TASK-19-7: Queue Worker (uses IndicatorProcessor)
 
 ---
 ## Comparison Registry and Data Loading (TASK-32-2)
@@ -24552,6 +25127,178 @@ None - Foundation task for FEAT-018.
 
 - TASK-18-2: SEOAnalysis Model and Repository
 - TASK-18-3: IndicatorChecker Interface
+- TASK-18-6: AnalysisRunnerService
+
+---
+## SEOAnalysis Model and Repository (TASK-18-2)
+
+### Service Description
+Eloquent model and repository pattern for SEO analyses, providing data access layer with JSON casting, relationships, query scopes, and caching. Foundation for the Legacy 17-Indicator SEO Analysis feature (FEAT-018).
+
+### Model: SEOAnalysis
+
+**File:** `backend/app/Models/SEOAnalysis.php`
+
+**Table:** `seo_analyses` (explicit table name required due to class naming `SEOAnalysis` → `s_e_o_analyses`)
+
+#### Status Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `STATUS_PENDING` | `pending` | Analysis queued, not started |
+| `STATUS_RUNNING` | `running` | Analysis in progress |
+| `STATUS_COMPLETED` | `completed` | Analysis finished successfully |
+| `STATUS_FAILED` | `failed` | Analysis encountered an error |
+
+#### Fillable Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `user_id` | int|null | FK to users.id (nullable for anonymous) |
+| `session_id` | string|null | Session identifier for anonymous tracking |
+| `domain` | string | Original domain input |
+| `normalized_url` | string | Normalized URL (https:// + domain) |
+| `overall_score` | int | Weighted SEO score (0-100) |
+| `status` | string | Analysis status (pending/running/completed/failed) |
+| `error_message` | string|null | Error message if failed |
+| `analysis_data` | array | Full analysis results (JSON cast) |
+| `checked_at` | Carbon|null | When analysis completed |
+| `expires_at` | Carbon|null | Cache expiry timestamp |
+| `ai_model` | string|null | AI model used (TASK-31-11 extension) |
+| `prompt_tokens` | int|null | Prompt token count (TASK-31-11) |
+| `response_tokens` | int|null | Response token count (TASK-31-11) |
+| `total_tokens` | int|null | Total token count (TASK-31-11) |
+| `truncation_applied` | array|null | Truncation strategies (TASK-31-11) |
+| `overall_summary` | string|null | AI-generated summary (TASK-31-11) |
+| `category_scores` | array|null | Category score breakdown (TASK-31-11) |
+| `ai_request_id` | int|null | FK to ai_analysis_requests (TASK-31-11) |
+
+#### Relationships
+
+| Relationship | Type | Model | Description |
+|--------------|------|-------|-------------|
+| `user()` | BelongsTo | User | Owner of the analysis |
+| `aiRequest()` | HasOne | AIAnalysisRequest | AI request details (TASK-31-11) |
+
+#### Query Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `byStatus(string $status)` | Filter by status |
+| `byUser(int $userId)` | Filter by user ID |
+| `bySession(string $sessionId)` | Filter by session ID |
+| `expired()` | Get expired analyses |
+| `notExpired()` | Get non-expired analyses |
+| `forDomain(string $domain)` | Filter by domain |
+| `pending()` | Get pending analyses |
+| `completed()` | Get completed analyses |
+| `failed()` | Get failed analyses |
+| `recent(int $days = 7)` | Get analyses within N days |
+| `unified()` | Get AI-powered analyses (TASK-31-11) |
+| `legacy()` | Get non-AI analyses (TASK-31-11) |
+
+#### Model Methods
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `markAsRunning()` | - | Set status to running |
+| `markAsCompleted(int $score, array $data)` | score, data | Set status to completed with results |
+| `markAsCompletedUnified(array $data)` | data | Complete with AI data (TASK-31-11) |
+| `markAsFailed(string $errorMessage)` | message | Set status to failed with error |
+| `isExpired()` | - | Check if analysis is expired |
+| `isPending()` | - | Check if status is pending |
+| `isRunning()` | - | Check if status is running |
+| `isCompleted()` | - | Check if status is completed |
+| `isFailed()` | - | Check if status is failed |
+| `wasUnifiedAnalysis()` | - | Check if AI-powered (TASK-31-11) |
+| `getCategoryScore(string $category)` | category | Get category score (TASK-31-11) |
+| `getTruncationStrategies()` | - | Get truncation info (TASK-31-11) |
+| `wasTruncated()` | - | Check if truncated (TASK-31-11) |
+| `getTokenUsage()` | - | Get token counts (TASK-31-11) |
+| `getAiModelDisplayName()` | - | Get friendly model name (TASK-31-11) |
+
+### Repository: SEOAnalysisRepository
+
+**File:** `backend/app/Repositories/SEOAnalysisRepository.php`
+
+#### CRUD Operations
+
+| Method | Parameters | Return | Description |
+|--------|------------|--------|-------------|
+| `create(array $data)` | data | SEOAnalysis | Create new analysis |
+| `find(int $id)` | id | SEOAnalysis\|null | Find by ID (cached) |
+| `update(int $id, array $data)` | id, data | SEOAnalysis\|null | Update analysis |
+| `delete(int $id)` | id | bool | Delete analysis |
+
+#### Query Methods
+
+| Method | Parameters | Return | Description |
+|--------|------------|--------|-------------|
+| `findByDomain(string $domain)` | domain | Collection | Get all analyses for domain |
+| `findCached(string $domain)` | domain | SEOAnalysis\|null | Get non-expired completed analysis |
+| `findByUser(int $userId)` | userId | Collection | Get user's analyses |
+| `findBySession(string $sessionId)` | sessionId | Collection | Get session's analyses |
+| `getLatest(string $domain)` | domain | SEOAnalysis\|null | Get latest analysis for domain |
+| `getPending()` | - | Collection | Get all pending analyses |
+| `getExpired()` | - | Collection | Get all expired analyses |
+| `findByDomainForUser(string $domain, int $userId)` | domain, userId | Collection | Get user's analyses for domain |
+| `findCachedBySession(string $domain, string $sessionId)` | domain, sessionId | SEOAnalysis\|null | Get cached session analysis |
+
+#### Utility Methods
+
+| Method | Parameters | Return | Description |
+|--------|------------|--------|-------------|
+| `paginate(int $perPage = 15, int $page = 1)` | perPage, page | LengthAwarePaginator | Paginated results |
+| `getStats(int $userId)` | userId | array | User stats (total, completed, failed, pending) |
+| `cleanupExpired()` | - | int | Delete expired analyses, return count |
+
+#### Caching
+
+| Feature | Implementation |
+|---------|----------------|
+| **TTL** | 3600 seconds (1 hour) |
+| **Key Pattern** | `seo_analysis.{id}` |
+| **Auto-cache** | `find()` caches automatically |
+| **Invalidation** | `update()` and `delete()` clear cache |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `SEOAnalysisTest.php` | 34 | 61 |
+| `SEOAnalysisRepositoryTest.php` | 25 | 43 |
+| **Total** | **59** | **104** |
+
+**Test Categories:**
+- Model creation and fillable attributes
+- JSON casting for analysis_data
+- Relationships (BelongsTo User)
+- Query scopes (12 scopes tested)
+- Status methods (markAs*, is*)
+- Repository CRUD operations
+- Caching and invalidation
+- Security (SQL injection, XSS, Unicode)
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-02-28 (GitHub Actions #22526076711) |
+| **Commit** | 3ad89e2 |
+| **Health Check** | Passing |
+| **Tests** | 59/59 passing (104 assertions) |
+| **Status** | Complete |
+
+### Dependencies
+
+- TASK-18-1 (SEO Analyses Table migration)
+- TASK-31-11 (AI Unified Analysis - extended columns)
+
+### Related Tasks
+
+- TASK-18-1: SEO Analyses Table
+- TASK-18-3: IndicatorChecker Interface
+- TASK-18-5: HtmlFetcherService
 - TASK-18-6: AnalysisRunnerService
 
 ---
