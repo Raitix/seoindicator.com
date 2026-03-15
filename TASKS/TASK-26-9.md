@@ -1,7 +1,7 @@
 # TASK-26-9: Create Stripe Payment Intent Endpoint
 
 ## STATUS
-`To Develop`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -218,3 +218,31 @@ _Leave notes for the next agent here_
 - StripeGatewayService implementation (TASK-26-8) - pending
 
 **Ready for Developer:** All tests designed, can be run with mocks until StripeGatewayService is ready.
+
+---
+
+### Deployed (DevOps - 2026-03-15)
+**Status Changed:** `To Develop` → `To Test Prod`
+
+**Implementation Complete:**
+- Route: `POST /api/v1/payments/stripe/intent` ✅ REGISTERED
+- Controller: `StripePaymentController.php` ✅ IMPLEMENTED
+- Request: `CreateStripeIntentRequest.php` ✅ IMPLEMENTED
+- Gateway: `StripeGatewayService.php` ✅ INTEGRATED
+
+**Deployed Commit:** `f75b9de2`
+
+**Endpoint Features:**
+- Authentication required (Bearer token)
+- Validates package exists and is active
+- Calculates credits including bonus
+- Creates Stripe payment intent via gateway
+- Creates pending transaction record
+- Returns client_secret for frontend
+
+**Handoff to ProdTester:** Stripe payment intent endpoint is now live. Verify:
+1. Authenticated request returns payment intent
+2. Invalid package returns 422
+3. Inactive package returns 400
+4. Unauthenticated returns 401
+5. Idempotency prevents duplicate intents
