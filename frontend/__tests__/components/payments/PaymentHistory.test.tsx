@@ -25,6 +25,29 @@ vi.mock('lucide-react', () => ({
   ExternalLink: () => <span data-testid="external-link-icon">ExternalLink</span>,
   Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loader2</span>,
   AlertCircle: () => <span data-testid="alert-icon">AlertCircle</span>,
+  RefreshCw: () => <span data-testid="refresh-icon">RefreshCw</span>,
+  Search: () => <span data-testid="search-icon">Search</span>,
+  FileText: () => <span data-testid="file-text-icon">FileText</span>,
+  Check: () => <span data-testid="check-icon">Check</span>,
+}));
+
+// Mock API hooks
+vi.mock('@/lib/api/payments', () => ({
+  usePaymentHistory: () => ({
+    transactions: [],
+    total: 0,
+    totalPages: 1,
+    isLoading: false,
+    error: null,
+    mutate: vi.fn(),
+  }),
+  useDownloadReceipt: () => ({
+    downloadReceipt: vi.fn(),
+    isLoading: false,
+  }),
+  formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
+  formatTransactionDate: (date: string) => new Date(date).toLocaleDateString(),
+  getPaymentErrorMessage: (error: any) => error?.message || 'An error occurred',
 }));
 
 // Mock fetch
