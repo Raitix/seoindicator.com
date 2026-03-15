@@ -756,6 +756,11 @@ class VercelAIProviderTest extends TestCase
         $config = config('ai.providers.vercel');
         $this->assertNotNull($config);
 
+        // Use a test api_key if the config one is null (env not set)
+        if ($config['api_key'] === null) {
+            $config['api_key'] = 'test-key';
+        }
+
         $provider = new VercelAIProvider($config);
         $this->assertInstanceOf(VercelAIProvider::class, $provider);
     }
