@@ -3787,15 +3787,14 @@ backend/tests/TESTS/
 
 | Task | Status | Description |
 |------|--------|-------------|
-| TASK-7-1 to TASK-7-17 | Done ✅ | All SERP feature implementation tasks |
-| TASK-7-18 | In Progress | Ready for Local Testing |
-| TASK-7-19 | In Progress | Tests Coverage Complete |
+| TASK-7-1 to TASK-7-17 | Done :white_check_mark: | All SERP feature implementation tasks |
+| TASK-7-18 | Done :white_check_mark: | Ready for Local Testing |
+| TASK-7-19 | Done :white_check_mark: | Tests Coverage Complete |
+| TASK-7-20 | Done :white_check_mark: | Integration Tests Complete |
 
 ### Related Tasks
 
-- TASK-7-1 to TASK-7-19: SERP feature implementation
-- TASK-7-18: Ready for Local Testing
-- TASK-7-19: Tests Coverage Complete
+- TASK-7-1 to TASK-7-20: SERP feature implementation (all complete)
 
 ---
 ## Reports API Endpoints (TASK-6-11)
@@ -28501,6 +28500,281 @@ $response->headers->set('X-RateLimit-Reset', $resetTime);
 - TASK-6-3: API Key Service
 
 ---
+## Keywords API Endpoints (TASK-6-8)
+
+### Task Description
+Implementation of REST API endpoints for keywords CRUD operations as part of the Reporting & Export feature (FEAT-006). Provides programmatic access to keyword management including create, read, update, and delete operations with pagination, filtering, and rate limiting.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/KeywordsApiController.php`
+- **Form Requests:**
+  - `backend/app/Http/Requests/Api/V1/StoreKeywordApiRequest.php`
+  - `backend/app/Http/Requests/Api/V1/UpdateKeywordApiRequest.php`
+- **Policy:** `backend/app/Policies/KeywordPolicy.php`
+- **Routes:** `backend/routes/api.php` (under `/api/v1/keywords`)
+- **Tests:** `backend/tests/Feature/Api/V1/KeywordsApiControllerTest.php`
+- **Test Documentation:** `TESTS/TASK-6-8.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/keywords` | List keywords with pagination and filters |
+| POST | `/api/v1/keywords` | Create new keyword |
+| GET | `/api/v1/keywords/{id}` | Get single keyword details |
+| PUT | `/api/v1/keywords/{id}` | Update keyword |
+| DELETE | `/api/v1/keywords/{id}` | Delete keyword |
+
+### List Keywords Endpoint
+
+**Request:**
+```
+GET /api/v1/keywords?site_id=1&status=active&page=1&per_page=20
+Authorization: Bearer {api_key}
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `site_id` | int | null | Filter by site ID |
+| `status` | string | null | Filter by status (active, paused, deleted) |
+| `page` | int | 1 | Page number |
+| `per_page` | int | 20 | Items per page (max 100) |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "site_id": 1,
+      "keyword": "seo tools",
+      "target_url": "https://example.com/seo-tools",
+      "search_engine": "google",
+      "location": "us",
+      "device": "desktop",
+      "status": "active",
+      "created_at": "2026-02-27T12:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 50,
+    "last_page": 3
+  }
+}
+```
+
+### Create Keyword Endpoint
+
+**Request:**
+```
+POST /api/v1/keywords
+Authorization: Bearer {api_key}
+Content-Type: application/json
+
+{
+  "site_id": 1,
+  "keyword": "seo tools",
+  "target_url": "https://example.com/seo-tools",
+  "search_engine": "google",
+  "location": "us",
+  "device": "desktop"
+}
+```
+
+**Validation Rules:**
+| Field | Rules |
+|-------|-------|
+| `site_id` | Required, integer, exists in sites table |
+| `keyword` | Required, string, max 255 chars, sanitized |
+| `target_url` | Optional, URL, max 2048 chars |
+| `search_engine` | Optional, in: google,bing,yahoo |
+| `location` | Optional, string, max 100 chars |
+| `device` | Optional, in: desktop,mobile,tablet |
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "site_id": 1,
+    "keyword": "seo tools",
+    "target_url": "https://example.com/seo-tools",
+    "search_engine": "google",
+    "location": "us",
+    "device": "desktop",
+    "status": "active",
+    "created_at": "2026-02-27T12:00:00Z"
+  }
+}
+```
+
+### Get Single Keyword Endpoint
+
+**Request:**
+```
+GET /api/v1/keywords/{id}
+Authorization: Bearer {api_key}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "site_id": 1,
+    "keyword": "seo tools",
+    "target_url": "https://example.com/seo-tools",
+    "search_engine": "google",
+    "location": "us",
+    "device": "desktop",
+    "status": "active",
+    "created_at": "2026-02-27T12:00:00Z",
+    "updated_at": "2026-02-27T14:00:00Z"
+  }
+}
+```
+
+### Update Keyword Endpoint
+
+**Request:**
+```
+PUT /api/v1/keywords/{id}
+Authorization: Bearer {api_key}
+Content-Type: application/json
+
+{
+  "keyword": "updated keyword",
+  "status": "paused"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "keyword": "updated keyword",
+    "status": "paused",
+    "updated_at": "2026-02-27T15:00:00Z"
+  }
+}
+```
+
+### Delete Keyword Endpoint
+
+**Request:**
+```
+DELETE /api/v1/keywords/{id}
+Authorization: Bearer {api_key}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Keyword deleted successfully"
+}
+```
+
+### Authorization Rules
+
+| Action | Permission | Check |
+|--------|------------|-------|
+| List | `keywords:read` | User owns the site |
+| Create | `keywords:write` | User owns the site |
+| View | `keywords:read` | User owns the keyword's site |
+| Update | `keywords:write` | User owns the keyword's site |
+| Delete | `keywords:write` | User owns the keyword's site |
+
+### Input Sanitization
+
+| Input | Sanitization |
+|-------|--------------|
+| `keyword` | HTML tags stripped, `<script>` tags removed with content |
+| `target_url` | URL validation, scheme normalization |
+| `location` | Trimmed, max length enforced |
+
+### Error Responses
+
+| Code | Condition | Response |
+|------|-----------|----------|
+| 400 | Invalid request | `{"success": false, "error": {...}}` |
+| 401 | Invalid/missing API key | `{"success": false, "error": {"code": "unauthorized", "message": "..."}}` |
+| 403 | Missing permission | `{"success": false, "error": {"code": "forbidden", "message": "..."}}` |
+| 404 | Keyword not found | `{"success": false, "error": {"code": "not_found", "message": "..."}}` |
+| 422 | Validation error | `{"success": false, "error": {"code": "validation_error", "details": [...]}}` |
+| 429 | Rate limit exceeded | `{"success": false, "error": {"code": "rate_limited", "retry_after": 60}}` |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | API Key middleware with Bearer token |
+| Authorization | KeywordPolicy with ownership checks |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Input sanitization, output encoding |
+| IDOR Protection | User ownership verification |
+| Rate Limiting | Per-key rate limits with headers |
+
+### Rate Limiting Headers
+
+All responses include rate limit information:
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1709123456
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| KeywordsApiControllerTest | 70 | 210 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| List Endpoint | 12 | Pagination, filtering, sorting |
+| Create Endpoint | 14 | Validation, sanitization, duplicates |
+| Show Endpoint | 10 | Retrieval, authorization |
+| Update Endpoint | 12 | Validation, partial updates |
+| Delete Endpoint | 8 | Soft delete, authorization |
+| Security | 8 | SQL injection, IDOR, XSS |
+| Rate Limiting | 4 | Headers, 429 responses |
+| Unicode/Special | 2 | Emoji, special characters |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Commit | `735ff5c` |
+| Health Check | ✅ 200 OK |
+| Tests | 70/70 passing (210 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-4 | Done ✅ | API Key Management |
+| TASK-6-5 | Done ✅ | Rate Limiter |
+
+### Related Tasks
+
+- TASK-6-4: API Key Management
+- TASK-6-5: Rate Limiter Middleware
+- TASK-6-7: Rate Limit Headers
+- TASK-6-10: Sites API Endpoints
+
+---
 ## PlaywrightRendererService Implementation (TASK-22-5)
 
 ### Service Description
@@ -46672,6 +46946,137 @@ React component for displaying a timeline of SERP feature changes for a specific
 - TASK-7-10: SERP Features API endpoints
 - TASK-7-16: SERP feature icons/badges
 - TASK-7-18: SERP feature filter UI
+
+---
+## Report Enhancement for SERP Features (TASK-7-15)
+
+### Feature Description
+Enhancement to the reporting system (FEAT-004) that adds SERP feature data to generated reports. PDF reports include a dedicated SERP features section with statistics, and CSV exports include a serp_features column showing feature icons for each keyword.
+
+### Component Locations
+- **Data Aggregator:** `backend/app/Services/ReportDataAggregator.php`
+- **PDF Exporter:** `backend/app/Exporters/PdfReportExporter.php`
+- **CSV Exporter:** `backend/app/Exporters/CsvReportExporter.php`
+- **Tests:**
+  - `backend/tests/Unit/Services/ReportDataAggregatorTest.php`
+  - `backend/tests/Unit/Exporters/PdfReportExporterTest.php`
+  - `backend/tests/Unit/Exporters/CsvReportExporterTest.php`
+- **Test Documentation:** `TESTS/SPEC-7-15.md`
+
+### PDF Report SERP Features Section
+
+When SERP features are present for a site, the PDF report includes a dedicated section with:
+
+**Feature Statistics:**
+- Total keywords with SERP features
+- Breakdown by feature type (featured snippets, local packs, etc.)
+- Recent gains (features acquired in the reporting period)
+- Recent losses (features lost in the reporting period)
+
+**Feature Icons in Keyword Table:**
+Each keyword row in the report displays SERP feature icons indicating which features the keyword triggers.
+
+### CSV Export SERP Features Column
+
+The CSV export includes an additional `SERP Features` column containing concatenated emoji icons for each keyword:
+
+| Keyword | Position | SERP Features |
+|---------|----------|---------------|
+| example keyword | 1 | 🏆📍 |
+| another keyword | 5 | 🖼️ |
+| no features | 10 | (empty) |
+
+### SERP Feature Icons
+
+| Feature | Icon | Name |
+|---------|------|------|
+| `featured_snippet` | 🏆 | Featured Snippet |
+| `local_pack` | 📍 | Local Pack |
+| `image_pack` | 🖼️ | Image Pack |
+| `video` | 🎬 | Video Result |
+| `people_also_ask` | ❓ | People Also Ask |
+| `knowledge_panel` | 📋 | Knowledge Panel |
+| `sitelinks` | 🔗 | Sitelinks |
+| `reviews` | ⭐ | Reviews/Ratings |
+| `faq` | 📝 | FAQ Rich Result |
+| `product` | 🛒 | Product Listing |
+
+### ReportDataAggregator Methods
+
+| Method | Description |
+|--------|-------------|
+| `getSerpFeatureData(int $siteId): array` | Aggregates SERP feature statistics for a site |
+| `getKeywordSerpFeatures(int $keywordId): array` | Gets feature icons for a single keyword |
+| `fetchKeywordSerpFeatures(array $keywordIds): Collection` | Batch fetches features for multiple keywords |
+
+### PDF Exporter Methods
+
+| Method | Description |
+|--------|-------------|
+| `buildSerpFeaturesSection(array $data): void` | Renders SERP features section in PDF |
+| `addFeatureIconToCell(PDF $pdf, string $type): void` | Adds feature icon to PDF cell |
+
+### CSV Exporter Methods
+
+| Method | Description |
+|--------|-------------|
+| `formatSerpFeatures(array $features): string` | Converts features to icon string |
+| `addSerpFeatureColumn(array $row, array $features): array` | Adds SERP features column to CSV row |
+
+### Configuration
+
+Reports can enable/disable the SERP features section via template configuration:
+
+```php
+$template = [
+    'sections' => [
+        'summary' => true,
+        'keywords' => true,
+        'serp_features' => true,  // Toggle SERP features section
+        'changes' => true,
+        'trends' => true,
+    ],
+];
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| PdfReportExporterTest (SERP features) | 8 | ✅ PASS |
+| CsvReportExporterTest (SERP features) | 8 | ✅ PASS |
+| ReportDataAggregatorTest (SERP features) | 6 | ✅ PASS |
+| **Total** | **22** | **✅ ALL PASS** |
+
+**Coverage Areas:**
+- PDF SERP features section rendering
+- Feature icons in PDF keyword table
+- CSV serp_features column formatting
+- Empty features handling
+- Multiple features concatenation
+- Feature metadata (icons, names)
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-27 |
+| Commit | Developer implementation complete |
+| Tests | 22/22 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-7-11 | Done ✅ | SERP Feature Summary endpoint |
+| FEAT-004 | Done ✅ | Report system infrastructure |
+
+### Related Tasks
+
+- TASK-7-11: SERP Feature Summary Endpoint (data source)
+- TASK-4-7: Reports CRUD API (report generation)
+- TASK-4-8: Report Generation Endpoint
 
 ---
 ## IndicatorProcessor Base Class (TASK-19-5)
