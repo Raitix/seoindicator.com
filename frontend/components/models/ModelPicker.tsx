@@ -195,6 +195,10 @@ export function ModelPicker({
   return (
     <div
       data-testid="model-picker"
+      role="combobox"
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+      aria-label="Select AI model"
       className={cn('relative', className)}
     >
       {/* Trigger Button */}
@@ -206,7 +210,6 @@ export function ModelPicker({
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Select AI model"
         className={cn(
           'flex items-center justify-between gap-2 w-full px-4 py-3',
           'rounded-lg border bg-card text-left',
