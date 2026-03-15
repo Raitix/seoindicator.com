@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentModal } from '@/components/payments/PaymentModal';
 
@@ -22,8 +23,8 @@ const mockPackage = {
 };
 
 describe('PaymentModal', () => {
-  const mockOnClose = jest.fn();
-  const mockOnSuccess = jest.fn();
+  const mockOnClose = vi.fn();
+  const mockOnSuccess = vi.fn();
 
   const defaultProps = {
     isOpen: true,
@@ -33,7 +34,7 @@ describe('PaymentModal', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('PM-001: Rendering', () => {
@@ -188,3 +189,4 @@ describe('PaymentModal', () => {
     });
   });
 });
+

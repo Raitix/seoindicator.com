@@ -515,6 +515,17 @@ export async function invalidatePreferencesCache(): Promise<void> {
 // ==================== Utility Functions ====================
 
 /**
+ * Sanitize text to prevent XSS attacks
+ * Removes HTML tags and dangerous characters
+ */
+export function sanitizeText(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[<>]/g, '') // Remove any remaining < or >
+    .trim();
+}
+
+/**
  * Format context window size in human-readable format
  */
 export function formatContextWindow(size: number): string {

@@ -1,7 +1,7 @@
 # FEAT-029: Export Results (PDF/XLS)
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`

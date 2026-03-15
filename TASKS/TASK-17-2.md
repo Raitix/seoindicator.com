@@ -95,4 +95,17 @@ This task handles all backend business logic. Frontend components will consume t
 
 ---
 
+## Comments
+
+### 2026-03-15 13:05 GMT+2 - DocSystemAnalyst
+**Re-verification Complete**
+- Task status confirmed: `Done`
+- Part of FEAT-017/SPEC-17 (User Onboarding & Activation Flow - Phase 1 MVP)
+- OnboardingService and OnboardingController already deployed to production
+- DOCUMENTATION.md verified at line 25643 (User Onboarding & Activation Flow section)
+- Completion marker written: `logs/completed/task/TASK-17-2.json`
+- Stale lock removed
+
+---
+
 *Created by SpecSystemAnalyst on 2026-02-28*

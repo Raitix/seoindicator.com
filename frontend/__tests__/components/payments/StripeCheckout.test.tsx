@@ -9,31 +9,32 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { StripeCheckout } from '@/components/payments/StripeCheckout';
 
-// Mock Stripe.js
-const mockConfirmPayment = jest.fn();
+// Define mock functions with vi.hoisted for proper hoisting
+const mockConfirmPayment = vi.hoisted(() => vi.fn());
+const mockSubmit = vi.hoisted(() => vi.fn().mockResolvedValue({}));
+
 const mockStripe = {
   confirmPayment: mockConfirmPayment,
-  elements: jest.fn(() => mockElements),
 };
 
 const mockElements = {
-  submit: jest.fn(),
-  getElement: jest.fn(),
+  submit: mockSubmit,
+  getElement: vi.fn(),
 };
 
 // Mock @stripe/react-stripe-js
-jest.mock('@stripe/react-stripe-js', () => ({
-  Elements: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  PaymentElement: () => <div data-testid="payment-element">Payment Element</div>,
+vi.mock('@stripe/react-stripe-js', () => ({
+  Elements: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
+  PaymentElement: () => React.createElement('div', { 'data-testid': 'payment-element' }, 'Payment Element'),
   useStripe: () => mockStripe,
   useElements: () => mockElements,
 }));
 
-jest.mock('@stripe/stripe-js', () => ({
-  loadStripe: jest.fn(() => Promise.resolve(mockStripe)),
-  Appearance: {},
+vi.mock('@stripe/stripe-js', () => ({
+  loadStripe: vi.fn(() => Promise.resolve(mockStripe)),
 }));
 
 // Mock credit package
@@ -54,9 +55,9 @@ const mockPaymentIntent = {
 };
 
 describe('StripeCheckout', () => {
-  const mockOnSuccess = jest.fn();
-  const mockOnError = jest.fn();
-  const mockOnCancel = jest.fn();
+  const mockOnSuccess = vi.fn();
+  const mockOnError = vi.fn();
+  const mockOnCancel = vi.fn();
 
   const defaultProps = {
     creditPackage: mockPackage,
@@ -67,8 +68,11 @@ describe('StripeCheckout', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockConfirmPayment.mockReset();
     mockConfirmPayment.mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
+    mockSubmit.mockReset();
+    mockSubmit.mockResolvedValue({});
   });
 
   describe('SC-001 to SC-003: Initial Rendering', () => {
@@ -96,7 +100,7 @@ describe('StripeCheckout', () => {
     it('disables pay button during processing', () => {
       render(<StripeCheckout {...defaultProps} isProcessing={true} />);
       
-      const payButton = screen.getByRole('button', { name: /pay/i });
+      const payButton = screen.getByRole('button', { name: /processing/i });
       expect(payButton).toBeDisabled();
     });
 
@@ -119,12 +123,16 @@ describe('StripeCheckout', () => {
           confirmParams: {
             return_url: expect.stringContaining('/payments/return'),
           },
+          redirect: 'if_required',
         });
       });
     });
 
     it('calls onSuccess on successful payment', async () => {
       const user = userEvent.setup();
+      mockConfirmPayment.mockResolvedValue({ 
+        paymentIntent: { status: 'succeeded', id: 'pi_test_123' } 
+      });
       render(<StripeCheckout {...defaultProps} />);
       
       const payButton = screen.getByRole('button', { name: /pay \$25\.00/i });
@@ -159,23 +167,22 @@ describe('StripeCheckout', () => {
       });
     });
 
-    it('handles 3D Secure success', async () => {
-      mockConfirmPayment
-        .mockResolvedValueOnce({
-          paymentIntent: { status: 'requires_action' }
-        })
-        .mockResolvedValueOnce({
-          paymentIntent: { status: 'succeeded' }
-        });
+    it('handles 3D Secure requires_action state', async () => {
+      mockConfirmPayment.mockResolvedValue({
+        paymentIntent: { status: 'requires_action' },
+        error: null
+      });
       
-      // Simulate return from 3DS
       const user = userEvent.setup();
       render(<StripeCheckout {...defaultProps} />);
       
       await user.click(screen.getByRole('button', { name: /pay/i }));
       
-      // After 3DS success
-      expect(mockOnSuccess).toHaveBeenCalled();
+      // Should show 3D Secure prompt and not call onSuccess yet
+      await waitFor(() => {
+        expect(screen.getByText(/3d secure/i)).toBeInTheDocument();
+      });
+      expect(mockOnSuccess).not.toHaveBeenCalled();
     });
 
     it('handles 3D Secure failure', async () => {
@@ -235,15 +242,17 @@ describe('StripeCheckout', () => {
       await user.click(payButton);
       
       // Verify saveCard was included
-      expect(mockConfirmPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          confirmParams: expect.objectContaining({
-            payment_method_data: expect.objectContaining({
-              save_for_future: true
+      await waitFor(() => {
+        expect(mockConfirmPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            confirmParams: expect.objectContaining({
+              payment_method_data: expect.objectContaining({
+                save_for_future: true
+              })
             })
           })
-        })
-      );
+        );
+      });
     });
 
     it('shows legal disclaimer', () => {
@@ -275,3 +284,4 @@ describe('StripeCheckout', () => {
     });
   });
 });
+

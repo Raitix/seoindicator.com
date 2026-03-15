@@ -730,6 +730,141 @@ Authorization: Bearer {token}
 - TASK-19-9: SSE Stream Endpoint (real-time updates)
 
 ---
+## Progress Tracking and Updates (TASK-19-8)
+
+### Feature Description
+Progress tracking service for the Progressive Analysis & Job System feature (FEAT-019) that updates job state and broadcasts real-time progress events. Provides atomic database updates, automatic progress calculation, and event dispatching for Server-Sent Events (SSE) integration.
+
+### Component Locations
+- **Service:** `backend/app/Services/ProgressService.php`
+- **Events:**
+  - `backend/app/Events/AnalysisProgressUpdated.php`
+  - `backend/app/Events/AnalysisIndicatorComplete.php`
+- **Tests:** `backend/tests/Unit/Services/ProgressServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-19-8.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `updateProgress(int $jobId, string $indicatorSlug, float $score): void` | Updates job progress_percent after each indicator |
+| `markComplete(int $jobId, string $indicatorSlug, IndicatorResult $result): void` | Marks indicator complete with result data |
+| `markFailed(int $jobId, string $indicatorSlug, string $error): void` | Marks indicator failed with error message |
+| `markRunning(int $jobId, string $indicatorSlug): void` | Marks indicator as currently processing |
+| `isJobCancelled(int $jobId): bool` | Checks if job was cancelled by user |
+
+### Progress Calculation
+
+```
+progress_percent = (completed_indicators / total_indicators) * 100
+```
+
+- Calculated automatically after each indicator completes
+- Stored in `progress_percent` column on `analysis_jobs` table
+- Updates are atomic (database transactions)
+
+### Event Dispatching
+
+#### AnalysisProgressUpdated Event
+
+Broadcasts when job progress changes:
+
+```php
+class AnalysisProgressUpdated implements ShouldBroadcast
+{
+    public int $jobId;
+    public int $completedIndicators;
+    public int $totalIndicators;
+    public float $progressPercent;
+    public string $status;
+    
+    // Broadcasts on: private-analysis-job.{id}
+}
+```
+
+#### AnalysisIndicatorComplete Event
+
+Broadcasts when individual indicator completes:
+
+```php
+class AnalysisIndicatorComplete implements ShouldBroadcast
+{
+    public int $jobId;
+    public string $indicatorSlug;
+    public float $score;
+    public float $percentage;
+    public int $processingTimeMs;
+    
+    // Broadcasts on: private-analysis-job.{id}
+}
+```
+
+### Broadcasting Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Channel | `private-analysis-job.{id}` | Private channel per job |
+| Connection | `log` (MVP) | Currently logs events; configure Pusher/Reverb for WebSocket |
+| Authorization | Job ownership | Users can only listen to their own jobs |
+
+**Note:** For real-time WebSocket updates, configure `BROADCAST_CONNECTION` to use Pusher or Laravel Reverb in future iteration.
+
+### Database Transaction Safety
+
+All progress updates are wrapped in database transactions:
+
+```php
+DB::transaction(function () use ($jobId, $indicatorSlug, $result) {
+    // 1. Update result record
+    // 2. Update job progress_percent
+    // 3. Dispatch event
+});
+```
+
+### Integration Points
+
+| Component | Integration |
+|-----------|-------------|
+| IndicatorProcessor | Calls `markRunning()` → `markComplete()` or `markFailed()` |
+| Queue Worker | Checks `isJobCancelled()` before processing each indicator |
+| SSE Endpoint | Listens to broadcast events for real-time streaming |
+| Frontend | Subscribes to private channel for live updates |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ProgressServiceTest | 18 | - | ✅ PASS |
+| AnalysisJobProgressTest | 9 | - | ✅ PASS |
+| AnalysisJobApiTest | 41 | - | ✅ PASS |
+| **Total** | **68** | **130+** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Commit | `9e9196d` |
+| GitHub Actions Workflow | 22521372737 |
+| Health Check | ✅ 200 OK |
+| Tests | 130/130 passing (301 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-19-2 | Done ✅ | AnalysisJob and AnalysisJobResult Models |
+| TASK-19-3 | Done ✅ | AnalysisJobService |
+
+### Related Tasks
+
+- TASK-19-3: AnalysisJobService (uses updateProgress)
+- TASK-19-5: IndicatorProcessor (calls markComplete/markFailed)
+- TASK-19-7: Queue Worker (checks isJobCancelled)
+- TASK-19-9: SSE Stream Endpoint (consumes broadcast events)
+
+---
 ## SSRF Protection Integration (TASK-19-15)
 
 ### Feature Description

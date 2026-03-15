@@ -108,6 +108,7 @@ function CheckoutForm({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [saveCard, setSaveCard] = React.useState(false);
+  const [requires3DS, setRequires3DS] = React.useState(false);
 
   const processing = externalProcessing || isProcessing;
 
@@ -120,6 +121,7 @@ function CheckoutForm({
 
     setIsProcessing(true);
     setError(null);
+    setRequires3DS(false);
 
     try {
       // Submit the form elements first
@@ -131,12 +133,22 @@ function CheckoutForm({
         return;
       }
 
+      // Build confirm params
+      const confirmParams: Record<string, unknown> = {
+        return_url: `${window.location.origin}/payments/return`,
+      };
+
+      // Add save_for_future if checkbox is checked
+      if (saveCard) {
+        confirmParams.payment_method_data = {
+          save_for_future: true,
+        };
+      }
+
       // Confirm the payment
       const { error: confirmError, paymentIntent: result } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/payments/return`,
-        },
+        confirmParams,
         redirect: "if_required",
       });
 
@@ -158,8 +170,8 @@ function CheckoutForm({
           credits: paymentIntent.credits,
         });
       } else if (result && result.status === "requires_action") {
-        // 3D Secure - will be handled by redirect
-        // The redirect will happen automatically
+        // 3D Secure - show prompt
+        setRequires3DS(true);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
@@ -207,6 +219,16 @@ function CheckoutForm({
           </div>
         </div>
       </div>
+
+      {/* 3D Secure Prompt */}
+      {requires3DS && (
+        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+          <p className="text-blue-400 font-medium">3D Secure Authentication Required</p>
+          <p className="text-blue-400/80 text-sm mt-1">
+            Please complete the authentication in the popup window.
+          </p>
+        </div>
+      )}
 
       {/* Payment Element */}
       <div className="space-y-4">
@@ -265,7 +287,7 @@ function CheckoutForm({
       >
         {processing ? (
           <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            <Loader2 data-testid="button-spinner" className="w-5 h-5 mr-2 animate-spin" />
             Processing...
           </>
         ) : (

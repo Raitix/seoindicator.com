@@ -7,11 +7,12 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentSuccess } from '@/components/payments/PaymentSuccess';
 
 describe('PaymentSuccess', () => {
-  const mockOnDone = jest.fn();
+  const mockOnDone = vi.fn();
   
   const defaultProps = {
     credits: 150,
@@ -21,12 +22,12 @@ describe('PaymentSuccess', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('PS-001 to PS-006: Content Display', () => {
@@ -95,7 +96,7 @@ describe('PaymentSuccess', () => {
       
       expect(mockOnDone).not.toHaveBeenCalled();
       
-      jest.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(5000);
       
       expect(mockOnDone).toHaveBeenCalledTimes(1);
     });
@@ -106,7 +107,7 @@ describe('PaymentSuccess', () => {
       const container = screen.getByTestId('success-container');
       fireEvent.mouseEnter(container);
       
-      jest.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(5000);
       
       expect(mockOnDone).not.toHaveBeenCalled();
     });
@@ -142,3 +143,4 @@ describe('PaymentSuccess', () => {
     });
   });
 });
+

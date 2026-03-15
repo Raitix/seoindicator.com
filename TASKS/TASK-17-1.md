@@ -86,6 +86,15 @@ This is the foundation task for the onboarding feature. All other tasks depend o
 
 ## Comments
 
+### 2026-03-15 12:56 GMT+2 - DocSystemAnalyst
+**Re-verification Complete**
+- Task status confirmed: `Done`
+- Task is part of FEAT-017/SPEC-17 (User Onboarding & Activation Flow - Phase 1 MVP)
+- Database migration and model already deployed to production
+- DOCUMENTATION.md contains User Onboarding & Activation Flow section
+- Completion marker written: `logs/completed/task/TASK-17-1.json`
+- **ORCHESTRATOR BUG:** Task repeatedly triggered due to naming mismatch (116+ verifications to date)
+
 ### 2026-02-28 13:23 - DevOps
 - Verified deployment: Migration and model already deployed to production in commit `e7f3fbb`
 - All acceptance criteria verified:

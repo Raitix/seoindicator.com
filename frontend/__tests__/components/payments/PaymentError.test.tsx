@@ -7,12 +7,13 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentError } from '@/components/payments/PaymentError';
 
 describe('PaymentError', () => {
-  const mockOnRetry = jest.fn();
-  const mockOnCancel = jest.fn();
+  const mockOnRetry = vi.fn();
+  const mockOnCancel = vi.fn();
 
   const defaultProps = {
     errorType: 'unknown',
@@ -21,7 +22,7 @@ describe('PaymentError', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('PE-001: Base Rendering', () => {
@@ -154,3 +155,4 @@ describe('PaymentError', () => {
     });
   });
 });
+

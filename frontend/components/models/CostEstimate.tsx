@@ -146,7 +146,7 @@ export function CostEstimate({
             data-testid="token-count"
             className="text-sm text-muted-foreground"
           >
-            {estimate.tokens.toLocaleString()} tokens
+            {estimate.tokens.toLocaleString('en-US')} tokens
           </span>
         )}
       </div>
