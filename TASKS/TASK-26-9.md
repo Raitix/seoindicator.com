@@ -1,7 +1,7 @@
 # TASK-26-9: Create Stripe Payment Intent Endpoint
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -185,3 +185,36 @@ Tests CAN be designed NOW using mocked StripeGatewayService interface:
 
 ---
 _Leave notes for the next agent here_
+
+### 2026-03-14 - PreTester
+**Test Design Complete:**
+- Created `tests/Feature/Api/V1/PaymentIntentControllerTest.php` with 55+ tests
+- Created `tests/TESTS/TASK-26-9.md` documentation
+- Status updated to `To Develop`
+
+**Test Categories:**
+- Success tests (7): PI-SUCCESS-01 to PI-SUCCESS-07
+- Authentication tests (2): PI-AUTH-01 to PI-AUTH-02
+- Validation tests (7): PI-VAL-01 to PI-VAL-07
+- Error handling tests (4): PI-ERR-01 to PI-ERR-04
+- Security tests (6): PI-SEC-01 to PI-SEC-06
+- Idempotency tests (4): PI-IDEMP-01 to PI-IDEMP-04
+- Edge cases (6): PI-EDGE-01 to PI-EDGE-06
+- HTTP method tests (1): PI-HTTP-01
+- Performance tests (1): PI-PERF-01
+- Rate limiting tests (1): PI-RATE-01
+- Integration tests (3): PI-INT-01 to PI-INT-03
+- Acceptance criteria tests (10): AC-01 to AC-10
+
+**Schema Notes:**
+- `CreditTransaction.payment_id` stores the payment intent ID
+- Package ID and credits stored in `metadata` JSON column
+- Return URL stored in `metadata.return_url`
+
+**Dependencies:**
+- CreditPackage model ✅
+- CreditTransaction model ✅
+- PaymentGatewayInterface ✅
+- StripeGatewayService implementation (TASK-26-8) - pending
+
+**Ready for Developer:** All tests designed, can be run with mocks until StripeGatewayService is ready.

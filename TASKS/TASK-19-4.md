@@ -1,7 +1,7 @@
 # TASK-19-4: Job CRUD API Endpoints
 
 ## STATUS
-`Documentation`
+`Done`
 
 ## PRIORITY
 `High`
