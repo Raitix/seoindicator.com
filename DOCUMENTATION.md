@@ -1,6 +1,308 @@
 # DOCUMENTATION.md
 
 ---
+## AnalysisJobService - Core Operations (TASK-19-3)
+
+### Feature Description
+Core service layer for the Progressive Analysis & Job System feature (FEAT-019) that manages the complete lifecycle of SEO analysis jobs. `AnalysisJobService` provides methods for job creation, retrieval, status transitions, cancellation, and progress tracking with built-in rate limiting and authorization checks.
+
+### Component Locations
+- **Service:** `backend/app/Services/AnalysisJobService.php`
+- **Model:** `backend/app/Models/AnalysisJob.php` (TASK-19-2)
+- **Result Model:** `backend/app/Models/AnalysisJobResult.php` (TASK-19-2)
+- **Rate Limiter:** `backend/app/Services/AnalysisRateLimiterService.php` (TASK-19-14)
+- **Tests:** `backend/tests/Unit/Services/AnalysisJobServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-19-3.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `createJob(int $userId, int $siteId, array $indicators): AnalysisJob` | Creates job with pending results for each indicator |
+| `getJob(int $jobId, ?int $userId): ?AnalysisJob` | Retrieves job with results loaded, supports user authorization |
+| `getJobProgress(int $jobId, ?int $userId): ?array` | Returns progress data for API responses |
+| `cancelJob(int $jobId, ?int $userId): bool` | Cancels pending/running jobs, marks incomplete results as skipped |
+| `startJob(int $jobId): bool` | Transitions pending job to running, sets started_at |
+| `completeJob(int $jobId): bool` | Marks job as completed, sets completed_at |
+| `failJob(int $jobId, string $error): bool` | Marks job as failed with error message |
+| `updateProgress(int $jobId): void` | Updates job progress based on completed results, auto-completes when done |
+| `getPendingJobs(int $limit): Collection` | Gets pending jobs ready for processing |
+| `getRunningJobs(): Collection` | Gets running jobs with pending results |
+| `canUserAccessJob(int $userId, int $jobId): bool` | Authorization check for job access |
+| `getAvailableIndicators(): array` | Returns all available indicator definitions |
+
+### Available Indicators (17 Total)
+
+| Slug | Name | Max Score |
+|------|------|-----------|
+| `meta_tags` | Meta Tags | 100 |
+| `headings` | Headings Structure | 100 |
+| `images` | Images Optimization | 100 |
+| `links` | Links Analysis | 100 |
+| `performance` | Performance | 100 |
+| `mobile` | Mobile Friendliness | 100 |
+| `security` | Security | 100 |
+| `structured_data` | Structured Data | 100 |
+| `content_quality` | Content Quality | 100 |
+| `url_structure` | URL Structure | 100 |
+| `canonicalization` | Canonicalization | 100 |
+| `robots_txt` | Robots.txt | 100 |
+| `sitemap` | XML Sitemap | 100 |
+| `internal_linking` | Internal Linking | 100 |
+| `external_links` | External Links | 100 |
+| `social_tags` | Social Tags | 100 |
+| `crawlability` | Crawlability | 100 |
+
+### Rate Limits
+
+| Constraint | Value | Description |
+|------------|-------|-------------|
+| Max concurrent jobs per user | 2 | User cannot have more than 2 running jobs |
+| Max jobs per user per hour | 10 | Hourly limit per user |
+| Max jobs per site per hour | 5 | Hourly limit per site |
+
+### Job Status Workflow
+
+```
+pending → running → completed
+   │         │
+   │         └──→ failed
+   │
+   └──────→ cancelled
+```
+
+### Status Transition Rules
+
+| Current Status | Can Transition To | Methods |
+|----------------|-------------------|---------|
+| `pending` | `running`, `cancelled` | `startJob()`, `cancelJob()` |
+| `running` | `completed`, `failed`, `cancelled` | `completeJob()`, `failJob()`, `cancelJob()` |
+| `completed` | (terminal) | - |
+| `failed` | (terminal) | - |
+| `cancelled` | (terminal) | - |
+
+### getJobProgress Response Format
+
+```php
+[
+    'id' => 1,
+    'status' => 'running',
+    'total_indicators' => 17,
+    'completed_indicators' => 5,
+    'failed_indicators' => 1,
+    'progress_percent' => 35,
+    'started_at' => '2026-03-15T10:00:00Z',
+    'completed_at' => null,
+    'cancelled_at' => null,
+    'error_message' => null,
+    'duration_seconds' => 45,
+    'duration_human' => '45s',
+    'results' => [
+        [
+            'indicator_slug' => 'meta_tags',
+            'indicator_name' => 'Meta Tags',
+            'status' => 'completed',
+            'score' => 85.50,
+            'max_score' => 100.00,
+            'percentage' => 85.5,
+            'processing_time_ms' => 1250,
+        ],
+        // ... more results
+    ],
+]
+```
+
+### Authorization
+
+| Action | Authorization |
+|--------|--------------|
+| Create job | User must own the site |
+| Get job | User must own the job (if userId provided) |
+| Get progress | User must own the job (if userId provided) |
+| Cancel job | User must own the job (if userId provided) |
+| Start/Complete/Fail | Internal use (queue worker) |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Site ownership verification | Required before job creation |
+| User authorization | Optional `$userId` parameter filters queries |
+| Rate limiting | Integrated with `AnalysisRateLimiterService` |
+| Atomic job creation | Database transaction for job + results |
+| Invalid state transitions | RuntimeException thrown |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AnalysisJobServiceTest | 44 | 170 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Job Creation | 9 | Indicator handling, validation, atomicity |
+| Job Retrieval | 6 | Get job, authorization checks |
+| Progress Tracking | 3 | Progress data structure, edge cases |
+| Status Transitions | 14 | Start, complete, fail, cancel operations |
+| Progress Updates | 3 | Auto-completion on all results done |
+| Authorization | 3 | User access checks |
+| Available Indicators | 2 | Indicator list retrieval |
+| Job Queries | 2 | Pending/running job retrieval |
+| Full Indicator Suite | 2 | 17 indicators handling |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-15 |
+| Deployment ID | `20260315T082003Z-a00ee7d8` |
+| Commit | `83d518a0c2982b518030a79466370c7b6e4ff4ef` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-15 11:10 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Unit Tests | 44 pass | 44 pass (170 assertions) | ✅ |
+| Security Tests | All pass | XSS, SQL injection, path traversal blocked | ✅ |
+| API Auth (5 endpoints) | 401 | All return 401 for unauthenticated | ✅ |
+| Production Smoke | 200 OK | Homepage + login loaded | ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-19-1 | Done ✅ | Database Migration - Analysis Jobs Tables |
+| TASK-19-2 | Done ✅ | AnalysisJob and AnalysisJobResult Models |
+| TASK-19-14 | Done ✅ | AnalysisRateLimiterService |
+
+### Related Tasks
+
+- TASK-19-4: Job CRUD API Endpoints (exposes this service)
+- TASK-19-5: IndicatorProcessor Base Class (processes indicators)
+- TASK-19-7: Queue Worker with Concurrency Throttling (consumes pending jobs)
+- TASK-19-8: Progress Tracking and Updates (uses updateProgress)
+
+---
+## Comparison Registry and Data Loading (TASK-32-2)
+
+### Feature Description
+Registry system for the Competitor Comparison Landing Pages feature (FEAT-032) that manages competitor data and generates comparison data structures. Provides helper functions for loading, validating, and transforming competitor data for programmatic SEO comparison pages.
+
+### Component Locations
+- **Registry:** `frontend/lib/compare/registry.ts`
+- **SEOIndicator Data:** `frontend/lib/compare/competitors/seoindicator.ts`
+- **Types:** `frontend/lib/compare/types.ts` (TASK-32-1)
+- **Tests:** `frontend/__tests__/lib/compare/registry.test.ts`, `frontend/__tests__/lib/compare/competitors/seoindicator.test.ts`
+- **Test Documentation:** `TESTS/TEST-32-2.md`
+
+### Core Functionalities
+
+| Function | Description |
+|----------|-------------|
+| `getCompetitorById(id)` | Returns CompetitorData or null for invalid ID |
+| `getComparisonBySlug(slug)` | Returns ComparisonData or null for invalid slug |
+| `parseSlug(slug)` | Extracts competitor IDs from slug format |
+| `generateComparisonData(a, b)` | Creates ComparisonData structure |
+| `getRelatedComparisons(id)` | Returns array of related comparison slugs |
+| `validateCompetitorData(data)` | Validates competitor data structure |
+| `validateComparisonData(data)` | Validates comparison data structure |
+
+### Registry Exports
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `COMPETITOR_REGISTRY` | `Record<string, CompetitorData>` | All competitor data indexed by ID |
+| `COMPARISON_SLUGS` | `string[]` | All valid comparison URL slugs |
+| `seoindicator` | `CompetitorData` | SEOIndicator competitor data |
+
+### Competitor Data Structure
+
+```typescript
+interface CompetitorData {
+  id: string;                    // 'ahrefs', 'semrush', etc.
+  name: string;                  // Display name
+  slug: string;                  // URL-safe name
+  website: string;               // Official website
+  logo?: string;                 // Logo URL (optional)
+  tagline: string;               // Short description
+  pricing: PricingTier[];
+  features: FeatureCategory[];
+  pros: string[];
+  cons: string[];
+  useCases: UseCase[];
+  lastUpdated: string;           // ISO date for freshness tracking
+  source: string;                // Data source attribution
+}
+```
+
+### SEOIndicator Pricing Tiers
+
+| Tier | Monthly Price | Annual Price | Features |
+|------|---------------|--------------|----------|
+| Free | $0 | $0 | Basic rank tracking, limited keywords |
+| Pro | $29 | $290 | Full rank tracking, 500 keywords, site audit |
+| Business | $79 | $790 | 2000 keywords, backlink analysis, API access |
+| Agency | $199 | $1990 | Unlimited keywords, white-label, priority support |
+
+### Validation Functions
+
+**validateCompetitorData():**
+- Checks required fields (id, name, slug, website, tagline, pricing, features, pros, cons, useCases, lastUpdated, source)
+- Validates pricing array is non-empty with valid items
+- Validates lastUpdated date format (YYYY-MM-DD)
+- Rejects negative prices
+- Validates use case audience values
+
+**validateComparisonData():**
+- Checks required fields (slug, title, metaDescription, summary, verdict, competitors)
+- Validates featureComparison, pricingComparison, prosCons, faqs arrays
+- Validates slug format (`[a-z0-9-]+-vs-[a-z0-9-]+`)
+
+### Error Handling
+
+| Input | Behavior |
+|-------|----------|
+| Null slug | Returns `null` (no exception) |
+| Invalid slug format | Returns `null` |
+| Unknown competitor ID | Returns `null` |
+| Missing competitor data | Returns `null` for comparison |
+
+### Test Coverage
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| Registry tests | 150 | ✅ PASS |
+| SEOIndicator data tests | 50 | ✅ PASS |
+| **Total** | **200** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment ID | 22725116735 |
+| Commit | 9d3b7d3d |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK, database connected |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-32-1 | Done ✅ | Types and Interfaces |
+
+### Related Tasks
+
+- TASK-32-3: Comparison Page Route (uses registry)
+- TASK-32-10: ComparisonSchema Component (uses comparison data)
+- TASK-32-11 to TASK-32-14: Competitor Data Files (extend registry)
+
+---
 ## Reports CRUD API (TASK-4-7)
 
 ### Feature Description
@@ -7884,6 +8186,164 @@ REST API controller for the authenticated Local SEO alert inbox. Exposes 6 user-
 | TASK-35-14 | Done ✅ | Adjacent Local SEO / GBP API controller pattern |
 
 ### Related Tasks
+- TASK-35-1: Local SEO Database Migrations (schema foundation)
+- TASK-35-13: Local SEO Alert Service (service layer)
+- TASK-35-15: GBP Insights & Reviews Controllers (related API patterns)
+
+---
+## IssueDetector Service (TASK-14-8)
+
+### Service Description
+Core orchestration service for the Technical SEO Site Audit feature (FEAT-014) that coordinates all issue detection checkers and creates AuditIssue records from findings. Implements the Strategy pattern with a checker registry, enabling extensible detection capabilities through the CheckerInterface. Handles duplicate title detection across pages using cache-based tracking.
+
+### Component Locations
+- **Service:** `backend/app/Services/Audit/IssueDetector.php`
+- **Interface:** `backend/app/Services/Audit/Contracts/IssueDetectorInterface.php`
+- **Checker Interface:** `backend/app/Services/Audit/Checkers/CheckerInterface.php`
+- **DTOs:** `backend/app/Services/Audit/DTOs/IssueFinding.php`, `backend/app/Services/Audit/DTOs/CrawlResult.php`
+- **Tests:** `backend/tests/Unit/Services/Audit/IssueDetectorTest.php`
+- **Test Documentation:** `TESTS/TEST-14-8.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `registerChecker(CheckerInterface $checker)` | Register an issue detection checker |
+| `analyze(CrawlResult $result, int $auditId)` | Run all registered checkers and store issues |
+| `runCheck(string $name, CrawlResult $result)` | Run a single checker by name |
+| `getAvailableChecks()` | Get list of registered checker names |
+
+### CheckerInterface Pattern
+
+All checkers implement the same interface for extensibility:
+
+```php
+interface CheckerInterface
+{
+    public function check(CrawlResult $result): ?IssueFinding;
+    public function getIssueType(): string;
+    public function getName(): string;
+    public function getPriority(): int;
+}
+```
+
+### MVP Checkers
+
+| Checker | Issue Type | Severity | Priority |
+|---------|------------|----------|----------|
+| TitleTagChecker | missing_title_tag | Critical | 100 |
+| MetaDescriptionChecker | missing_meta_description | Warning | 90 |
+| H1Checker | missing_h1 / multiple_h1 | Warning/Notice | 80 |
+| ViewportChecker | missing_viewport | Warning | 70 |
+| BrokenLinkChecker | broken_link | Critical | 60 |
+| PerformanceChecker | slow_page | Notice | 50 |
+| ImageAltChecker | image_missing_alt | Notice | 40 |
+
+### Duplicate Title Detection
+
+The service tracks titles across pages to detect duplicates:
+
+| Aspect | Implementation |
+|--------|----------------|
+| Cache Key | `audit:titles:{audit_id}` |
+| TTL | Duration of audit |
+| Storage | Title → URL mapping |
+| Detection | Second+ occurrences flagged |
+
+### IssueFinding DTO
+
+```php
+readonly class IssueFinding
+{
+    public function __construct(
+        public readonly string $issueType,    // Maps to issue_types.name
+        public readonly string $severity,     // critical, warning, notice
+        public readonly string $description,  // Human-readable description
+        public readonly string $recommendation, // Fix recommendation
+        public readonly array $context = []   // Additional context (URL, etc.)
+    ) {}
+}
+```
+
+### CrawlResult DTO
+
+```php
+readonly class CrawlResult
+{
+    public function __construct(
+        public readonly string $url,
+        public readonly int $statusCode,
+        public readonly int $responseTimeMs,
+        public readonly string $html,
+        public readonly array $links = [],
+        public readonly array $metadata = [],
+        public readonly ?string $errorMessage = null,
+        public readonly array $headers = [],
+        public readonly int $depth = 0,
+        public readonly array $redirectChain = []
+    ) {}
+}
+```
+
+### Severity Mapping
+
+| Checker Severity | Issue Type Default | Final Severity |
+|------------------|-------------------|----------------|
+| Checker-provided | — | Uses checker value |
+| — (not provided) | Database lookup | Uses issue_types.severity_default |
+| — (not found) | — | Defaults to 'notice' |
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Checker throws exception | Log error, continue to next checker |
+| Invalid CrawlResult | Return empty array |
+| Missing audit ID | InvalidArgumentException |
+| Cache unavailable | Continue without duplicate detection |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `IssueDetectorTest.php` | 95+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 5 | Container binding, dependencies |
+| Checker Registration | 12 | Single, multiple, invalid registrations |
+| Analyze Method | 15 | Full flow, issue creation |
+| Run Check Method | 10 | Single checker execution |
+| Duplicate Detection | 12 | Cross-page title tracking |
+| Severity Mapping | 10 | Priority resolution |
+| Error Handling | 10 | Exceptions, graceful degradation |
+| Edge Cases | 12 | Large HTML, unicode, boundaries |
+| Security | 9 | XSS, SQL injection |
+| Performance | 5 | Memory, timing |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `9064d999` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 95+ passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-14-2 (Audit Issues table) - Done ✅
+- TASK-14-3 (Issue Types table) - Done ✅
+
+### Related Tasks
+- TASK-14-9: HTML Analysis Checkers (implement CheckerInterface)
+- TASK-14-10: Link Checker (implements CheckerInterface)
+- TASK-14-11: Performance Checker (implements CheckerInterface)
+- TASK-14-12: Image Alt Checker (implements CheckerInterface)
+
+---
 
 - TASK-35-13: Local SEO alert generation and service logic
 - TASK-35-17 to TASK-35-23: Frontend Local SEO surfaces that consume the alert inbox

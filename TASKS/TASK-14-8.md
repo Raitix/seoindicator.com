@@ -296,3 +296,20 @@ Tests: 15 risky, 44 passed (50 assertions)
 - [x] Integration tests with sample HTML (blocked by test DB schema, not prod issue)
 
 **Status changed:** `To Test Prod` → `Done`
+
+### [2026-03-15 10:43] Agent: DocSystemAnalyst
+**Documentation Complete:**
+
+| Documentation Item | Status |
+|-------------------|--------|
+| DOCUMENTATION.md Updated | ✅ Done |
+| IssueDetector Service section added | ✅ Done |
+| CheckerInterface pattern documented | ✅ Done |
+| MVP Checkers table added | ✅ Done |
+| Duplicate Detection logic documented | ✅ Done |
+| IssueFinding & CrawlResult DTOs documented | ✅ Done |
+| Test coverage summary added | ✅ Done |
+
+**Note:** SPEC-14 cannot be marked as Done because TASK-14-22 (E2E Tests) is still in `To Develop` status. Documentation will be complete for the full specification when all tasks are done.
+
+**Lock file cleaned up:** `.locks/TASK-14-8.lock` removed
