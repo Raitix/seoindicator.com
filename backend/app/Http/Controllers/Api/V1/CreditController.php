@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Credits\TransactionHistoryRequest;
+use App\Models\Credit;
 use App\Services\CreditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -17,11 +18,44 @@ use Illuminate\Support\Facades\Auth;
 class CreditController extends Controller
 {
     /**
+     * Low balance threshold in dollars.
+     */
+    private const LOW_BALANCE_THRESHOLD = 2.00;
+
+    /**
      * Create a new controller instance.
      */
     public function __construct(
         protected CreditService $creditService
     ) {}
+
+    /**
+     * Get the current balance for the authenticated user.
+     *
+     * @return JsonResponse
+     */
+    public function balance(): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Get or create credit record
+        $credit = Credit::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'balance' => 0.00,
+                'total_purchased' => 0.00,
+                'total_spent' => 0.00,
+            ]
+        );
+
+        return response()->json([
+            'balance' => (float) $credit->balance,
+            'formatted_balance' => '$' . number_format($credit->balance, 2),
+            'total_purchased' => (float) $credit->total_purchased,
+            'total_spent' => (float) $credit->total_spent,
+            'low_balance' => $credit->balance < self::LOW_BALANCE_THRESHOLD,
+        ]);
+    }
 
     /**
      * Get paginated transaction history for the authenticated user.

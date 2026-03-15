@@ -1165,4 +1165,62 @@ await act(async () => {
 
 ---
 
-Last updated: 2026-03-14
+## Credit Aggregation Service Testing (TASK-27-9)
+
+### Query Builder Mutation Bug
+When building services that calculate multiple metrics from the same base query, **do not reuse query builder instances**. Each `where*` method modifies the builder in place AND returns `$this`.
+
+**Bug Pattern:**
+```php
+// BUGGY - conditions accumulate!
+$query = Model::where('type', 'usage');
+return [
+    'total' => $query->sum('amount'),                    // WHERE type = 'usage'
+    'today' => $query->whereDate(...)->sum('amount'),   // WHERE type = 'usage' AND DATE(...)
+    'thisWeek' => $query->whereBetween(...)->sum('amount'), // ALL PREVIOUS + BETWEEN!
+];
+```
+
+**Fix Pattern:**
+```php
+// FIXED - fresh query for each metric
+return [
+    'total' => Model::where('type', 'usage')->sum('amount'),
+    'today' => Model::where('type', 'usage')->whereDate(...)->sum('amount'),
+    'thisWeek' => Model::where('type', 'usage')->whereBetween(...)->sum('amount'),
+];
+```
+
+### Service Test Categories (29 tests)
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 1 | Container resolution |
+| getStats() Structure | 2 | Return keys, empty database |
+| Balance Metrics | 5 | totalHeld, average, usersWithBalance, lowBalance |
+| Spend Metrics | 5 | total, today, thisWeek, thisMonth, filtering |
+| Revenue Metrics | 5 | total, today, thisWeek, thisMonth, filtering |
+| Recent Transactions | 3 | Pagination, ordering, relationships |
+| Performance | 2 | <100ms, efficient queries |
+| Edge Cases | 6 | Negative amounts, large values, precision, timezone, PII |
+
+### Duplicate Migration Detection
+When tests fail with "table already exists" errors:
+1. Check for duplicate migration files (same table name)
+2. Remove duplicates, keeping only the earliest
+3. Run tests with in-memory SQLite to catch this early
+
+### Negative Amount Handling
+When service uses `abs()` to ensure positive values:
+- Tests should expect positive results
+- Document that negative amounts are converted (intentional)
+- Example: `usage(-50)` results in `spend.total = 50`
+
+### Cache Testing Notes
+- Tests don't explicitly test cache behavior
+- Service uses `Cache::remember()` with 5-minute TTL
+- RefreshDatabase trait clears cache between tests
+- Performance tests verify caching is effective
+
+---
+
+Last updated: 2026-03-18

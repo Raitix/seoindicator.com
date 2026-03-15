@@ -89,16 +89,18 @@ class CreditAggregationService
     public function getSpendMetrics(): array
     {
         return Cache::remember('admin.credit.spend', self::CACHE_TTL, function () {
-            $usageTransactions = CreditTransaction::where('type', 'usage');
-
+            // Use fresh query for each metric to avoid query builder mutation
             return [
-                'total' => round(abs($usageTransactions->sum('amount')), 2),
-                'today' => round(abs($usageTransactions->whereDate('created_at', today())->sum('amount')), 2),
-                'thisWeek' => round(abs($usageTransactions->whereBetween('created_at', [
-                    now()->startOfWeek(),
-                    now()->endOfWeek(),
-                ])->sum('amount')), 2),
-                'thisMonth' => round(abs($usageTransactions->whereMonth('created_at', now()->month)
+                'total' => round(abs(CreditTransaction::where('type', 'usage')->sum('amount')), 2),
+                'today' => round(abs(CreditTransaction::where('type', 'usage')
+                    ->whereDate('created_at', today())->sum('amount')), 2),
+                'thisWeek' => round(abs(CreditTransaction::where('type', 'usage')
+                    ->whereBetween('created_at', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek(),
+                    ])->sum('amount')), 2),
+                'thisMonth' => round(abs(CreditTransaction::where('type', 'usage')
+                    ->whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
                     ->sum('amount')), 2),
             ];
@@ -113,16 +115,18 @@ class CreditAggregationService
     public function getRevenueMetrics(): array
     {
         return Cache::remember('admin.credit.revenue', self::CACHE_TTL, function () {
-            $purchaseTransactions = CreditTransaction::where('type', 'purchase');
-
+            // Use fresh query for each metric to avoid query builder mutation
             return [
-                'total' => (float) round($purchaseTransactions->sum('amount'), 2),
-                'today' => (float) round($purchaseTransactions->whereDate('created_at', today())->sum('amount'), 2),
-                'thisWeek' => (float) round($purchaseTransactions->whereBetween('created_at', [
-                    now()->startOfWeek(),
-                    now()->endOfWeek(),
-                ])->sum('amount'), 2),
-                'thisMonth' => (float) round($purchaseTransactions->whereMonth('created_at', now()->month)
+                'total' => (float) round(CreditTransaction::where('type', 'purchase')->sum('amount'), 2),
+                'today' => (float) round(CreditTransaction::where('type', 'purchase')
+                    ->whereDate('created_at', today())->sum('amount'), 2),
+                'thisWeek' => (float) round(CreditTransaction::where('type', 'purchase')
+                    ->whereBetween('created_at', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek(),
+                    ])->sum('amount'), 2),
+                'thisMonth' => (float) round(CreditTransaction::where('type', 'purchase')
+                    ->whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
                     ->sum('amount'), 2),
                 'byPackage' => [],

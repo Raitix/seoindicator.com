@@ -157,7 +157,7 @@ class ApiEndpointTest extends TestCase
         $response = $this->getJson('/api/v1/packages');
 
         $response->assertJsonPath('data.0.bonus_percent', 20)
-            ->assertJsonPath('data.0.total_credits', 60.00); // 50 + 20%
+            ->assertJsonPath('data.0.effective_credits', 60.00); // 50 + 20%
     }
 
     // ============================================
