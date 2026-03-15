@@ -92,4 +92,15 @@ _(Document local environment quirks)_
 
 ---
 
-Last updated: 2026-03-14
+### Payment Integration Tests (TASK-26-26)
+- **Test Suite Size**: 168 tests, 468 assertions covering Stripe, PayPal, webhooks, balance, and error scenarios
+- **PHPUnit Deprecation Warnings**: Tests using `@test` annotations in doc-comments generate warnings. PHPUnit 12 will require `#[Test]` attributes instead
+- **Skipped Tests Pattern**: Some tests are legitimately skipped when:
+  1. Feature is not yet implemented (e.g., refund endpoint)
+  2. Test infrastructure is fragile (e.g., Log facade mocking in unit tests)
+- **ErrorScenarioTest Database Trait**: Uses `DatabaseMigrations` instead of `RefreshDatabase` to avoid SQLite transaction cascade failures
+- **Webhook Security Testing**: Tests verify signature verification, replay attack prevention, and idempotent handling for both Stripe and PayPal
+
+---
+
+Last updated: 2026-03-15
