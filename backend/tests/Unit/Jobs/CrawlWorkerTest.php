@@ -6,6 +6,9 @@ use Tests\TestCase;
 use App\Jobs\CrawlWorker;
 use App\Models\CrawlJob;
 use App\Services\Crawler\CrawlerService;
+use App\Services\Crawler\TimeoutHandlerService;
+use App\Services\Crawler\CancellationService;
+use App\Services\Crawler\PartialResultsService;
 use App\Services\PlaywrightRendererService;
 use App\Services\UrlValidatorService;
 use App\Exceptions\SSRFException;
@@ -23,10 +26,124 @@ use Mockery;
  */
 class CrawlWorkerTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Increase memory limit for tests that call handle()
+        // CrawlWorker sets 256M limit which may fail in test environment
+        ini_set('memory_limit', '512M');
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
+    }
+
+    /**
+     * Create mock services for handle() method.
+     *
+     * @param array $options Override default mock behaviors
+     * @return array Array of mock services in correct order for handle()
+     */
+    protected function createMockServices(array $options = []): array
+    {
+        $crawlJob = $options['crawlJob'] ?? null;
+        $validateUrl = $options['validateUrl'] ?? true;
+        $renderResult = $options['renderResult'] ?? [
+            'html' => '<html></html>',
+            'text' => '',
+            'meta' => [],
+            'links' => [],
+            'size' => 1024,
+        ];
+        $shouldFail = $options['shouldFail'] ?? false;
+        $failException = $options['failException'] ?? null;
+
+        // CrawlerService mock
+        $mockCrawler = Mockery::mock(CrawlerService::class);
+        if ($crawlJob) {
+            $mockCrawler->shouldReceive('getCrawlJob')
+                ->with($options['jobId'] ?? 'test-job')
+                ->atLeast(1)
+                ->andReturn($crawlJob);
+            
+            if (!$shouldFail) {
+                $mockCrawler->shouldReceive('updateStatus')->atLeast(0);
+                $mockCrawler->shouldReceive('storePageResult')->atLeast(0);
+                $mockCrawler->shouldReceive('updateStats')->atLeast(0);
+            }
+            
+            if ($shouldFail) {
+                $mockCrawler->shouldReceive('markJobFailed')->atLeast(1);
+            }
+        }
+
+        // PlaywrightRendererService mock
+        $mockRenderer = Mockery::mock(PlaywrightRendererService::class);
+        if (isset($options['launchBrowser']) && $options['launchBrowser'] === false) {
+            // Don't set up launchBrowser expectation
+        } else {
+            $mockRenderer->shouldReceive('launchBrowser')
+                ->atLeast(0)
+                ->andReturn(new \stdClass());
+        }
+        
+        if (isset($options['renderPage']) && $options['renderPage'] === false) {
+            // Don't set up renderPage expectation
+        } elseif ($failException) {
+            $mockRenderer->shouldReceive('renderPage')
+                ->atLeast(0)
+                ->andThrow($failException);
+        } else {
+            $mockRenderer->shouldReceive('renderPage')
+                ->atLeast(0)
+                ->andReturn($renderResult);
+        }
+        
+        $mockRenderer->shouldReceive('closeBrowser')->atLeast(0);
+
+        // UrlValidatorService mock
+        $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
+        if ($validateUrl === true) {
+            $mockUrlValidator->shouldReceive('validate')
+                ->atLeast(0)
+                ->andReturn(true);
+        } elseif ($validateUrl instanceof \Exception) {
+            $mockUrlValidator->shouldReceive('validate')
+                ->atLeast(0)
+                ->andThrow($validateUrl);
+        }
+
+        // TimeoutHandlerService mock
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->atLeast(0);
+        $mockTimeoutHandler->shouldReceive('stopTracking')->atLeast(0);
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(0)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(0)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(0)->andReturn(false);
+        $mockTimeoutHandler->shouldReceive('isPageTimeout')->atLeast(0)->andReturn(false);
+        $mockTimeoutHandler->shouldReceive('getElapsedSeconds')->atLeast(0)->andReturn(0);
+        $mockTimeoutHandler->shouldReceive('getDefaultTimeout')->atLeast(0)->andReturn(300);
+        $mockTimeoutHandler->shouldReceive('getRemainingSeconds')->atLeast(0)->andReturn(300);
+
+        // CancellationService mock
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(0)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->atLeast(0);
+
+        // PartialResultsService mock
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+        $mockPartialResultsService->shouldReceive('storePartialResults')->atLeast(0);
+
+        return [
+            $mockCrawler,
+            $mockRenderer,
+            $mockUrlValidator,
+            $mockTimeoutHandler,
+            $mockCancellationService,
+            $mockPartialResultsService,
+        ];
     }
 
     // =========================================================================
@@ -196,8 +313,23 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('error')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services required by handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+        $mockTimeoutHandler->shouldReceive('isPageTimeout')->atLeast(0)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-test-123');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -226,8 +358,13 @@ class CrawlWorkerTest extends TestCase
         $mockRenderer = Mockery::mock(PlaywrightRendererService::class);
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
 
+        // Additional services for handle() - not needed for job not found case
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-nonexistent');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -266,8 +403,13 @@ class CrawlWorkerTest extends TestCase
         $mockRenderer = Mockery::mock(PlaywrightRendererService::class);
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-completed');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -305,8 +447,13 @@ class CrawlWorkerTest extends TestCase
         $mockRenderer = Mockery::mock(PlaywrightRendererService::class);
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-cancelled');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -344,8 +491,13 @@ class CrawlWorkerTest extends TestCase
         $mockRenderer = Mockery::mock(PlaywrightRendererService::class);
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-running');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -393,8 +545,22 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('error')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-valid-url');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -428,8 +594,13 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('debug')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-localhost');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -461,8 +632,13 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('debug')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-private-ip');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -489,6 +665,7 @@ class CrawlWorkerTest extends TestCase
         $mockCrawler->shouldReceive('updateStatus')->atLeast(1);
         $mockCrawler->shouldReceive('storePageResult')->atLeast(1);
         $mockCrawler->shouldReceive('updateStats')->atLeast(1);
+        $mockCrawler->shouldReceive('markJobFailed')->atLeast(0);
 
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
         $mockUrlValidator->shouldReceive('validate')->andReturn(true);
@@ -516,8 +693,22 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('error')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-browser-test');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -566,8 +757,22 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('error')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-browser-close');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue($browserClosed);
     }
@@ -610,8 +815,18 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('debug')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-browser-failure');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue($browserClosed);
     }
@@ -648,8 +863,18 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('debug')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-launch-fail');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -684,8 +909,18 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('debug')->atLeast(0);
         Log::shouldReceive('warning')->atLeast(0);
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-timeout');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -751,6 +986,7 @@ class CrawlWorkerTest extends TestCase
         $mockCrawler->shouldReceive('updateStatus')->atLeast(1);
         $mockCrawler->shouldReceive('storePageResult')->atLeast(1);
         $mockCrawler->shouldReceive('updateStats')->atLeast(1);
+        $mockCrawler->shouldReceive('markJobFailed')->atLeast(0);
 
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
         $mockUrlValidator->shouldReceive('validate')->andReturn(true);
@@ -766,8 +1002,22 @@ class CrawlWorkerTest extends TestCase
         ]);
         $mockRenderer->shouldReceive('closeBrowser');
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-log-start');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -804,6 +1054,7 @@ class CrawlWorkerTest extends TestCase
         $mockCrawler->shouldReceive('updateStatus')->atLeast(1);
         $mockCrawler->shouldReceive('storePageResult')->atLeast(1);
         $mockCrawler->shouldReceive('updateStats')->atLeast(1);
+        $mockCrawler->shouldReceive('markJobFailed')->atLeast(0);
 
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
         $mockUrlValidator->shouldReceive('validate')->andReturn(true);
@@ -819,8 +1070,22 @@ class CrawlWorkerTest extends TestCase
         ]);
         $mockRenderer->shouldReceive('closeBrowser');
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-log-complete');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
@@ -859,6 +1124,7 @@ class CrawlWorkerTest extends TestCase
         $mockCrawler->shouldReceive('updateStatus')->atLeast(1);
         $mockCrawler->shouldReceive('storePageResult')->atLeast(1);
         $mockCrawler->shouldReceive('updateStats')->atLeast(1);
+        $mockCrawler->shouldReceive('markJobFailed')->atLeast(0);
 
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
         $mockUrlValidator->shouldReceive('validate')->andReturn(true);
@@ -874,8 +1140,22 @@ class CrawlWorkerTest extends TestCase
         ]);
         $mockRenderer->shouldReceive('closeBrowser');
 
+        // Additional services for handle()
+        $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        $mockTimeoutHandler->shouldReceive('canContinueCrawling')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('hasTimeForNextPage')->atLeast(1)->andReturn(true);
+        $mockTimeoutHandler->shouldReceive('shouldStartGracefulShutdown')->atLeast(1)->andReturn(false);
+
+        $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('shouldCancel')->atLeast(1)->andReturn(false);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+
+        $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
+
         $job = new CrawlWorker('crawl-sensitive');
-        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator);
+        $job->handle($mockCrawler, $mockRenderer, $mockUrlValidator, $mockTimeoutHandler, $mockCancellationService, $mockPartialResultsService);
 
         $this->assertTrue(true);
     }
