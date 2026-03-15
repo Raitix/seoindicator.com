@@ -220,7 +220,14 @@ Route::prefix('v1')->group(function () {
     // Models (TASK-26-17) - Public endpoint for model listing
     Route::get('models', [\App\Http\Controllers\Api\V1\ModelController::class, 'index']);
 
-    // Model Pricing (TASK-26-18) - Public endpoint for model pricing details
+    // Model Pricing (TASK-26-18) - Public endpoint for all models pricing
+    Route::get('models/pricing', [\App\Http\Controllers\Api\V1\ModelController::class, 'allPricing']);
+
+    // Single Model Details (TASK-26-17) - Public endpoint
+    Route::get('models/{id}', [\App\Http\Controllers\Api\V1\ModelController::class, 'show'])
+        ->where('id', '[0-9]+');
+
+    // Model Pricing for specific model (TASK-26-18) - Public endpoint
     Route::get('models/{id}/pricing', [\App\Http\Controllers\Api\V1\ModelController::class, 'pricing'])
         ->where('id', '[0-9]+');
 
@@ -503,6 +510,10 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Credit Balance (TASK-26-7, SPEC-026)
     Route::get('credits/balance', [CreditController::class, 'balance']);
+
+    // Credit Purchase (TASK-26-26, SPEC-026)
+    Route::post('credits/purchase', [\App\Http\Controllers\Api\V1\CreditPurchaseController::class, 'store'])
+        ->middleware('throttle:10,60'); // 10 requests per hour
 
     // Stripe Payment Intent (TASK-26-8, SPEC-026)
     Route::post('payments/stripe/intent', [\App\Http\Controllers\Api\V1\Payments\StripePaymentController::class, 'createIntent']);
