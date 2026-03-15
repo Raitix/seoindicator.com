@@ -175,7 +175,12 @@ export function useConfirmPayment() {
       const idempotencyKey = crypto.randomUUID();
 
       try {
-        const result = await apiRequest('/payments/confirm', {
+        const result = await apiRequest<{
+          success: boolean;
+          credits?: number;
+          balance?: number;
+          transaction_id?: string;
+        }>('/payments/confirm', {
           method: 'POST',
           body: JSON.stringify({
             payment_intent_id: paymentIntentId,
