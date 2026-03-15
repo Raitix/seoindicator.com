@@ -308,9 +308,10 @@ function CheckoutForm({
 // ==================== Main Component ====================
 
 // Detect test environment
-const isTestEnv = typeof vi !== 'undefined' || 
+const isTestEnv = 
   (typeof globalThis !== 'undefined' && (globalThis as any).__TEST__) ||
-  (typeof window !== 'undefined' && (window as any).__TEST__);
+  (typeof window !== 'undefined' && (window as any).__TEST__) ||
+  (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test');
 
 export function StripeCheckout({
   creditPackage,
