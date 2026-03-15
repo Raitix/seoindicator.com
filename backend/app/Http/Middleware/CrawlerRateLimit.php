@@ -190,8 +190,8 @@ class CrawlerRateLimit
             'message' => $message,
             'limit' => $result->limit,
             'remaining' => $result->remaining,
-            'resetAt' => $result->resetAt->toIso8601ZuluString(),
-            'retryAfter' => $result->retryAfter,
+            'reset_at' => $result->resetAt->toIso8601ZuluString(),
+            'retry_after' => $result->retryAfter,
         ], 429);
 
         // Add rate limit headers
