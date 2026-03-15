@@ -30,6 +30,15 @@ export interface PaymentIntent {
   amount: number;
   credits: number;
   currency?: string;
+  package_name?: string;
+}
+
+// Backend response wrapper
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  errors?: Record<string, string[]>;
 }
 
 export interface PaymentMethod {
@@ -128,15 +137,39 @@ export function useCreatePaymentIntent() {
       const idempotencyKey = crypto.randomUUID();
 
       try {
-        const result = await apiRequest<PaymentIntent>('/payments/create-intent', {
+        const response = await apiRequest<ApiResponse<{
+          client_secret: string;
+          payment_intent_id: string;
+          amount: number | string;
+          credits: number | string;
+          package_name?: string;
+        }>>('/payments/stripe/intent', {
           method: 'POST',
-          body: JSON.stringify(params),
+          body: JSON.stringify({
+            package_id: params.packageId,
+            return_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/payments/return`,
+          }),
           headers: {
             'Idempotency-Key': idempotencyKey,
           },
         });
 
-        return result;
+        if (!response.success || !response.data) {
+          throw {
+            type: 'api_error',
+            message: response.message || 'Failed to create payment intent',
+          };
+        }
+
+        // Map backend response to frontend PaymentIntent
+        return {
+          id: response.data.payment_intent_id,
+          client_secret: response.data.client_secret,
+          payment_intent_id: response.data.payment_intent_id,
+          amount: typeof response.data.amount === 'string' ? parseFloat(response.data.amount) : response.data.amount,
+          credits: typeof response.data.credits === 'string' ? parseFloat(response.data.credits) : response.data.credits,
+          package_name: response.data.package_name,
+        };
       } catch (err: unknown) {
         const error = err as PaymentError;
         setError(error);

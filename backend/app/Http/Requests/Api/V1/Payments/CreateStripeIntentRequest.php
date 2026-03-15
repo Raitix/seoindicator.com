@@ -10,7 +10,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 /**
  * Request validation for Stripe Payment Intent Creation.
  *
- * @see TASK-26-8
+ * @see TASK-26-9
  * @see FEAT-026
  */
 class CreateStripeIntentRequest extends FormRequest
@@ -36,17 +36,10 @@ class CreateStripeIntentRequest extends FormRequest
                 'integer',
                 'exists:credit_packages,id',
             ],
-            'amount' => [
-                'required',
-                'numeric',
-                'min:5',
-                'max:9999.99',
-            ],
-            'currency' => [
+            'return_url' => [
                 'nullable',
-                'string',
-                'size:3',
-                'in:USD,EUR,GBP',
+                'url',
+                'max:2048',
             ],
         ];
     }
@@ -61,13 +54,9 @@ class CreateStripeIntentRequest extends FormRequest
         return [
             'package_id.required' => 'The package ID is required.',
             'package_id.integer' => 'The package ID must be a valid number.',
-            'package_id.exists' => 'The selected package is invalid.',
-            'amount.required' => 'The amount is required.',
-            'amount.numeric' => 'The amount must be a valid number.',
-            'amount.min' => 'The minimum purchase amount is $5.00.',
-            'amount.max' => 'The maximum purchase amount is $9,999.99.',
-            'currency.size' => 'The currency must be a 3-letter code.',
-            'currency.in' => 'The selected currency is not supported. Supported currencies: USD, EUR, GBP.',
+            'package_id.exists' => 'Invalid package selected',
+            'return_url.url' => 'The return URL must be a valid URL.',
+            'return_url.max' => 'The return URL may not be greater than 2048 characters.',
         ];
     }
 
@@ -83,48 +72,9 @@ class CreateStripeIntentRequest extends FormRequest
     {
         throw new HttpResponseException(response()->json([
             'success' => false,
-            'error' => [
-                'code' => 'VALIDATION_ERROR',
-                'message' => 'The given data was invalid.',
-                'details' => $validator->errors(),
-            ],
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()->toArray(),
         ], 422));
-    }
-
-    /**
-     * Configure the validator instance.
-     *
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
-     * @return void
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function ($validator) {
-            $packageId = $this->input('package_id');
-            $amount = $this->input('amount');
-
-            if ($packageId && $amount) {
-                $package = CreditPackage::find($packageId);
-                
-                if ($package) {
-                    // Check if package is active
-                    if (!$package->is_active) {
-                        $validator->errors()->add(
-                            'package_id',
-                            'The selected package is not available for purchase.'
-                        );
-                    }
-                    
-                    // Check if amount matches package price
-                    if (abs((float) $amount - (float) $package->price_usd) > 0.01) {
-                        $validator->errors()->add(
-                            'amount',
-                            "The amount must match the package price of \${$package->price_usd}."
-                        );
-                    }
-                }
-            }
-        });
     }
 
     /**
