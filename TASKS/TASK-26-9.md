@@ -1,7 +1,7 @@
 # TASK-26-9: Create Stripe Payment Intent Endpoint
 
 ## STATUS
-`To Develop` - Auth middleware bug requiring fix
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -296,3 +296,49 @@ Change middleware from `['auth']` to `['auth:sanctum']` in `routes/api.php` for 
 - Credit calculation (blocked by auth)
 
 **Action:** Fix task created as TASK-26-9-FIX, this task returned to Developer for middleware fix.
+
+---
+
+### Production Testing (ProdTester - 2026-03-15 23:09)
+**Status:** RE-VERIFIED - Middleware Bug Still Present
+
+**Verification Method:**
+Used Laravel tinker to directly check route middleware:
+```php
+// Stripe Payment Intent route
+URI: api/v1/payments/stripe/intent
+Methods: POST
+Middleware: api, auth  ← WRONG (should be auth:sanctum)
+
+// Comparison: Auth User route (correct)
+URI: api/v1/auth/user
+Methods: GET, HEAD
+Middleware: api, auth:sanctum  ← CORRECT
+```
+
+**Root Cause Confirmed:**
+The route is defined inside `Route::prefix('v1')->middleware(['auth'])->group()` in `routes/api.php` (line ~188), which applies session-based `auth` middleware instead of `auth:sanctum` for bearer token authentication.
+
+**Fix Required:**
+Move the payment routes to the `auth:sanctum` middleware group OR change the middleware on the payments route group from `['auth']` to `['auth:sanctum']`.
+
+**Affected Routes (all using wrong middleware):**
+- `POST /api/v1/payments/methods` (list payment methods)
+- `DELETE /api/v1/payments/methods/{id}` (delete payment method)
+- `POST /api/v1/payments/paypal/order` (PayPal order creation)
+- `POST /api/v1/payments/paypal/capture` (PayPal capture)
+- `POST /api/v1/payments/stripe/intent` (Stripe payment intent)
+- `GET /api/v1/credits/transactions` (credit transaction history)
+- `GET /api/v1/credits/balance` (credit balance)
+- `POST /api/v1/credits/purchase` (credit purchase)
+
+**Recommended Fix Location:** `routes/api.php` - change line ~188 from:
+```php
+Route::prefix('v1')->middleware(['auth'])->group(function () {
+```
+To:
+```php
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+```
+
+**Action:** Task returned to Developer for middleware fix. Status set to `To Develop`.
