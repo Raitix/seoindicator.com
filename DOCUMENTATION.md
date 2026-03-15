@@ -29124,6 +29124,144 @@ All errors return partial results when possible, with error message populated.
 - TASK-22-15: CrawlWorker
 
 ---
+## Depth Controller Service (TASK-22-8)
+
+### Service Description
+Depth controller service for the Headless Crawler Service (FEAT-022) that manages multi-level crawling (L0: main page, L1: sub-pages, L2: sub-sub-pages). Implements link discovery, URL normalization, filtering rules, and queue management for intelligent crawl depth control.
+
+### Component Locations
+- **Service:** `backend/app/Services/Crawler/DepthControllerService.php`
+- **URL Normalizer:** `backend/app/Services/Crawler/UrlNormalizer.php`
+- **Tests:**
+  - `backend/tests/Unit/Services/Crawler/DepthControllerServiceTest.php` (84 tests)
+  - `backend/tests/Unit/Services/Crawler/UrlNormalizerTest.php` (51 tests)
+- **Test Documentation:** `TESTS/TASK-22-8.md`
+
+### Core Methods
+
+| Method | Description |
+|--------|-------------|
+| `shouldCrawl(string $url, int $currentDepth, int $maxDepth): bool` | Check if URL should be crawled based on depth and duplicate rules |
+| `extractLinks(string $html, string $baseUrl): array` | Extract all links from HTML with URL resolution |
+| `filterLinks(array $links, array $options): array` | Filter links based on file extensions, paths, domains |
+| `queueLinks(array $links, string $jobId, int $depth): void` | Add links to crawl queue with depth tracking |
+| `getCrawlQueue(string $jobId): array` | Get pending URLs for a job |
+
+### Depth Management
+
+| Depth Level | Description | Behavior |
+|-------------|-------------|----------|
+| **L0** | Main page only | Crawls only the starting URL |
+| **L1** | Main page + linked pages | Crawls starting URL and all linked pages |
+| **L2** | Main page + linked + sub-linked | Full multi-level crawl (max 3 levels) |
+
+### Link Extraction
+
+The service extracts links from HTML using Symfony DomCrawler:
+
+| Feature | Description |
+|---------|-------------|
+| Absolute URLs | Direct extraction |
+| Relative URLs | Resolved against base URL |
+| Protocol-relative URLs | `//example.com` resolved to `https://example.com` |
+| Hash fragments | Optionally skipped |
+| mailto:/javascript: | Automatically skipped |
+| Link attributes | Extracts href, text, rel, target |
+
+### Link Filtering Rules
+
+| Filter | Description |
+|--------|-------------|
+| Blocked URLs | SSRF protection via UrlValidatorService |
+| Duplicates | Normalized URL comparison |
+| Already crawled | Per-job URL tracking |
+| External domains | Configurable (default: skip) |
+| File extensions | PDF, images, videos, downloads skipped |
+| Paths | `/api/*`, `/admin/*` skipped |
+
+### URL Normalization
+
+The `UrlNormalizer` class provides comprehensive URL normalization:
+
+| Normalization | Description |
+|---------------|-------------|
+| Host lowercase | `Example.COM` → `example.com` |
+| Default port removal | `:80` and `:443` removed |
+| Tracking params removed | `utm_*`, `fbclid`, `gclid`, `msclkid` |
+| Query param sorting | Alphabetical order |
+| Fragment removal | `#section` removed (configurable) |
+| IDN to Punycode | `münchen.de` → `xn--mnchen-3ya.de` |
+
+### Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `max_depth` | 2 | Maximum crawl depth |
+| `max_pages` | 50 | Maximum pages per job |
+| `follow_external_links` | false | Follow links to other domains |
+| `respect_robots_txt` | false | robots.txt compliance (MVP: disabled) |
+| `skip_file_extensions` | pdf, jpg, png, gif, mp4, zip, exe | Non-content files to skip |
+| `skip_paths` | /api/*, /admin/*, /login, /logout | Paths to skip |
+| `normalize_urls` | true | Enable URL normalization |
+| `remove_tracking_params` | true | Remove UTM and other tracking params |
+
+### Duplicate Detection
+
+- URLs normalized before comparison
+- Per-job URL tracking in database
+- Canonical URLs handled
+- Redirect chains use final URL
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `DepthControllerServiceTest.php` | 84 | 102 | ✅ PASS |
+| `UrlNormalizerTest.php` | 51 | 52 | ✅ PASS |
+| **Total** | **135** | **154** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 5 | DI and config loading |
+| shouldCrawl() | 12 | Depth limits, duplicate detection, SSRF |
+| extractLinks() | 25 | URL resolution, special URLs, attributes |
+| filterLinks() | 20 | Basic filtering, file extensions, paths |
+| URL Normalization | 30 | Host, ports, tracking params, fragments |
+| queueLinks() | 6 | Queue operations |
+| getCrawlQueue() | 3 | Queue retrieval |
+| Depth Management | 3 | L0/L1/L2 scenarios |
+| Duplicate Detection | 3 | Normalized duplicates |
+| Security | 3 | SSRF protection |
+| Edge Cases | 4 | Long URLs, malformed HTML |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-02 |
+| GitHub Actions Run | #22569359442 |
+| Health Check | ✅ 200 OK |
+| Tests | 135/135 passing (154 assertions) |
+| Status | Complete ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-22-1 | Done ✅ | Database migrations |
+| TASK-22-7 | Done ✅ | URL Validation (SSRF protection) |
+
+### Related Tasks
+
+- TASK-22-7: UrlValidatorService (SSRF protection integration)
+- TASK-22-9: Size Limiter (content cap enforcement)
+- TASK-22-10: Link extraction and queue management
+- TASK-22-15: CrawlWorker (uses DepthController)
+- SPEC-022: Headless Crawler Service
+- FEAT-022: Headless Crawler Service
+
+---
 ## CrawlerService Skeleton (TASK-22-3)
 
 ### Service Description
@@ -29356,6 +29494,147 @@ private const BLOCKED_IP_RANGES = [
 - TASK-22-16: Queue integration
 - SPEC-022: Headless Crawler Service
 - FEAT-022: Headless Crawler Service
+
+---
+## Playwright Integration and Configuration (TASK-22-4)
+
+### Feature Description
+Playwright PHP integration for the Headless Crawler Service (FEAT-022) that provides headless browser automation capabilities. Implements browser instance management, launch options configuration, context creation with cookies support, and connection pooling for efficient resource utilization.
+
+### Component Locations
+- **Configuration:** `backend/config/playwright.php`
+- **Service:** `backend/app/Services/Playwright/BrowserLauncher.php`
+- **Contracts:**
+  - `backend/app/Services/Playwright/Contracts/BrowserInterface.php`
+  - `backend/app/Services/Playwright/Contracts/BrowserContextInterface.php`
+  - `backend/app/Services/Playwright/Contracts/PageInterface.php`
+- **Tests:**
+  - `backend/tests/Unit/Services/Playwright/BrowserLauncherTest.php` (28 tests)
+  - `backend/tests/Unit/Config/PlaywrightConfigTest.php` (31 tests)
+  - `backend/tests/Integration/Services/Playwright/BrowserOperationsTest.php` (19 tests)
+- **Test Documentation:** `TESTS/TASK-22-4.md`
+
+### Configuration File
+
+**config/playwright.php:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `browser` | `chromium` | Default browser (chromium/firefox/webkit) |
+| `headless` | `true` | Headless mode for production |
+| `timeout` | `30000` | Default page timeout (ms) |
+| `slow_mo` | `0` | Delay between actions (ms) |
+| `viewport.width` | `1280` | Default viewport width |
+| `viewport.height` | `720` | Default viewport height |
+| `user_agent` | `SEOIndicator/1.0 Crawler` | Default user agent string |
+| `ignore_https_errors` | `false` | Ignore HTTPS certificate errors |
+| `downloads_path` | `null` | Path for downloads |
+| `max_instances` | `3` | Maximum concurrent browser instances |
+| `instance_timeout` | `300` | Instance lifetime before restart (seconds) |
+
+### BrowserLauncher Service
+
+**Methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `launch` | `launch(array $options = []): BrowserInterface` | Launch new browser instance |
+| `getSharedInstance` | `getSharedInstance(): BrowserInterface` | Get or create shared browser instance |
+| `closeInstance` | `closeInstance(BrowserInterface $browser): void` | Close specific browser |
+| `closeAll` | `closeAll(): void` | Close all browser instances |
+| `createContext` | `createContext(BrowserInterface $browser, array $options = []): BrowserContextInterface` | Create browser context |
+| `isHealthy` | `isHealthy(BrowserInterface $browser): bool` | Check browser health |
+
+### Browser Instance Pooling
+
+| Feature | Implementation |
+|---------|----------------|
+| Shared Instance | Single browser instance reused across requests |
+| Instance Tracking | Array of active browser instances |
+| Max Instances | Configurable limit (default: 3) |
+| Instance Timeout | Auto-restart after 5 minutes |
+| Consecutive Failures | Track failures, restart on threshold |
+| Garbage Collection | Forced on browser close |
+
+### Browser Context Configuration
+
+| Option | Description |
+|--------|-------------|
+| `cookies` | Pre-set cookies for the context |
+| `locale` | Browser locale (e.g., 'en-US') |
+| `timezone` | Browser timezone ID |
+| `geolocation` | `{latitude, longitude}` object |
+| `permissions` | Array of permissions to grant |
+| `userAgent` | Custom user agent for context |
+
+### Error Handling
+
+| Exception | Condition |
+|-----------|-----------|
+| `PlaywrightException` | Browser launch failure |
+| `TimeoutException` | Connection timeout |
+| `ConnectionException` | Network connectivity issue |
+| `InstanceLimitException` | Max instances exceeded |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Sandbox | Enabled by default |
+| Download Blocking | Auto-downloads disabled |
+| HTTPS Errors | Strict by default (can override) |
+| Resource Limits | Memory and instance limits |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| BrowserLauncherTest | 28 | 52 | ✅ PASS |
+| PlaywrightConfigTest | 31 | 70 | ✅ PASS |
+| BrowserOperationsTest | 19 | 26 | ✅ PASS |
+| **Total** | **78** | **148** | **✅ ALL PASS** |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Browser Launch | 8 | Instance creation, options |
+| Shared Instance | 6 | Pooling, reuse, cleanup |
+| Context Creation | 7 | Cookies, locale, permissions |
+| Health Checks | 4 | isConnected() verification |
+| Instance Limits | 5 | Max instances, timeout |
+| Error Recovery | 6 | Crash handling, restart |
+| Configuration | 31 | All config options |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-02 |
+| Commit | `42f36a8` |
+| GitHub Actions Run | 22567644751 |
+| Health Check | ✅ 200 OK |
+| Tests | 78/78 passing (148 assertions) |
+| Status | Complete ✅ |
+
+### Production Notes
+
+- Playwright PHP package (`playwright/browser`) needs manual installation on server
+- Browser binaries need installation: `npx playwright install chromium`
+- These are one-time setup steps for when the crawler service is activated
+- Server needs sufficient RAM for browser instances (512MB+ per instance)
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-22-3 | Done ✅ | CrawlerService Skeleton |
+
+### Related Tasks
+
+- TASK-22-5: PlaywrightRendererService (uses BrowserLauncher)
+- TASK-22-6: ContentProcessorService (processes rendered content)
+- TASK-22-15: CrawlWorker (consumes browser instances)
 
 ---
 ## CrawlWorker Implementation (TASK-22-15)
@@ -30214,6 +30493,216 @@ The CrawlRequest validates URLs against SSRF attacks:
 - TASK-22-18: Unit Tests for Services
 - TASK-22-19: Feature Tests (API tests)
 - TASK-22-20: Integration Tests
+
+---
+## Request Validation and Authorization (TASK-22-12)
+
+Comprehensive form request validation and authorization policies for the Headless Crawler API. Implements SSRF protection via ValidCrawlUrl rule, authorization via CrawlJobPolicy, and rate limiting via CrawlRateLimiter service.
+
+### Component Locations
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| CrawlRequest | `backend/app/Http/Requests/CrawlRequest.php` | POST /crawl validation |
+| ContentRetrievalRequest | `backend/app/Http/Requests/ContentRetrievalRequest.php` | GET /content validation |
+| ValidCrawlUrl Rule | `backend/app/Rules/ValidCrawlUrl.php` | SSRF protection rule |
+| MaxContentSize Rule | `backend/app/Rules/MaxContentSize.php` | Content size limit |
+| CrawlJobPolicy | `backend/app/Policies/CrawlJobPolicy.php` | Authorization policy |
+| CrawlRateLimiter | `backend/app/Services/Crawler/CrawlRateLimiter.php` | Rate limiting service |
+| CrawlerRateLimit Middleware | `backend/app/Http/Middleware/CrawlerRateLimit.php` | Rate limit enforcement |
+
+### Form Request Validation
+
+#### CrawlRequest (POST /api/v1/crawler/crawl)
+
+**Authorization:** Authenticated users only
+
+**Validation Rules:**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `url` | string | Yes | URL format, max 2083 chars, ValidCrawlUrl rule (SSRF) |
+| `depth` | int | No | Integer, 0-2 range, default 0 |
+| `options.waitForSelector` | string | No | Nullable, max 200 chars |
+| `options.waitTime` | int | No | Integer, 0-30000 ms, default 2000 |
+| `options.userAgent` | string | No | Max 500 chars, regex validation |
+| `options.includeImages` | bool | No | - |
+| `options.followRedirects` | bool | No | Default true |
+| `options.maxRedirects` | int | No | Integer, 0-10, default 5 |
+
+#### ContentRetrievalRequest (GET /api/v1/crawler/jobs/{jobId}/content)
+
+**Authorization:** User must own the job
+
+**Validation Rules:**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `page` | int | No | Min 1, default 1 |
+| `perPage` | int | No | 1-100, default 50 |
+| `depth` | int | No | Filter: 0, 1, or 2 |
+| `search` | string | No | Max 255 chars |
+| `sortBy` | string | No | Enum: depth, size, crawledAt |
+| `sortOrder` | string | No | Enum: asc, desc |
+
+### Custom Validation Rules
+
+#### ValidCrawlUrl Rule
+
+SSRF protection rule that validates URLs against blocked patterns:
+
+| Blocked Category | Patterns |
+|------------------|----------|
+| Localhost | `localhost`, `127.*`, `::1`, `0.0.0.0` |
+| Private IPs (10.x) | `10.0.0.0/8` |
+| Private IPs (172.16-31.x) | `172.16.0.0/12` |
+| Private IPs (192.168.x) | `192.168.0.0/16` |
+| Cloud Metadata | `169.254.169.254` (AWS/GCP/Azure) |
+| Link-local | `169.254.0.0/16`, `fe80::/10` |
+| Blocked Protocols | `file://`, `ftp://`, `data:`, `javascript:` |
+| Blocked Domains | `*.internal`, `*.local`, `*.localhost` |
+| Alternative Notations | Decimal IP, hex IP, octal IP, IPv4-mapped IPv6 |
+
+**Error Messages:**
+
+| Error Type | Message |
+|------------|---------|
+| Protocol blocked | "The :attribute protocol is not allowed." |
+| Localhost | "The :attribute resolves to a blocked IP address (localhost)." |
+| Private IP | "The :attribute resolves to a private IP address." |
+| Metadata | "The :attribute resolves to a cloud metadata endpoint." |
+| Domain blocked | "The :attribute domain is not allowed." |
+
+#### MaxContentSize Rule
+
+Validates content size against maximum limit:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `$maxBytes` | 3145728 (3MB) | Maximum allowed content size |
+
+**Validation:** Size must be positive integer, not exceed `$maxBytes`
+
+### Authorization Policy
+
+#### CrawlJobPolicy
+
+| Method | Authorization | Status Check |
+|--------|---------------|--------------|
+| `view($user, $job)` | User owns job OR is admin | None |
+| `update($user, $job)` | User owns job | Job must be `queued` |
+| `delete($user, $job)` | User owns job | None |
+| `cancel($user, $job)` | User owns job | Job must be `queued` or `running` |
+
+**Admin Bypass:** Users with `is_admin: true` bypass ownership checks.
+
+### Rate Limiting
+
+#### CrawlRateLimiter Service
+
+| Limit Type | Default | Key | Description |
+|------------|---------|-----|-------------|
+| Daily Jobs | 10 per 24h | `crawler:daily:{user_id}` | Max crawl jobs per day |
+| Concurrent Jobs | 3 | `crawler:concurrent:{user_id}` | Max simultaneous running jobs |
+| Domain Rate | 1 per second | `crawler:domain:{domain}` | Per-domain rate limiting |
+
+**Admin Bypass:** Admins bypass all rate limits.
+
+#### Rate Limit Headers
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum allowed requests |
+| `X-RateLimit-Remaining` | Remaining requests in window |
+| `X-RateLimit-Reset` | Unix timestamp when limit resets |
+| `Retry-After` | Seconds until retry (when limited) |
+
+**429 Response:**
+```json
+{
+  "message": "Too Many Requests",
+  "retry_after": 3600
+}
+```
+
+### Error Response Format
+
+**422 Validation Error:**
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "url": [
+      "The URL format is invalid.",
+      "The URL resolves to a blocked IP address."
+    ],
+    "depth": [
+      "The depth must be between 0 and 2."
+    ]
+  }
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "message": "This action is unauthorized."
+}
+```
+
+**429 Rate Limited:**
+```json
+{
+  "message": "Too Many Requests",
+  "retry_after": 3600
+}
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `ValidCrawlUrlTest.php` | 73 | 82 | ✅ PASS |
+| `CrawlJobPolicyTest.php` | 25 | 32 | ✅ PASS |
+| `CrawlRateLimiterTest.php` | 34 | 45 | ✅ PASS |
+| `CrawlRequestValidationTest.php` | 26 | 69 | ✅ PASS |
+| **TOTAL** | **158** | **228** | ✅ **ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-15 |
+| Deployment ID | `20260315T175342Z-42846942` |
+| Commit | `787b59917d1f` |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK |
+| Tests | 158/228 assertions passing |
+
+### Production Security Verification
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| POST /crawl (no auth) | 401 | 401 | ✅ |
+| SSRF: file:// protocol | 401/422 | 401 | ✅ |
+| SSRF: AWS metadata IP | 401/422 | 401 | ✅ |
+| SSRF: Private IP | 401/422 | 401 | ✅ |
+| Rate limit headers | Present | Present | ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-22-2 | Done ✅ | CrawlJob and CrawlPage models |
+| TASK-22-7 | Done ✅ | URL Validation / SSRF protection |
+| TASK-22-11 | Done ✅ | CrawlController |
+
+### Related Tasks
+
+- TASK-22-11: CrawlController implementation
+- TASK-22-14: Content Retrieval Endpoints
+- TASK-22-18: Unit Tests for Services
+- TASK-22-19: Feature Tests (API tests)
 
 ---
 ## Content Retrieval Endpoints (TASK-22-14)
@@ -59454,6 +59943,553 @@ Comprehensive unit test suite for the Billing, Credits & Model Selection feature
 - TASK-26-16: ModelPricingService (implementation)
 - TASK-26-26: Integration Tests (complementary)
 - TASK-26-27: Security Audit (complementary)
+
+---
+## CrawlJob and CrawlPage Models (TASK-22-2)
+
+### Model Description
+Eloquent models for the Headless Crawler Service (FEAT-022) that manage crawl job tracking and individual page data. CrawlJob represents a complete crawling task with status tracking, metrics, and relationships to crawled pages. CrawlPage stores individual page data including rendered HTML, extracted metadata, and link information for JavaScript-rendered content analysis.
+
+### Component Locations
+- **CrawlJob Model:** `backend/app/Models/CrawlJob.php`
+- **CrawlPage Model:** `backend/app/Models/CrawlPage.php`
+- **Factories:**
+  - `backend/database/factories/CrawlJobFactory.php` (12 states)
+  - `backend/database/factories/CrawlPageFactory.php` (13 states)
+- **Tests:**
+  - `backend/tests/Unit/Models/CrawlJobTest.php` (64 tests)
+  - `backend/tests/Unit/Models/CrawlPageTest.php` (60 tests)
+- **Test Documentation:** `TESTS/TASK-22-2.md`
+
+### CrawlJob Model
+
+**Purpose:** Tracks headless crawl jobs for JavaScript-rendered HTML extraction.
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `user_id` | int | Owner of the crawl job |
+| `project_id` | int\|null | Optional project association |
+| `job_id` | string | Unique job identifier (UUID) |
+| `url` | string | Starting URL for crawl |
+| `status` | string | Job status (queued, running, completed, failed, cancelled) |
+| `depth` | int | Maximum crawl depth |
+| `options` | array | Crawl configuration options |
+| `pages_crawled` | int | Number of pages successfully crawled |
+| `total_size` | int | Total size in bytes |
+| `error` | string\|null | Error message if failed |
+| `started_at` | datetime\|null | When crawl started |
+| `completed_at` | datetime\|null | When crawl finished |
+| `expires_at` | datetime\|null | When results expire |
+
+**Status Constants:**
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `STATUS_QUEUED` | 'queued' | Job waiting to start |
+| `STATUS_RUNNING` | 'running' | Job currently executing |
+| `STATUS_COMPLETED` | 'completed' | Job finished successfully |
+| `STATUS_FAILED` | 'failed' | Job encountered error |
+| `STATUS_CANCELLED` | 'cancelled' | Job manually cancelled |
+
+**Casts:**
+```php
+protected $casts = [
+    'options' => 'array',
+    'started_at' => 'datetime',
+    'completed_at' => 'datetime',
+    'expires_at' => 'datetime',
+    'depth' => 'integer',
+    'pages_crawled' => 'integer',
+    'total_size' => 'integer',
+];
+```
+
+**Relationships:**
+| Method | Type | Description |
+|--------|------|-------------|
+| `user()` | BelongsTo | Job owner |
+| `project()` | BelongsTo | Optional project (nullable) |
+| `pages()` | HasMany | Crawled pages |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `queued()` | Where status = 'queued' |
+| `running()` | Where status = 'running' |
+| `completed()` | Where status = 'completed' |
+| `failed()` | Where status = 'failed' |
+| `cancelled()` | Where status = 'cancelled' |
+| `forUser($userId)` | Where user_id = $userId |
+| `forProject($projectId)` | Where project_id = $projectId |
+| `expired()` | Where expires_at < now() |
+
+**Accessors:**
+| Accessor | Returns | Description |
+|----------|---------|-------------|
+| `is_complete` | bool | Status in ['completed', 'failed', 'cancelled'] |
+| `duration` | int\|null | Seconds between started_at and completed_at |
+| `size_formatted` | string | Human-readable size (KB, MB) |
+
+**Helper Methods:**
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `canBeCancelled()` | bool | True if status is 'queued' or 'running' |
+| `content_url` | string | API endpoint for job content |
+
+### CrawlPage Model
+
+**Purpose:** Stores individual page data from headless crawling including rendered HTML and extracted metadata.
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `crawl_job_id` | int | Parent crawl job ID |
+| `url` | string | Page URL |
+| `depth` | int | Crawl depth level |
+| `title` | string\|null | Page title |
+| `rendered_html` | string\|null | JavaScript-rendered HTML (MEDIUMTEXT) |
+| `structured_text` | string\|null | Extracted text content |
+| `meta` | array\|null | Page metadata (description, og:tags, etc.) |
+| `links` | array\|null | Extracted links with internal/external flags |
+| `size` | int | Page size in bytes |
+| `crawled_at` | datetime | When page was crawled |
+| `error` | string\|null | Error if crawl failed |
+
+**Casts:**
+```php
+protected $casts = [
+    'meta' => 'array',
+    'links' => 'array',
+    'crawled_at' => 'datetime',
+    'depth' => 'integer',
+    'size' => 'integer',
+];
+```
+
+**Relationships:**
+| Method | Type | Description |
+|--------|------|-------------|
+| `crawlJob()` | BelongsTo | Parent crawl job |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `forJob($jobId)` | Where crawl_job_id = $jobId |
+| `atDepth($depth)` | Where depth = $depth |
+| `successful()` | Where error is null |
+
+**Accessors:**
+| Accessor | Returns | Description |
+|----------|---------|-------------|
+| `size_formatted` | string | Human-readable size (KB, MB) |
+| `internal_links` | array | Links where internal = true |
+| `external_links` | array | Links where internal = false |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `CrawlJobTest.php` | 64 | 107 | ✅ PASS |
+| `CrawlPageTest.php` | 60 | 99 | ✅ PASS |
+| **Total** | **124** | **206** | **✅ ALL PASS** |
+
+**Test Categories (CrawlJob):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Creation & Mass Assignment | 8 | Fillable attributes, casts |
+| Status Constants | 5 | All 5 status values |
+| Relationships | 15 | user, project (nullable), pages |
+| Scopes | 20 | queued, running, completed, failed, cancelled, forUser, forProject, expired |
+| Accessors | 8 | is_complete, duration, size_formatted |
+| Helper Methods | 5 | canBeCancelled, content_url |
+| Edge Cases | 8 | Zero values, null dates, max lengths |
+| Cascade Delete | 5 | Foreign key constraints |
+| Factory States | 12 | All states verified |
+
+**Test Categories (CrawlPage):**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Creation & Mass Assignment | 8 | Fillable attributes, casts |
+| Relationships | 10 | crawlJob |
+| Scopes | 12 | forJob, atDepth, successful |
+| Accessors | 10 | size_formatted, internal_links, external_links |
+| Edge Cases | 10 | Null values, zero values, large HTML |
+| Cascade Delete | 5 | CrawlJob delete cascade |
+| Factory States | 13 | All states verified |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| Mass Assignment Protection | Fillable whitelist |
+| SQL Injection | Eloquent parameterized queries |
+| XSS Prevention | Casts for array fields |
+| Foreign Key Constraints | Cascade delete enabled |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-02 |
+| GitHub Actions Run | #22566874628 |
+| Build Time | 1m22s |
+| Deploy Time | 30s |
+| Health Check | ✅ OK (database connected) |
+| Tests | 124/124 passing (206 assertions) |
+| Status | Complete |
+
+### Dependencies
+- TASK-22-1 (Database migrations) - Done ✅
+
+### Related Tasks
+- TASK-22-3: Crawler Service (uses models)
+- TASK-22-4: Crawler API Controller (exposes models)
+- TASK-22-5: Frontend Crawl UI (displays model data)
+
+---
+## URL Validation and SSRF Protection (TASK-22-7)
+
+### Service Description
+Comprehensive URL validation and SSRF (Server-Side Request Forgery) protection service for the Headless Crawler Service feature (FEAT-022). Prevents malicious requests to internal resources by validating URLs before making HTTP requests. Blocks private IP ranges, localhost, cloud metadata endpoints, and dangerous URL schemes.
+
+### Component Locations
+- **Service:** `backend/app/Services/Crawler/UrlValidatorService.php`
+- **Configuration:** `backend/config/crawler.php`
+- **Tests:** `backend/tests/Unit/Services/Crawler/UrlValidatorServiceTest.php`, `backend/tests/Feature/Services/Crawler/UrlValidatorIntegrationTest.php`
+- **Test Documentation:** `TESTS/TEST-22-7.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `validate(string $url): ValidationResult` | Main validation entry point |
+| `normalizeUrl(string $url): string` | Normalize URL (lowercase host, remove default port) |
+| `isProtocolAllowed(string $protocol): bool` | Check if protocol is allowed |
+| `isIpBlocked(string $ip): bool` | Check if IP is in blocked range |
+| `isDomainBlocked(string $host): bool` | Check if domain is blocked |
+| `resolveDns(string $host): array` | Resolve hostname to IP addresses |
+| `validateRedirect(string $url, array $history): ValidationResult` | Validate redirect targets |
+
+### Protocol Validation
+
+| Protocol | Status | Reason |
+|----------|--------|--------|
+| `http://` | ✅ Allowed | Standard HTTP |
+| `https://` | ✅ Allowed | Secure HTTP |
+| `file://` | ❌ Blocked | Local file access |
+| `ftp://` | ❌ Blocked | FTP protocol |
+| `data://` | ❌ Blocked | Data URLs |
+| `javascript:` | ❌ Blocked | JavaScript execution |
+| `mailto:` | ❌ Blocked | Email links |
+| Custom | ❌ Blocked | Unknown protocols |
+
+### IP Address Blocking (SSRF Protection)
+
+**IPv4 Blocked Ranges:**
+
+| CIDR Range | Description |
+|------------|-------------|
+| `127.0.0.0/8` | Localhost |
+| `10.0.0.0/8` | Private Class A |
+| `172.16.0.0/12` | Private Class B |
+| `192.168.0.0/16` | Private Class C |
+| `169.254.0.0/16` | Link-local (AWS/GCP metadata) |
+| `0.0.0.0/8` | Current network |
+| `224.0.0.0/4` | Multicast |
+| `240.0.0.0/4` | Reserved |
+
+**IPv6 Blocked Ranges:**
+
+| CIDR Range | Description |
+|------------|-------------|
+| `::1/128` | IPv6 localhost |
+| `fc00::/7` | Unique local |
+| `fe80::/10` | Link-local |
+| `ff00::/8` | Multicast |
+
+**Cloud Metadata Endpoints:**
+
+| IP/Host | Provider |
+|---------|----------|
+| `169.254.169.254` | AWS/GCP metadata |
+| `metadata.google.internal` | GCP metadata |
+
+### Domain Blocking
+
+| Pattern | Description |
+|---------|-------------|
+| `*.internal` | Internal domain suffix |
+| `*.local` | Local domain suffix |
+| `*.localhost` | Localhost domain suffix |
+| `*.internal.*` | Internal domain wildcard |
+
+### ValidationResult Structure
+
+```php
+[
+    'valid' => bool,           // Whether URL is safe to request
+    'url' => string,           // Normalized URL
+    'originalUrl' => string,   // Original input URL
+    'host' => string,          // Extracted hostname
+    'ip' => string|null,       // Resolved IP address
+    'error' => string|null,    // Error message if invalid
+    'blocked' => bool,         // Whether request was blocked
+    'blockReason' => string|null,  // Reason for blocking
+]
+```
+
+### Configuration
+
+```php
+// config/crawler.php
+'ssrf' => [
+    'blocked_ip_ranges' => [
+        '127.0.0.0/8',      // Localhost
+        '10.0.0.0/8',       // Private Class A
+        '172.16.0.0/12',    // Private Class B
+        '192.168.0.0/16',   // Private Class C
+        '169.254.0.0/16',   // Link-local (AWS metadata)
+        '::1/128',          // IPv6 localhost
+        'fe80::/10',        // IPv6 link-local
+    ],
+    'blocked_hosts' => ['localhost', '*.local', '*.internal', '*.localhost'],
+    'blocked_protocols' => ['file', 'ftp', 'gopher', 'data', 'javascript'],
+]
+
+'allowed_protocols' => ['http', 'https'],
+'blocked_domains' => ['*.internal', '*.local', '*.localhost', '*.internal.*'],
+'dns_cache_ttl' => 60,      // seconds
+'max_redirects' => 5,
+```
+
+### DNS Rebinding Protection
+
+| Feature | Implementation |
+|---------|---------------|
+| DNS Resolution | Resolve hostname to IP before browser navigation |
+| DNS Cache | 60-second TTL to prevent rapid DNS changes |
+| Redirect Validation | Re-validate IP after redirects |
+| Blocked IP Domains | Block domains resolving to blocked IPs |
+
+### SSRF Bypass Protection
+
+| Attack Vector | Protection |
+|---------------|------------|
+| Decimal IP notation (`2130706433`) | Blocked |
+| Hex IP notation (`0x7f000001`) | Blocked |
+| Octal IP notation (`017700000001`) | Blocked |
+| URL encoding (`%31%32%37`) | Blocked |
+| Double URL encoding | Blocked |
+| IPv4-mapped IPv6 (`::ffff:127.0.0.1`) | Blocked |
+| IPv6 compression (`::1`) | Blocked |
+
+### Error Messages
+
+| Error | Condition |
+|-------|-----------|
+| "Protocol not allowed" | Non-HTTP(S) protocol |
+| "URL format invalid" | Malformed URL |
+| "IP address blocked: private network" | Private IP range |
+| "IP address blocked: localhost" | Localhost IP |
+| "IP address blocked: metadata endpoint" | Cloud metadata IP |
+| "Domain blocked" | Blocked domain pattern |
+| "DNS resolution failed" | DNS lookup failure |
+| "Redirect target blocked" | Redirect to blocked IP/domain |
+
+### Security Logging
+
+All blocked requests are logged to the security channel:
+
+```php
+Log::channel('security')->warning('SSRF attempt blocked', [
+    'url' => $url,
+    'reason' => $blockReason,
+    'ip' => $resolvedIp,
+]);
+```
+
+### Integration Points
+
+| Consumer | Usage |
+|----------|-------|
+| `CrawlWorker` job | Validates URLs before crawling (line 180) |
+| `ProcessIndicatorJob` | Validates URLs for indicator processing (lines 80, 122, 356-360) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `UrlValidatorServiceTest.php` | 44 | 161 | ✅ PASS |
+| `UrlValidatorIntegrationTest.php` | 18 | 59 | ✅ PASS |
+| **Total** | **62** | **220** | **✅ ALL PASS** |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Protocol Validation (PV) | 14 | HTTP/HTTPS allowed, all others blocked |
+| URL Format Validation (UFV) | 18 | Structure, normalization, edge cases |
+| IP Blocking IPv4 (IPV4) | 25 | All private/reserved ranges |
+| IP Blocking IPv6 (IPV6) | 15 | IPv6 localhost, link-local, multicast |
+| DNS Rebinding (DRP) | 12 | DNS resolution, caching, rebinding |
+| Domain Blocking (DB) | 10 | *.internal, *.local, *.localhost |
+| Redirect Handling (RH) | 14 | Chain limits, target validation |
+| Result Structure (VRS) | 10 | DTO validation |
+| Configuration (CFG) | 8 | Config values and defaults |
+| Error Messages (ERR) | 8 | All error message types |
+| Security Edge Cases (SEC) | 20 | SSRF vectors, IP notation tricks |
+| Integration (INT) | 10 | Full pipeline, performance |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T104236Z-4f2fa949` |
+| Commit | `125314159ca0d63ea50c37f12db0e2cce1276a10` |
+| Health Check | ✅ 200 OK |
+| Tests | 62/62 passing (220 assertions) |
+| Status | Complete |
+
+### Security Note
+
+SSRF vulnerabilities can lead to:
+- Access to internal services
+- Cloud metadata exposure (AWS keys, GCP tokens)
+- Port scanning internal networks
+- Data exfiltration
+- Remote code execution in some cases
+
+This service mitigates these risks through comprehensive validation.
+
+### Dependencies
+- None (standalone security service)
+
+### Related Tasks
+- TASK-22-1: Database Migrations (crawler tables)
+- TASK-22-3: Crawler Service (uses URL validation)
+- TASK-22-11: Crawler API (uses URL validation)
+- TASK-22-15: Crawler Worker (uses URL validation)
+- TASK-16-1: Tools Infrastructure (reference implementation)
+
+---
+## Depth Controller (TASK-22-8)
+
+### Feature Description
+URL depth limiting functionality for the crawler that restricts crawling to a configurable maximum URL depth level. Provides granular control over crawl scope to prevent crawler traps, reduce crawl time, and focus on relevant content. Part of the Crawler Enhancements feature set.
+
+### Component Locations
+- **Service:** `backend/app/Services/Crawler/DepthController.php`
+- **Integration:** `backend/app/Services/Crawler/CrawlerService.php`
+- **Configuration:** `backend/config/crawler.php`
+- **Tests:** `backend/tests/Unit/Services/Crawler/DepthControllerTest.php`
+- **Task Specification:** `TASKS/TASK-22-8.md`
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Depth Calculation | Calculate URL depth from root URL |
+| Depth Limiting | Skip URLs exceeding maximum configured depth |
+| Configuration | Maximum depth configurable via CrawlConfig |
+| Validation | Reject invalid depth values with clear errors |
+| URL Normalization | Handle trailing slashes and query strings |
+
+### Configuration Options
+
+```php
+// config/crawler.php
+return [
+    'max_depth' => env('CRAWLER_MAX_DEPTH', 3), // Default: 3 levels deep
+];
+```
+
+**CrawlConfig Integration:**
+```php
+$crawlConfig = new CrawlConfig(
+    url: 'https://example.com',
+    maxDepth: 5,  // Override default
+    // ... other options
+);
+```
+
+### Depth Calculation Logic
+
+| URL | Root Depth | Calculated Depth |
+|-----|------------|------------------|
+| `https://example.com/` | 0 | 0 (root) |
+| `https://example.com/page` | 0 | 1 |
+| `https://example.com/category/page` | 0 | 2 |
+| `https://example.com/a/b/c/d` | 0 | 4 |
+| `https://example.com/page?query=value` | 0 | 1 (query ignored) |
+
+**Rules:**
+- Root URL always depth 0
+- Each path segment adds 1 to depth
+- Query strings do NOT increase depth
+- Trailing slashes normalized (no depth impact)
+- Fragments (#section) ignored for depth
+
+### API Methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `calculateDepth` | `calculateDepth(string $url, string $rootUrl): int` | Get URL depth relative to root |
+| `shouldCrawl` | `shouldCrawl(string $url, int $maxDepth): bool` | Check if URL within depth limit |
+| `setMaxDepth` | `setMaxDepth(int $depth): void` | Set maximum allowed depth |
+| `getMaxDepth` | `getMaxDepth(): int` | Get current maximum depth |
+
+### Error Handling
+
+| Error | Condition | Response |
+|-------|-----------|----------|
+| `InvalidDepthException` | maxDepth < 0 | Throw with message "Maximum depth must be >= 0" |
+| `InvalidUrlException` | Malformed URL | Throw with URL parsing error |
+| `RootMismatchException` | URL outside root domain | Skip URL (not an error) |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `DepthControllerTest.php` | 25 | 42 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Depth Calculation | 8 | Various URL structures, edge cases |
+| Depth Limiting | 6 | URLs at/above/below limit |
+| Configuration | 4 | Valid/invalid config values |
+| URL Normalization | 4 | Trailing slashes, queries, fragments |
+| Error Handling | 3 | Invalid inputs, exceptions |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| Input Validation | All URLs validated before processing |
+| URL Injection | URLs parsed with PHP's built-in parser |
+| Memory Safety | No recursion, iterative depth calculation |
+| DoS Prevention | Depth limit prevents infinite crawl loops |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-15 |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 25/25 passing (42 assertions) |
+| Status | Complete |
+
+### Dependencies
+- CrawlConfig (existing crawler configuration)
+- URL Normalization utilities
+
+### Related Tasks
+- TASK-22-1: Basic Crawler Implementation
+- TASK-22-2: Crawl Queue Management
+- TASK-22-3: Robots.txt Parser
+- TASK-22-9: Rate Limiter Integration
 
 ---
 *Last updated: 2026-03-15*

@@ -11,6 +11,7 @@ use Laravel\Sanctum\Sanctum;
 use App\Models\User;
 use App\Models\AIVisibility\AIVisibilityProject;
 use App\Models\AIVisibility\AIQueryResult;
+use App\Models\AIVisibility\AIMention;
 use App\Models\AIVisibility\AIMentionAnalytics;
 use App\Jobs\AIVisibility\RunQueryJob;
 use App\Services\AIVisibility\AIQueryEngine;
@@ -92,9 +93,9 @@ class AnalyticsFlowIntegrationTest extends TestCase
         $this->assertEquals('chatgpt', $queryResult->platform);
         $this->assertNotNull($queryResult->response_text);
 
-        // Step 3: Verify mention analytics were created
-        $analytics = AIMentionAnalytics::where('project_id', $this->project->id)->get();
-        $this->assertGreaterThan(0, $analytics->count(), 'Mention analytics should be created');
+        // Step 3: Verify mentions were created
+        $mentions = AIMention::where('project_id', $this->project->id)->get();
+        $this->assertGreaterThan(0, $mentions->count(), 'Mentions should be created');
     }
 
     /** @test FLOW-002: Query flow with brand mention creates correct analytics */
@@ -108,7 +109,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
         );
 
         // Verify brand mention was recorded
-        $brandMention = AIMentionAnalytics::where('project_id', $this->project->id)
+        $brandMention = AIMention::where('project_id', $this->project->id)
             ->where('entity_type', 'brand')
             ->where('entity_name', 'SEOIndicator')
             ->first();
@@ -129,7 +130,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
         );
 
         // Verify competitor mention was recorded
-        $competitorMention = AIMentionAnalytics::where('project_id', $this->project->id)
+        $competitorMention = AIMention::where('project_id', $this->project->id)
             ->where('entity_type', 'competitor')
             ->where('entity_name', 'Ahrefs')
             ->first();
@@ -148,7 +149,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
         );
 
         // Count all mentions
-        $allMentions = AIMentionAnalytics::where('project_id', $this->project->id)->get();
+        $allMentions = AIMention::where('project_id', $this->project->id)->get();
         
         // Should have brand + 2 competitors mentioned
         $this->assertGreaterThanOrEqual(2, $allMentions->count(), 'Should have multiple mentions');

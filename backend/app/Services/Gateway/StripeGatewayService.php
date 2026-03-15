@@ -191,6 +191,45 @@ class StripeGatewayService
     }
 
     /**
+     * Get the owner user ID of a payment method.
+     *
+     * @param string $paymentMethodId The payment method ID
+     * @return int|null User ID or null if not found
+     */
+    public function getPaymentMethodOwner(string $paymentMethodId): ?int
+    {
+        // Check local database first
+        $paymentMethod = PaymentMethod::where('stripe_payment_method_id', $paymentMethodId)->first();
+        
+        if ($paymentMethod) {
+            return $paymentMethod->user_id;
+        }
+
+        // If not in database, try to get from Stripe
+        if (!$this->stripe) {
+            return null;
+        }
+
+        try {
+            $pm = $this->stripe->paymentMethods->retrieve($paymentMethodId);
+            
+            if ($pm->customer) {
+                // Find the user by Stripe customer ID
+                $userMethod = PaymentMethod::where('stripe_customer_id', $pm->customer)->first();
+                
+                return $userMethod?->user_id;
+            }
+        } catch (Exception $e) {
+            Log::warning('Failed to get payment method owner from Stripe', [
+                'payment_method_id' => $paymentMethodId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
      * Sync payment methods from Stripe to local database.
      *
      * @param User $user

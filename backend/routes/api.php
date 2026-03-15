@@ -212,6 +212,11 @@ Route::middleware(['auth'])->group(function () {
 */
 
 Route::prefix('v1')->group(function () {
+    // Credit Packages (TASK-26-26) - Public endpoint for package listing
+    Route::get('packages', [\App\Http\Controllers\Api\V1\CreditPackageController::class, 'index']);
+    Route::get('packages/{id}', [\App\Http\Controllers\Api\V1\CreditPackageController::class, 'show'])
+        ->where('id', '[0-9]+');
+
     // Models (TASK-26-17) - Public endpoint for model listing
     Route::get('models', [\App\Http\Controllers\Api\V1\ModelController::class, 'index']);
 
@@ -485,7 +490,7 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Payment Methods (TASK-26-11, SPEC-026)
     Route::get('payments/methods', [\App\Http\Controllers\Api\V1\PaymentController::class, 'listMethods']);
-    Route::delete('payments/methods/{id}', [\App\Http\Controllers\Api\V1\PaymentController::class, 'deleteMethod'])->where('id', '[0-9]+');
+    Route::delete('payments/methods/{id}', [\App\Http\Controllers\Api\V1\PaymentController::class, 'deleteMethod']);
 
     // PayPal Orders (TASK-26-13, SPEC-026)
     Route::post('payments/paypal/order', [\App\Http\Controllers\Api\V1\Payments\PayPalOrderController::class, 'store']);
@@ -495,6 +500,12 @@ Route::prefix('v1')->middleware(['auth'])->group(function () {
 
     // Credit Transaction History (TASK-26-7, SPEC-026)
     Route::get('credits/transactions', [CreditController::class, 'transactions']);
+
+    // Credit Balance (TASK-26-7, SPEC-026)
+    Route::get('credits/balance', [CreditController::class, 'balance']);
+
+    // Stripe Payment Intent (TASK-26-8, SPEC-026)
+    Route::post('payments/stripe/intent', [\App\Http\Controllers\Api\V1\Payments\StripePaymentController::class, 'createIntent']);
 
     // AI Visibility Projects (TASK-34-6, SPEC-034)
     Route::prefix('ai-visibility')->group(function () {
