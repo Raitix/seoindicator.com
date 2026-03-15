@@ -1,7 +1,7 @@
 # TASK-27-4: User Stats Aggregation Queries
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ## PRIORITY
 `High`
@@ -151,6 +151,26 @@ The repository implementation already exists at `app/Repositories/UserStatsRepos
 - Response format matches SPEC-027 exactly
 
 **Handoff:** Ready for DevOps to deploy to production.
+
+### 2026-03-15 - DevOps
+**Deployment Complete ✅**
+
+- **Method:** Already deployed (code was in origin/main)
+- **Commit:** 7e574bbc (included in deployment 87629bc4)
+- **Deployment Log:** 20260315T152702Z-b307c11f.json
+- **Result:** Successful
+- **Health Check:** 200 OK, production smoke passed
+
+**What was deployed:**
+- `backend/app/Repositories/UserStatsRepository.php` - User stats aggregation repository
+- Repository methods: `getTotalUserCount()`, `getActiveUsersCount()`, `getNewRegistrationsToday()`, `getNewRegistrationsThisWeek()`, `getNewRegistrationsThisMonth()`, `getGrowthRates()`, `getUsersByPlan()`, `getFullStats()`, `getCachedFullStats()`, `clearCache()`
+- Migration: `last_login_at` and `plan` columns with indexes
+- 62 tests passing (111 assertions)
+
+**Deployment Note:**
+Code was already committed and pushed by LocalTester. The latest production deployment (commit 87629bc4) includes TASK-27-4's implementation. No additional deployment needed.
+
+**Handoff:** Ready for ProdTester to verify in production.
 
 ### 2026-03-13 - ProjectManager
 **Prioritization Complete**
