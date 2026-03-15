@@ -145,20 +145,17 @@ class StripeGatewayServiceTest extends TestCase
             })
             ->andReturn($mockPaymentIntent);
 
-        // Mock customers service (for getCustomer returning null, then createCustomer)
+        // Mock customers service (for createCustomer since getCustomer returns null)
         $mockCustomers = Mockery::mock();
-        $mockCustomers->shouldReceive('retrieve')
-            ->once()
-            ->andThrow(new \Exception('No such customer'));
         $mockCustomers->shouldReceive('create')
             ->once()
             ->andReturn((object) ['id' => 'cus_test_123', 'email' => $user->email]);
 
         // Set up property access mocks
-        $mockStripe->shouldReceive('__get')
+        $mockStripe->shouldReceive('getService')
             ->with('paymentIntents')
             ->andReturn($mockPaymentIntents);
-        $mockStripe->shouldReceive('__get')
+        $mockStripe->shouldReceive('getService')
             ->with('customers')
             ->andReturn($mockCustomers);
 
