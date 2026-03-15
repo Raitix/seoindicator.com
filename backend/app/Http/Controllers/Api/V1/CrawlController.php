@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CrawlRequest;
 use App\Services\Crawler\CrawlerService;
 use App\Services\Crawler\CrawlerServiceInterface;
+use App\Services\Crawler\RateLimiterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,7 +25,8 @@ class CrawlController extends Controller
      * Create a new controller instance.
      */
     public function __construct(
-        protected CrawlerServiceInterface $crawlerService
+        protected CrawlerServiceInterface $crawlerService,
+        protected RateLimiterService $rateLimiter
     ) {}
 
     /**
@@ -47,11 +49,20 @@ class CrawlController extends Controller
             $validated['options'] ?? []
         );
 
+        // Inject rate limiter into service if it's a CrawlerService instance
+        if ($this->crawlerService instanceof CrawlerService) {
+            $this->crawlerService->withRateLimiter($this->rateLimiter);
+        }
+
         $job = $this->crawlerService->createJob(
             $user->id,
             $validated['url'],
             $options
         );
+
+        // Get rate limit headers
+        $isAdmin = $user->role === 'admin';
+        $headers = $this->rateLimiter->getHeaders($user->id, $isAdmin);
 
         return response()->json([
             'jobId' => $job['jobId'],
@@ -60,7 +71,7 @@ class CrawlController extends Controller
             'depth' => $job['depth'],
             'estimatedTime' => $job['estimatedTime'],
             'message' => $job['message'],
-        ], 202);
+        ], 202)->withHeaders($headers);
     }
 
     /**
