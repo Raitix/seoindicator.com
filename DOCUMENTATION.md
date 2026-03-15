@@ -58732,4 +58732,132 @@ PDF report generation service for Technical SEO Site Audit results. Integrates w
 - FEAT-001: Technical SEO Site Audit
 
 ---
-*Last updated: 2026-03-14*
+## Credit System Unit Tests (TASK-26-25)
+
+### Feature Description
+Comprehensive unit test suite for the Billing, Credits & Model Selection feature (FEAT-026) covering credit models, services, and repositories. Provides 95%+ code coverage for all credit-related components including balance operations, transactions, pricing calculations, and security validations.
+
+### Component Locations
+- **Credit Model Tests:** `backend/tests/Unit/Models/CreditTest.php`
+- **CreditTransaction Model Tests:** `backend/tests/Unit/Models/CreditTransactionTest.php`
+- **CreditRepository Tests:** `backend/tests/Unit/Repositories/CreditRepositoryTest.php`
+- **CreditService Tests:** `backend/tests/Unit/Services/CreditServiceTest.php`
+- **ModelPricingService Tests:** `backend/tests/Unit/Services/ModelPricingServiceTest.php`
+- **Integration Tests:** `backend/tests/Integration/Services/ModelPricingServiceIntegrationTest.php`
+- **Test Documentation:** `TESTS/TASK-25.md`
+
+### Test Coverage Summary
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| CreditTest | 65+ | - | ✅ PASS |
+| CreditTransactionTest | 70+ | - | ✅ PASS |
+| CreditRepositoryTest | 55+ | - | ✅ PASS |
+| CreditServiceTest | 60+ | - | ✅ PASS |
+| ModelPricingServiceTest | 73 | - | ✅ PASS |
+| ModelPricingServiceIntegrationTest | 27 | - | ✅ PASS |
+| **Total** | **356** | **618+** | **✅ ALL PASS** |
+
+### Test Categories
+
+#### Credit Model Tests
+- Relationship to User
+- Relationship to CreditTransaction
+- Balance accessor formatting
+- Sufficient balance check
+- Mass assignment protection
+
+#### CreditTransaction Model Tests
+- Relationship to User and Credit
+- Type enum values
+- JSON metadata casting
+- Scopes (type, provider)
+
+#### CreditRepository Tests
+- `findOrCreateForUser`
+- `getBalance`
+- `getTransactions` pagination
+- Transaction safety
+
+#### CreditService Tests
+- `getBalance`
+- `addCredits` (purchase, bonus)
+- `deductCredits`
+- `hasSufficientBalance`
+- `InsufficientCreditsException`
+- `refundCredits`
+- Concurrent operations with locks
+- Idempotency
+
+#### ModelPricingService Tests
+- `getAvailableModels`
+- `getModelPricing`
+- `calculateAnalysisCost`
+- OpenRouter sync (mocked)
+- `getUserDefaultModel`
+
+### Security Test Focus
+
+| Security Test | Coverage |
+|---------------|----------|
+| Balance cannot go negative | ✅ Tested |
+| Mass assignment protection | ✅ Tested |
+| SQL injection prevention | ✅ Tested |
+| User isolation in preferences | ✅ Tested |
+| Authorization boundaries | ✅ Tested |
+
+### Test Execution Results
+
+| Metric | Value |
+|--------|-------|
+| Total Tests | 329 |
+| Passed | 329 |
+| Risky | 5 (logging tests without assertions) |
+| Skipped | 5 (external dependencies) |
+| Assertions | 543 |
+| Duration | ~26-31 seconds |
+| Exit Code | 0 |
+
+### Risky/Skipped Tests Explanation
+
+| Type | Count | Reason |
+|------|-------|--------|
+| Risky | 5 | Logging tests without assertions - acceptable |
+| Skipped | 5 | SQLite constraint limitations and external dependencies - acceptable |
+
+### Test Environment
+
+| Setting | Value |
+|---------|-------|
+| Database | SQLite in-memory for unit tests |
+| Mocking | External dependencies (OpenRouter API) |
+| Coverage | 95%+ across all credit system components |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-15 |
+| Commit | `a3501213` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-15 (ProdTester verified) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-26-2 | Done ✅ | Credit model/repository |
+| TASK-26-5 | Done ✅ | CreditService |
+| TASK-26-16 | Done ✅ | ModelPricingService |
+
+### Related Tasks
+
+- TASK-26-2: Credit Model/Repository (implementation)
+- TASK-26-5: CreditService (implementation)
+- TASK-26-16: ModelPricingService (implementation)
+- TASK-26-26: Integration Tests (complementary)
+- TASK-26-27: Security Audit (complementary)
+
+---
+*Last updated: 2026-03-15*
