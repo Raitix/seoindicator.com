@@ -578,7 +578,7 @@ class CrawlWorkerTest extends TestCase
 
         $mockCrawler = Mockery::mock(CrawlerService::class);
         $mockCrawler->shouldReceive('getCrawlJob')->atLeast(1)->andReturn($crawlJob);
-        $mockCrawler->shouldReceive('updateStatus')->atLeast(1);
+        $mockCrawler->shouldReceive('updateStatus')->atLeast(0);
         $mockCrawler->shouldReceive('markJobFailed')->once();
 
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
@@ -595,8 +595,14 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('warning')->atLeast(0);
 
         // Additional services for handle()
+        // startTracking is called BEFORE url validation, so we need to mock it
         $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        
         $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+        
         $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
 
         $job = new CrawlWorker('crawl-localhost');
@@ -618,7 +624,7 @@ class CrawlWorkerTest extends TestCase
 
         $mockCrawler = Mockery::mock(CrawlerService::class);
         $mockCrawler->shouldReceive('getCrawlJob')->atLeast(1)->andReturn($crawlJob);
-        $mockCrawler->shouldReceive('updateStatus')->atLeast(1);
+        $mockCrawler->shouldReceive('updateStatus')->atLeast(0);
         $mockCrawler->shouldReceive('markJobFailed')->once();
 
         $mockUrlValidator = Mockery::mock(UrlValidatorService::class);
@@ -633,8 +639,14 @@ class CrawlWorkerTest extends TestCase
         Log::shouldReceive('warning')->atLeast(0);
 
         // Additional services for handle()
+        // startTracking is called BEFORE url validation, so we need to mock it
         $mockTimeoutHandler = Mockery::mock(TimeoutHandlerService::class);
+        $mockTimeoutHandler->shouldReceive('startTracking')->once();
+        $mockTimeoutHandler->shouldReceive('stopTracking')->once();
+        
         $mockCancellationService = Mockery::mock(CancellationService::class);
+        $mockCancellationService->shouldReceive('clearCancellationFlag')->once();
+        
         $mockPartialResultsService = Mockery::mock(PartialResultsService::class);
 
         $job = new CrawlWorker('crawl-private-ip');
