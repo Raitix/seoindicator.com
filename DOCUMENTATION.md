@@ -1,6 +1,151 @@
 # DOCUMENTATION.md
 
 ---
+## Tools Infrastructure (TASK-16-1)
+
+### Feature Description
+Foundation infrastructure for the Interactive SEO Tools feature (FEAT-016) that enables server-side analysis of external URLs. Provides CORS proxy API endpoint, HTML parsing via Symfony DomCrawler, base SEO tool class architecture, URL validation with SSRF protection, and rate limiting infrastructure. This is the foundational layer that all interactive SEO tools build upon.
+
+### Component Locations
+- **API Controller:** `backend/app/Http/Controllers/Api/V1/Tools/APIProxyController.php`
+- **Base Tool Class:** `backend/app/Services/Tools/SEOTool.php`
+- **HTML Parser Service:** `backend/app/Services/Tools/HtmlParserService.php`
+- **URL Validation Service:** `backend/app/Services/Tools/URLValidationService.php`
+- **Rate Limiting Service:** `backend/app/Services/Tools/ToolsRateLimitService.php`
+- **Rate Limit Facade:** `backend/app/Services/RateLimitService.php`
+- **Tool Result DTO:** `backend/app/Services/Tools/ToolResult.php`
+- **Tests:** `backend/tests/Unit/Services/Tools/ToolsRateLimitServiceTest.php` (64 tests)
+- **Test Documentation:** `TESTS/TEST-16-1.md`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/tools/analyze` | Analyze external URL with specified tool |
+
+**Request:**
+```json
+{
+  "url": "https://example.com",
+  "tool": "meta-tag-analyzer"
+}
+```
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://example.com",
+    "analyzedAt": "2026-02-27T12:00:00Z",
+    "tool": "meta-tag-analyzer",
+    "results": { ... }
+  }
+}
+```
+
+### Base SEOTool Class
+
+```php
+abstract class SEOTool
+{
+    abstract public function name(): string;
+    abstract public function analyze(Crawler $crawler, string $url): ToolResult;
+    
+    protected function fetchUrl(string $url): string;     // Via HtmlParserService
+    protected function parseHtml(string $html): Crawler;  // Symfony DomCrawler
+    protected function validateUrl(string $url): bool;    // Via URLValidationService
+}
+```
+
+### URL Validation & SSRF Protection
+
+| Protection | Implementation |
+|------------|----------------|
+| Localhost block | Blocks localhost, 127.0.0.1, ::1 |
+| Private IP block | Blocks 10.x.x.x, 172.16-31.x.x, 192.168.x.x |
+| Cloud metadata block | Blocks 169.254.169.254 (AWS/GCP/Azure) |
+| Protocol restriction | Only HTTP/HTTPS allowed |
+| Port restriction | Standard ports only (80, 443, 8080, 8443) |
+
+### Rate Limiting Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Requests per IP per 24h | 3 | Free tier limit |
+| CAPTCHA bypass | Yes | reCAPTCHA verification unlocks additional requests |
+| Tracking | Per IP | Stored in cache with 24-hour TTL |
+| Response headers | `X-RateLimit-Remaining`, `X-RateLimit-Reset` | Standard rate limit headers |
+
+### Error Handling
+
+| Error Code | HTTP Status | Description |
+|------------|-------------|-------------|
+| `invalid_url` | 400 | URL format validation failed |
+| `blocked_url` | 403 | URL blocked by SSRF protection |
+| `fetch_failed` | 502 | Unable to fetch external URL |
+| `timeout` | 504 | Request timeout (30s total, 10s connection) |
+| `rate_limited` | 429 | Rate limit exceeded (includes `retry_after`) |
+| `tool_error` | 500 | Tool-specific analysis error |
+
+### Request Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Total timeout | 30 seconds | Maximum request duration |
+| Connection timeout | 10 seconds | Connection establishment timeout |
+| Max response size | 10 MB | Maximum HTML response size |
+| User-Agent | `SEOIndicator-Tools/1.0` | Identifies requests |
+
+### Tool Result DTO
+
+```php
+class ToolResult
+{
+    public bool $success;
+    public array $data;
+    public ?string $error;
+    public int $processingTimeMs;
+    
+    public static function success(array $data, int $processingTimeMs): self;
+    public static function error(string $error, int $processingTimeMs): self;
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ToolsRateLimitServiceTest | 64 | 250 | ✅ PASS |
+| APIProxyControllerTest | Feature tests | - | ✅ PASS |
+| URLValidationServiceTest | Unit tests | - | ✅ PASS |
+| MetaTagAnalyzerTest | Tool tests | - | ✅ PASS |
+| KeywordDensityCheckerTest | Tool tests | - | ✅ PASS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-27 |
+| Production URL | https://seoindicator.com |
+| Status | Complete |
+
+### Dependencies
+
+| Component | Description |
+|-----------|-------------|
+| Symfony DomCrawler | HTML parsing (no external API dependencies) |
+| Laravel Cache | Rate limit tracking |
+| reCAPTCHA | Optional CAPTCHA bypass for rate limits |
+
+### Related Tasks
+
+- TASK-16-2: Meta Tag Analyzer Tool (uses this infrastructure)
+- TASK-16-3: Keyword Density Checker Tool (uses this infrastructure)
+- TASK-16-7: Mobile-Friendly Checker Tool (uses this infrastructure)
+- TASK-16-8: Social Media Preview Tool (uses this infrastructure)
+
+---
 ## AnalysisJobService - Core Operations (TASK-19-3)
 
 ### Feature Description

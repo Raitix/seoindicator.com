@@ -2,389 +2,365 @@
 
 namespace App\Services\Admin;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Config;
 
 /**
- * Health Check Service for Admin Dashboard.
- *
- * Provides health monitoring for database, queue, cache, and storage.
- * Designed for 30-second polling with caching support.
- *
- * @see TASK-27-18
- * @see TASK-27-12
- * @see SPEC-027
+ * Health Check Service
+ * 
+ * Monitors system health status including database, cache, storage, and queue.
+ * 
+ * TASK-27-11: Health Check Service
+ * Status: To Develop
+ * 
+ * @see TESTS/TEST-27-11.md for test documentation
  */
 class HealthCheckService
 {
-    /**
-     * Cache TTL for health stats (30 seconds).
-     */
-    private const CACHE_TTL = 30;
+    protected const CACHE_KEY = 'health-check:status';
+    protected const CACHE_TTL = 30; // seconds
 
     /**
-     * Queue monitoring service instance.
-     */
-    protected ?QueueMonitoringService $queueMonitoring = null;
-
-    /**
-     * Set the queue monitoring service (for dependency injection).
-     */
-    public function setQueueMonitoringService(QueueMonitoringService $service): void
-    {
-        $this->queueMonitoring = $service;
-    }
-
-    /**
-     * Get the queue monitoring service.
-     */
-    protected function getQueueMonitoringService(): QueueMonitoringService
-    {
-        if ($this->queueMonitoring === null) {
-            $this->queueMonitoring = app(QueueMonitoringService::class);
-        }
-
-        return $this->queueMonitoring;
-    }
-
-    /**
-     * Get all health statistics.
+     * Get full health status of all services
      *
+     * @param bool $forceRefresh Bypass cache
      * @return array
      */
-    public function getStats(): array
+    public function checkHealth(bool $forceRefresh = false): array
     {
-        // Bypass cache in testing environment for accurate test results
-        if (app()->environment('testing')) {
-            return $this->calculateStats();
+        $cached = Cache::get(self::CACHE_KEY);
+
+        if ($cached && !$forceRefresh) {
+            return $cached;
         }
 
-        return Cache::remember('admin.health.stats', self::CACHE_TTL, function () {
-            return $this->calculateStats();
-        });
-    }
-
-    /**
-     * Calculate health statistics (extracted for testability).
-     *
-     * @return array
-     */
-    protected function calculateStats(): array
-    {
         $services = [
             'database' => $this->checkDatabase(),
-            'queue' => $this->checkQueue(),
             'cache' => $this->checkCache(),
             'storage' => $this->checkStorage(),
+            'queue' => $this->checkQueue(),
         ];
 
-        $alerts = $this->generateAlerts($services);
-
-        return [
-            'status' => $this->determineOverallStatus($services),
-            'uptime' => $this->calculateUptime(),
+        $health = [
+            'status' => $this->getOverallStatus($services),
+            'uptime' => $this->calculateUptime($services),
             'lastChecked' => now()->toIso8601String(),
             'services' => $services,
-            'alerts' => $alerts,
         ];
+
+        Cache::put(self::CACHE_KEY, $health, self::CACHE_TTL);
+
+        return $health;
     }
 
     /**
-     * Check database health.
+     * Check database connectivity and latency
      *
-     * @return array
+     * @return array{status: string, message: string, metrics: array}
      */
     public function checkDatabase(): array
     {
-        $start = microtime(true);
-
         try {
+            $start = microtime(true);
             DB::select('SELECT 1');
-            $latency = round((microtime(true) - $start) * 1000);
+            $latencyMs = (int) ((microtime(true) - $start) * 1000);
+
+            $warningThreshold = Config::get('health-check.thresholds.database_latency_warning', 100);
+            $criticalThreshold = Config::get('health-check.thresholds.database_latency_critical', 500);
+
             $status = 'healthy';
-            $connections = $this->getConnectionCount();
-        } catch (\Exception $e) {
-            $latency = 0;
-            $status = 'unhealthy';
+            if ($latencyMs >= $criticalThreshold) {
+                $status = 'unhealthy';
+            } elseif ($latencyMs >= $warningThreshold) {
+                $status = 'degraded';
+            }
+
+            // Get connection count (MySQL specific, fallback to 0)
             $connections = 0;
-        }
-
-        return [
-            'status' => $status,
-            'latencyMs' => (int) $latency,
-            'connections' => $connections,
-        ];
-    }
-
-    /**
-     * Check queue health.
-     *
-     * Uses QueueMonitoringService for enhanced queue metrics including
-     * per-queue pending counts, 24-hour failed job tracking, and
-     * configurable alert thresholds.
-     *
-     * @return array
-     */
-    public function checkQueue(): array
-    {
-        try {
-            $queueStats = $this->getQueueMonitoringService()->getQueueStats();
+            try {
+                $result = DB::select("SHOW STATUS LIKE 'Threads_connected'");
+                $connections = isset($result[0]) ? (int) $result[0]->Value : 0;
+            } catch (\Exception $e) {
+                // Connection count not available for this driver
+            }
 
             return [
-                'status' => $queueStats['status'],
-                'pending' => $queueStats['pending'],
-                'failed' => $queueStats['failed'],
-                'failed_24h' => $queueStats['failed_24h'],
-                'workers' => $queueStats['workers'],
-                'avgProcessingTimeMs' => $queueStats['avgProcessingTimeMs'],
-                'queues' => $queueStats['queues'],
+                'status' => $status,
+                'message' => 'Database is responding normally',
+                'metrics' => [
+                    'latencyMs' => $latencyMs,
+                    'connections' => $connections,
+                ],
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
-                'pending' => 0,
-                'failed' => 0,
-                'failed_24h' => 0,
-                'workers' => 0,
-                'avgProcessingTimeMs' => 0,
-                'queues' => [
-                    'default' => [
-                        'pending' => 0,
-                        'status' => 'healthy',
-                    ],
+                'message' => 'Database error: ' . $e->getMessage(),
+                'metrics' => [
+                    'latencyMs' => 0,
+                    'connections' => 0,
                 ],
             ];
         }
     }
 
     /**
-     * Check cache health.
+     * Check cache (Redis) connectivity and hit rate
      *
-     * @return array
+     * @return array{status: string, message: string, metrics: array}
      */
     public function checkCache(): array
     {
-        $start = microtime(true);
-
         try {
-            // Test cache read/write
-            Cache::put('health_check_test', true, 10);
-            $result = Cache::get('health_check_test');
-            Cache::forget('health_check_test');
+            $testKey = 'health-check:test';
+            $testValue = 'health-check-' . time();
 
-            if (!$result) {
-                throw new \Exception('Cache read failed');
+            $start = microtime(true);
+            Cache::put($testKey, $testValue, 60);
+            $retrieved = Cache::get($testKey);
+            $latencyMs = (int) ((microtime(true) - $start) * 1000);
+
+            if ($retrieved !== $testValue) {
+                return [
+                    'status' => 'unhealthy',
+                    'message' => 'Cache read/write test failed',
+                    'metrics' => [
+                        'hitRate' => 0.0,
+                        'latencyMs' => $latencyMs,
+                    ],
+                ];
             }
 
-            $latency = round((microtime(true) - $start) * 1000);
+            // Calculate hit rate (simplified - uses cache stats if available)
             $hitRate = $this->getCacheHitRate();
 
-            return [
-                'status' => 'healthy',
-                'latencyMs' => (int) $latency,
-                'hitRate' => $hitRate,
-            ];
-        } catch (\Exception $e) {
-            return [
-                'status' => 'unhealthy',
-                'latencyMs' => 0,
-                'hitRate' => 0.0,
-            ];
-        }
-    }
-
-    /**
-     * Check storage health.
-     *
-     * @return array
-     */
-    public function checkStorage(): array
-    {
-        try {
-            $storagePath = Storage::path('');
-            $usedPercent = 0.0;
-
-            if (is_dir($storagePath) && function_exists('disk_free_space')) {
-                $freeSpace = disk_free_space($storagePath);
-                $totalSpace = disk_total_space($storagePath);
-
-                if ($totalSpace > 0) {
-                    $usedPercent = round((($totalSpace - $freeSpace) / $totalSpace) * 100, 2);
-                }
-            }
-
-            // Test storage write
-            Storage::exists('.');
+            $warningThreshold = Config::get('health-check.thresholds.cache_hit_rate_warning', 80);
 
             $status = 'healthy';
-            if ($usedPercent > 90) {
-                $status = 'warning';
-            }
-            if ($usedPercent > 95) {
-                $status = 'unhealthy';
+            if ($hitRate < $warningThreshold && $hitRate > 0) {
+                $status = 'degraded';
             }
 
             return [
                 'status' => $status,
-                'usedPercent' => $usedPercent,
+                'message' => 'Cache is responding normally',
+                'metrics' => [
+                    'hitRate' => $hitRate,
+                    'latencyMs' => $latencyMs,
+                ],
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
-                'usedPercent' => 0.0,
+                'message' => 'Cache error: ' . $e->getMessage(),
+                'metrics' => [
+                    'hitRate' => 0.0,
+                    'latencyMs' => 0,
+                ],
             ];
         }
     }
 
     /**
-     * Get current database connection count.
+     * Check storage availability and disk usage
      *
-     * @return int
+     * @return array{status: string, message: string, metrics: array}
      */
-    protected function getConnectionCount(): int
+    public function checkStorage(): array
     {
         try {
-            $connection = config('database.default');
-            
-            if (config("database.connections.{$connection}.driver") === 'mysql') {
-                $result = DB::selectOne("SHOW STATUS LIKE 'Threads_connected'");
-                return (int) ($result->Value ?? 1);
+            $disk = Storage::disk('local');
+            $path = storage_path();
+
+            $totalBytes = disk_total_space($path);
+            $freeBytes = disk_free_space($path);
+            $usedPercent = $totalBytes > 0 ? (($totalBytes - $freeBytes) / $totalBytes) * 100 : 0;
+
+            $warningThreshold = Config::get('health-check.thresholds.storage_usage_warning', 80);
+            $criticalThreshold = Config::get('health-check.thresholds.storage_usage_critical', 95);
+
+            $status = 'healthy';
+            if ($usedPercent >= $criticalThreshold) {
+                $status = 'unhealthy';
+            } elseif ($usedPercent >= $warningThreshold) {
+                $status = 'degraded';
             }
+
+            return [
+                'status' => $status,
+                'message' => 'Storage is available',
+                'metrics' => [
+                    'usedPercent' => round($usedPercent, 2),
+                    'totalBytes' => (int) $totalBytes,
+                    'freeBytes' => (int) $freeBytes,
+                ],
+            ];
         } catch (\Exception $e) {
-            // Ignore
+            return [
+                'status' => 'unhealthy',
+                'message' => 'Storage error: ' . $e->getMessage(),
+                'metrics' => [
+                    'usedPercent' => 100.0,
+                    'totalBytes' => 0,
+                    'freeBytes' => 0,
+                ],
+            ];
         }
-
-        return 1;
     }
 
     /**
-     * Get active worker count.
+     * Check queue worker status
      *
-     * @return int
+     * @return array{status: string, message: string, metrics: array}
      */
-    protected function getWorkerCount(): int
+    public function checkQueue(): array
     {
-        // Try to get worker count from cache (set by workers)
-        return (int) Cache::get('queue:workers:count', 0);
-    }
-
-    /**
-     * Get cache hit rate percentage.
-     *
-     * @return float
-     */
-    protected function getCacheHitRate(): float
-    {
-        // For Redis, we could get actual hit rate
-        // For file/database cache, return a default
         try {
-            $driver = config('cache.default');
-            
-            if ($driver === 'redis') {
-                // Could query Redis INFO for hit rate
-                return 95.0; // Default estimate
-            }
-        } catch (\Exception $e) {
-            // Ignore
-        }
+            $pendingJobs = 0;
+            $failedJobs = 0;
+            $workers = 0;
 
-        return 95.0; // Default estimate
+            // Count pending jobs
+            try {
+                $pendingJobs = DB::table('jobs')->count();
+            } catch (\Exception $e) {
+                // Jobs table might not exist
+            }
+
+            // Count failed jobs
+            try {
+                $failedJobs = DB::table('failed_jobs')->count();
+            } catch (\Exception $e) {
+                // Failed jobs table might not exist
+            }
+
+            // Estimate workers (simplified - check for recent job processing)
+            try {
+                // Check for jobs processed in last minute
+                $recentProcessed = DB::table('jobs')
+                    ->where('reserved_at', '>=', now()->subMinute()->timestamp)
+                    ->count();
+                $workers = $recentProcessed > 0 ? 1 : 0;
+            } catch (\Exception $e) {
+                $workers = 0;
+            }
+
+            $pendingWarning = Config::get('health-check.thresholds.queue_pending_warning', 100);
+            $failedCritical = Config::get('health-check.thresholds.queue_failed_critical', 10);
+
+            $status = 'healthy';
+            if ($failedJobs >= $failedCritical) {
+                $status = 'unhealthy';
+            } elseif ($pendingJobs >= $pendingWarning) {
+                $status = 'degraded';
+            }
+
+            return [
+                'status' => $status,
+                'message' => $workers > 0 ? 'Queue workers are active' : 'No active queue workers',
+                'metrics' => [
+                    'pendingJobs' => $pendingJobs,
+                    'failedJobs' => $failedJobs,
+                    'workers' => $workers,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => 'unhealthy',
+                'message' => 'Queue error: ' . $e->getMessage(),
+                'metrics' => [
+                    'pendingJobs' => 0,
+                    'failedJobs' => 0,
+                    'workers' => 0,
+                ],
+            ];
+        }
     }
 
     /**
-     * Determine overall status from service statuses.
+     * Compute overall status from service statuses
      *
      * @param array $services
-     * @return string
+     * @return string 'healthy'|'degraded'|'unhealthy'
      */
-    protected function determineOverallStatus(array $services): string
+    public function getOverallStatus(array $services): string
     {
-        $statuses = collect($services)->pluck('status');
+        if (empty($services)) {
+            return 'healthy';
+        }
 
-        if ($statuses->contains('unhealthy')) {
+        $hasUnhealthy = false;
+        $hasDegraded = false;
+
+        foreach ($services as $service) {
+            if (!isset($service['status'])) {
+                continue;
+            }
+
+            if ($service['status'] === 'unhealthy') {
+                $hasUnhealthy = true;
+            } elseif ($service['status'] === 'degraded') {
+                $hasDegraded = true;
+            }
+        }
+
+        if ($hasUnhealthy) {
             return 'unhealthy';
         }
 
-        if ($statuses->contains('warning')) {
-            return 'warning';
+        if ($hasDegraded) {
+            return 'degraded';
         }
 
         return 'healthy';
     }
 
     /**
-     * Calculate uptime percentage.
-     *
-     * @return float
-     */
-    protected function calculateUptime(): float
-    {
-        // Try to get cached uptime calculation
-        $uptime = Cache::get('system:uptime:percentage');
-        
-        if ($uptime !== null) {
-            return (float) $uptime;
-        }
-
-        // Default to 99.9% for a healthy system
-        return 99.9;
-    }
-
-    /**
-     * Generate alerts from service statuses.
+     * Calculate uptime percentage from service statuses
      *
      * @param array $services
-     * @return array
+     * @return float
      */
-    protected function generateAlerts(array $services): array
+    protected function calculateUptime(array $services): float
     {
-        $alerts = [];
+        $healthyCount = 0;
+        $totalCount = count($services);
 
-        foreach ($services as $name => $service) {
-            if ($service['status'] === 'unhealthy') {
-                $alerts[] = [
-                    'level' => 'critical',
-                    'message' => ucfirst($name) . ' service is unhealthy',
-                    'since' => now()->toIso8601String(),
-                ];
-            } elseif ($service['status'] === 'warning') {
-                $alerts[] = [
-                    'level' => 'warning',
-                    'message' => ucfirst($name) . ' service has warnings',
-                    'since' => now()->toIso8601String(),
-                ];
+        if ($totalCount === 0) {
+            return 100.0;
+        }
+
+        foreach ($services as $service) {
+            if (isset($service['status']) && $service['status'] === 'healthy') {
+                $healthyCount++;
             }
         }
 
-        return $alerts;
+        return round(($healthyCount / $totalCount) * 100, 2);
     }
 
     /**
-     * Get queue pending count (for testing/mocking).
+     * Get cache hit rate (simplified implementation)
      *
-     * @return int
+     * @return float
      */
-    public function getQueuePendingCount(): int
+    protected function getCacheHitRate(): float
     {
+        // This is a simplified implementation
+        // Real implementation would query Redis INFO for keyspace_hits/keyspace_misses
         try {
-            return DB::table('jobs')->count();
-        } catch (\Exception $e) {
-            return 0;
-        }
-    }
+            if (app()->environment('local')) {
+                // For local/file cache, assume good hit rate
+                return 95.0;
+            }
 
-    /**
-     * Get queue failed count (for testing/mocking).
-     *
-     * @return int
-     */
-    public function getQueueFailedCount(): int
-    {
-        try {
-            return DB::table('failed_jobs')->count();
+            // Try to get Redis stats
+            // This would require Redis facade and specific commands
+            return 90.0;
         } catch (\Exception $e) {
-            return 0;
+            return 0.0;
         }
     }
 }
