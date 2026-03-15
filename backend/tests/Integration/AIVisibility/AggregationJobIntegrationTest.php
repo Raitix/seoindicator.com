@@ -12,7 +12,7 @@ use Laravel\Sanctum\Sanctum;
 use App\Models\User;
 use App\Models\AIVisibility\AIVisibilityProject;
 use App\Models\AIVisibility\AIQueryResult;
-use App\Models\AIVisibility\AIMentionAnalytics;
+use App\Models\AIVisibility\AIMention;
 use App\Jobs\AIVisibility\RunQueryJob;
 use App\Jobs\AIVisibility\AggregateAnalyticsJob;
 use App\Services\AIVisibility\AIQueryEngine;
@@ -262,8 +262,8 @@ class AggregationJobIntegrationTest extends TestCase
         ]);
     }
 
-    /** @test EXEC-002: Query job creates mention analytics */
-    public function test_query_job_creates_mention_analytics(): void
+    /** @test EXEC-002: Query job creates mentions */
+    public function test_query_job_creates_mentions(): void
     {
         Queue::fake();
 
@@ -274,8 +274,8 @@ class AggregationJobIntegrationTest extends TestCase
             app(MentionParser::class)
         );
 
-        // Verify mention analytics were created
-        $mentions = AIMentionAnalytics::where('project_id', $this->project->id)->get();
+        // Verify mentions were created (per-mention tracking)
+        $mentions = AIMention::where('project_id', $this->project->id)->get();
         $this->assertGreaterThan(0, $mentions->count());
     }
 
@@ -364,8 +364,8 @@ class AggregationJobIntegrationTest extends TestCase
             app(MentionParser::class)
         );
 
-        // Should have competitor mentions
-        $competitorMentions = AIMentionAnalytics::where('project_id', $this->project->id)
+        // Should have competitor mentions (per-mention tracking)
+        $competitorMentions = AIMention::where('project_id', $this->project->id)
             ->where('entity_type', 'competitor')
             ->get();
 

@@ -605,13 +605,14 @@ class AnalyticsFlowIntegrationTest extends TestCase
 
             // Mention count increases over time
             for ($j = 0; $j < $i; $j++) {
-                AIMentionAnalytics::create([
+                AIMention::create([
                     'project_id' => $this->project->id,
                     'entity_type' => 'brand',
                     'entity_name' => 'SEOIndicator',
                     'mention_type' => 'neutral',
                     'sentiment' => 'neutral',
                     'context' => 'test context',
+                    'platform' => 'chatgpt',
                     'mentioned_at' => now()->subDays($i),
                 ]);
             }
@@ -678,26 +679,28 @@ class AnalyticsFlowIntegrationTest extends TestCase
     {
         // Create brand mentions
         for ($i = 0; $i < 10; $i++) {
-            AIMentionAnalytics::create([
+            AIMention::create([
                 'project_id' => $this->project->id,
                 'entity_type' => 'brand',
                 'entity_name' => 'SEOIndicator',
                 'mention_type' => 'neutral',
                 'sentiment' => 'positive',
                 'context' => 'test context',
+                'platform' => 'chatgpt',
                 'mentioned_at' => now(),
             ]);
         }
 
         // Create competitor mentions
         for ($i = 0; $i < 20; $i++) {
-            AIMentionAnalytics::create([
+            AIMention::create([
                 'project_id' => $this->project->id,
                 'entity_type' => 'competitor',
                 'entity_name' => 'Ahrefs',
                 'mention_type' => 'neutral',
                 'sentiment' => 'neutral',
                 'context' => 'test context',
+                'platform' => 'chatgpt',
                 'mentioned_at' => now(),
             ]);
         }
@@ -807,7 +810,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
         ];
 
         foreach ($sentimentScores as $sentiment => $score) {
-            AIMentionAnalytics::create([
+            AIMention::create([
                 'project_id' => $this->project->id,
                 'entity_type' => 'brand',
                 'entity_name' => 'SEOIndicator',
@@ -815,6 +818,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
                 'sentiment' => $sentiment,
                 'sentiment_score' => $score,
                 'context' => 'test context',
+                'platform' => 'chatgpt',
                 'mentioned_at' => now(),
             ]);
         }
@@ -902,13 +906,14 @@ class AnalyticsFlowIntegrationTest extends TestCase
         Sanctum::actingAs($this->user);
 
         // Create mentions
-        AIMentionAnalytics::create([
+        AIMention::create([
             'project_id' => $this->project->id,
             'entity_type' => 'brand',
             'entity_name' => 'SEOIndicator',
             'mention_type' => 'neutral',
             'sentiment' => 'positive',
             'context' => 'test context',
+            'platform' => 'chatgpt',
             'mentioned_at' => now(),
         ]);
 
@@ -1163,13 +1168,14 @@ class AnalyticsFlowIntegrationTest extends TestCase
         ]);
 
         if ($withMention) {
-            AIMentionAnalytics::create([
+            AIMention::create([
                 'project_id' => $this->project->id,
                 'entity_type' => 'brand',
                 'entity_name' => 'SEOIndicator',
                 'mention_type' => 'neutral',
                 'sentiment' => 'positive',
                 'context' => 'SEOIndicator is mentioned here.',
+                'platform' => $platform,
                 'mentioned_at' => now(),
             ]);
         }

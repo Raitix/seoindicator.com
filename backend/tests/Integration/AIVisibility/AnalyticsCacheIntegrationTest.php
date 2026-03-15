@@ -9,6 +9,7 @@ use Laravel\Sanctum\Sanctum;
 use App\Models\User;
 use App\Models\AIVisibility\AIVisibilityProject;
 use App\Models\AIVisibility\AIQueryResult;
+use App\Models\AIVisibility\AIMention;
 use App\Models\AIVisibility\AIMentionAnalytics;
 use App\Services\AIVisibility\Contracts\AnalyticsAggregatorInterface;
 use Carbon\Carbon;
@@ -702,13 +703,14 @@ class AnalyticsCacheIntegrationTest extends TestCase
         $data1 = $response1->json('data');
 
         // Add new mention
-        AIMentionAnalytics::create([
+        AIMention::create([
             'project_id' => $this->project->id,
             'entity_type' => 'brand',
             'entity_name' => 'SEOIndicator',
             'mention_type' => 'recommendation',
             'sentiment' => 'positive',
             'context' => 'test context',
+            'platform' => 'chatgpt',
             'mentioned_at' => now(),
         ]);
 
@@ -1112,13 +1114,14 @@ class AnalyticsCacheIntegrationTest extends TestCase
         ]);
 
         if ($withMention) {
-            AIMentionAnalytics::create([
+            AIMention::create([
                 'project_id' => $this->project->id,
                 'entity_type' => 'brand',
                 'entity_name' => 'SEOIndicator',
                 'mention_type' => 'neutral',
                 'sentiment' => 'positive',
                 'context' => 'SEOIndicator is mentioned here.',
+                'platform' => $platform,
                 'mentioned_at' => now(),
             ]);
         }

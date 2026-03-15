@@ -317,9 +317,31 @@ class StripeGatewayService implements PaymentGatewayInterface
     public function getCustomer(User $user): ?string
     {
         // Check if user has a stored Stripe customer ID
-        // This would typically be stored in a payment_methods or user metadata table
-        // For now, return null to trigger customer creation
-        return null;
+        $paymentMethod = PaymentMethod::where('user_id', $user->id)
+            ->where('provider', 'stripe')
+            ->whereNotNull('stripe_customer_id')
+            ->first();
+
+        if (!$paymentMethod || !$paymentMethod->stripe_customer_id) {
+            return null;
+        }
+
+        // Verify the customer still exists in Stripe
+        try {
+            $customer = $this->stripe->customers->retrieve($paymentMethod->stripe_customer_id);
+
+            // Check if customer was deleted
+            if (isset($customer->deleted) && $customer->deleted) {
+                // Customer was deleted, remove reference
+                $paymentMethod->update(['stripe_customer_id' => null]);
+                return null;
+            }
+
+            return $customer->id;
+        } catch (\Exception $e) {
+            // Customer not found or other error
+            return null;
+        }
     }
 
     /**
@@ -342,7 +364,16 @@ class StripeGatewayService implements PaymentGatewayInterface
             ]);
 
             // Store customer ID for future use
-            // This would typically be saved to a payment_methods table
+            // Update or create payment method record
+            PaymentMethod::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'provider' => 'stripe',
+                ],
+                [
+                    'stripe_customer_id' => $customer->id,
+                ]
+            );
 
             return $customer->id;
         } catch (ApiErrorException $e) {

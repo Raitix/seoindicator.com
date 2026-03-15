@@ -6,7 +6,7 @@ use App\Services\AIVisibility\AIQueryEngine;
 use App\Services\AIVisibility\MentionParser;
 use App\Models\AIVisibility\AIVisibilityProject;
 use App\Models\AIVisibility\AIQueryResult;
-use App\Models\AIVisibility\AIMentionAnalytics;
+use App\Models\AIVisibility\AIMention;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -89,14 +89,17 @@ class RunQueryJob implements ShouldQueue
             $competitorMentions = [];
 
             if (!empty($response)) {
-                $mentions = $parser->extractMentions(
-                    $response,
-                    [$project->brand_name],
-                    $project->getCompetitorNames()
-                );
+                // Extract brand mentions
+                $brandMentions = $parser->extractMentions($response, [$project->brand_name]);
+                
+                // Extract competitor mentions
+                $competitorNames = $project->getCompetitorNames();
+                $competitorMentionData = !empty($competitorNames) 
+                    ? $parser->extractCompetitorMentions($response, $competitorNames)
+                    : [];
 
-                $brandMentioned = in_array(strtolower($project->brand_name), array_map('strtolower', $mentions['brand'] ?? []));
-                $competitorMentions = $mentions['competitors'] ?? [];
+                $brandMentioned = !empty($brandMentions);
+                $competitorMentions = array_column($competitorMentionData, 'brand');
             }
 
             // Detect mention type
@@ -125,6 +128,42 @@ class RunQueryJob implements ShouldQueue
                 'latency_ms' => $latencyMs,
                 'queried_at' => now(),
             ]);
+
+            // Create AIMention records for each brand mention
+            if (!empty($brandMentions)) {
+                foreach ($brandMentions as $mention) {
+                    AIMention::create([
+                        'project_id' => $this->projectId,
+                        'query_result_id' => $queryResult->id,
+                        'entity_type' => AIMention::ENTITY_TYPE_BRAND,
+                        'entity_name' => $project->brand_name,
+                        'mention_type' => $mention['type'] ?? 'mention',
+                        'sentiment' => $sentiment,
+                        'sentiment_score' => $sentimentScore,
+                        'context' => $mention['context'] ?? $context,
+                        'platform' => $this->platform,
+                        'mentioned_at' => now(),
+                    ]);
+                }
+            }
+
+            // Create AIMention records for each competitor mention
+            if (!empty($competitorMentionData)) {
+                foreach ($competitorMentionData as $compMention) {
+                    AIMention::create([
+                        'project_id' => $this->projectId,
+                        'query_result_id' => $queryResult->id,
+                        'entity_type' => AIMention::ENTITY_TYPE_COMPETITOR,
+                        'entity_name' => $compMention['brand'],
+                        'mention_type' => $parser->detectMentionType($compMention['context'] ?? ''),
+                        'sentiment' => 'neutral',
+                        'sentiment_score' => null,
+                        'context' => $compMention['context'] ?? null,
+                        'platform' => $this->platform,
+                        'mentioned_at' => now(),
+                    ]);
+                }
+            }
 
             // Update project last_run_at if column exists
             if (in_array('last_run_at', \Schema::getColumnListing('ai_visibility_projects'))) {

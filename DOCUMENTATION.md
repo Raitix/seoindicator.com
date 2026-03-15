@@ -6833,6 +6833,160 @@ interface GuideData {
 - TASK-24-12: PWA Recommendations Component (links to guide sections)
 
 ---
+## PWAScorerService (TASK-24-6)
+
+### Service Description
+Core scoring service for the PWA / Web App Manifest Indicator feature (FEAT-024) that calculates the PWA readiness score (0-100) based on manifest validation results. Implements a weighted scoring algorithm across multiple categories and determines readiness levels for user-facing indicators.
+
+### Component Location
+- **Service:** `backend/app/Services/PWAScorerService.php`
+- **Model:** `backend/app/Models/PWAAnalysis.php` (data source)
+- **Tests:** `backend/tests/Unit/Services/PWAScorerServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-24-6.md`
+
+### Core Functionalities
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `calculateScore(PWAAnalysis $analysis)` | int (0-100) | Calculate PWA readiness score |
+| `determineReadinessLevel(int $score)` | string | Get readiness level (none/basic/enhanced/full) |
+| `getScoreBreakdown(PWAAnalysis $analysis)` | array | Get detailed points breakdown |
+
+### Scoring Algorithm
+
+**Points Distribution (Total: 85 points):**
+
+| Category | Max Points | Breakdown |
+|----------|------------|-----------|
+| Manifest Presence | 20 | 10 for presence, 10 for validity |
+| Required Fields | 15 | name, short_name, start_url, display (3.75 each) |
+| Recommended Fields | 15 | background_color, theme_color, description (5 each) |
+| Required Icons | 25 | 192x192: 10, 512x512: 10, 180x180: 5 |
+| Icon Validity Bonus | 10 | Proportional to icons_valid/icons_total |
+
+**Note:** The specification originally listed total as 100, but the algorithm mathematically totals 85.
+
+### Readiness Levels
+
+| Level | Score Range | Description |
+|-------|-------------|-------------|
+| `none` | 0-39 | No manifest or critically incomplete |
+| `basic` | 40-69 | Manifest present with basic fields |
+| `enhanced` | 70-89 | Most fields and icons present |
+| `full` | 90-100 | Complete PWA with all recommended elements |
+
+### Score Breakdown Structure
+
+```php
+[
+    'manifest' => [
+        'presence' => 10,    // 0 or 10
+        'validity' => 10,    // 0 or 10
+        'earned' => 20,
+        'max' => 20
+    ],
+    'required_fields' => [
+        'fields' => [
+            'name' => true,
+            'short_name' => true,
+            'start_url' => true,
+            'display' => true
+        ],
+        'earned' => 15,
+        'max' => 15
+    ],
+    'recommended_fields' => [
+        'fields' => [
+            'background_color' => true,
+            'theme_color' => true,
+            'description' => false
+        ],
+        'earned' => 10,
+        'max' => 15
+    ],
+    'icons' => [
+        'sizes' => [
+            '192x192' => true,
+            '512x512' => true,
+            '180x180' => false
+        ],
+        'earned' => 20,
+        'max' => 25
+    ],
+    'icon_validity' => [
+        'ratio' => 0.75,
+        'earned' => 7,
+        'max' => 10
+    ],
+    'total' => 72,
+    'max_total' => 85,
+    'readiness_level' => 'enhanced'
+]
+```
+
+### PWAAnalysis Model Fields Used
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `has_manifest` | boolean | Manifest presence (10 pts) |
+| `manifest_valid` | boolean | Manifest validity (10 pts) |
+| `has_name`, `has_short_name`, `has_start_url`, `has_display` | boolean | Required fields (3.75 pts each) |
+| `has_background_color`, `has_theme_color`, `has_description` | boolean | Recommended fields (5 pts each) |
+| `icons_192_present`, `icons_512_present`, `icons_180_present` | boolean | Icon sizes present |
+| `icons_total`, `icons_valid` | int | Icon validity ratio calculation |
+
+### Edge Case Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Null PWAAnalysis | Returns score 0 |
+| No manifest | Returns score 0 |
+| Score > 100 | Capped at 100 |
+| Score < 0 | Capped at 0 |
+| Decimal scores | Rounded to nearest integer |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `PWAScorerServiceTest.php` | 74 | 153 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| calculateScore() | 20 | Manifest, fields, icon scoring |
+| Full Score Scenarios | 5 | Perfect PWA, near-perfect cases |
+| Score Boundary Tests | 8 | Readiness level boundaries |
+| determineReadinessLevel() | 12 | All 4 levels tested |
+| getScoreBreakdown() | 10 | Breakdown structure validation |
+| Edge Cases | 10 | Null, caps, precision, security |
+| Model Integration | 5 | PWAAnalysis model interaction |
+| Readiness Level Integration | 4 | Score-to-level mapping |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-01 |
+| Commit | `4cab95a` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 74/74 passing (153 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-24-1 | Done ✅ | Database migration |
+| TASK-24-2 | Done ✅ | PWAAnalysis model/repository |
+
+### Related Tasks
+- TASK-24-2: PWAAnalysis Model (data source)
+- TASK-24-7: PWAScanJob (populates PWAAnalysis data)
+- TASK-24-13: Visibility Score Integration (uses PWAScorerService)
+
+---
 ## QueueMonitoringService (TASK-27-12)
 
 ### Service Description
