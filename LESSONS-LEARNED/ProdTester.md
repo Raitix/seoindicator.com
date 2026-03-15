@@ -303,3 +303,47 @@ curl.exe -k -s -X GET "https://seoindicator.com/api/v1/crawler/jobs/../../../etc
 ---
 
 Last updated: 2026-03-14
+
+---
+
+## 2026-03-15: TASK-26-9 Stripe Payment Intent Endpoint
+- **Critical Bug Found:** Middleware mismatch between `auth` and `auth:sanctum`
+- Session-based auth (web guard) vs bearer token auth (sanctum guard)
+- Routes using `['auth']` middleware default to `web` guard (session-based)
+- Routes using `['auth:sanctum']` accept bearer tokens from API login/register
+- **Pattern:** Always check `php artisan route:list --path=<route> -v` to verify middleware
+
+**Authentication Middleware Debug Process:**
+1. Register new user via API → get bearer token
+2. Test `/api/v1/auth/user` with bearer token → should return 200
+3. Test target endpoint with same bearer token → if 401, check middleware
+4. Compare middleware between working and non-working routes
+5. Fix: Change `['auth']` to `['auth:sanctum']` for API routes that accept bearer tokens
+
+**Route Middleware Comparison:**
+```bash
+# Working route (accepts bearer tokens)
+GET api/v1/auth/user → middleware: Authenticate:sanctum
+
+# Broken route (session-based only)
+POST api/v1/payments/stripe/intent → middleware: Authenticate
+```
+
+**Fix Pattern in routes/api.php:**
+```php
+// Before (broken for bearer tokens)
+Route::middleware(['auth'])->group(function () {
+    Route::post('payments/stripe/intent', [...]);
+});
+
+// After (accepts bearer tokens)
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('payments/stripe/intent', [...]);
+});
+```
+
+**Impact:** All payment-related API endpoints may be affected if they use `auth` instead of `auth:sanctum`.
+
+---
+
+Last updated: 2026-03-15

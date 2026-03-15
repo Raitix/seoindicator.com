@@ -1,7 +1,7 @@
 # TASK-26-9: Create Stripe Payment Intent Endpoint
 
 ## STATUS
-`To Test Prod`
+`To Develop` - Auth middleware bug requiring fix
 
 ## PRIORITY
 `High`
@@ -246,3 +246,53 @@ _Leave notes for the next agent here_
 3. Inactive package returns 400
 4. Unauthenticated returns 401
 5. Idempotency prevents duplicate intents
+
+---
+
+### Production Testing (ProdTester - 2026-03-15)
+**Status:** FAILED - Authentication Middleware Bug
+
+**Critical Issue Found:**
+The Stripe payment intent endpoint uses `auth` middleware instead of `auth:sanctum`, which breaks bearer token authentication for API consumers.
+
+**Evidence:**
+```
+GET api/v1/auth/user → middleware: Authenticate:sanctum ✅ (bearer tokens work)
+POST api/v1/payments/stripe/intent → middleware: Authenticate ❌ (session-based only)
+```
+
+**Root Cause:**
+- Route defined in `routes/api.php` uses `['auth']` middleware
+- Default guard is `web` (session-based), not `sanctum`
+- Bearer tokens from API registration/login are rejected
+
+**Production Test Results:**
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Unauthenticated request | 401 JSON | `{"message":"Unauthenticated."}` | ✅ PASS |
+| GET method on POST-only route | 405 | `{"message":"The GET method is not supported..."}` | ✅ PASS |
+| Bearer token authentication | 200/422 | 401 Unauthenticated | ❌ FAIL |
+| Route registration | Registered | Registered correctly | ✅ PASS |
+
+**Fix Required:**
+Change middleware from `['auth']` to `['auth:sanctum']` in `routes/api.php` for the payments routes group.
+
+**Recommendation:**
+- Create fix task TASK-26-9-FIX with priority High
+- Fix affects all payment-related API endpoints (PayPal orders, capture, etc.)
+- Session-based auth still works (web UI), bearer token auth broken
+
+**Tests that passed:**
+- Unauthenticated requests return 401 JSON (correct behavior)
+- HTTP 405 for wrong method (correct behavior)
+- Route is properly registered and reachable
+- No 500 errors or server crashes
+
+**Tests that cannot be completed:**
+- Authenticated payment intent creation
+- Package validation (blocked by auth)
+- Idempotency check (blocked by auth)
+- Credit calculation (blocked by auth)
+
+**Action:** Fix task created as TASK-26-9-FIX, this task returned to Developer for middleware fix.
