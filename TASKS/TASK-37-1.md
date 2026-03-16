@@ -1,7 +1,6 @@
-# TASK-37-1: Fix Token Validation in AuthContext
+﻿# TASK-37-1: Fix Token Validation in AuthContext
 
-## STATUS
-`To Prioritize`
+## STATUS`n`To Write Tests`
 
 ## PRIORITY
 `Critical`
@@ -59,3 +58,26 @@ Modify `initializeAuth` in `AuthContext.tsx`:
 ## Related Issues
 - FEAT-037
 - SPEC-037
+
+## Comments
+
+### ProjectManager Assessment (2026-03-16 19:56)
+**Priority:** Critical (confirmed) - Authentication bug blocking user login
+**Risk:** High (confirmed) - Security-critical token validation changes
+**Dependencies:** None - task can proceed immediately
+
+**Rationale:**
+- Authentication bug causes redirect loops for users with expired tokens
+- Users see error pages instead of login page
+- Direct impact on user ability to authenticate
+- High business impact - blocks user access to application
+
+**Status Changed:** To Prioritize → To Write Tests
+
+**Handoff to PreTester:**
+- Test scenarios needed for token validation logic
+- Test expired token handling
+- Test localStorage clearing on 401
+- Test loading state during verification
+- Tests can be designed immediately - no dependencies blocking
+
