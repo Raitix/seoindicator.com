@@ -11663,6 +11663,193 @@ savings = ((monthly * 12 - annual * 12) / (monthly * 12)) * 100
 - TASK-32-3: Page route
 
 ---
+## Admin Stats Service with Caching (TASK-27-3)
+
+### Service Description
+Core caching service for the Admin Dashboard feature (FEAT-027) that provides cached access to admin statistics. Implements a caching layer using Laravel's Cache facade to reduce database load and improve response times for dashboard metrics. Uses namespaced cache keys and configurable TTL values for different metric types.
+
+### Component Locations
+- **Service:** `backend/app/Services/Admin/AdminStatsService.php`
+- **Tests:** `backend/tests/Unit/Services/Admin/AdminStatsServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-27-3.md`
+
+### Core Functionalities
+
+| Method | Description | TTL |
+|--------|-------------|-----|
+| `getUserStats()` | Returns user statistics (total, active, new, churned) | 5 minutes (300s) |
+| `getUsageStats()` | Returns usage statistics (audits, keywords, reports) | 5 minutes (300s) |
+| `getCreditStats()` | Returns credit statistics (sold, used, remaining) | 1 minute (60s) |
+| `getHealthStats()` | Returns system health status | 30 seconds |
+| `getCachedMetric()` | Generic cache method with custom key and TTL | Configurable (default 300s) |
+| `getAllStats()` | Aggregates all stats into single response | Varies per metric |
+| `refreshAllCaches()` | Clears all admin stat caches | — |
+| `refreshUserCache()` | Invalidates user stats cache | — |
+| `refreshUsageCache()` | Invalidates usage stats cache | — |
+| `refreshCreditCache()` | Invalidates credit stats cache | — |
+| `refreshHealthCache()` | Invalidates health stats cache | — |
+
+### Cache TTL Configuration
+
+| Metric Type | TTL | Rationale |
+|-------------|-----|-----------|
+| User Stats | 300 seconds | Relatively stable, moderate refresh rate |
+| Usage Stats | 300 seconds | Relatively stable, moderate refresh rate |
+| Credit Stats | 60 seconds | More frequent updates for balance tracking |
+| Health Stats | 30 seconds | Near real-time monitoring requirement |
+
+### Cache Key Namespacing
+
+All cache keys use the `admin:stats:` prefix:
+- `admin:stats:users` — User statistics
+- `admin:stats:usage` — Usage statistics
+- `admin:stats:credits` — Credit statistics
+- `admin:stats:health` — System health status
+
+### getCachedMetric() Method
+
+```php
+/**
+ * Generic caching method for admin metrics
+ *
+ * @param string $key Cache key (namespaced)
+ * @param callable $calculator Function to compute value on cache miss
+ * @param int $ttl Time-to-live in seconds (default: 300)
+ * @return mixed Cached or computed value
+ */
+public function getCachedMetric(string $key, callable $calculator, int $ttl = 300): mixed
+```
+
+**Usage Example:**
+```php
+$stats = $service->getCachedMetric(
+    'admin:stats:custom_metric',
+    fn() => DB::table('custom_data')->count(),
+    600 // 10 minute TTL
+);
+```
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Cache unavailable | Falls back to direct calculation |
+| Calculator throws exception | Returns graceful fallback (empty array or unhealthy status) |
+| Database connection error | Returns unhealthy status for health metrics |
+
+### Return Value Structures
+
+**getUserStats():**
+```php
+[
+    'total' => int,
+    'active' => int,
+    'new_this_month' => int,
+    'churned_this_month' => int,
+]
+```
+
+**getUsageStats():**
+```php
+[
+    'audits_total' => int,
+    'audits_this_month' => int,
+    'keywords_tracked' => int,
+    'reports_generated' => int,
+]
+```
+
+**getCreditStats():**
+```php
+[
+    'total_sold' => float,
+    'total_used' => float,
+    'balance_remaining' => float,
+]
+```
+
+**getHealthStats():**
+```php
+[
+    'status' => 'healthy' | 'degraded' | 'unhealthy',
+    'database' => 'connected' | 'disconnected',
+    'cache' => 'connected' | 'disconnected',
+    'queue' => 'running' | 'stopped',
+]
+```
+
+### Cache Invalidation
+
+| Method | Cache Key Cleared |
+|--------|-------------------|
+| `refreshUserCache()` | `admin:stats:users` |
+| `refreshUsageCache()` | `admin:stats:usage` |
+| `refreshCreditCache()` | `admin:stats:credits` |
+| `refreshHealthCache()` | `admin:stats:health` |
+| `refreshAllCaches()` | All above keys |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AdminStatsServiceTest.php` | 38 | 60 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 2 | Container binding, dependency injection |
+| getUserStats() Caching | 4 | Cache hit, miss, TTL, invalidation |
+| getUsageStats() Caching | 3 | Cache behavior, aggregation |
+| getCreditStats() Caching | 3 | Cache behavior, currency precision |
+| getHealthStats() Caching | 3 | Status determination, error handling |
+| getCachedMetric() Generic | 3 | Key-based lookup, calculator execution |
+| Cache Invalidation | 5 | Per-metric and all-cache clearing |
+| getAllStats() Aggregation | 2 | Combined response structure |
+| TTL Configuration | 4 | Constant verification |
+| Data Integrity | 2 | Numeric precision, type safety |
+| Performance | 1 | Response time bounds |
+| Acceptance Criteria | 6 | All ACs verified |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|---------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| Data Exposure | No sensitive data in responses |
+| Authentication | Service called from authenticated controllers |
+| Cache Poisoning | Namespaced keys, validated inputs |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Commit | `cf8757f9` |
+| Deployment ID | `20260316T131858Z-6bfb2b2e` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 38/38 passing (60 assertions) |
+| Status | Complete |
+
+### Production Verification
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Health Check | 200 OK | 200 OK | ✅ |
+| Database Connected | connected | connected | ✅ |
+| Admin Stats (unauthenticated) | 401 JSON | 401 JSON | ✅ |
+| XSS Injection | 401 JSON (sanitized) | 401 JSON | ✅ |
+| Path Traversal | 404 | 404 | ✅ |
+
+### Dependencies
+- TASK-27-1 (system_metrics_cache table) - Done ✅
+
+### Related Tasks
+- TASK-27-4: User Stats Aggregation (uses this service)
+- TASK-27-5: User Stats API (uses this service)
+- TASK-27-13: HealthCheckService (related caching pattern)
+
+---
 ## UseCaseSection Component (TASK-32-8)
 
 ### Component Description
@@ -17671,6 +17858,175 @@ CREATE TABLE system_metrics_cache (
 - TASK-27-3: AdminStatsService (uses system_metrics_cache for caching)
 - TASK-27-5: User Stats API (caches metrics in system_metrics_cache)
 - TASK-27-8: Usage Stats API (caches metrics in system_metrics_cache)
+
+---
+## Admin Stats Service with Caching (TASK-27-3)
+
+### Service Description
+Caching service for the Admin Dashboard (FEAT-027) that provides cached access to admin statistics with configurable TTL and cache invalidation. The service implements a caching layer to reduce database load and improve response times for frequently accessed admin metrics.
+
+### Component Locations
+- **Service:** `backend/app/Services/Admin/AdminStatsService.php`
+- **Tests:** `backend/tests/Unit/Services/Admin/AdminStatsServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-27-3.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `getCachedMetric(string $key, callable $calculator, int $ttl = 300): mixed` | Generic cached metric retrieval with calculator fallback |
+| `getUserStats(): array` | Get cached user statistics (TTL: 5 minutes) |
+| `getUsageStats(): array` | Get cached usage statistics (TTL: 5 minutes) |
+| `getCreditStats(): array` | Get cached credit statistics (TTL: 1 minute) |
+| `getHealthStats(): array` | Get cached health statistics (TTL: 30 seconds) |
+| `getAllStats(): array` | Get aggregated statistics from all sources |
+| `refreshAllCaches(): void` | Clear all admin stats caches |
+| `refreshUserCache(): void` | Clear user stats cache |
+| `refreshUsageCache(): void` | Clear usage stats cache |
+| `refreshCreditCache(): void` | Clear credit stats cache |
+| `refreshHealthCache(): void` | Clear health stats cache |
+
+### Cache TTL Configuration
+
+| Metric Type | TTL | Reason |
+|-------------|-----|--------|
+| User Stats | 300s (5 min) | Less frequent changes |
+| Usage Stats | 300s (5 min) | Aggregated data, acceptable lag |
+| Credit Stats | 60s (1 min) | Balance tracking needs fresher data |
+| Health Stats | 30s | Near real-time monitoring |
+| Default | 300s (5 min) | Standard caching duration |
+
+### Cache Key Namespace
+
+All cache keys are namespaced with `admin:stats:` prefix:
+
+| Cache Key | Purpose |
+|-----------|---------|
+| `admin:stats:users` | User statistics cache |
+| `admin:stats:usage` | Usage statistics cache |
+| `admin:stats:credits` | Credit statistics cache |
+| `admin:stats:health` | Health statistics cache |
+
+### getCachedMetric Pattern
+
+The service uses Laravel's `Cache::remember()` pattern:
+
+```php
+public function getCachedMetric(string $key, callable $calculator, int $ttl = 300): mixed
+{
+    return Cache::remember("admin:stats:{$key}", $ttl, $calculator);
+}
+```
+
+**Behavior:**
+- Cache hit: Returns cached value immediately
+- Cache miss: Executes calculator callable, stores result, returns value
+- TTL expiration: Triggers recalculation on next access
+
+### Response Formats
+
+**User Stats:**
+```json
+{
+  "total": 1250,
+  "active_today": 89,
+  "new_this_week": 45,
+  "by_plan": {
+    "free": 800,
+    "pro": 350,
+    "business": 75,
+    "agency": 25
+  }
+}
+```
+
+**Usage Stats:**
+```json
+{
+  "analyses_today": 1250,
+  "analyses_this_week": 8500,
+  "by_type": {
+    "quick": 500,
+    "standard": 600,
+    "deep": 150
+  }
+}
+```
+
+**Credit Stats:**
+```json
+{
+  "total_purchased": 15000.00,
+  "total_used": 8500.00,
+  "balance": 6500.00,
+  "purchases_this_month": 2500.00
+}
+```
+
+**Health Stats:**
+```json
+{
+  "database": "healthy",
+  "cache": "healthy",
+  "queue": "healthy",
+  "storage": "healthy",
+  "overall_score": 98
+}
+```
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Calculator throws exception | Returns graceful fallback (empty array or unhealthy status) |
+| Cache unavailable | Executes calculator directly (no caching) |
+| Invalid metric key | Returns null |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AdminStatsServiceTest | 38 | 60 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 2 | Container binding, DI resolution |
+| getUserStats() | 4 | User stats caching, cache hit/miss |
+| getUsageStats() | 3 | Usage stats caching |
+| getCreditStats() | 3 | Credit stats with shorter TTL |
+| getHealthStats() | 3 | Health stats with shortest TTL |
+| getCachedMetric() | 3 | Generic method with custom TTL |
+| Cache Invalidation | 5 | refreshAllCaches, individual refresh methods |
+| getAllStats() | 2 | Aggregation from all sources |
+| TTL Configuration | 4 | Verify TTL constants |
+| Data Integrity | 2 | Numeric precision preserved |
+| Performance | 1 | Response time acceptable |
+| Acceptance Criteria | 6 | All ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T131858Z-6bfb2b2e` |
+| Commit | `cf8757f9` |
+| Production Validation | 2026-03-16 |
+| Tests | 38/38 passing (60 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-27-1 | Done ✅ | system_metrics_cache table |
+
+### Related Tasks
+
+- TASK-27-4: User Stats Aggregation (uses this service)
+- TASK-27-5: User Stats API (exposes user metrics)
+- TASK-27-12: QueueMonitoringService (similar caching pattern)
+- TASK-27-13: Admin Health API (uses health stats)
 
 ---
 ## Request Tracking Middleware (TASK-27-6)
