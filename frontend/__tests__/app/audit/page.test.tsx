@@ -174,8 +174,14 @@ describe('Public Audit Route - Query Parameter Approach', () => {
         render(<AuditPageClient />);
       });
       
+      // The implementation uses NEXT_PUBLIC_API_URL which defaults to https://api.seoindicator.com
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/public-audit/testhash123')
+        expect.stringContaining('/api/v1/public-audit/testhash123'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Accept: 'application/json',
+          }),
+        })
       );
     });
 
@@ -448,7 +454,8 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       
       // Hash should be URL-safe in API call
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('test-hash-123')
+        expect.stringContaining('/api/v1/public-audit/test-hash-123'),
+        expect.any(Object)
       );
     });
   });
@@ -587,7 +594,8 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/public-audit/')
+        expect.stringContaining('/api/v1/public-audit/'),
+        expect.any(Object)
       );
     });
 
