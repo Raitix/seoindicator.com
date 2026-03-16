@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`To Prioritize`
+`Blocked`
 
 ## PRIORITY
 `High`
@@ -116,3 +116,41 @@ if (error) {
 - This task: Still blocked until TASK-37-1 reaches `To Test Locally` or later
 
 **Assessment:** Task remains blocked. No changes needed. Will unblock when TASK-37-1 implementation is complete.
+
+### ProjectManager Reassessment (2026-03-16 22:39 GMT+2)
+**Status:** `Blocked` (reconfirmed and corrected in file)
+**Priority:** HIGH (confirmed) - Authentication UX is critical for user experience
+**Risk:** MEDIUM (confirmed) - Frontend-only changes, standard error handling patterns
+
+**Dependency Status:**
+- TASK-37-1: `To Write Tests` - PreTester designing tests, NOT IMPLEMENTED ❌
+
+**Blocker Analysis:**
+- TASK-37-1 must reach `To Test Locally` or later before this task can proceed
+- Logical dependency: Token validation (37-1) must work before dashboard error handling (37-3) makes sense
+- Files are different (AuthContext vs dashboard page), allowing parallel development once 37-1 is ready
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Effort:** Small (1-2 hours) - straightforward error handling logic
+
+**Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
+
+### ProjectManager Reassessment (2026-03-16 22:49 GMT+2)
+**Status Changed:** `To Prioritize` → `Blocked`
+**Priority:** HIGH (confirmed) - Authentication UX is critical for user experience
+**Risk:** MEDIUM (confirmed) - Frontend-only changes, standard error handling patterns
+
+**Dependency Status:**
+- TASK-37-1: `To Write Tests` - PreTester designing tests, NOT IMPLEMENTED ❌
+
+**Blocker Analysis:**
+- TASK-37-1 must reach `To Test Locally` or later before this task can proceed
+- Logical dependency: Token validation (37-1) must work before dashboard error handling (37-3) makes sense
+- Files are different (AuthContext.tsx vs dashboard/page.tsx), allowing parallel development once 37-1 is ready
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Effort:** Small (1-2 hours) - straightforward error handling logic
+
+**Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
