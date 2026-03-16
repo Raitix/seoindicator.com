@@ -264,7 +264,7 @@ def build_frontend(temp_dir: Path, log: DeploymentLog):
     commands = [
         ['node', 'scripts/generate-og-images.mjs'],
         ['node', 'scripts/generate-audit-og-images.mjs'],
-        ['node', 'node_modules/next/dist/bin/next', 'build'],
+        ['node', 'node_modules/next/dist/bin/next', 'build', '--no-turbopack'],
     ]
 
     chunks = []
