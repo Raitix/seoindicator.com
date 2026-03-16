@@ -1,7 +1,7 @@
 # TASK-37-4: Graceful Token Expiry Handling
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Critical`
@@ -75,3 +75,26 @@ apiClient.interceptors.response.use(
 ## Related Issues
 - FEAT-037
 - SPEC-037
+
+## Comments
+
+### ProjectManager Assessment (2026-03-16 20:00 GMT+2)
+**Priority:** Critical (confirmed) - Authentication token expiry directly impacts user ability to use the application
+**Risk:** High (confirmed) - Security-critical token handling changes
+**Dependencies:** TASK-37-1 (Token validation) at `To Write Tests` - progressing, NOT blocking
+
+**Rationale:**
+- Users with expired tokens see raw error messages instead of clean re-auth flow
+- Direct impact on user experience and ability to authenticate
+- Authentication changes are always security-critical (High risk)
+- Dependency TASK-37-1 is progressing with PreTester - tests can be designed in parallel
+
+**Status Changed:** To Prioritize → To Write Tests
+
+**Handoff to PreTester:**
+- Test scenarios documented in acceptance criteria
+- 401 response interceptor tests
+- localStorage clearing tests
+- Login redirect tests with session expiry message
+- Redirect target storage tests for post-login navigation
+- Tests can be designed immediately - dependency is progressing, not blocking
