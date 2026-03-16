@@ -44,20 +44,20 @@ vi.mock('@/hooks/useAIVisibilityUnreadCount', () => ({
   useAIVisibilityUnreadCount: () => ({ count: 0, mutate: vi.fn() }),
 }));
 
-// Mock Lucide icons
+// Mock Lucide icons - render empty spans to avoid text content issues
 vi.mock('lucide-react', () => ({
-  LayoutDashboard: () => <span data-testid="dashboard-icon">Dashboard</span>,
-  FolderKanban: () => <span data-testid="competitors-icon">Competitors</span>,
-  Key: () => <span data-testid="keywords-icon">Keywords</span>,
-  FileBarChart: () => <span data-testid="reports-icon">Reports</span>,
-  Settings: () => <span data-testid="settings-icon">Settings</span>,
-  Bell: () => <span data-testid="bell-icon">Bell</span>,
-  User: () => <span data-testid="user-icon">User</span>,
-  LogOut: () => <span data-testid="logout-icon">Logout</span>,
-  ChevronDown: () => <span data-testid="chevron-icon">Chevron</span>,
-  Eye: () => <span data-testid="eye-icon">Eye</span>,
-  Menu: () => <span data-testid="menu-icon">Menu</span>,
-  X: () => <span data-testid="x-icon">X</span>,
+  LayoutDashboard: () => <span data-testid="dashboard-icon" aria-hidden="true" />,
+  FolderKanban: () => <span data-testid="competitors-icon" aria-hidden="true" />,
+  Key: () => <span data-testid="keywords-icon" aria-hidden="true" />,
+  FileBarChart: () => <span data-testid="reports-icon" aria-hidden="true" />,
+  Settings: () => <span data-testid="settings-icon" aria-hidden="true" />,
+  Bell: () => <span data-testid="bell-icon" aria-hidden="true" />,
+  User: () => <span data-testid="user-icon" aria-hidden="true" />,
+  LogOut: () => <span data-testid="logout-icon" aria-hidden="true" />,
+  ChevronDown: () => <span data-testid="chevron-icon" aria-hidden="true" />,
+  Eye: () => <span data-testid="eye-icon" aria-hidden="true" />,
+  Menu: () => <span data-testid="menu-icon" aria-hidden="true" />,
+  X: () => <span data-testid="x-icon" aria-hidden="true" />,
 }));
 
 // Mock dropdown menu

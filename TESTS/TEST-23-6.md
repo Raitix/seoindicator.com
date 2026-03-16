@@ -1,317 +1,397 @@
-# TEST-23-6: BacklinkSnapshotService Tests
+# TEST-23-6: Backlink Snapshot Service
 
 ## Task Reference
-- Task: [TASK-23-6](../TASKS/TASK-23-6.md)
-- Specification: SPEC-023
-- Feature: FEAT-023
+- **Task:** TASK-23-6
+- **Feature:** FEAT-023 (Backlinks Indicator)
+- **Specification:** SPEC-023
+- **Status:** Tests Coverage In Progress
+
+---
 
 ## Overview
-Tests for `BacklinkSnapshotService` which generates and manages historical backlink snapshots for trend analysis.
+Tests for `BacklinkSnapshotService` - a service that generates and manages historical backlink snapshots. Creates daily snapshots with aggregated metrics for trend analysis.
 
 ---
 
 ## Test Files
 
-| File | Tests | Assertions | Status |
-|------|-------|------------|--------|
-| `backend/tests/Unit/Services/Backlinks/BacklinkSnapshotServiceTest.php` | 85+ | 150+ | TDD (to be created) |
+| File | Type | Tests | Status |
+|------|------|-------|--------|
+| `backend/tests/Unit/Services/BacklinkSnapshotServiceTest.php` | Unit | 105+ | EXISTS |
 
 ---
 
-## Service Interface
+## Service Methods Under Test
+
+### 1. `createSnapshot(Project $project): BacklinkSnapshot`
+Creates a daily snapshot with aggregated backlink metrics.
+
+### 2. `getHistory(int $projectId, string $from, string $to): Collection`
+Returns snapshot history for a date range.
+
+### 3. `calculateAnchorDiversity(int $projectId): float`
+Calculates anchor text diversity score (0-100).
+
+### 4. `calculateAverageTrust(int $projectId): float`
+Calculates average domain trust from referring domains.
+
+---
+
+## Test Categories
+
+### Category 1: Service Instantiation (SI) - 3 tests
+
+| ID | Scenario | Expected |
+|----|----------|----------|
+| SI-001 | Service can be instantiated via container | Instance created |
+| SI-002 | Service has required dependencies | All repos injected |
+| SI-003 | Service resolves from container | New instance each time |
+
+### Category 2: createSnapshot() - Basic (CSB) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSB-001 | Creates snapshot with all metrics | Valid project | BacklinkSnapshot with all fields |
+| CSB-002 | Returns BacklinkSnapshot model | Valid project | Instance of BacklinkSnapshot |
+| CSB-003 | Snapshot date is today | Valid project | `snapshot_date` = today |
+| CSB-004 | Stores snapshot in database | Valid project | Snapshot persisted |
+| CSB-005 | Associates snapshot with project | Project ID 5 | `project_id` = 5 |
+
+### Category 3: createSnapshot() - Total Backlinks (CST) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CST-001 | Counts active backlinks only | 10 active | `total_backlinks` = 10 |
+| CST-002 | Excludes inactive backlinks | 10 total, 3 inactive | `total_backlinks` = 7 |
+| CST-003 | Zero backlinks returns zero | No backlinks | `total_backlinks` = 0 |
+| CST-004 | Large count handled correctly | 15000 backlinks | `total_backlinks` = 15000 |
+| CST-005 | Counts from correct project | Project ID 42 | Uses project 42's data |
+
+### Category 4: createSnapshot() - Referring Domains (CSR) - 3 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSR-001 | Counts distinct referring domains | 3 domains | `referring_domains_count` = 3 |
+| CSR-002 | Uses referring_domains table count | 5 domains | `referring_domains_count` = 5 |
+| CSR-003 | Zero domains returns zero | No domains | `referring_domains_count` = 0 |
+
+### Category 5: createSnapshot() - Dofollow/Nofollow (CSN) - 7 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSN-001 | Counts dofollow links | 8 dofollow, 2 nofollow | `dofollow_count` = 8 |
+| CSN-002 | Counts nofollow links | 8 dofollow, 2 nofollow | `nofollow_count` = 2 |
+| CSN-003 | Unknown link type not counted | 5 dofollow, 3 nofollow, 2 unknown | Only 5+3 counted |
+| CSN-004 | Only active backlinks counted | Active only | Excludes inactive |
+| CSN-005 | Zero dofollow/nofollow | All unknown | Both = 0 |
+| CSN-006 | All dofollow | 10 dofollow, 0 nofollow | `dofollow` = 10, `nofollow` = 0 |
+| CSN-007 | All nofollow | 0 dofollow, 10 nofollow | `dofollow` = 0, `nofollow` = 10 |
+
+### Category 6: createSnapshot() - Average Domain Trust (CSA) - 4 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSA-001 | Calculates average trust | Scores: 50, 60, 70 | `avg_domain_trust` = 60.0 |
+| CSA-002 | Handles zero trust scores | All 0 | `avg_domain_trust` = 0.0 |
+| CSA-003 | Zero domains returns zero | No domains | `avg_domain_trust` = 0.0 |
+| CSA-004 | Precision to two decimals | 50.123 | `avg_domain_trust` = 50.12 |
+
+### Category 7: createSnapshot() - Anchor Diversity (CSD) - 4 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSD-001 | Calculates diversity correctly | Top anchor 25% | `anchor_diversity_score` = 75.0 |
+| CSD-002 | Single anchor zero diversity | Top anchor 100% | `anchor_diversity_score` = 0.0 |
+| CSD-003 | Perfect distribution | Top anchor 10% | `anchor_diversity_score` = 90.0 |
+| CSD-004 | No anchors returns zero | No anchors | `anchor_diversity_score` = 0.0 |
+
+### Category 8: createSnapshot() - Edge Cases (CSE) - 3 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSE-001 | Project with no backlinks | Empty project | All metrics = 0 |
+| CSE-002 | Project with only inactive backlinks | All inactive | All metrics = 0 |
+| CSE-003 | Concurrent snapshot updates existing | Same day call | Upserts correctly |
+
+### Category 9: createSnapshot() - Idempotency (CSI) - 2 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CSI-001 | Upserts by project and date | Same project, same day | Updates existing |
+| CSI-002 | Returns existing snapshot if exists | Existing snapshot | Same ID returned |
+
+### Category 10: getHistory() - Basic (GHB) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| GHB-001 | Returns collection | Valid range | Collection instance |
+| GHB-002 | Ordered by date ascending | Multiple snapshots | Oldest first |
+| GHB-003 | Returns empty collection | No snapshots | Empty collection |
+| GHB-004 | Returns all snapshots in range | 30 days | 30 snapshots |
+| GHB-005 | Each item is BacklinkSnapshot | Valid range | All items correct type |
+
+### Category 11: getHistory() - Date Filtering (GHF) - 6 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| GHF-001 | Filters by from_date | Range 2026-01-15 to 2026-01-31 | From date applied |
+| GHF-002 | Filters by to_date | Range 2026-01-01 to 2026-01-20 | To date applied |
+| GHF-003 | Inclusive date range | Same from and to | Includes that day |
+| GHF-004 | Date format YYYY-MM-DD | Valid format | Parsed correctly |
+| GHF-005 | Invalid date format throws exception | 'invalid-date' | InvalidArgumentException |
+| GHF-006 | From date after to date | Reversed range | Empty collection |
+
+### Category 12: getHistory() - Project Filtering (GHP) - 4 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| GHP-001 | Filters by project_id | Project ID 42 | Only project 42 snapshots |
+| GHP-002 | Multiple projects isolated | Projects 1, 2 | Separate results |
+| GHP-003 | Non-existent project | ID 99999 | Empty collection |
+| GHP-004 | Project with no snapshots | New project | Empty collection |
+
+### Category 13: calculateAnchorDiversity() - Basic (CADB) - 3 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CADB-001 | Returns float | Any project | Float type |
+| CADB-002 | Score in zero to hundred range | Any project | 0.0-100.0 |
+| CADB-003 | Uses anchor_texts table | Project ID | Correct table queried |
+
+### Category 14: calculateAnchorDiversity() - Calculations (CADC) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CADC-001 | Single anchor zero diversity | Top anchor 100% | 0.0 |
+| CADC-002 | Two equal anchors fifty | Top anchor 50% | 50.0 |
+| CADC-003 | Top anchor 25 percent | Top anchor 25% | 75.0 |
+| CADC-004 | No anchors zero | No anchors | 0.0 |
+| CADC-005 | Top anchor 10 percent | Top anchor 10% | 90.0 |
+
+### Category 15: calculateAnchorDiversity() - Edge Cases (CADE) - 2 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CADE-001 | No project found | ID 99999 | 0.0 |
+| CADE-002 | Unicode anchor text | Multi-byte chars | Calculated correctly |
+
+### Category 16: calculateAverageTrust() - Basic (CATB) - 3 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CATB-001 | Returns float | Any project | Float type |
+| CATB-002 | Score in zero to hundred range | Any project | 0.0-100.0 |
+| CATB-003 | Uses referring_domains table | Project ID | Correct table queried |
+
+### Category 17: calculateAverageTrust() - Calculations (CATC) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CATC-001 | Single domain | Score 75 | 75.0 |
+| CATC-002 | Multiple domains | Scores 50, 60, 70 | 60.0 |
+| CATC-003 | Zero trust domains | All 0 | 0.0 |
+| CATC-004 | No domains | No records | 0.0 |
+| CATC-005 | All max scores | All 100 | 100.0 |
+
+### Category 18: calculateAverageTrust() - Edge Cases (CATE) - 2 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| CATE-001 | Non-existent project | ID 99999 | 0.0 |
+| CATE-002 | Null trust scores excluded | Mixed nulls | Only non-null averaged |
+
+### Category 19: Error Handling (EH) - 4 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| EH-001 | Database connection lost | Connection error | Exception thrown |
+| EH-002 | Invalid project ID type | Wrong type | Handled gracefully |
+| EH-003 | Invalid date format | 'not-a-date' | InvalidArgumentException |
+| EH-004 | Repository returns null | Null result | Default value returned |
+
+### Category 20: Security (SEC) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| SEC-001 | SQL injection in project_id | Malicious input | Parameterized query |
+| SEC-002 | SQL injection in date | Malicious date | Parameterized query |
+| SEC-003 | No sensitive data in logs | Error scenario | No sensitive data logged |
+| SEC-004 | Mass assignment protection | Extra fields | Only fillable used |
+| SEC-005 | Data isolation | Project query | Only own data returned |
+
+### Category 21: Integration (INT) - 5 tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| INT-001 | Full snapshot creation flow | Valid project | All metrics populated |
+| INT-002 | History retrieval matches created | Created snapshots | All returned |
+| INT-003 | Diversity matches snapshot | Calculate then create | Consistent values |
+| INT-004 | Average trust matches snapshot | Calculate then create | Consistent values |
+| INT-005 | Multiple projects isolated | Two projects | Separate snapshots |
+
+---
+
+## Repository Dependencies
+
+### Required Repository Methods
+
+| Repository | Method | Purpose | Exists? |
+|------------|--------|---------|---------|
+| BacklinkRepository | `countActiveByProject(int $projectId): int` | Count active backlinks | ❌ Use `getActiveCount()` |
+| BacklinkRepository | `countByType(int $projectId, string $type): int` | Count by link type | ❌ Use `countByLinkType()` |
+| ReferringDomainRepository | `countByProject(int $projectId): int` | Count domains | ❌ Use `getTotalCount()` |
+| ReferringDomainRepository | `getAverageTrustScore(int $projectId): float` | Avg trust | ✅ EXISTS |
+| AnchorTextRepository | `getTopAnchorPercentage(int $projectId): float` | Top anchor % | ❌ NEEDS IMPLEMENTATION |
+| BacklinkSnapshotRepository | `getByDateRange(int $projectId, string $from, string $to): Collection` | Date range query | ✅ EXISTS |
+| BacklinkSnapshotRepository | `upsert(array $data): BacklinkSnapshot` | Create/update snapshot | ✅ EXISTS |
+
+### Missing Repository Methods
+
+The following methods are expected by tests but don't exist in repositories:
+
+1. **AnchorTextRepository::getTopAnchorPercentage(int $projectId): float**
+   - Should return the percentage of backlinks using the most common anchor text
+   - Formula: top anchor backlinks count / total backlinks count
+   - Alternative: Use existing `calculateDiversity()` method
+
+2. **BacklinkRepository method for counting by type**
+   - Tests expect `countByType($projectId, 'dofollow')` returning int
+   - Existing `countByLinkType()` returns array of all types
+   - Service can use: `countByLinkType()[$type] ?? 0`
+
+---
+
+## Service Implementation Notes
+
+### createSnapshot() Implementation
 
 ```php
-namespace App\Services\Backlinks;
-
-class BacklinkSnapshotService
+public function createSnapshot(Project $project): BacklinkSnapshot
 {
-    /**
-     * Create snapshot for a project
-     */
-    public function createSnapshot(Project $project): BacklinkSnapshot;
+    $totalBacklinks = $this->backlinkRepository->getActiveCount($project->id);
+    $referringDomains = $this->referringDomainRepository->getTotalCount($project->id);
     
-    /**
-     * Get snapshot history for date range
-     */
-    public function getHistory(int $projectId, string $from, string $to): Collection;
+    $linkTypes = $this->backlinkRepository->countByLinkType($project->id);
+    $dofollowCount = $linkTypes['dofollow'] ?? 0;
+    $nofollowCount = $linkTypes['nofollow'] ?? 0;
     
-    /**
-     * Calculate anchor diversity score (0-100)
-     */
-    public function calculateAnchorDiversity(int $projectId): float;
+    $avgTrust = $this->referringDomainRepository->getAverageTrustScore($project->id);
+    $diversity = $this->calculateAnchorDiversity($project->id);
     
-    /**
-     * Calculate average domain trust
-     */
-    public function calculateAverageTrust(int $projectId): float;
+    return $this->snapshotRepository->upsert([
+        'project_id' => $project->id,
+        'snapshot_date' => now()->toDateString(),
+        'total_backlinks' => $totalBacklinks,
+        'referring_domains_count' => $referringDomains,
+        'dofollow_count' => $dofollowCount,
+        'nofollow_count' => $nofollowCount,
+        'avg_domain_trust' => $avgTrust,
+        'anchor_diversity_score' => $diversity,
+    ]);
+}
+```
+
+### getHistory() Implementation
+
+```php
+public function getHistory(int $projectId, string $from, string $to): Collection
+{
+    return $this->snapshotRepository->getByDateRange($projectId, $from, $to);
+}
+```
+
+### calculateAnchorDiversity() Implementation
+
+```php
+public function calculateAnchorDiversity(int $projectId): float
+{
+    // Option 1: Add getTopAnchorPercentage() to repository
+    $topPercentage = $this->anchorTextRepository->getTopAnchorPercentage($projectId);
+    return 100.0 - ($topPercentage * 100.0);
+    
+    // Option 2: Use existing calculateDiversity()
+    // This returns a ratio, need to convert to 0-100 scale
+    $diversity = $this->anchorTextRepository->calculateDiversity($projectId);
+    // Existing method returns unique/total ratio
+    // We need: 100 - (top_anchor_percentage * 100)
+}
+```
+
+### calculateAverageTrust() Implementation
+
+```php
+public function calculateAverageTrust(int $projectId): float
+{
+    return $this->referringDomainRepository->getAverageTrustScore($projectId);
 }
 ```
 
 ---
 
-## Test Scenarios
-
-### SI: Service Instantiation (5 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| SI-001 | Service can be resolved from container | `app(BacklinkSnapshotService::class)` | Instance returned |
-| SI-002 | Service has createSnapshot method | `method_exists($service, 'createSnapshot')` | true |
-| SI-003 | Service has getHistory method | `method_exists($service, 'getHistory')` | true |
-| SI-004 | Service has calculateAnchorDiversity method | `method_exists($service, 'calculateAnchorDiversity')` | true |
-| SI-005 | Service has calculateAverageTrust method | `method_exists($service, 'calculateAverageTrust')` | true |
-
-### CS: createSnapshot() Tests (20 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CS-001 | Creates snapshot with all metrics | Project with backlinks | BacklinkSnapshot with all fields populated |
-| CS-002 | Returns BacklinkSnapshot instance | Project | BacklinkSnapshot class |
-| CS-003 | Calculates total_backlinks correctly | 100 active backlinks | total_backlinks = 100 |
-| CS-004 | Excludes inactive backlinks | 100 active + 50 inactive | total_backlinks = 100 |
-| CS-005 | Calculates referring_domains_count correctly | 10 unique domains | referring_domains_count = 10 |
-| CS-006 | Calculates dofollow_count correctly | 80 dofollow, 20 nofollow | dofollow_count = 80 |
-| CS-007 | Calculates nofollow_count correctly | 80 dofollow, 20 nofollow | nofollow_count = 20 |
-| CS-008 | Calculates avg_domain_trust correctly | Domains with scores 50, 70, 90 | avg_domain_trust = 70.00 |
-| CS-009 | Calculates anchor_diversity_score correctly | Top anchor = 30% | anchor_diversity_score = 70.00 |
-| CS-010 | Sets snapshot_date to today | Project | snapshot_date = today |
-| CS-011 | Handles project with no backlinks | Empty project | All counts = 0, avg_trust = 0 |
-| CS-012 | Handles project with no referring domains | Backlinks without domains | avg_domain_trust = 0 |
-| CS-013 | Handles project with no anchor texts | No anchors | anchor_diversity_score = 0 |
-| CS-014 | Uses repository upsert for duplicate date | Same project, same date | Updates existing snapshot |
-| CS-015 | Sets created_at timestamp | Project | created_at set to now |
-| CS-016 | Associates snapshot with project | Project | snapshot.project_id = project.id |
-| CS-017 | Handles large datasets efficiently | 10000 backlinks | Completes in < 5 seconds |
-| CS-018 | Uses database transaction | Project | Wrapped in DB::transaction |
-| CS-019 | Throws exception on invalid project | null | InvalidArgumentException |
-| CS-020 | Handles missing backlinks_count gracefully | ReferringDomain with null count | Treats as 0 |
-
-### GH: getHistory() Tests (15 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| GH-001 | Returns collection of snapshots | projectId, date range | Collection |
-| GH-002 | Filters by project_id | projectId | Only snapshots for project |
-| GH-003 | Filters by date range | from=2026-01-01, to=2026-01-31 | Snapshots in January |
-| GH-004 | Orders by snapshot_date ascending | Multiple snapshots | Oldest first |
-| GH-005 | Returns empty collection for no data | projectId without snapshots | Empty Collection |
-| GH-006 | Returns empty collection for invalid project | projectId=99999 | Empty Collection |
-| GH-007 | Includes all snapshot fields | Snapshot | All fields present |
-| GH-008 | Handles single date range | from=to | Single or no snapshot |
-| GH-009 | Handles wide date range | 1 year range | All snapshots in range |
-| GH-010 | Uses repository for data access | projectId | Calls repository method |
-| GH-011 | Validates date format | invalid date | InvalidArgumentException |
-| GH-012 | Validates from before to | from > to | InvalidArgumentException |
-| GH-013 | Handles date boundaries | from=2026-02-28, to=2026-03-01 | Correct boundary handling |
-| GH-014 | Returns snapshots with computed fields | Snapshot | avg_domain_trust as float |
-| GH-015 | Handles timezone correctly | Date range | Correct local date handling |
-
-### CAD: calculateAnchorDiversity() Tests (15 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CAD-001 | Returns 100 for perfect diversity | Equal distribution | 100.00 |
-| CAD-002 | Returns 0 for single anchor | One anchor, all backlinks | 0.00 |
-| CAD-003 | Returns correct score for 50% top anchor | Top = 50% | 50.00 |
-| CAD-004 | Returns correct score for 30% top anchor | Top = 30% | 70.00 |
-| CAD-005 | Returns correct score for 10% top anchor | Top = 10% | 90.00 |
-| CAD-006 | Handles empty anchors | No anchor texts | 0.00 |
-| CAD-007 | Handles single anchor text | One anchor | 0.00 |
-| CAD-008 | Handles two anchors equally | 50/50 split | 50.00 |
-| CAD-009 | Handles multiple anchors | 10 anchors varying counts | Correct calculation |
-| CAD-010 | Uses backlinks_count from AnchorText model | AnchorText records | Correct aggregation |
-| CAD-011 | Returns float with 2 decimal places | Calculation | Rounded to 2 decimals |
-| CAD-012 | Handles zero backlinks_count | Anchor with 0 backlinks | Excludes from calculation |
-| CAD-013 | Handles large backlinks_count | 100000+ backlinks | Correct calculation |
-| CAD-014 | Orders anchors by backlinks_count | Multiple anchors | Top anchor identified correctly |
-| CAD-015 | Isolated to project | Multiple projects | Correct project anchors only |
-
-### CAT: calculateAverageTrust() Tests (15 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| CAT-001 | Returns average trust score | Domains with 50, 70, 90 | 70.00 |
-| CAT-002 | Returns 0 for no domains | No referring domains | 0.00 |
-| CAT-003 | Returns score for single domain | One domain, score=80 | 80.00 |
-| CAT-004 | Handles zero trust scores | Domains with 0 | 0.00 |
-| CAT-005 | Handles mixed trust scores | 0, 50, 100 | 50.00 |
-| CAT-006 | Returns float with 2 decimal places | Calculation | Rounded to 2 decimals |
-| CAT-007 | Handles large domain count | 1000 domains | Correct average |
-| CAT-008 | Uses domain_trust_score column | ReferringDomain records | Correct field used |
-| CAT-009 | Isolated to project | Multiple projects | Correct project domains only |
-| CAT-010 | Handles null trust scores | Domain with null score | Excludes from average |
-| CAT-011 | Handles all null trust scores | All domains null | 0.00 |
-| CAT-012 | Uses AVG aggregation | Multiple domains | Single query |
-| CAT-013 | Filters by project_id | projectId | Correct WHERE clause |
-| CAT-014 | Returns decimal type | Calculation | float/double |
-| CAT-015 | Handles very high scores | Scores 95-100 | Correct average |
-
-### HD: Handle Missing Data Tests (10 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| HD-001 | No backlinks for project | Empty backlinks | snapshot with zeros |
-| HD-002 | No referring domains | Empty domains | avg_domain_trust = 0 |
-| HD-003 | No anchor texts | Empty anchors | anchor_diversity_score = 0 |
-| HD-004 | Backlinks without anchor text | null anchor_text | Excluded from anchor calc |
-| HD-005 | Domains without trust score | null domain_trust_score | Excluded from trust calc |
-| HD-006 | Only inactive backlinks | is_active=false | total_backlinks = 0 |
-| HD-007 | Mixed active/inactive | 100 active, 50 inactive | Only active counted |
-| HD-008 | Empty project object | Project with no data | Snapshot with zeros |
-| HD-009 | Handles database errors | Query exception | Graceful error handling |
-| HD-010 | Logs warning for missing data | No backlinks | Warning logged |
-
-### INT: Integration Tests (10 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| INT-001 | Full snapshot creation workflow | Project with all data | Complete snapshot |
-| INT-002 | Multiple snapshots over time | 30 days of snapshots | Correct history |
-| INT-003 | Trend calculation uses history | Two snapshots | Correct trend |
-| INT-004 | Concurrent snapshot creation | Two processes | No race condition |
-| INT-005 | Snapshot used by API | API endpoint | Correct JSON response |
-| INT-006 | Repository integration | Repository calls | Correct data flow |
-| INT-007 | Model relationships | Snapshot->project | BelongsTo relationship |
-| INT-008 | Factory integration | Factory states | Correct test data |
-| INT-009 | Full project lifecycle | Create, update, delete | Snapshot cascade |
-| INT-010 | Performance with real data | 10000 backlinks | < 5 seconds |
-
-### SEC: Security Tests (5 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| SEC-001 | SQL injection in project_id | Malicious string | Parameter binding |
-| SEC-002 | XSS in anchor text | Script tags | Not executed |
-| SEC-003 | Data isolation between projects | projectId=1, projectId=2 | Correct isolation |
-| SEC-004 | No sensitive data exposure | Snapshot data | No PII in response |
-| SEC-005 | Input validation | Invalid inputs | Graceful rejection |
-
-### EDGE: Edge Cases (10 tests)
-
-| ID | Scenario | Input | Expected Output |
-|----|----------|-------|-----------------|
-| EDGE-001 | Very large backlinks count | 1000000 backlinks | Handles correctly |
-| EDGE-002 | Unicode anchor text | Japanese characters | Handled correctly |
-| EDGE-003 | Very long anchor text | 1000+ characters | Truncated/stored correctly |
-| EDGE-004 | Future snapshot_date | Tomorrow | Accepted (for scheduled) |
-| EDGE-005 | Past snapshot_date | Last year | Accepted |
-| EDGE-006 | Same snapshot twice | Duplicate call | Upsert behavior |
-| EDGE-007 | Zero values | All zeros | Correct zeros |
-| EDGE-008 | Negative values prevented | Negative counts | Clamped to 0 |
-| EDGE-009 | Concurrent updates | Race condition | Consistent state |
-| EDGE-010 | Memory efficiency | Large dataset | Memory stable |
-
----
-
 ## Coverage Targets
 
-| Metric | Target |
-|--------|--------|
-| Statements | 90% |
-| Branches | 85% |
-| Functions | 100% |
-| Lines | 90% |
+| Category | Target | Current |
+|----------|--------|---------|
+| Service Instantiation | 100% | ✅ |
+| createSnapshot() | 100% | Tests exist |
+| getHistory() | 100% | Tests exist |
+| calculateAnchorDiversity() | 100% | Tests exist |
+| calculateAverageTrust() | 100% | Tests exist |
+| Error Handling | 100% | Tests exist |
+| Security | 100% | Tests exist |
+| Integration | 100% | Tests exist |
 
 ---
 
 ## Test Execution
 
 ```bash
-# Run all tests
 cd backend
 php artisan test --filter=BacklinkSnapshotServiceTest
-
-# Run with coverage
-php artisan test --filter=BacklinkSnapshotServiceTest --coverage
 ```
 
 ---
 
 ## Dependencies
-
-| Dependency | Status |
-|------------|--------|
-| TASK-23-2 (Backlink Models) | Done ✅ |
-| Backlink model | Available ✅ |
-| ReferringDomain model | Available ✅ |
-| AnchorText model | Available ✅ |
-| BacklinkSnapshot model | Available ✅ |
-| BacklinkSnapshotRepository | Available ✅ |
-| Project model | Available ✅ |
-| Model Factories | Available ✅ |
+- TASK-23-2 (Backlink Models and Repositories)
+- BacklinkRepository
+- ReferringDomainRepository
+- AnchorTextRepository
+- BacklinkSnapshotRepository
 
 ---
 
-## Notes for Developer
+## Handoff to Developer
 
-### Implementation Checklist
+### What's Done
+- ✅ Test file exists with 105+ tests
+- ✅ Test coverage for all 4 service methods
+- ✅ Edge cases, error handling, security tests
 
-1. Create `app/Services/Backlinks/BacklinkSnapshotService.php`
-2. Inject `BacklinkSnapshotRepository` via constructor
-3. Implement `createSnapshot(Project $project)`:
-   - Query active backlinks count
-   - Query unique referring domains count
-   - Query dofollow/nofollow counts
-   - Call `calculateAnchorDiversity()`
-   - Call `calculateAverageTrust()`
-   - Use repository `upsert()` for persistence
-4. Implement `getHistory(int $projectId, string $from, string $to)`:
-   - Validate date format
-   - Validate from <= to
-   - Call repository `getByDateRange()`
-5. Implement `calculateAnchorDiversity(int $projectId)`:
-   - Query AnchorText ordered by backlinks_count DESC
-   - Calculate: 100 - (top_anchor_backlinks / total_backlinks * 100)
-   - Handle edge cases (no anchors, zero total)
-6. Implement `calculateAverageTrust(int $projectId)`:
-   - Query ReferringDomain AVG(domain_trust_score)
-   - Handle null/zero cases
+### What Needs Implementation
+1. **Service Methods** - All 4 methods have stubs only:
+   - `createSnapshot()`
+   - `getHistory()`
+   - `calculateAnchorDiversity()`
+   - `calculateAverageTrust()`
 
-### Key Calculations
+2. **Optional Repository Enhancement** (or adjust service):
+   - Add `getTopAnchorPercentage()` to AnchorTextRepository
+   - OR modify service to use existing `calculateDiversity()`
 
-**Anchor Diversity Score:**
-```php
-$topAnchorPercent = $anchors->first()->backlinks_count / $totalBacklinks;
-return 100 - ($topAnchorPercent * 100);
-```
-
-**Average Domain Trust:**
-```php
-return ReferringDomain::where('project_id', $projectId)
-    ->whereNotNull('domain_trust_score')
-    ->avg('domain_trust_score') ?? 0;
-```
-
-### Snapshot Metrics Source
-
-| Metric | Source | Query |
-|--------|--------|-------|
-| total_backlinks | backlinks | COUNT WHERE is_active=true |
-| referring_domains_count | referring_domains | COUNT DISTINCT domain |
-| dofollow_count | backlinks | COUNT WHERE link_type='dofollow' AND is_active=true |
-| nofollow_count | backlinks | COUNT WHERE link_type='nofollow' AND is_active=true |
-| avg_domain_trust | referring_domains | AVG(domain_trust_score) |
-| anchor_diversity_score | anchor_texts | 100 - (top_anchor % * 100) |
+### Test Adjustments Needed
+Tests may need minor adjustments if:
+- Repository method names differ from test expectations
+- Service implementation uses different approach for anchor diversity
 
 ---
 
 ## Comments
-_Agent communication log_
 
-### [2026-03-16 16:05] Agent: PreTester
-**Tests Coverage In Progress**
-
-Creating test documentation and unit tests for BacklinkSnapshotService.
-
-**Test Categories:**
-- Service Instantiation (5 tests)
-- createSnapshot() (20 tests)
-- getHistory() (15 tests)
-- calculateAnchorDiversity() (15 tests)
-- calculateAverageTrust() (15 tests)
-- Handle Missing Data (10 tests)
-- Integration (10 tests)
-- Security (5 tests)
-- Edge Cases (10 tests)
-
-**Total:** 105 test scenarios
+### [2026-03-16 17:18] Agent: PreTester
+- Test file analysis complete
+- 105+ tests already exist in `BacklinkSnapshotServiceTest.php`
+- Tests use mock-based approach (isolated unit tests)
+- Service implementation is incomplete (only stubs)
+- Identified gap: `getTopAnchorPercentage()` method doesn't exist in AnchorTextRepository
+- Developer can either add method to repository or adjust service to use existing `calculateDiversity()`
