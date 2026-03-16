@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`To Prioritize`
+`Blocked`
 
 ## PRIORITY
 `High`
@@ -96,3 +96,13 @@ if (error) {
 **Effort:** Small (1-2 hours) - straightforward error handling logic
 
 **Next Agent:** Developer (after TASK-37-1 completes PreTester phase)
+
+### ProjectManager Status Update (2026-03-16 13:19 GMT+2)
+**Status Changed:** `To Prioritize` → `Blocked`
+**Reason:** Dependency TASK-37-1 not yet implemented
+
+**Action Taken:**
+- Status updated to `Blocked` to prevent infinite orchestrator loops
+- Task will remain blocked until TASK-37-1 reaches `To Test Locally` or later
+
+**Unblocks when:** TASK-37-1 (Token Validation in AuthContext) is implemented and tested

@@ -1,7 +1,7 @@
 # SPEC-037: Production Critical Fixes - Auth & Navigation
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `Critical`
@@ -354,9 +354,28 @@ If issues occur post-deployment:
 
 ## Comments
 
+### 2026-03-16 16:30 GMT+2 - SpecSystemAnalyst
+**Task Breakdown Complete:**
+- Created all 17 tasks per spec's breakdown table
+- **Note on existing tasks:**
+  - TASK-37-1: Token Validation (To Prioritize) - matches spec TASK-37-1
+  - TASK-37-2: Header Navigation (To Develop) - **combined task** that covers spec's TASK-37-5 through TASK-37-8; already has tests written by PreTester
+  - TASK-37-3: Dashboard Error Handling (Blocked) - corresponds to spec's TASK-37-4; blocked on TASK-37-1
+- **Newly created tasks:**
+  - TASK-37-4: Graceful Token Expiry Handling (Critical) - new
+  - TASK-37-5: Login Page Redirect Loop Prevention (Critical) - new
+  - TASK-37-6 through TASK-37-17: Remaining tasks per spec breakdown
+
+**Task Count:** 17 tasks total
+- Critical: 3 (TASK-37-1, 37-4, 37-5)
+- High: 5 (TASK-37-2, 37-3, 37-6, 37-7, 37-12, 37-15, 37-16)
+- Medium: 9 (TASK-37-8 through TASK-37-11, 37-13, 37-14, 37-17)
+
+**Status Updated:** SPEC-037 and FEAT-037 → "To Prioritize"
+
 ### 2026-03-13 - Architect
 Created specification from FEAT-037. Root cause identified: stale localStorage tokens causing premature redirect to dashboard before token validation. 17 tasks organized across 5 groups. High risk due to auth system changes - SecurityAuditor review required before deployment.
 
 ---
 
-Last updated: 2026-03-13
+Last updated: 2026-03-16

@@ -198,6 +198,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Billing\Contracts\ModelPricingServiceInterface::class,
             \App\Services\Billing\ModelPricingService::class
         );
+
+        // User Stats Repository binding (TASK-27-5, SPEC-027)
+        $this->app->bind(
+            \App\Services\Admin\Contracts\UserStatsRepositoryInterface::class,
+            \App\Repositories\UserStatsRepository::class
+        );
     }
 
     /**

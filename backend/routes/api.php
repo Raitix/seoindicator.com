@@ -837,6 +837,13 @@ Route::prefix('v1')->middleware(['throttle:60,1'])->group(function () {
         Route::post('/{id}/impersonate', [\App\Http\Controllers\Api\V1\Admin\AdminUsersController::class, 'impersonate'])->where('id', '[0-9]+');
     });
 
+    // Admin: User Stats API (TASK-27-5, SPEC-027)
+    Route::prefix('admin/users')->middleware('admin')->group(function () {
+        Route::get('/stats', [\App\Http\Controllers\Api\V1\Admin\UserStatsController::class, 'stats']);
+        Route::get('/recent', [\App\Http\Controllers\Api\V1\Admin\UserStatsController::class, 'recent']);
+        Route::get('/active', [\App\Http\Controllers\Api\V1\Admin\UserStatsController::class, 'active']);
+    });
+
     // Admin: Lead Management (TASK-16-6)
     Route::prefix('admin/leads')->middleware('admin')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\V1\Admin\LeadController::class, 'index']);

@@ -19,6 +19,21 @@ class SEOAnalysisAITest extends TestCase
 {
     use RefreshDatabase, WithFaker;
 
+    /**
+     * Create an SEOAnalysis with minimal required fields.
+     */
+    private function createAnalysis(array $attributes = []): SEOAnalysis
+    {
+        $defaults = [
+            'domain' => 'example.com',
+            'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
+        ];
+
+        return SEOAnalysis::create(array_merge($defaults, $attributes));
+    }
+
     // =========================================================================
     // CATEGORY 1: MODEL INSTANTIATION & NEW FILLABLES (MF-001 to MF-015)
     // =========================================================================
@@ -47,9 +62,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-002: ai_model is fillable */
     public function test_mf002_ai_model_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
         ]);
 
@@ -59,9 +72,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-003: prompt_tokens is fillable */
     public function test_mf003_prompt_tokens_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 2500,
         ]);
 
@@ -71,9 +82,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-004: response_tokens is fillable */
     public function test_mf004_response_tokens_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'response_tokens' => 800,
         ]);
 
@@ -83,9 +92,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-005: total_tokens is fillable */
     public function test_mf005_total_tokens_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'total_tokens' => 3300,
         ]);
 
@@ -97,9 +104,7 @@ class SEOAnalysisAITest extends TestCase
     {
         $truncationData = ['primary' => 'summarize', 'fallback' => 'truncate'];
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => $truncationData,
         ]);
 
@@ -111,9 +116,7 @@ class SEOAnalysisAITest extends TestCase
     {
         $summary = 'This page has good SEO fundamentals but needs improvement in meta tags.';
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'overall_summary' => $summary,
         ]);
 
@@ -130,9 +133,7 @@ class SEOAnalysisAITest extends TestCase
             'user_experience' => 90,
         ];
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => $scores,
         ]);
 
@@ -142,9 +143,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-009: ai_request_id is fillable */
     public function test_mf009_ai_request_id_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_request_id' => 1,
         ]);
 
@@ -154,9 +153,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-010: All AI fields can be filled together */
     public function test_mf010_all_ai_fields_fillable_together(): void
     {
-        $data = [
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
@@ -165,26 +162,22 @@ class SEOAnalysisAITest extends TestCase
             'overall_summary' => 'Good SEO overall.',
             'category_scores' => ['technical' => 85, 'content' => 72],
             'ai_request_id' => null,
-        ];
+        ]);
 
-        $analysis = SEOAnalysis::create($data);
-
-        $this->assertEquals($data['ai_model'], $analysis->ai_model);
-        $this->assertEquals($data['prompt_tokens'], $analysis->prompt_tokens);
-        $this->assertEquals($data['response_tokens'], $analysis->response_tokens);
-        $this->assertEquals($data['total_tokens'], $analysis->total_tokens);
-        $this->assertEquals($data['truncation_applied'], $analysis->truncation_applied);
-        $this->assertEquals($data['overall_summary'], $analysis->overall_summary);
-        $this->assertEquals($data['category_scores'], $analysis->category_scores);
-        $this->assertEquals($data['ai_request_id'], $analysis->ai_request_id);
+        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
+        $this->assertEquals(1500, $analysis->prompt_tokens);
+        $this->assertEquals(500, $analysis->response_tokens);
+        $this->assertEquals(2000, $analysis->total_tokens);
+        $this->assertEquals(['primary' => 'summarize'], $analysis->truncation_applied);
+        $this->assertEquals('Good SEO overall.', $analysis->overall_summary);
+        $this->assertEquals(['technical' => 85, 'content' => 72], $analysis->category_scores);
+        $this->assertNull($analysis->ai_request_id);
     }
 
     /** @test MF-011: Model can be created without AI fields (backward compatibility) */
     public function test_mf011_backward_compatibility_without_ai_fields(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'overall_score' => 75,
             'status' => 'completed',
         ]);
@@ -202,11 +195,9 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-012: Existing fields remain fillable */
     public function test_mf012_existing_fields_remain_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
+        $analysis = $this->createAnalysis([
             'user_id' => 1,
             'session_id' => 'test-session',
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
             'overall_score' => 85,
             'status' => 'completed',
             'error_message' => null,
@@ -223,10 +214,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-013: AI fields are nullable */
     public function test_mf013_ai_fields_are_nullable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertNull($analysis->ai_model);
         $this->assertNull($analysis->prompt_tokens);
@@ -241,11 +229,8 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-014: Partial AI fields can be set */
     public function test_mf014_partial_ai_fields_can_be_set(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
-            // Other AI fields left null
         ]);
 
         $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
@@ -256,10 +241,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test MF-015: Model update with AI fields */
     public function test_mf015_model_update_with_ai_fields(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $analysis->update([
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
@@ -283,9 +265,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-001: prompt_tokens is cast to integer */
     public function test_ca001_prompt_tokens_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 1500,
         ]);
 
@@ -295,9 +275,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-002: response_tokens is cast to integer */
     public function test_ca002_response_tokens_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'response_tokens' => 500,
         ]);
 
@@ -307,9 +285,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-003: total_tokens is cast to integer */
     public function test_ca003_total_tokens_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'total_tokens' => 2000,
         ]);
 
@@ -319,9 +295,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-004: truncation_applied is cast to array */
     public function test_ca004_truncation_applied_is_cast_to_array(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => ['primary' => 'summarize'],
         ]);
 
@@ -332,9 +306,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-005: category_scores is cast to array */
     public function test_ca005_category_scores_is_cast_to_array(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => ['technical' => 85, 'content' => 72],
         ]);
 
@@ -345,10 +317,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-006: Null truncation_applied returns null not array */
     public function test_ca006_null_truncation_applied_returns_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertNull($analysis->truncation_applied);
     }
@@ -356,10 +325,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-007: Null category_scores returns null not array */
     public function test_ca007_null_category_scores_returns_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertNull($analysis->category_scores);
     }
@@ -376,9 +342,7 @@ class SEOAnalysisAITest extends TestCase
             'threshold' => 4000,
         ];
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => $nested,
         ]);
 
@@ -400,9 +364,7 @@ class SEOAnalysisAITest extends TestCase
             ],
         ];
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => $scores,
         ]);
 
@@ -413,9 +375,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-010: Empty array for truncation_applied */
     public function test_ca010_empty_array_for_truncation_applied(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => [],
         ]);
 
@@ -426,9 +386,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-011: Empty array for category_scores */
     public function test_ca011_empty_array_for_category_scores(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => [],
         ]);
 
@@ -439,9 +397,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-012: Integer preservation after refresh */
     public function test_ca012_integer_preservation_after_refresh(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -460,9 +416,7 @@ class SEOAnalysisAITest extends TestCase
         $scores = ['technical' => 85, 'content' => 72];
         $truncation = ['primary' => 'summarize'];
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => $scores,
             'truncation_applied' => $truncation,
         ]);
@@ -476,9 +430,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-014: Zero tokens stored correctly */
     public function test_ca014_zero_tokens_stored_correctly(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 0,
             'response_tokens' => 0,
             'total_tokens' => 0,
@@ -492,9 +444,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test CA-015: Large token values stored correctly */
     public function test_ca015_large_token_values_stored_correctly(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 100000,
             'response_tokens' => 50000,
             'total_tokens' => 150000,
@@ -519,10 +469,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-002: aiRequest returns HasOne relationship */
     public function test_re002_ai_request_returns_has_one_relationship(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $relation = $analysis->aiRequest();
         $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasOne::class, $relation);
@@ -531,10 +478,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-003: aiRequest relationship returns related model */
     public function test_re003_ai_request_relationship_returns_related_model(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $aiRequest = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -549,10 +493,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-004: aiRequest returns null when not exists */
     public function test_re004_ai_request_returns_null_when_not_exists(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertNull($analysis->aiRequest);
     }
@@ -560,10 +501,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-005: aiRequest uses correct foreign key */
     public function test_re005_ai_request_uses_correct_foreign_key(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $aiRequest = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -579,10 +517,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-006: Creating aiRequest through relationship */
     public function test_re006_creating_ai_request_through_relationship(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $aiRequest = $analysis->aiRequest()->create([
             'model' => 'google/gemini-2.0-flash-exp:free',
@@ -596,10 +531,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-007: Deleting analysis cascades to aiRequest */
     public function test_re007_deleting_analysis_cascades_to_ai_request(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $aiRequest = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -616,10 +548,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-008: Eager loading aiRequest */
     public function test_re008_eager_loading_ai_request(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -636,14 +565,8 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-009: aiRequest with multiple queries */
     public function test_re009_ai_request_with_multiple_queries(): void
     {
-        $analysis1 = SEOAnalysis::create([
-            'domain' => 'example1.com',
-            'normalized_url' => 'https://example1.com/',
-        ]);
-        $analysis2 = SEOAnalysis::create([
-            'domain' => 'example2.com',
-            'normalized_url' => 'https://example2.com/',
-        ]);
+        $analysis1 = $this->createAnalysis(['domain' => 'example1.com', 'normalized_url' => 'https://example1.com/']);
+        $analysis2 = $this->createAnalysis(['domain' => 'example2.com', 'normalized_url' => 'https://example2.com/']);
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis1->id,
@@ -665,10 +588,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test RE-010: aiRequest relationship query constraints */
     public function test_re010_ai_request_relationship_query_constraints(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -699,9 +619,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-002: wasUnifiedAnalysis returns true when ai_model set */
     public function test_ac002_was_unified_analysis_returns_true_when_ai_model_set(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
 
@@ -711,10 +629,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-003: wasUnifiedAnalysis returns false when ai_model null */
     public function test_ac003_was_unified_analysis_returns_false_when_ai_model_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertFalse($analysis->wasUnifiedAnalysis());
     }
@@ -729,9 +644,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-005: getCategoryScore returns score for existing category */
     public function test_ac005_get_category_score_returns_score_for_existing_category(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => ['technical' => 85, 'content' => 72],
         ]);
 
@@ -742,9 +655,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-006: getCategoryScore returns null for missing category */
     public function test_ac006_get_category_score_returns_null_for_missing_category(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'category_scores' => ['technical' => 85],
         ]);
 
@@ -754,10 +665,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-007: getCategoryScore returns null when category_scores null */
     public function test_ac007_get_category_score_returns_null_when_category_scores_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertNull($analysis->getCategoryScore('technical'));
     }
@@ -774,9 +682,7 @@ class SEOAnalysisAITest extends TestCase
     {
         $strategies = ['primary' => 'summarize', 'fallback' => 'truncate'];
 
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => $strategies,
         ]);
 
@@ -786,10 +692,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-010: getTruncationStrategies returns empty array when null */
     public function test_ac010_get_truncation_strategies_returns_empty_array_when_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertEquals([], $analysis->getTruncationStrategies());
     }
@@ -804,9 +707,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-012: wasTruncated returns true when truncation_applied not empty */
     public function test_ac012_was_truncated_returns_true_when_truncation_applied_not_empty(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => ['primary' => 'summarize'],
         ]);
 
@@ -816,9 +717,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-013: wasTruncated returns false when truncation_applied empty */
     public function test_ac013_was_truncated_returns_false_when_truncation_applied_empty(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'truncation_applied' => [],
         ]);
 
@@ -828,10 +727,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-014: wasTruncated returns false when truncation_applied null */
     public function test_ac014_was_truncated_returns_false_when_truncation_applied_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertFalse($analysis->wasTruncated());
     }
@@ -846,9 +742,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-016: getTokenUsage returns array with all token fields */
     public function test_ac016_get_token_usage_returns_array_with_all_token_fields(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -865,9 +759,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-017: getTokenUsage returns correct values */
     public function test_ac017_get_token_usage_returns_correct_values(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -883,10 +775,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-018: getTokenUsage handles null values */
     public function test_ac018_get_token_usage_handles_null_values(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $usage = $analysis->getTokenUsage();
 
@@ -905,9 +794,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-020: getAiModelDisplayName returns display name for Gemini */
     public function test_ac020_get_ai_model_display_name_returns_display_name_for_gemini(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
 
@@ -917,9 +804,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-021: getAiModelDisplayName returns display name for Llama */
     public function test_ac021_get_ai_model_display_name_returns_display_name_for_llama(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
         ]);
 
@@ -929,9 +814,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-022: getAiModelDisplayName returns display name for Mistral */
     public function test_ac022_get_ai_model_display_name_returns_display_name_for_mistral(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'mistralai/mistral-7b-instruct:free',
         ]);
 
@@ -941,9 +824,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-023: getAiModelDisplayName returns display name for Qwen */
     public function test_ac023_get_ai_model_display_name_returns_display_name_for_qwen(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'qwen/qwen-2-7b-instruct:free',
         ]);
 
@@ -953,9 +834,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-024: getAiModelDisplayName returns raw model name for unknown */
     public function test_ac024_get_ai_model_display_name_returns_raw_model_name_for_unknown(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
+        $analysis = $this->createAnalysis([
             'ai_model' => 'unknown/model-name',
         ]);
 
@@ -965,10 +844,7 @@ class SEOAnalysisAITest extends TestCase
     /** @test AC-025: getAiModelDisplayName returns Unknown when ai_model null */
     public function test_ac025_get_ai_model_display_name_returns_unknown_when_ai_model_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $this->assertEquals('Unknown', $analysis->getAiModelDisplayName());
     }
@@ -983,11 +859,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'with-ai.com',
             'normalized_url' => 'https://with-ai.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'without-ai.com',
             'normalized_url' => 'https://without-ai.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
 
         $withAi = SEOAnalysis::whereNotNull('ai_model')->get();
@@ -1021,11 +901,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'gemini.com',
             'normalized_url' => 'https://gemini.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'llama.com',
             'normalized_url' => 'https://llama.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
         ]);
 
@@ -1041,11 +925,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'low-tokens.com',
             'normalized_url' => 'https://low-tokens.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'total_tokens' => 500,
         ]);
         SEOAnalysis::create([
             'domain' => 'high-tokens.com',
             'normalized_url' => 'https://high-tokens.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'total_tokens' => 5000,
         ]);
 
@@ -1061,6 +949,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1079,11 +969,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'truncated.com',
             'normalized_url' => 'https://truncated.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'truncation_applied' => ['primary' => 'summarize'],
         ]);
         SEOAnalysis::create([
             'domain' => 'not-truncated.com',
             'normalized_url' => 'https://not-truncated.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
 
         $truncated = SEOAnalysis::whereNotNull('truncation_applied')->get();
@@ -1098,11 +992,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'good-technical.com',
             'normalized_url' => 'https://good-technical.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => ['technical' => 90, 'content' => 60],
         ]);
         SEOAnalysis::create([
             'domain' => 'poor-technical.com',
             'normalized_url' => 'https://poor-technical.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => ['technical' => 40, 'content' => 90],
         ]);
 
@@ -1117,6 +1015,8 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'complete.com',
             'normalized_url' => 'https://complete.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
@@ -1140,11 +1040,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'low.com',
             'normalized_url' => 'https://low.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'total_tokens' => 100,
         ]);
         SEOAnalysis::create([
             'domain' => 'high.com',
             'normalized_url' => 'https://high.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'total_tokens' => 10000,
         ]);
 
@@ -1160,16 +1064,22 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'gemini1.com',
             'normalized_url' => 'https://gemini1.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'gemini2.com',
             'normalized_url' => 'https://gemini2.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'llama.com',
             'normalized_url' => 'https://llama.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
         ]);
 
@@ -1193,6 +1103,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => $longName,
         ]);
 
@@ -1207,6 +1119,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'overall_summary' => $summary,
         ]);
 
@@ -1222,6 +1136,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => $scores,
             'truncation_applied' => $truncation,
         ]);
@@ -1238,6 +1154,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'overall_summary' => $malicious,
         ]);
 
@@ -1254,6 +1172,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => $malicious,
         ]);
 
@@ -1269,6 +1189,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => $malicious,
         ]);
 
@@ -1286,6 +1208,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'prompt_tokens' => -100,
         ]);
 
@@ -1299,6 +1223,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => '',
         ]);
 
@@ -1318,6 +1244,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => $largeScores,
         ]);
 
@@ -1342,6 +1270,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'truncation_applied' => $nested,
         ]);
 
@@ -1354,12 +1284,16 @@ class SEOAnalysisAITest extends TestCase
         $nullAnalysis = SEOAnalysis::create([
             'domain' => 'null.com',
             'normalized_url' => 'https://null.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => null,
         ]);
 
         $emptyAnalysis = SEOAnalysis::create([
             'domain' => 'empty.com',
             'normalized_url' => 'https://empty.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => [],
         ]);
 
@@ -1376,6 +1310,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'overall_summary' => $special,
         ]);
 
@@ -1390,6 +1326,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => $data,
         ]);
 
@@ -1406,6 +1344,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => $scores,
         ]);
 
@@ -1419,6 +1359,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
 
         // Simulate concurrent update
@@ -1452,6 +1394,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'status' => 'pending',
         ]);
 
@@ -1512,6 +1456,8 @@ class SEOAnalysisAITest extends TestCase
         $gemini = SEOAnalysis::create([
             'domain' => 'gemini.com',
             'normalized_url' => 'https://gemini.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
             'total_tokens' => 2000,
         ]);
@@ -1524,6 +1470,8 @@ class SEOAnalysisAITest extends TestCase
         $llama = SEOAnalysis::create([
             'domain' => 'llama.com',
             'normalized_url' => 'https://llama.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
             'total_tokens' => 3000,
         ]);
@@ -1543,6 +1491,8 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'a.com',
             'normalized_url' => 'https://a.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'prompt_tokens' => 1000,
             'response_tokens' => 500,
             'total_tokens' => 1500,
@@ -1550,6 +1500,8 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'b.com',
             'normalized_url' => 'https://b.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'prompt_tokens' => 2000,
             'response_tokens' => 800,
             'total_tokens' => 2800,
@@ -1570,11 +1522,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'a.com',
             'normalized_url' => 'https://a.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => ['technical' => 80, 'content' => 70],
         ]);
         SEOAnalysis::create([
             'domain' => 'b.com',
             'normalized_url' => 'https://b.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'category_scores' => ['technical' => 90, 'content' => 60],
         ]);
 
@@ -1589,6 +1545,8 @@ class SEOAnalysisAITest extends TestCase
         $truncated = SEOAnalysis::create([
             'domain' => 'truncated.com',
             'normalized_url' => 'https://truncated.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'truncation_applied' => [
                 'primary' => 'summarize',
                 'sections' => ['footer', 'sidebar'],
@@ -1598,6 +1556,8 @@ class SEOAnalysisAITest extends TestCase
         $notTruncated = SEOAnalysis::create([
             'domain' => 'not-truncated.com',
             'normalized_url' => 'https://not-truncated.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
 
         $this->assertTrue($truncated->wasTruncated());
@@ -1611,6 +1571,8 @@ class SEOAnalysisAITest extends TestCase
         $analysis = SEOAnalysis::create([
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
 
         $aiRequest = $analysis->aiRequest()->create([
@@ -1639,6 +1601,7 @@ class SEOAnalysisAITest extends TestCase
             'domain' => 'legacy.com',
             'normalized_url' => 'https://legacy.com/',
             'overall_score' => 70,
+            'analysis_data' => [],
             'status' => 'completed',
         ]);
 
@@ -1647,6 +1610,7 @@ class SEOAnalysisAITest extends TestCase
             'domain' => 'ai-powered.com',
             'normalized_url' => 'https://ai-powered.com/',
             'overall_score' => 85,
+            'analysis_data' => [],
             'status' => 'completed',
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
             'category_scores' => ['technical' => 90, 'content' => 80],
@@ -1666,6 +1630,8 @@ class SEOAnalysisAITest extends TestCase
             SEOAnalysis::create([
                 'domain' => "site$i.com",
                 'normalized_url' => "https://site$i.com/",
+                'overall_score' => 0,
+                'analysis_data' => [],
                 'ai_model' => 'google/gemini-2.0-flash-exp:free',
                 'total_tokens' => ($i + 1) * 1000,
             ]);
@@ -1693,6 +1659,8 @@ class SEOAnalysisAITest extends TestCase
             SEOAnalysis::create([
                 'domain' => "perf$i.com",
                 'normalized_url' => "https://perf$i.com/",
+                'overall_score' => 0,
+                'analysis_data' => [],
                 'ai_model' => 'google/gemini-2.0-flash-exp:free',
                 'prompt_tokens' => 1000,
                 'response_tokens' => 500,

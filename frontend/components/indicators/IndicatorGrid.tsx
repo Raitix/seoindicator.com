@@ -259,6 +259,7 @@ export const IndicatorGrid = React.forwardRef<HTMLDivElement, IndicatorGridProps
         data-testid="indicator-grid"
         data-slot="indicator-grid"
         data-loading={isLoading}
+        data-indicator-count={isLoading ? 0 : indicators.length}
         className={cn(gridClasses, className)}
         role="grid"
         aria-label={ariaLabel}

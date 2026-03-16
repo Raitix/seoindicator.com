@@ -1,7 +1,7 @@
 # FEAT-037: Production Critical Fixes - Auth & Navigation
 
 ## STATUS
-`To Break Into Tasks`
+`To Prioritize`
 
 ## PRIORITY
 `Critical`
@@ -113,6 +113,21 @@ In the header component:
 - Local build files are correct
 
 ## Comments
+
+### 2026-03-16 16:30 GMT+2 - SpecSystemAnalyst
+**Task Breakdown Complete:**
+- 17 tasks created for SPEC-037
+- Status updated to "To Prioritize"
+- Ready for ProjectManager to prioritize
+
+**Task Summary:**
+| Priority | Count | Tasks |
+|----------|-------|-------|
+| Critical | 3 | TASK-37-1, 37-4, 37-5 |
+| High | 5 | TASK-37-2, 37-3, 37-6, 37-7, 37-12, 37-15, 37-16 |
+| Medium | 9 | TASK-37-8 through 37-11, 37-13, 37-14, 37-17 |
+
+**Note:** TASK-37-2 is already at "To Develop" status with tests written.
 
 ### 2026-03-13 - Architect
 Created specification SPEC-037 with 17 tasks across 5 groups:

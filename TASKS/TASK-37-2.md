@@ -1,7 +1,7 @@
 # TASK-37-2: Fix Header Navigation
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -80,6 +80,41 @@ Use `isAuthenticated` to hide protected nav items from guests
 - SPEC-037
 
 ## Comments
+
+### 2026-03-16 13:15 GMT+2 - PreTester
+**Test Design Complete:**
+- Created test documentation: `TESTS/TEST-37-2.md`
+- Created navigation tests: `frontend/__tests__/components/layout/Header.navigation.test.tsx` (40+ tests)
+- Created hover state tests: `frontend/__tests__/components/layout/Header.hover-states.test.tsx` (35+ tests)
+
+**Test Coverage:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| NAV-001 | 4 | Sign In button for guests |
+| NAV-002 | 4 | Indicators button navigation |
+| NAV-003 | 6 | Protected nav items hidden from guests |
+| NAV-004 | 6 | Protected nav items visible to auth users |
+| NAV-005 | 5 | Navigation links functionality |
+| HOV-001 | 9 | Pointer cursor on all nav elements |
+| HOV-002 | 7 | Hover state backgrounds (dark, not white) |
+| HOV-003 | 4 | Active state styling |
+| HOV-004 | 4 | Focus states |
+| HOV-005 | 4 | Element type tests (anchor vs button) |
+| HOV-006 | 4 | Notification bell buttons |
+| ACC-001 | 4 | Accessibility tests |
+| SEC-001 | 3 | Security tests |
+| Edge Cases | 6 | Boundary conditions |
+| **Total** | **70+** | Full coverage |
+
+**Key Test Findings:**
+1. Tests expect `cursor-pointer` class on all nav links
+2. Tests verify `hover:bg-slate-*` (dark background) NOT `hover:bg-white`
+3. Tests verify guest navigation shows only: Indicators, Sign In
+4. Tests verify auth navigation shows all protected items
+5. Tests verify all nav items are `<a>` elements (not `<button>`)
+6. Tests verify accessibility attributes (aria-label, aria-current)
+
+**Next Step:** Developer to implement changes to pass tests
 
 ### 2026-03-16 13:10 GMT+2 - ProjectManager
 **Prioritization Assessment:**
