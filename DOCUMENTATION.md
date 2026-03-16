@@ -16519,23 +16519,299 @@ All admin endpoints require authentication and admin role. Rate limited to 60 re
 **Credits Overview Response Example:**
 ```json
 {
-  "balances": {
-    "totalHeld": 15678.50,
-    "averagePerUser": 12.54,
-    "usersWithBalance": 890,
-    "lowBalanceCount": 234
-  },
-  "spend": {
-    "total": 45678.90,
-    "today": 567.80,
-    "thisMonth": 12345.60
-  },
-  "revenue": {
-    "total": 78900.00,
-    "thisMonth": 15600.00
+  "success": true,
+  "data": {
+    "balances": {
+      "totalHeld": 15678.50,
+      "averagePerUser": 12.54,
+      "usersWithBalance": 890,
+      "lowBalanceCount": 234
+    },
+    "spend": {
+      "total": 45678.90,
+      "today": 567.80,
+      "thisWeek": 3456.70,
+      "thisMonth": 12345.60
+    },
+    "revenue": {
+      "total": 78900.00,
+      "today": 780.00,
+      "thisWeek": 3900.00,
+      "thisMonth": 15600.00
+    }
   }
 }
 ```
+
+---
+## Admin Credits API Controller (TASK-27-10)
+
+### Service Description
+REST API controller for admin credit/billing metrics within the Admin Dashboard (FEAT-027). Provides three endpoints for credit overview statistics, paginated transaction history with filtering, and revenue metrics. All endpoints are protected by AdminAuthorizationMiddleware and rate-limited to 60 requests per minute.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Admin/CreditsController.php`
+- **Service Dependency:** `backend/app/Services/Admin/CreditAggregationService.php` (TASK-27-9)
+- **Middleware:** `backend/app/Http/Middleware/AdminAuthorizationMiddleware.php` (TASK-27-2)
+- **Tests:** `backend/tests/Feature/Api/V1/Admin/CreditsControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-27-10.md`
+
+### API Endpoints
+
+#### GET /api/v1/admin/credits/overview
+
+Returns aggregated credit balance, spending, and revenue metrics.
+
+**Authorization:** Admin role required
+
+**Response Structure:**
+```json
+{
+  "success": true,
+  "data": {
+    "balances": {
+      "totalHeld": 15678.50,
+      "averagePerUser": 12.54,
+      "usersWithBalance": 890,
+      "lowBalanceCount": 234
+    },
+    "spend": {
+      "total": 45678.90,
+      "today": 567.80,
+      "thisWeek": 3456.70,
+      "thisMonth": 12345.60
+    },
+    "revenue": {
+      "total": 78900.00,
+      "today": 780.00,
+      "thisWeek": 3900.00,
+      "thisMonth": 15600.00
+    }
+  }
+}
+```
+
+**Balance Metrics:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `totalHeld` | float | Total credits held across all users |
+| `averagePerUser` | float | Average balance per user with balance |
+| `usersWithBalance` | int | Count of users with non-zero balance |
+| `lowBalanceCount` | int | Users below low balance threshold |
+
+**Spend Metrics:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `total` | float | Total credits spent all time |
+| `today` | float | Credits spent today |
+| `thisWeek` | float | Credits spent this week |
+| `thisMonth` | float | Credits spent this month |
+
+---
+
+#### GET /api/v1/admin/credits/transactions
+
+Returns paginated list of credit transactions with filtering support.
+
+**Authorization:** Admin role required
+
+**Query Parameters:**
+| Parameter | Type | Validation | Default | Description |
+|-----------|------|------------|---------|-------------|
+| `user_id` | integer | min:1 | null | Filter by user ID |
+| `type` | string | in:purchase,usage,refund,bonus | null | Filter by transaction type |
+| `date_from` | date | Y-m-d format | null | Start date filter |
+| `date_to` | date | Y-m-d format | null | End date filter |
+| `per_page` | integer | min:1, max:100 | 20 | Items per page |
+| `page` | integer | min:1 | 1 | Page number |
+
+**Response Structure:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "user_id": 456,
+      "type": "purchase",
+      "amount": 100.00,
+      "balance_after": 250.00,
+      "description": "Credit purchase - Pro Pack",
+      "created_at": "2026-03-16T10:30:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 156,
+    "last_page": 8
+  }
+}
+```
+
+**Transaction Types:**
+| Type | Description |
+|------|-------------|
+| `purchase` | User purchased credits |
+| `usage` | Credits used for analysis |
+| `refund` | Credits refunded |
+| `bonus` | Bonus credits added |
+
+**PII Protection:**
+- Email addresses excluded from response
+- User names excluded from response
+- Only `user_id` exposed for admin reference
+
+---
+
+#### GET /api/v1/admin/credits/revenue
+
+Returns revenue metrics for the platform.
+
+**Authorization:** Admin role required
+
+**Query Parameters:**
+| Parameter | Type | Validation | Default | Description |
+|-----------|------|------------|---------|-------------|
+| `from` | date | Y-m-d format | null | Start date filter |
+| `to` | date | Y-m-d format | null | End date filter |
+
+**Response Structure:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 78900.00,
+    "today": 780.00,
+    "thisWeek": 3900.00,
+    "thisMonth": 15600.00,
+    "byPackage": []
+  }
+}
+```
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Authentication | Session-based via Sanctum |
+| Authorization | AdminAuthorizationMiddleware checks `isAdmin()` |
+| Rate Limiting | `throttle:60,1` (60 requests/minute) |
+| SQL Injection | Parameter binding via Eloquent |
+| XSS Prevention | JSON response encoding |
+| PII Protection | Sensitive fields excluded from transaction list |
+| Enumeration Prevention | user_id filter validated |
+
+### Validation Rules
+
+**Transactions Endpoint:**
+```php
+[
+    'user_id' => ['nullable', 'integer', 'min:1'],
+    'type' => ['nullable', 'string', 'in:purchase,usage,refund,bonus'],
+    'date_from' => ['nullable', 'date', 'date_format:Y-m-d'],
+    'date_to' => ['nullable', 'date', 'date_format:Y-m-d'],
+    'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+    'page' => ['nullable', 'integer', 'min:1'],
+]
+```
+
+**Revenue Endpoint:**
+```php
+[
+    'from' => ['nullable', 'date', 'date_format:Y-m-d'],
+    'to' => ['nullable', 'date', 'date_format:Y-m-d'],
+]
+```
+
+### Error Responses
+
+**401 Unauthorized:**
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "message": "Forbidden"
+}
+```
+
+**422 Validation Error:**
+```json
+{
+  "message": "The type must be one of: purchase, usage, refund, bonus",
+  "errors": {
+    "type": ["The type must be one of: purchase, usage, refund, bonus"]
+  }
+}
+```
+
+**500 Server Error:**
+```json
+{
+  "success": false,
+  "message": "Server Error"
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| CreditsControllerTest | 39 | 94 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Overview Endpoint | 6 | Response structure, auth, data aggregation |
+| Transactions Endpoint | 16 | Pagination, filtering, ordering, PII exclusion |
+| Revenue Endpoint | 4 | Response structure, date range support |
+| Authentication/Authorization | 5 | Admin access, non-admin denial, unauthenticated |
+| Performance | 1 | Response time under 200ms |
+| Error Handling | 1 | Service exception handling |
+| Security | 3 | PII exclusion, SQL injection prevention |
+| HTTP Method Restrictions | 3 | POST returns 405 |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T111812Z-34043215` |
+| Commit | `816daf38b344fc3ad683251048bf6e2a9bdcc91f` |
+| Production URL | https://seoindicator.com |
+| Status | Complete ✅ |
+
+### Routes Configuration
+
+```php
+// routes/api.php
+Route::middleware(['admin', 'throttle:60,1'])
+    ->prefix('admin/credits')
+    ->group(function () {
+        Route::get('/overview', [CreditsController::class, 'overview']);
+        Route::get('/transactions', [CreditsController::class, 'transactions']);
+        Route::get('/revenue', [CreditsController::class, 'revenue']);
+    });
+```
+
+### Dependencies
+
+| Dependency | Task | Status |
+|------------|------|--------|
+| AdminAuthorizationMiddleware | TASK-27-2 | Done ✅ |
+| CreditAggregationService | TASK-27-9 | Done ✅ |
+| Credits/Billing System | FEAT-026 | In Progress |
+
+### Related Tasks
+
+- TASK-27-2: AdminAuthorizationMiddleware (endpoint protection)
+- TASK-27-9: CreditAggregationService (data aggregation)
+- TASK-26-5: CreditService (core credit operations)
 
 #### System Health Endpoints
 
@@ -16972,6 +17248,224 @@ Laravel middleware that tracks API requests for usage analytics in the admin das
 ### Related Tasks
 - TASK-27-7: Usage Aggregation Service (consumes tracking data)
 - TASK-27-8: Admin Usage API (exposes aggregated stats)
+
+---
+## Credit Model and Repository (TASK-26-2)
+
+### Feature Description
+Eloquent models and repository pattern for Credit and CreditTransaction entities as part of the Billing, Credits & Model Selection feature (FEAT-026). Provides the data layer foundation for the credit system with proper relationships, accessors, and transaction-safe operations.
+
+### Component Locations
+- **Credit Model:** `backend/app/Models/Credit.php`
+- **CreditTransaction Model:** `backend/app/Models/CreditTransaction.php`
+- **Repository:** `backend/app/Repositories/CreditRepository.php`
+- **Factories:** 
+  - `backend/database/factories/CreditFactory.php`
+  - `backend/database/factories/CreditTransactionFactory.php`
+- **Tests:**
+  - `backend/tests/Unit/Models/CreditTest.php`
+  - `backend/tests/Unit/Models/CreditTransactionTest.php`
+  - `backend/tests/Unit/Repositories/CreditRepositoryTest.php`
+- **Test Documentation:** `TESTS/TASK-26-2.md`
+
+### Credit Model
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | bigint | Primary key |
+| `user_id` | bigint | Foreign key to users |
+| `balance` | decimal(10,2) | Current credit balance |
+| `total_purchased` | decimal(10,2) | Total credits purchased |
+| `total_spent` | decimal(10,2) | Total credits spent |
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | BelongsTo | User who owns this credit record |
+| `transactions()` | HasMany | All credit transactions |
+
+**Accessors:**
+| Accessor | Return | Description |
+|----------|--------|-------------|
+| `formatted_balance` | string | Balance formatted as currency (e.g., "$12.50") |
+
+**Methods:**
+| Method | Return | Description |
+|--------|--------|-------------|
+| `hasSufficientBalance(float $amount)` | bool | Check if user has enough credits |
+
+### CreditTransaction Model
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | bigint | Primary key |
+| `user_id` | bigint | Foreign key to users |
+| `amount` | decimal(10,2) | Transaction amount (positive or negative) |
+| `balance_after` | decimal(10,2) | Balance after this transaction |
+| `type` | enum | Transaction type (purchase, usage, refund, bonus) |
+| `description` | string(500) | Human-readable description |
+| `reference_type` | string(50) | Polymorphic reference type |
+| `reference_id` | bigint | Polymorphic reference ID |
+| `payment_provider` | string(20) | Payment provider (stripe, paypal) |
+| `payment_id` | string(255) | External payment ID |
+| `metadata` | json | Additional transaction data |
+
+**Relationships:**
+| Method | Relationship | Description |
+|--------|--------------|-------------|
+| `user()` | BelongsTo | User who owns this transaction |
+| `credit()` | BelongsTo | Credit record this transaction belongs to |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `ofType(string $type)` | Filter by transaction type |
+| `ofProvider(string $provider)` | Filter by payment provider |
+
+**Transaction Types:**
+| Type | Description | Typical Amount |
+|------|-------------|----------------|
+| `purchase` | Credits bought via Stripe/PayPal | Positive |
+| `usage` | Credits deducted for analysis | Negative |
+| `refund` | Credits returned to user | Positive |
+| `bonus` | Promotional or bonus credits | Positive |
+
+### CreditRepository
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `findOrCreateForUser(User $user)` | Credit | Get existing or create new credit record |
+| `getBalance(User $user)` | float | Get current balance (0.00 if no record) |
+| `getTransactions(User $user, int $perPage = 15)` | LengthAwarePaginator | Paginated transaction history |
+| `addCredits(User $user, float $amount, string $type, string $description, ...)` | CreditTransaction | Add credits with audit trail |
+| `deductCredits(User $user, float $amount, string $description, ...)` | CreditTransaction | Deduct credits with validation |
+| `hasSufficientBalance(User $user, float $amount)` | bool | Check if user has enough credits |
+
+**Transaction Safety:**
+- Uses `lockForUpdate()` for concurrent operation handling
+- All balance updates wrapped in `DB::transaction()`
+- Prevents negative balance through validation
+
+### Factory States
+
+**CreditFactory:**
+| State | Description |
+|-------|-------------|
+| `withBalance($amount)` | Set specific balance |
+| `withPurchased($amount)` | Set total purchased |
+| `withSpent($amount)` | Set total spent |
+| `forUser($user)` | Associate with specific user |
+| `withFunds($amount)` | User with available balance |
+| `empty` | Zero balance |
+| `overdrawn` | Negative balance (testing only) |
+
+**CreditTransactionFactory:**
+| State | Description |
+|-------|-------------|
+| `purchase()` | Purchase transaction |
+| `usage()` | Usage transaction |
+| `refund()` | Refund transaction |
+| `bonus()` | Bonus transaction |
+| `forUser($user)` | Associate with specific user |
+| `forCredit($credit)` | Associate with specific credit |
+| `withPayment($provider, $id)` | Add payment provider info |
+| `withReference($type, $id)` | Add polymorphic reference |
+| `withMetadata(array $data)` | Add JSON metadata |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Mass Assignment Protection | `$fillable` whitelist on both models |
+| Unique User Constraint | One credit record per user |
+| Transaction Immutability | No `updated_at` column on transactions |
+| Audit Trail | All balance changes logged via transactions |
+| Type Validation | ENUM constraint on transaction type |
+| Concurrent Operations | `lockForUpdate()` prevents race conditions |
+
+### Database Schema
+
+**credits table:**
+```sql
+CREATE TABLE credits (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    balance DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    total_purchased DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    total_spent DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_credits_user_unique (user_id)
+);
+```
+
+**credit_transactions table:**
+```sql
+CREATE TABLE credit_transactions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    balance_after DECIMAL(10, 2) NOT NULL,
+    type ENUM('purchase', 'usage', 'refund', 'bonus') NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    reference_type VARCHAR(50) NULL,
+    reference_id BIGINT UNSIGNED NULL,
+    payment_provider VARCHAR(20) NULL,
+    payment_id VARCHAR(255) NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+### Test Coverage
+
+| Test File | Tests | Passed | Skipped | Assertions |
+|-----------|-------|--------|---------|------------|
+| `CreditTest.php` | 62 | 61 | 1 | 86 |
+| `CreditTransactionTest.php` | 78 | 75 | 3 | 137 |
+| `CreditRepositoryTest.php` | 61 | 60 | 1 | 103 |
+| **Total** | **201** | **196** | **5** | **326** |
+
+**Skipped Tests (Expected):**
+- SQLite does not enforce DECIMAL/VARCHAR constraints (4 tests)
+- CreditRepositoryInterface not defined (1 test - optional)
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Credit Model | 62 | Instantiation, relationships, casts, accessors, balance check |
+| CreditTransaction Model | 78 | Relationships, casts, scopes, type validation, polymorphic refs |
+| CreditRepository | 61 | findOrCreateForUser, getBalance, getTransactions, balance operations |
+| Factory States | All | All factory states tested and working |
+| Edge Cases | 10 | Negative balance prevention, concurrent operations, unicode |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260314T204714Z-377287dd` |
+| Commit | `7fb7c11c` |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK |
+| Tests | 196/201 passing (5 skipped expected) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-26-1 | Done ✅ | Database migrations |
+
+### Related Tasks
+
+- TASK-26-5: CreditService (uses CreditRepository)
+- TASK-26-6: Credit Balance API Endpoint (uses Credit model)
+- TASK-26-7: Transaction History API Endpoint (uses CreditTransaction model)
+- TASK-26-8: StripeGatewayService (creates purchase transactions)
+- TASK-26-10: Stripe Webhook Handler (creates purchase transactions)
 
 ---
 ## CreditService with Balance Management (TASK-26-5)
@@ -29706,6 +30200,141 @@ All errors return partial results when possible, with error message populated.
 - TASK-22-6: ContentProcessorService
 - TASK-22-8: Depth Controller
 - TASK-22-15: CrawlWorker
+
+---
+## ContentProcessorService (TASK-22-6)
+
+### Service Description
+Content processing service for the Headless Crawler Service (FEAT-022) that performs advanced HTML-to-text conversion and metadata extraction with structured output suitable for SEO analysis. Converts rendered HTML into clean, readable text while preserving semantic structure.
+
+### Component Locations
+- **Service:** `backend/app/Services/Crawler/ContentProcessorService.php`
+- **Tests:** `backend/tests/Unit/Services/Crawler/ContentProcessorServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-22-6.md`
+
+### Core Methods
+
+| Method | Description |
+|--------|-------------|
+| `extractStructuredText(?string $html): string` | Convert HTML to readable text with structure preservation |
+| `extractMetadata(?string $html): array` | Extract meta tags, Open Graph, Twitter Cards |
+| `calculateSize(?string $content): int` | Calculate byte size (UTF-8 aware) |
+| `processContent(?string $html): array` | Full processing pipeline (text + metadata + size) |
+
+### Processing Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `MEMORY_LIMIT` | 512MB | PHP memory limit for processing |
+| `MAX_INPUT_SIZE` | 2MB | Maximum input HTML size |
+| `MAX_OUTPUT_SIZE` | 500KB | Maximum output text size |
+| `MAX_RECURSION_DEPTH` | 100 | Maximum DOM traversal depth |
+
+### Structured Text Extraction
+
+**Element Removal:**
+| Category | Elements Removed |
+|----------|-----------------|
+| Scripting | `<script>`, `<style>`, `<noscript>`, `<svg>` |
+| Boilerplate | `<nav>`, `<footer>`, `<aside>`, `<header>` |
+| Hidden | Elements with `aria-hidden="true"` or `display:none` |
+
+**Structure Preservation:**
+| Element | Output Format |
+|---------|--------------|
+| Headings (h1-h6) | `# `, `## `, `### ` (markdown-style) |
+| Unordered lists | `- item` |
+| Ordered lists | `1. item`, `2. item` |
+| Links | `[link text]` |
+| Images | `[alt: alt text]` |
+| Paragraphs/divs | Blank line separation |
+| Blockquotes | `> quoted text` |
+
+### Metadata Extraction
+
+**MetadataResult Structure:**
+```php
+[
+    'title' => string|null,        // <title> tag
+    'description' => string|null,  // meta name="description"
+    'robots' => string|null,        // meta name="robots"
+    'canonical' => string|null,     // link rel="canonical"
+    'og' => [
+        'title' => string|null,     // og:title
+        'description' => string|null, // og:description
+        'image' => string|null,     // og:image
+        'type' => string|null,      // og:type
+        'url' => string|null,       // og:url
+    ],
+    'twitter' => [
+        'card' => string|null,      // twitter:card
+        'title' => string|null,     // twitter:title
+        'description' => string|null, // twitter:description
+    ],
+    'language' => string|null,      // html lang attribute
+    'charset' => string|null,       // charset from meta or Content-Type
+]
+```
+
+### Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Empty/null input | Returns empty string or null metadata |
+| Malformed HTML | Gracefully parses, logs warning |
+| Memory exhaustion | Size limits prevent crashes |
+| Invalid UTF-8 | Handled via entity decoding |
+| Very large content | Truncated to size limits |
+
+**Error Handling Principle:** Never throws exceptions - all errors are logged and empty/null results returned.
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| DOM Parsing | Uses DOMDocument (no regex for HTML) |
+| No JS Execution | Script tags removed before processing |
+| SVG Sanitization | SVG elements completely removed |
+| XSS Prevention | Output is plain text, no HTML preserved |
+| Memory Safety | Hard limits on input/output size |
+
+### Test Coverage
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| ContentProcessorServiceTest | 89 | 182 |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Structured Text Extraction | 33 | HTML to plain text, headings, lists, links, whitespace |
+| Metadata Extraction | 31 | title, description, robots, canonical, OG, Twitter |
+| Size Calculation | 8 | Byte counting, UTF-8, multibyte, emoji |
+| Process Pipeline | 6 | Full pipeline, edge cases |
+| Error Handling | 3 | Malformed HTML, empty content |
+| Unicode/Edge Cases | 6 | UTF-8, emoji, special characters |
+| Security | 3 | No JS execution, SVG sanitization |
+| Performance | 2 | Large content handling |
+| Integration | 1 | End-to-end processing |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| **Deployed** | 2026-03-16 (Deployment ID: `20260316T115818Z-59c8be43`) |
+| **Commit** | `345942ba647ba390dc8c5fbff165f2f948ff56b3` |
+| **Tests** | 89/89 passing (182 assertions) |
+| **Status** | Complete ✅ |
+
+### Dependencies
+- Symfony DomCrawler (already installed)
+- PHP DOM extension
+
+### Related Tasks
+- TASK-22-5: PlaywrightRendererService (provides rendered HTML)
+- TASK-22-7: UrlValidatorService
+- TASK-22-14: Content Retrieval Endpoints
 
 ---
 ## Depth Controller Service (TASK-22-8)
