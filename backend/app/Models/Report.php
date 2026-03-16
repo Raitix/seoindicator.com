@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\HasProjectScope;
 
 /**
  * Report model for generated SEO reports.
@@ -35,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Report extends Model
 {
-    use HasFactory;
+    use HasFactory, HasProjectScope;
 
     public const STATUSES = [
         'pending' => 'Pending',
@@ -114,5 +115,8 @@ class Report extends Model
     public function getStatusLabelAttribute(): string
     {
         return self::STATUSES[$this->status] ?? ucfirst($this->status ?? '');
+    }
+}
+? '');
     }
 }

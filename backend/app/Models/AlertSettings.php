@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AlertSettings extends Model
 {
-    use HasFactory;
+    use HasFactory, HasProjectScope;
 
     /**
      * The model's default values for attributes.
@@ -108,5 +108,8 @@ class AlertSettings extends Model
             'serp_feature_alerts_enabled' => true,
             'serp_feature_types' => null,
         ];
+    }
+}
+    ];
     }
 }

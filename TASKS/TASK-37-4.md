@@ -1,7 +1,7 @@
 # TASK-37-4: Graceful Token Expiry Handling
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Critical`
@@ -98,3 +98,70 @@ apiClient.interceptors.response.use(
 - Login redirect tests with session expiry message
 - Redirect target storage tests for post-login navigation
 - Tests can be designed immediately - dependency is progressing, not blocking
+
+### PreTester Handoff (2026-03-16 22:50 GMT+2)
+**Status Changed:** Tests Coverage In Progress → To Develop
+
+**Tests Designed and Implemented:**
+- 36 unit tests in `frontend/__tests__/lib/api/token-expiry-handler.test.ts`
+- 12 integration tests in `frontend/__tests__/integration/token-expiry-flow.test.tsx`
+- Test documentation in `TESTS/TEST-37-4.md`
+
+**Test Categories:**
+- AC-001: 401 triggers automatic logout (TH-001 to TH-003)
+- AC-002: localStorage cleared on 401 (TH-004 to TH-006)
+- AC-003: User redirected to login (TH-007 to TH-009)
+- AC-004: Redirect target saved (TH-010 to TH-012)
+- AC-005: User-friendly message (TH-013 to TH-015)
+- AC-006: No raw error messages (TH-016 to TH-018)
+- Security: XSS prevention, open redirect prevention, token cleared before redirect
+- Accessibility: Screen reader announcements with role="alert"
+- Storage edge cases: Quota exceeded, corrupt data, private browsing
+
+**Handoff to Developer:**
+1. Create `frontend/lib/api/token-expiry-handler.ts` with:
+   - `handleTokenExpiry(redirectPath?: string): void`
+   - `setupUnauthorizedInterceptor(): void`
+   - `isUnauthorizedResponse(error: unknown): boolean`
+   - `clearAuthStorage(): void`
+   - `storeRedirectTarget(path: string): void`
+
+2. Integration points:
+   - Register interceptor in `AuthContext.tsx` during initialization
+   - Call `handleTokenExpiry()` from `handleErrorResponse()` in `auth.ts`
+   - Add message param to login redirect URL
+   - Display session expired toast on login page
+
+3. All tests are ready for TDD - they use mock implementations that match expected behavior
+
+### PreTester (2026-03-16 22:45 GMT+2)
+**Test Coverage Complete:**
+- 48 tests total (36 unit + 12 integration)
+- All tests passing
+- Unit tests: `frontend/__tests__/lib/api/token-expiry-handler.test.ts`
+- Integration tests: `frontend/__tests__/integration/token-expiry-flow.test.tsx`
+- Test documentation: `TESTS/TEST-37-4.md`
+
+**Test Categories:**
+1. **AC-001 to AC-007:** All acceptance criteria covered
+2. **Token Expiry Handler (TH-*):** 36 unit tests for core logic
+3. **Interceptor Integration (II-*):** 5 tests for fetch interceptor
+4. **Storage Handling (SH-*):** 3 tests for localStorage edge cases
+5. **Redirect Flow (RF-*):** 5 tests for login redirect flow
+6. **Security (SEC-*):** 6 tests for XSS, open redirect, token safety
+7. **Accessibility (AX-*):** 2 tests for screen reader support
+8. **Performance (PF-*):** 1 test for handler speed
+
+**Security Tests Verified:**
+- SEC-001: Token not in redirect URL ✓
+- SEC-004: XSS prevention in redirect path ✓
+- SEC-005: Open redirect prevention ✓
+- SEC-007: Token cleared before redirect ✓
+
+**Handoff to Developer:**
+- Create `frontend/lib/api/token-expiry-handler.ts`
+- Implement `handleTokenExpiry()`, `setupUnauthorizedInterceptor()`, `isUnauthorizedResponse()`
+- Integrate with existing `auth.ts` error handling
+- Add session expired message to login page
+
+**Status Changed:** Tests Coverage In Progress → To Develop
