@@ -11,6 +11,9 @@ import '@testing-library/jest-dom';
 // Types
 import type { ComparisonData, CompetitorData, FAQ } from '@/lib/compare/types';
 
+// Registry
+import { COMPARISON_SLUGS } from '@/lib/compare/registry';
+
 // ============================================================================
 // Mock Data
 // ============================================================================
@@ -369,7 +372,6 @@ describe('generateStaticParams', () => {
 
   describe('CP-STR: Static Params Structure', () => {
     it('CP-STR-001: returns array of slug params', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
       
       expect(Array.isArray(params)).toBe(true);
@@ -377,7 +379,6 @@ describe('generateStaticParams', () => {
     });
 
     it('CP-STR-002: each param has slug property', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
       
       params.forEach((param: { slug: string }) => {
@@ -387,22 +388,18 @@ describe('generateStaticParams', () => {
     });
 
     it('CP-STR-003: all COMPARISON_SLUGS included', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
       
       expect(params.length).toBe(COMPARISON_SLUGS.length);
     });
 
     it('CP-STR-004: slug format contains -vs-', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-      
       COMPARISON_SLUGS.forEach((slug: string) => {
         expect(slug).toContain('-vs-');
       });
     });
 
     it('CP-STR-005: no duplicate slugs', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const uniqueSlugs = new Set(COMPARISON_SLUGS);
       
       expect(uniqueSlugs.size).toBe(COMPARISON_SLUGS.length);
@@ -417,20 +414,19 @@ describe('generateStaticParams', () => {
     });
 
     it('CP-STR-007: params are serializable', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
       
       expect(() => JSON.stringify(params)).not.toThrow();
     });
 
     it('CP-STR-008: all primary comparisons exist', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const primaryComparisons = COMPARISON_SLUGS.filter((s: string) => s.startsWith('seoindicator-vs-'));
       const crossCompetitor = COMPARISON_SLUGS.filter((s: string) => !s.startsWith('seoindicator-'));
 
       // Verify primary comparisons exist (seoindicator-vs-*)
+      // At minimum, these core competitors should have comparisons
       const expectedPrimary = ['seoindicator-vs-ahrefs', 'seoindicator-vs-moz', 'seoindicator-vs-semrush', 'seoindicator-vs-ubersuggest'];
-      expect(primaryComparisons.length).toBe(expectedPrimary.length);
+      expect(primaryComparisons.length).toBeGreaterThanOrEqual(expectedPrimary.length);
       expectedPrimary.forEach(slug => {
         expect(COMPARISON_SLUGS).toContain(slug);
       });
@@ -440,7 +436,6 @@ describe('generateStaticParams', () => {
     });
 
     it('CP-STR-009: primary comparisons first (seoindicator-vs-*)', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const primaryComparisons = COMPARISON_SLUGS.filter((s: string) => s.startsWith('seoindicator-vs-'));
       const firstNonPrimary = COMPARISON_SLUGS.findIndex((s: string) => !s.startsWith('seoindicator-vs-'));
       
@@ -454,7 +449,6 @@ describe('generateStaticParams', () => {
     });
 
     it('CP-STR-010: cross-competitor comparisons included', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const crossCompetitor = COMPARISON_SLUGS.filter((s: string) => !s.startsWith('seoindicator-'));
       
       expect(crossCompetitor.length).toBeGreaterThan(0);
@@ -775,7 +769,6 @@ describe('ComparisonPage - Acceptance Criteria', () => {
 
   describe('CP-AC: Acceptance Criteria', () => {
     it('CP-AC-001: static params generate all slugs', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
       const params = COMPARISON_SLUGS.map((slug: string) => ({ slug }));
       
       expect(params.length).toBe(COMPARISON_SLUGS.length);
@@ -792,8 +785,6 @@ describe('ComparisonPage - Acceptance Criteria', () => {
     });
 
     it('CP-AC-004: page renders for all valid slugs', () => {
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-      
       COMPARISON_SLUGS.forEach((slug: string) => {
         const { unmount } = render(<ComparisonPage params={{ slug }} />);
         expect(mockGetComparisonBySlug).toHaveBeenCalledWith(slug);

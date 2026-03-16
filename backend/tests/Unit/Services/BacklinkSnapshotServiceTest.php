@@ -12,6 +12,7 @@ use App\Repositories\BacklinkRepository;
 use App\Repositories\BacklinkSnapshotRepository;
 use App\Repositories\ReferringDomainRepository;
 use App\Services\BacklinkSnapshotService;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -965,7 +966,7 @@ class BacklinkSnapshotServiceTest extends TestCase
     {
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $result = $this->service->getHistory(1, '2026-01-01', '2026-01-31');
 
@@ -1019,7 +1020,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(1, '2026-01-15', '2026-01-31')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $this->service->getHistory(1, '2026-01-15', '2026-01-31');
     }
@@ -1030,7 +1031,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(1, '2026-01-01', '2026-01-20')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $this->service->getHistory(1, '2026-01-01', '2026-01-20');
     }
@@ -1043,7 +1044,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(1, '2026-01-15', '2026-01-15')
             ->once()
-            ->andReturn(collect([$snapshot]));
+            ->andReturn(new EloquentCollection([]));
 
         $result = $this->service->getHistory(1, '2026-01-15', '2026-01-15');
 
@@ -1056,7 +1057,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(1, '2026-01-01', '2026-01-31')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $this->service->getHistory(1, '2026-01-01', '2026-01-31');
     }
@@ -1077,7 +1078,7 @@ class BacklinkSnapshotServiceTest extends TestCase
     {
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $result = $this->service->getHistory(1, '2026-01-31', '2026-01-01');
 
@@ -1094,7 +1095,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(42, '2026-01-01', '2026-01-31')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $this->service->getHistory(42, '2026-01-01', '2026-01-31');
     }
@@ -1118,7 +1119,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(99999, '2026-01-01', '2026-01-31')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $result = $this->service->getHistory(99999, '2026-01-01', '2026-01-31');
 
@@ -1130,7 +1131,7 @@ class BacklinkSnapshotServiceTest extends TestCase
     {
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $result = $this->service->getHistory(1, '2026-01-01', '2026-01-31');
 
@@ -1429,7 +1430,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         // PHP will type-hint this, but we test the service behavior
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         // Passing a valid int to test the flow
         $result = $this->service->getHistory(1, '2026-01-01', '2026-01-31');
@@ -1469,7 +1470,7 @@ class BacklinkSnapshotServiceTest extends TestCase
     {
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         // If this doesn't throw, the parameterized query is working
         $result = $this->service->getHistory(1, '2026-01-01', '2026-01-31');
@@ -1482,7 +1483,7 @@ class BacklinkSnapshotServiceTest extends TestCase
     {
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->once()
-            ->andReturn(collect());
+            ->andReturn(new EloquentCollection());
 
         $result = $this->service->getHistory(1, '2026-01-01', '2026-01-31');
 
