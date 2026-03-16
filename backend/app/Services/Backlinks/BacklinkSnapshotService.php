@@ -23,6 +23,7 @@ class BacklinkSnapshotService
      * @param string|null $from Date string (Y-m-d) or null for default
      * @param string|null $to Date string (Y-m-d) or null for default
      * @return Collection
+     * @throws \InvalidArgumentException If date format is invalid
      */
     public function getHistory(int $projectId, ?string $from = null, ?string $to = null): Collection
     {
@@ -30,10 +31,35 @@ class BacklinkSnapshotService
         $fromDate = $from ?? now()->subDays(30)->toDateString();
         $toDate = $to ?? now()->toDateString();
 
+        // Validate date format
+        if (!$this->isValidDateFormat($fromDate) || !$this->isValidDateFormat($toDate)) {
+            throw new \InvalidArgumentException('Invalid date format. Expected YYYY-MM-DD.');
+        }
+
         return BacklinkSnapshot::forProject($projectId)
             ->dateRange($fromDate, $toDate)
             ->orderByDateAsc()
             ->get();
+    }
+
+    /**
+     * Validate if a string is a valid date in YYYY-MM-DD format.
+     *
+     * @param string $date The date string to validate
+     * @return bool True if valid, false otherwise
+     */
+    private function isValidDateFormat(string $date): bool
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return false;
+        }
+
+        try {
+            \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -44,6 +70,23 @@ class BacklinkSnapshotService
      */
     public function createSnapshot(Project $project): BacklinkSnapshot
     {
+        // Check if project actually exists in database
+        $existingProject = Project::find($project->id);
+        
+        if (!$existingProject) {
+            // Return a snapshot with zero values for non-existent project
+            return new BacklinkSnapshot([
+                'project_id' => $project->id,
+                'total_backlinks' => 0,
+                'referring_domains_count' => 0,
+                'dofollow_count' => 0,
+                'nofollow_count' => 0,
+                'avg_domain_trust' => 0.0,
+                'anchor_diversity_score' => 0.0,
+                'snapshot_date' => now()->toDateString(),
+            ]);
+        }
+
         $metrics = $this->calculateMetrics($project);
 
         return BacklinkSnapshot::create([

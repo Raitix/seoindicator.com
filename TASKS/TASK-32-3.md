@@ -1,7 +1,7 @@
 # TASK-32-3: Create Comparison Page Route with Static Generation
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

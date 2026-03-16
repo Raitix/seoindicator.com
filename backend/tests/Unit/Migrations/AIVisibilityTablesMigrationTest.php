@@ -10,6 +10,25 @@ use Illuminate\Support\Facades\Artisan;
 /**
  * Test suite for TASK-34-1: AI Visibility Tracking Database Migrations
  *
+ * ============================================================================
+ * KNOWN ISSUE: SCHEMA MISMATCH (2026-03-16)
+ * ============================================================================
+ * This test file was written against TEST-34-1.md specification but the
+ * actual migration (2026_03_07_200000_create_ai_visibility_tables.php) has
+ * different column names and structure.
+ *
+ * Key discrepancies:
+ * - `model` column → actual: `model_used`
+ * - `brand_mentioned` → doesn't exist in migration
+ * - `brand_sentiment` → actual: `sentiment`
+ * - `competitor_mentions` → actual: `mentions`
+ * - `citations` → doesn't exist
+ * - FULLTEXT index on response_text → not implemented
+ *
+ * Status: Test failed at test_qr005_model_column (27 passed, 1 failed)
+ * Resolution: Requires alignment between specification and implementation
+ * ============================================================================
+ *
  * Tests the migrations creating four tables for AI Visibility Tracking:
  * - ai_visibility_projects: Project configuration for brand tracking
  * - ai_query_results: Individual AI query results and responses

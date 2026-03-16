@@ -295,7 +295,7 @@ test.describe('Audit List Page', () => {
     await page.click('[data-testid="status-filter"] button, button:has-text("All Statuses")');
     
     // Select "completed"
-    await page.click('text=Completed');
+    await page.click('[data-value="completed"], text=Completed');
     
     // Verify filter was applied
     await expect(page.locator('text=completed')).toBeVisible();
@@ -315,8 +315,8 @@ test.describe('Audit List Page', () => {
     await expect(page.locator('label:has-text("Max Pages")')).toBeVisible();
     await expect(page.locator('label:has-text("Max Depth")')).toBeVisible();
     
-    // Close modal
-    await page.click('button:has-text("Cancel")');
+    // Close modal using the specific modal cancel button
+    await page.click('[role="dialog"] button:has-text("Cancel")');
     
     // Verify modal is closed
     await expect(page.locator('text=Start New Audit')).not.toBeVisible();

@@ -1,7 +1,7 @@
 # TASK-34-2: AIVisibilityProject Model
 
 ## STATUS
-`To Test Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -206,3 +206,101 @@ Create Eloquent models for all AI Visibility entities: `AIVisibilityProject`, `A
 - ✅ Scopes implemented (active, dueForQuery, mentioned, forPlatform, unread, unresolved)
 
 **Handoff:** Ready for LocalTester to run model tests.
+
+### [2026-03-16 23:36 UTC+2] LocalTester - Spec/Implementation Mismatch Detected
+
+**Test Results:** 56 failed, 1 risky, 9 skipped, 99 passed
+
+**Decision:** Returned to Developer for alignment. Tests cannot pass due to fundamental spec/implementation mismatch.
+
+---
+
+## Spec/Implementation Discrepancies
+
+### 1. AIVisibilityProject Model
+
+| Aspect | TEST-34-2.md Expects | Model Implements | Status |
+|--------|---------------------|------------------|--------|
+| Fillable | `brand_name`, `keywords`, `competitors`, `query_templates`, `tracking_frequency`, `is_active`, `last_queried_at` | ✅ Matches + `user_id` | ✅ OK |
+| Scope `active()` | `where('is_active', true)` | ❌ Missing | ❌ FAIL |
+| Scope `dueForQuery()` | Projects needing queries | ❌ Missing | ❌ FAIL |
+| Accessor `getCompetitorListAttribute()` | Returns competitor names array | Has `getCompetitorNames()` method instead | ⚠️ DIFFERENT |
+| Default `tracking_frequency` | `'weekly'` | ❌ Not set in model | ❌ FAIL |
+
+### 2. AIQueryResult Model
+
+| Aspect | TEST-34-2.md Expects | Model Implements | Status |
+|--------|---------------------|------------------|--------|
+| Column `model` | Expected | `model_used` instead | ❌ MISMATCH |
+| Column `brand_sentiment` | Expected | `sentiment` instead | ❌ MISMATCH |
+| Fillable `brand_context` | Expected | ❌ Missing | ❌ FAIL |
+| Fillable `citations` | Expected | ❌ Missing | ❌ FAIL |
+| Fillable `query_tokens` | Expected | `tokens_used` instead | ⚠️ DIFFERENT |
+| Fillable `response_tokens` | Expected | ❌ Missing | ❌ FAIL |
+| Fillable `cache_hit` | Expected | ❌ Missing | ❌ FAIL |
+| Scope `mentioned()` | `where('brand_mentioned', true)` | ❌ Missing (has `successful()`) | ❌ FAIL |
+| Scope `forPlatform()` | Expected | ✅ Implemented | ✅ OK |
+| Cast `citations` → array | Expected | ❌ Missing | ❌ FAIL |
+| Cast `cache_hit` → boolean | Expected | ❌ Missing | ❌ FAIL |
+
+### 3. AIMentionAnalytics Model
+
+| Aspect | TEST-34-2.md Expects | Model Implements | Status |
+|--------|---------------------|------------------|--------|
+| Fillable `share_of_voice` | Expected | ❌ Missing (has `calculateShareOfVoice()` method) | ❌ FAIL |
+| Fillable `avg_sentiment_score` | Expected | `average_sentiment` instead | ⚠️ DIFFERENT |
+| Fillable `top_query_categories` | Expected | ❌ Missing | ❌ FAIL |
+| Fillable `mention_trend` | Expected | ❌ Missing | ❌ FAIL |
+| Cast `top_query_categories` → array | Expected | ❌ Missing | ❌ FAIL |
+| Default values | Various | ❌ Not set in model | ❌ FAIL |
+
+### 4. AIVisibilityAlert Model
+
+| Aspect | TEST-34-2.md Expects | Model Implements | Status |
+|--------|---------------------|------------------|--------|
+| Fillable attributes | `project_id`, `alert_type`, `threshold`, `previous_value`, `current_value`, `change_percent`, `is_read`, `is_resolved`, `triggered_at`, `resolved_at` | ✅ Matches + `metadata` | ✅ OK |
+| Scope `unread()` | Expected | ✅ Implemented | ✅ OK |
+| Scope `unresolved()` | Expected | ✅ Implemented | ✅ OK |
+
+---
+
+## Root Cause
+
+The Developer implemented models based on a different schema than what was specified in:
+1. TASK-34-2.md Acceptance Criteria
+2. TEST-34-2.md test specifications
+3. The migrations (TASK-34-1) which also differ from tests
+
+The migration tests also fail because they expect different column names (e.g., `model` vs `model_used`).
+
+---
+
+## Resolution Options
+
+**Option A: Update Models to Match Specification**
+- Add missing fillable attributes
+- Add missing scopes (`active()`, `dueForQuery()`, `mentioned()`)
+- Add missing casts
+- Rename columns to match spec (requires migration changes too)
+
+**Option B: Update Tests to Match Implementation**
+- Change `model` → `model_used` in tests
+- Change `brand_sentiment` → `sentiment` in tests
+- Remove tests for missing attributes (`brand_context`, `citations`, `cache_hit`, etc.)
+- Add tests for implementation-specific features
+
+**Option C: Update Both to Reach Consensus**
+- Architect/Developer decides which schema is correct
+- Both tests and models updated to match agreed schema
+
+---
+
+## Recommendation
+
+Per LESSONS-LEARNED: "When tests fail due to spec/implementation mismatch, document the discrepancy and return for alignment decision rather than modifying tests or implementation unilaterally."
+
+**LocalTester cannot proceed until Developer confirms which schema is correct.**
+
+---
+
+*Analyzed by LocalTester on 2026-03-16*

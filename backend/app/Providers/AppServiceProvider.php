@@ -204,6 +204,36 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Admin\Contracts\UserStatsRepositoryInterface::class,
             \App\Repositories\UserStatsRepository::class
         );
+
+        // BacklinkSnapshotService singleton binding (TASK-23-6, SPEC-023)
+        $this->app->singleton(
+            \App\Services\BacklinkSnapshotService::class,
+            \App\Services\BacklinkSnapshotService::class
+        );
+
+        // Backlinks\BacklinkSnapshotService singleton binding (TASK-23-6, SPEC-023)
+        $this->app->singleton(
+            \App\Services\Backlinks\BacklinkSnapshotService::class,
+            \App\Services\Backlinks\BacklinkSnapshotService::class
+        );
+
+        // Backlink Repository bindings (TASK-23-2, TASK-23-6, SPEC-023)
+        $this->app->bind(
+            \App\Repositories\BacklinkRepository::class,
+            \App\Repositories\BacklinkRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\ReferringDomainRepository::class,
+            \App\Repositories\ReferringDomainRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\AnchorTextRepository::class,
+            \App\Repositories\AnchorTextRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\BacklinkSnapshotRepository::class,
+            \App\Repositories\BacklinkSnapshotRepository::class
+        );
     }
 
     /**

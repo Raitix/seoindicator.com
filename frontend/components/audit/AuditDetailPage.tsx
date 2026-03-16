@@ -31,6 +31,10 @@ import type { IssueFilters as IssueFiltersType, IssueStatus, IssueSeverity } fro
 // ============================================================
 
 export interface AuditDetailPageProps {
+  /** Site ID from route params */
+  siteId?: string;
+  /** Audit ID from route params */
+  auditId?: string;
   /** Additional CSS classes */
   className?: string;
 }
@@ -39,14 +43,14 @@ export interface AuditDetailPageProps {
 // Component
 // ============================================================
 
-export function AuditDetailPage({ className }: AuditDetailPageProps) {
+export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, className }: AuditDetailPageProps) {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Get route params
-  const siteId = params.siteId as string;
-  const auditId = params.auditId as string;
+  // Get route params - prefer props over useParams for SSR
+  const siteId = siteIdProp ?? (params.siteId as string);
+  const auditId = auditIdProp ?? (params.auditId as string);
 
   // Parse URL params for filters
   const initialFilters: IssueFiltersType = {

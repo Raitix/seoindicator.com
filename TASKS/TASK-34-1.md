@@ -1,7 +1,7 @@
 # TASK-34-1: Database Migrations
 
 ## STATUS
-`To Test Locally`
+`Test Failed - Schema Mismatch`
 
 ## PRIORITY
 `High`
@@ -192,3 +192,53 @@ Create database migrations for AI Visibility Tracking feature. This includes fou
 - Migration includes rollback support
 
 **Handoff:** Ready for LocalTester to verify migrations run successfully.
+
+---
+
+### [2026-03-16 22:54 GMT+2] LocalTester - Test Execution Failed
+
+**Status:** ❌ Test Failed - Schema Mismatch
+
+**Test Execution Summary:**
+- **Total Tests:** 145 planned, 30 executed before failure
+- **Passed:** 27
+- **Failed:** 1 (`test_qr005_model_column`)
+- **Skipped:** 2 (MySQL-specific FK tests on SQLite)
+- **Duration:** 99.85 seconds
+
+**Failure Details:**
+```
+FAILED  Tests\Unit\Migrations\AIVisibilityTablesMigrationTest > qr005 model column
+model column should exist
+Failed asserting that an array contains 'model'.
+```
+
+**Root Cause Analysis:**
+
+The test file was written against a specification (TEST-34-1.md) that differs from the actual migration implementation. Significant schema discrepancies exist:
+
+| Expected by Tests | Actual in Migration | Impact |
+|-------------------|---------------------|--------|
+| `model` | `model_used` | Test Failure |
+| `query_category` | (missing) | Tests will fail |
+| `brand_mentioned` | (missing) | Tests will fail |
+| `brand_context` | (missing) | Tests will fail |
+| `brand_sentiment` | `sentiment` | Tests will fail |
+| `competitor_mentions` | `mentions` | Tests will fail |
+| `citations` | (missing) | Tests will fail |
+| `query_tokens` | `tokens_used` | Tests will fail |
+| `response_tokens` | (missing) | Tests will fail |
+| `cache_hit` | (missing) | Tests will fail |
+| FULLTEXT index on response_text | Not present | Tests will fail |
+
+**Additional Missing in Migration:**
+- `ai_mention_analytics`: `period_start`, `period_end`, `mention_trend`, `top_query_categories`, `avg_sentiment_score`
+- `ai_visibility_alerts`: `resolved_at` (added in separate migration), ENUM for `alert_type`
+
+**Decision Required:**
+1. **Option A:** Update migration to match TEST-34-1.md specification (adds missing columns)
+2. **Option B:** Update tests to match actual migration schema (removes test coverage for missing columns)
+
+**Recommendation:** Return to PreTester/Developer for alignment decision.
+
+**Handoff:** Needs resolution before proceeding to DevOps.

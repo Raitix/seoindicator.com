@@ -24,10 +24,12 @@ export function generateStaticParams() {
 // Page Component
 // ============================================================
 
-export default function AuditsPage({ params }: { params: { siteId: string } }) {
+export default async function AuditsPage({ params }: { params: Promise<{ siteId: string }> }) {
+  const { siteId } = await params;
+  
   return (
     <main className="container mx-auto px-4 py-8 max-w-4xl">
-      <AuditList siteId={params.siteId} />
+      <AuditList siteId={siteId} />
     </main>
   );
 }
