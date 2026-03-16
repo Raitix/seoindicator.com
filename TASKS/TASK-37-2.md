@@ -1,7 +1,7 @@
 # TASK-37-2: Fix Header Navigation
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -78,3 +78,22 @@ Use `isAuthenticated` to hide protected nav items from guests
 ## Related Issues
 - FEAT-037
 - SPEC-037
+
+## Comments
+
+### 2026-03-16 13:10 GMT+2 - ProjectManager
+**Prioritization Assessment:**
+- **Priority:** HIGH (confirmed) - Navigation is critical for user experience. Broken buttons prevent users from accessing login/dashboard.
+- **Risk:** MEDIUM (confirmed) - Frontend-only changes, no external APIs, but affects user authentication flow visibility.
+- **Dependencies:** None - Header component exists at `frontend/components/layout/Header.tsx`.
+
+**Justification for HIGH Priority:**
+1. Users cannot navigate to login page from header - blocks authentication flow
+2. Protected routes visible to guests - security/usability concern
+3. Broken hover states affect UX perception
+4. Simple fix with high user impact
+
+**Task Ready for:** PreTester
+- Clear acceptance criteria defined
+- Technical solution documented
+- No blocking dependencies
