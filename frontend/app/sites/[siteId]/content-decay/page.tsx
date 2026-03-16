@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,11 +18,29 @@ import {
 import type { DecayCandidate, DecayQueueFilterState } from "@/lib/types/content-decay";
 import { RefreshCw, Download, Settings, LayoutDashboard, Columns, BarChart3 } from "lucide-react";
 
+// Loading fallback for Suspense
+function ContentDecayLoadingFallback() {
+  return (
+    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="content-decay-page-loading">
+      <div className="animate-pulse">
+        <div className="h-8 w-48 bg-slate-700 rounded mb-2" />
+        <div className="h-4 w-64 bg-slate-700 rounded" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-24 bg-slate-700 rounded-lg" />
+        ))}
+      </div>
+      <div className="h-96 bg-slate-700 rounded-lg" />
+    </div>
+  );
+}
+
 /**
- * Content Decay Refresh Queue Page
+ * Content Decay Refresh Queue Page - Content Component
  * Route: /sites/[siteId]/content-decay
  */
-export default function ContentDecayPage() {
+function ContentDecayContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -122,5 +140,14 @@ export default function ContentDecayPage() {
 
       <CandidateDetailDrawer candidate={selectedCandidate} isOpen={isDrawerOpen} onClose={handleDrawerClose} isLoading={isCandidateLoading} />
     </div>
+  );
+}
+
+// Wrap with Suspense for static export compatibility with useSearchParams
+export default function ContentDecayPage() {
+  return (
+    <Suspense fallback={<ContentDecayLoadingFallback />}>
+      <ContentDecayContent />
+    </Suspense>
   );
 }
