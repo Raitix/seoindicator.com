@@ -190,7 +190,7 @@ Route::prefix('v1/badge')->middleware(['throttle:badge-tracking'])->group(functi
 | All routes require authentication.
 |
 */
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/gsc/connect', [GSCConnectionController::class, 'connect']);
     Route::delete('/gsc/disconnect/{propertyId}', [GSCConnectionController::class, 'disconnect']);
     Route::get('/gsc/properties', [GSCConnectionController::class, 'properties']);
@@ -232,7 +232,7 @@ Route::prefix('v1')->group(function () {
         ->where('id', '[0-9]+');
 
     // Model Preferences (TASK-26-19) - Requires authentication
-    Route::middleware(['auth'])->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('models/preferences', [\App\Http\Controllers\Api\V1\ModelController::class, 'preferences']);
         Route::post('models/preferences', [\App\Http\Controllers\Api\V1\ModelController::class, 'setPreference']);
     });
@@ -277,11 +277,12 @@ Route::prefix('v1')->group(function () {
 
     // AI Suggestions (TASK-21-5, TASK-21-10) - requires auth + rate limiting
     Route::post('ai/suggestions', [AISuggestionController::class, 'generate'])
-        ->middleware(['auth', 'ai.ratelimit']);
+        ->middleware(['auth:sanctum', 'ai.ratelimit']);
 });
 
 // Authenticated V1 API Routes
-Route::prefix('v1')->middleware(['auth'])->group(function () {
+// Using auth:sanctum to support both session and bearer token authentication
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     // Audit Visibility Routes (TASK-33-7, SPEC-33)
     Route::middleware(['throttle:60,1'])->group(function () {
         Route::post('audits/{id}/publish', [\App\Http\Controllers\Api\V1\AuditVisibilityController::class, 'publish'])

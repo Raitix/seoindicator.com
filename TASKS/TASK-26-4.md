@@ -1,7 +1,7 @@
 # TASK-26-4: Create AI Models Table with OpenRouter Sync
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`
