@@ -1044,7 +1044,7 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->snapshotRepo->shouldReceive('getByDateRange')
             ->with(1, '2026-01-15', '2026-01-15')
             ->once()
-            ->andReturn(new EloquentCollection([]));
+            ->andReturn(new EloquentCollection([$snapshot]));
 
         $result = $this->service->getHistory(1, '2026-01-15', '2026-01-15');
 
