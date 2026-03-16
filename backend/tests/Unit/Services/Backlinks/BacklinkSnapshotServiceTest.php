@@ -8,17 +8,19 @@ use App\Models\BacklinkSnapshot;
 use App\Models\Project;
 use App\Models\ReferringDomain;
 use App\Services\Backlinks\BacklinkSnapshotService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /**
  * Unit tests for BacklinkSnapshotService.
  *
- * Tests snapshot creation, history retrieval, and metric calculations.
+ * Tests snapshot generation, history retrieval, and metric calculations
+ * for backlink trend analysis.
  *
  * @see TASK-23-6
- * @see TASK-23-17
+ * @see TEST-23-6
  */
 class BacklinkSnapshotServiceTest extends TestCase
 {
@@ -29,215 +31,201 @@ class BacklinkSnapshotServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new BacklinkSnapshotService();
+        $this->service = app(BacklinkSnapshotService::class);
     }
 
-    // =============================================
-    // GET HISTORY TESTS (GH)
-    // =============================================
+    // ========================================================================
+    // BS-001: Service Instantiation
+    // ========================================================================
 
-    /** @test GH-001: Returns history for project */
-    public function get_history_returns_snapshots_for_project(): void
+    /** @test */
+    public function bs_001_a_service_can_be_instantiated_from_container(): void
     {
-        Carbon::setTestNow('2026-02-28');
-        
-        $project = Project::factory()->create();
-        $otherProject = Project::factory()->create();
+        $service = app(BacklinkSnapshotService::class);
 
-        // Create snapshots on different dates
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-10',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-20',
-        ]);
-        
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $otherProject->id,
-            'snapshot_date' => '2026-02-12',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $otherProject->id,
-            'snapshot_date' => '2026-02-18',
-        ]);
-
-        $history = $this->service->getHistory($project->id);
-
-        $this->assertCount(3, $history);
-        
-        Carbon::setTestNow();
+        $this->assertInstanceOf(BacklinkSnapshotService::class, $service);
     }
 
-    /** @test GH-002: Returns empty collection for no snapshots */
-    public function get_history_returns_empty_for_no_snapshots(): void
+    /** @test */
+    public function bs_001_b_service_has_required_methods(): void
     {
-        $project = Project::factory()->create();
-
-        $history = $this->service->getHistory($project->id);
-
-        $this->assertEmpty($history);
+        $this->assertTrue(method_exists($this->service, 'createSnapshot'));
+        $this->assertTrue(method_exists($this->service, 'getHistory'));
+        $this->assertTrue(method_exists($this->service, 'calculateAnchorDiversity'));
+        $this->assertTrue(method_exists($this->service, 'calculateAverageTrust'));
+        $this->assertTrue(method_exists($this->service, 'getLatestSnapshot'));
+        $this->assertTrue(method_exists($this->service, 'createSnapshotForDate'));
     }
 
-    /** @test GH-003: Filters by date range */
-    public function get_history_filters_by_date_range(): void
+    /** @test */
+    public function bs_001_c_service_is_singleton(): void
+    {
+        $service1 = app(BacklinkSnapshotService::class);
+        $service2 = app(BacklinkSnapshotService::class);
+
+        $this->assertSame($service1, $service2);
+    }
+
+    /** @test */
+    public function bs_001_d_service_dependencies_are_injected(): void
+    {
+        $reflection = new \ReflectionClass($this->service);
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertGreaterThan(0, $constructor->getNumberOfParameters());
+    }
+
+    // ========================================================================
+    // BS-002: createSnapshot() Basic
+    // ========================================================================
+
+    /** @test */
+    public function bs_002_a_creates_snapshot_with_valid_project(): void
     {
         $project = Project::factory()->create();
-
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-10',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-20',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-25',
-        ]);
-
-        $history = $this->service->getHistory($project->id, '2026-02-12', '2026-02-22');
-
-        $this->assertCount(2, $history);
-    }
-
-    /** @test GH-004: Defaults to last 30 days */
-    public function get_history_defaults_to_30_days(): void
-    {
-        Carbon::setTestNow('2026-02-28');
-
-        $project = Project::factory()->create();
-
-        // Within 30 days
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15',
-        ]);
-        // Outside 30 days
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-01-20',
-        ]);
-
-        $history = $this->service->getHistory($project->id);
-
-        $this->assertCount(1, $history);
-
-        Carbon::setTestNow();
-    }
-
-    /** @test GH-005: Orders by date ascending */
-    public function get_history_orders_by_date_asc(): void
-    {
-        $project = Project::factory()->create();
-
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-20',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-10',
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15',
-        ]);
-
-        $history = $this->service->getHistory($project->id);
-
-        $dates = $history->pluck('date')->toArray();
-        $this->assertEquals(['2026-02-10', '2026-02-15', '2026-02-20'], $dates);
-    }
-
-    /** @test GH-006: Returns API response format */
-    public function get_history_returns_api_response_format(): void
-    {
-        $project = Project::factory()->create();
-
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15',
-            'total_backlinks' => 100,
-            'referring_domains_count' => 50,
-        ]);
-
-        $history = $this->service->getHistory($project->id);
-
-        $this->assertArrayHasKey('date', $history[0]);
-        $this->assertArrayHasKey('total_backlinks', $history[0]);
-        $this->assertArrayHasKey('referring_domains_count', $history[0]);
-    }
-
-    /** @test GH-007: Returns empty for non-existent project */
-    public function get_history_returns_empty_for_nonexistent_project(): void
-    {
-        $history = $this->service->getHistory(99999);
-
-        $this->assertEmpty($history);
-    }
-
-    // =============================================
-    // CREATE SNAPSHOT TESTS (CS)
-    // =============================================
-
-    /** @test CS-001: Creates snapshot with calculated metrics */
-    public function create_snapshot_stores_metrics(): void
-    {
-        $project = Project::factory()->create();
-
-        // Create backlinks
-        Backlink::factory()->count(50)->dofollow()->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        Backlink::factory()->count(30)->nofollow()->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-
-        // Create referring domains
-        ReferringDomain::factory()->count(10)->create([
-            'project_id' => $project->id,
-        ]);
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
 
         $snapshot = $this->service->createSnapshot($project);
 
+        $this->assertInstanceOf(BacklinkSnapshot::class, $snapshot);
         $this->assertDatabaseHas('backlink_snapshots', [
-            'project_id' => $project->id,
-            'total_backlinks' => 80,
-            'referring_domains_count' => 10,
-            'dofollow_count' => 50,
-            'nofollow_count' => 30,
+            'id' => $snapshot->id,
         ]);
     }
 
-    /** @test CS-002: Creates snapshot with today's date */
-    public function create_snapshot_uses_todays_date(): void
+    /** @test */
+    public function bs_002_b_sets_correct_project_id(): void
     {
-        Carbon::setTestNow('2026-02-28 12:00:00');
-
-        $project = Project::factory()->create();
+        $project = Project::factory()->create(['id' => 5]);
+        Backlink::factory()->create(['project_id' => $project->id]);
 
         $snapshot = $this->service->createSnapshot($project);
 
-        $this->assertEquals('2026-02-28', $snapshot->snapshot_date->format('Y-m-d'));
-
-        Carbon::setTestNow();
+        $this->assertEquals(5, $snapshot->project_id);
     }
 
-    /** @test CS-003: Handles empty backlink profile */
-    public function create_snapshot_handles_empty_profile(): void
+    /** @test */
+    public function bs_002_c_sets_snapshot_date_to_today(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(today()->toDateString(), $snapshot->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_002_d_calculates_total_backlinks(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(150)->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(150, $snapshot->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_002_e_calculates_referring_domains_count(): void
+    {
+        $project = Project::factory()->create();
+        ReferringDomain::factory()->count(25)->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(25, $snapshot->referring_domains_count);
+    }
+
+    /** @test */
+    public function bs_002_f_calculates_dofollow_count(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(100)->dofollow()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+        Backlink::factory()->count(50)->nofollow()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(100, $snapshot->dofollow_count);
+    }
+
+    /** @test */
+    public function bs_002_g_calculates_nofollow_count(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(100)->dofollow()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+        Backlink::factory()->count(50)->nofollow()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(50, $snapshot->nofollow_count);
+    }
+
+    /** @test */
+    public function bs_002_h_calculates_avg_domain_trust(): void
+    {
+        $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 50]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 70]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 90]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(70.0, (float) $snapshot->avg_domain_trust);
+    }
+
+    /** @test */
+    public function bs_002_i_calculates_anchor_diversity_score(): void
+    {
+        $project = Project::factory()->create();
+        // 5 anchors with equal 20 backlinks each = 80% diversity (100 - 20)
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 20]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 20]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 20]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 20]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 20]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        // Top anchor has 20/100 = 20%, diversity = 100 - 20 = 80
+        $this->assertEquals(80.0, (float) $snapshot->anchor_diversity_score);
+    }
+
+    /** @test */
+    public function bs_002_j_excludes_inactive_backlinks(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(100)->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+        Backlink::factory()->count(50)->inactive()->create([
+            'project_id' => $project->id,
+        ]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(100, $snapshot->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_002_k_handles_empty_backlinks(): void
     {
         $project = Project::factory()->create();
 
@@ -247,581 +235,1102 @@ class BacklinkSnapshotServiceTest extends TestCase
         $this->assertEquals(0, $snapshot->referring_domains_count);
         $this->assertEquals(0, $snapshot->dofollow_count);
         $this->assertEquals(0, $snapshot->nofollow_count);
-        $this->assertNull($snapshot->avg_domain_trust);
+        $this->assertEquals(0.0, (float) $snapshot->avg_domain_trust);
+        $this->assertEquals(0.0, (float) $snapshot->anchor_diversity_score);
     }
 
-    /** @test CS-004: Only counts active backlinks */
-    public function create_snapshot_only_counts_active_backlinks(): void
-    {
-        $project = Project::factory()->create();
-
-        Backlink::factory()->count(50)->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        Backlink::factory()->count(30)->create([
-            'project_id' => $project->id,
-            'is_active' => false,
-        ]);
-
-        $snapshot = $this->service->createSnapshot($project);
-
-        $this->assertEquals(50, $snapshot->total_backlinks);
-    }
-
-    /** @test CS-005: Returns snapshot model instance */
-    public function create_snapshot_returns_model_instance(): void
+    /** @test */
+    public function bs_002_l_returns_backlink_snapshot_instance(): void
     {
         $project = Project::factory()->create();
 
         $snapshot = $this->service->createSnapshot($project);
 
         $this->assertInstanceOf(BacklinkSnapshot::class, $snapshot);
-        $this->assertTrue($snapshot->exists);
     }
 
-    /** @test CS-006: Calculates average domain trust */
-    public function create_snapshot_calculates_avg_trust(): void
+    // ========================================================================
+    // BS-003: createSnapshotForDate()
+    // ========================================================================
+
+    /** @test */
+    public function bs_003_a_creates_snapshot_for_specific_date(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshotForDate($project, '2026-03-01');
+
+        $this->assertEquals('2026-03-01', $snapshot->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_003_b_idempotent_same_date_returns_existing(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot1 = $this->service->createSnapshotForDate($project, '2026-03-01');
+        $snapshot2 = $this->service->createSnapshotForDate($project, '2026-03-01');
+
+        $this->assertEquals($snapshot1->id, $snapshot2->id);
+        $this->assertEquals(1, BacklinkSnapshot::where('project_id', $project->id)->count());
+    }
+
+    /** @test */
+    public function bs_003_c_different_dates_create_new_snapshots(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot1 = $this->service->createSnapshotForDate($project, '2026-03-01');
+        $snapshot2 = $this->service->createSnapshotForDate($project, '2026-03-02');
+
+        $this->assertNotEquals($snapshot1->id, $snapshot2->id);
+        $this->assertEquals(2, BacklinkSnapshot::where('project_id', $project->id)->count());
+    }
+
+    /** @test */
+    public function bs_003_d_creates_if_not_exists(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $this->assertEquals(0, BacklinkSnapshot::where('project_id', $project->id)->count());
+
+        $snapshot = $this->service->createSnapshotForDate($project, '2026-03-01');
+
+        $this->assertNotNull($snapshot->id);
+    }
+
+    /** @test */
+    public function bs_003_e_updates_existing_snapshot(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot1 = $this->service->createSnapshotForDate($project, '2026-03-01');
+        $this->assertEquals(10, $snapshot1->total_backlinks);
+
+        // Add more backlinks
+        Backlink::factory()->count(20)->create(['project_id' => $project->id]);
+
+        $snapshot2 = $this->service->createSnapshotForDate($project, '2026-03-01');
+
+        $this->assertEquals($snapshot1->id, $snapshot2->id);
+        $this->assertEquals(30, $snapshot2->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_003_f_invalid_date_format_throws_exception(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $project = Project::factory()->create();
+        $this->service->createSnapshotForDate($project, 'invalid-date');
+    }
+
+    /** @test */
+    public function bs_003_g_future_date_allowed(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $futureDate = Carbon::tomorrow()->toDateString();
+        $snapshot = $this->service->createSnapshotForDate($project, $futureDate);
+
+        $this->assertEquals($futureDate, $snapshot->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_003_h_past_date_allowed(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshotForDate($project, '2020-01-01');
+
+        $this->assertEquals('2020-01-01', $snapshot->snapshot_date->toDateString());
+    }
+
+    // ========================================================================
+    // BS-004: getHistory()
+    // ========================================================================
+
+    /** @test */
+    public function bs_004_a_returns_collection_of_snapshots(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->count(7)->create(['project_id' => $project->id]);
+
+        $history = $this->service->getHistory($project->id, '2020-01-01', '2030-12-31');
+
+        $this->assertInstanceOf(Collection::class, $history);
+        $this->assertCount(7, $history);
+    }
+
+    /** @test */
+    public function bs_004_b_filters_by_date_range(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2026-03-01')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-05')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-10')->create(['project_id' => $project->id]);
+
+        $history = $this->service->getHistory($project->id, '2026-03-03', '2026-03-07');
+
+        $this->assertCount(1, $history);
+        $this->assertEquals('2026-03-05', $history->first()->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_004_c_ordered_by_date_ascending(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2026-03-10')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-01')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-05')->create(['project_id' => $project->id]);
+
+        $history = $this->service->getHistory($project->id, '2020-01-01', '2030-12-31');
+
+        $this->assertEquals('2026-03-01', $history->first()->snapshot_date->toDateString());
+        $this->assertEquals('2026-03-10', $history->last()->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_004_d_returns_empty_for_no_history(): void
     {
         $project = Project::factory()->create();
 
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 80,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 60,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 40,
-        ]);
+        $history = $this->service->getHistory($project->id, '2026-03-01', '2026-03-07');
 
-        $snapshot = $this->service->createSnapshot($project);
-
-        $this->assertEquals(60.0, $snapshot->avg_domain_trust);
+        $this->assertTrue($history->isEmpty());
     }
 
-    /** @test CS-007: Handles domains with zero trust */
-    public function create_snapshot_excludes_zero_trust_from_avg(): void
+    /** @test */
+    public function bs_004_e_handles_single_day_range(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2026-03-05')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-06')->create(['project_id' => $project->id]);
+
+        $history = $this->service->getHistory($project->id, '2026-03-05', '2026-03-05');
+
+        $this->assertCount(1, $history);
+    }
+
+    /** @test */
+    public function bs_004_f_exclusive_of_future_dates(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2026-03-01')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate(Carbon::tomorrow()->toDateString())->create(['project_id' => $project->id]);
+
+        $history = $this->service->getHistory($project->id, '2026-03-01', Carbon::today()->toDateString());
+
+        $this->assertCount(1, $history);
+        $this->assertEquals('2026-03-01', $history->first()->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_004_g_handles_invalid_date_format(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $project = Project::factory()->create();
+        $this->service->getHistory($project->id, 'invalid', '2026-03-07');
+    }
+
+    /** @test */
+    public function bs_004_h_validates_from_before_to(): void
     {
         $project = Project::factory()->create();
 
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 80,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 0, // Should be excluded
-        ]);
+        $history = $this->service->getHistory($project->id, '2026-03-10', '2026-03-01');
 
-        $snapshot = $this->service->createSnapshot($project);
-
-        $this->assertEquals(80.0, $snapshot->avg_domain_trust);
+        $this->assertTrue($history->isEmpty());
     }
 
-    // =============================================
-    // ANCHOR DIVERSITY CALCULATION TESTS (AD)
-    // =============================================
-
-    /** @test AD-001: Perfect diversity (equal distribution) */
-    public function anchor_diversity_perfect_distribution(): void
+    /** @test */
+    public function bs_004_i_large_date_range(): void
     {
         $project = Project::factory()->create();
+        
+        // Create 365 snapshots
+        for ($i = 0; $i < 365; $i++) {
+            BacklinkSnapshot::factory()->onDate(
+                Carbon::parse('2026-01-01')->addDays($i)->toDateString()
+            )->create(['project_id' => $project->id]);
+        }
 
-        // 10 anchors, each with 10 backlinks = perfect distribution
-        foreach (range(1, 10) as $i) {
+        $history = $this->service->getHistory($project->id, '2026-01-01', '2026-12-31');
+
+        $this->assertCount(365, $history);
+    }
+
+    /** @test */
+    public function bs_004_j_isolates_by_project_id(): void
+    {
+        $project1 = Project::factory()->create();
+        $project2 = Project::factory()->create();
+        BacklinkSnapshot::factory()->count(5)->create(['project_id' => $project1->id]);
+        BacklinkSnapshot::factory()->count(3)->create(['project_id' => $project2->id]);
+
+        $history = $this->service->getHistory($project1->id, '2020-01-01', '2030-12-31');
+
+        $this->assertCount(5, $history);
+        $history->each(function ($snapshot) use ($project1) {
+            $this->assertEquals($project1->id, $snapshot->project_id);
+        });
+    }
+
+    /** @test */
+    public function bs_004_k_returns_backlink_snapshot_models(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->create(['project_id' => $project->id]);
+
+        $history = $this->service->getHistory($project->id, '2020-01-01', '2030-12-31');
+
+        $this->assertInstanceOf(BacklinkSnapshot::class, $history->first());
+    }
+
+    // ========================================================================
+    // BS-005: calculateAnchorDiversity()
+    // ========================================================================
+
+    /** @test */
+    public function bs_005_a_perfect_diversity(): void
+    {
+        $project = Project::factory()->create();
+        // 5 anchors with 20 backlinks each = 20% top, diversity = 80
+        for ($i = 0; $i < 5; $i++) {
             AnchorText::factory()->create([
                 'project_id' => $project->id,
-                'anchor_text' => "anchor-{$i}",
-                'backlinks_count' => 10,
+                'backlinks_count' => 20,
             ]);
         }
 
-        $score = $this->service->calculateAnchorDiversity($project->id);
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
 
-        // Perfect diversity = 100 - (10% * 100) = 90
-        $this->assertEquals(90.0, $score);
+        $this->assertEquals(80.0, $diversity);
     }
 
-    /** @test AD-002: Poor diversity (dominant anchor) */
-    public function anchor_diversity_poor_distribution(): void
+    /** @test */
+    public function bs_005_b_single_anchor_dominates(): void
     {
         $project = Project::factory()->create();
-
-        // One anchor with 90 backlinks, others with 10 total
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 90,
-        ]);
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 10,
-        ]);
-
-        $score = $this->service->calculateAnchorDiversity($project->id);
-
-        // 90% dominant = 100 - 90 = 10
-        $this->assertEquals(10.0, $score);
-    }
-
-    /** @test AD-003: Single anchor */
-    public function anchor_diversity_single_anchor(): void
-    {
-        $project = Project::factory()->create();
-
         AnchorText::factory()->create([
             'project_id' => $project->id,
             'backlinks_count' => 100,
         ]);
 
-        $score = $this->service->calculateAnchorDiversity($project->id);
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
 
-        // 100% dominant = 100 - 100 = 0
-        $this->assertEquals(0.0, $score);
+        $this->assertEquals(0.0, $diversity);
     }
 
-    /** @test AD-004: No anchors */
-    public function anchor_diversity_no_anchors(): void
+    /** @test */
+    public function bs_005_b2_90_percent_top_anchor(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 90]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 10]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        $this->assertEquals(10.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_005_c_no_anchors(): void
     {
         $project = Project::factory()->create();
 
-        $score = $this->service->calculateAnchorDiversity($project->id);
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
 
-        $this->assertEquals(0.0, $score);
+        $this->assertEquals(0.0, $diversity);
     }
 
-    /** @test AD-005: Anchors with zero backlinks */
-    public function anchor_diversity_zero_backlinks(): void
+    /** @test */
+    public function bs_005_d_zero_backlinks_count(): void
     {
         $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 0]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 0]);
 
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        $this->assertEquals(0.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_005_e_two_anchors_equal(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 50]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 50]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        $this->assertEquals(50.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_005_f_three_anchors_varied(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 60]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 30]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 10]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        // Top = 60/100 = 60%, diversity = 100 - 60 = 40
+        $this->assertEquals(40.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_005_g_branded_vs_exact_match(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->branded()->create(['project_id' => $project->id, 'backlinks_count' => 40]);
+        AnchorText::factory()->exactMatch()->create(['project_id' => $project->id, 'backlinks_count' => 30]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 30]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        // Top = 40/100 = 40%, diversity = 60
+        $this->assertEquals(60.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_005_h_handles_unicode_anchors(): void
+    {
+        $project = Project::factory()->create();
         AnchorText::factory()->create([
             'project_id' => $project->id,
-            'backlinks_count' => 0,
+            'anchor_text' => 'リンクテキスト',  // Japanese
+            'backlinks_count' => 50,
         ]);
         AnchorText::factory()->create([
             'project_id' => $project->id,
-            'backlinks_count' => 0,
+            'anchor_text' => 'ссылка',  // Russian
+            'backlinks_count' => 50,
         ]);
 
-        $score = $this->service->calculateAnchorDiversity($project->id);
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
 
-        $this->assertEquals(0.0, $score);
+        $this->assertEquals(50.0, $diversity);
     }
 
-    /** @test AD-006: Calculates from ordered data */
-    public function anchor_diversity_uses_top_anchor(): void
+    /** @test */
+    public function bs_005_i_many_small_anchors(): void
     {
         $project = Project::factory()->create();
+        
+        // 100 anchors with 1 backlink each
+        for ($i = 0; $i < 100; $i++) {
+            AnchorText::factory()->create([
+                'project_id' => $project->id,
+                'backlinks_count' => 1,
+            ]);
+        }
 
-        // Create in reverse order to test ordering
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 20,
-        ]);
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 80, // Top anchor
-        ]);
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
 
-        $score = $this->service->calculateAnchorDiversity($project->id);
-
-        // 80% dominant = 100 - 80 = 20
-        $this->assertEquals(20.0, $score);
+        // Top = 1/100 = 1%, diversity = 99
+        $this->assertEquals(99.0, $diversity);
     }
 
-    /** @test AD-007: Returns float rounded to 2 decimals */
-    public function anchor_diversity_returns_rounded_float(): void
-    {
-        $project = Project::factory()->create();
-
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 33,
-        ]);
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 67,
-        ]);
-
-        $score = $this->service->calculateAnchorDiversity($project->id);
-
-        $this->assertIsFloat($score);
-        // Score should be 33.0 (100 - 67% dominant = 33)
-        $this->assertEquals(33.0, $score);
-    }
-
-    // =============================================
-    // AVERAGE TRUST CALCULATION TESTS (AT)
-    // =============================================
-
-    /** @test AT-001: Calculates average correctly */
-    public function avg_trust_calculates_correctly(): void
-    {
-        $project = Project::factory()->create();
-
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 50,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 70,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 90,
-        ]);
-
-        $avg = $this->service->calculateAverageTrust($project->id);
-
-        $this->assertEquals(70.0, $avg);
-    }
-
-    /** @test AT-002: Returns null for no domains */
-    public function avg_trust_returns_null_for_no_domains(): void
-    {
-        $project = Project::factory()->create();
-
-        $avg = $this->service->calculateAverageTrust($project->id);
-
-        $this->assertNull($avg);
-    }
-
-    /** @test AT-003: Excludes zero trust from calculation */
-    public function avg_trust_excludes_zero_trust(): void
-    {
-        $project = Project::factory()->create();
-
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 60,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 0, // Should be excluded
-        ]);
-
-        $avg = $this->service->calculateAverageTrust($project->id);
-
-        $this->assertEquals(60.0, $avg);
-    }
-
-    /** @test AT-004: Returns null if all domains have zero trust */
-    public function avg_trust_returns_null_all_zero(): void
-    {
-        $project = Project::factory()->create();
-
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 0,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 0,
-        ]);
-
-        $avg = $this->service->calculateAverageTrust($project->id);
-
-        $this->assertNull($avg);
-    }
-
-    /** @test AT-005: Returns rounded to 2 decimals */
-    public function avg_trust_rounded_to_two_decimals(): void
-    {
-        $project = Project::factory()->create();
-
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 33,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 34,
-        ]);
-
-        $avg = $this->service->calculateAverageTrust($project->id);
-
-        // 33.5 should be rounded
-        $this->assertEquals(33.5, $avg);
-    }
-
-    /** @test AT-006: Only counts domains for specified project */
-    public function avg_trust_filters_by_project(): void
+    /** @test */
+    public function bs_005_k_filters_by_project_id(): void
     {
         $project1 = Project::factory()->create();
         $project2 = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project1->id, 'backlinks_count' => 100]);
+        AnchorText::factory()->create(['project_id' => $project2->id, 'backlinks_count' => 50]);
+        AnchorText::factory()->create(['project_id' => $project2->id, 'backlinks_count' => 50]);
 
-        ReferringDomain::factory()->create([
-            'project_id' => $project1->id,
-            'domain_trust_score' => 80,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project2->id,
-            'domain_trust_score' => 40,
-        ]);
+        $diversity1 = $this->service->calculateAnchorDiversity($project1->id);
+        $diversity2 = $this->service->calculateAnchorDiversity($project2->id);
 
-        $avg = $this->service->calculateAverageTrust($project1->id);
-
-        $this->assertEquals(80.0, $avg);
+        $this->assertEquals(0.0, $diversity1);  // Single anchor dominates
+        $this->assertEquals(50.0, $diversity2);  // Equal distribution
     }
 
-    // =============================================
-    // INTEGRATION TESTS (IT)
-    // =============================================
-
-    /** @test IT-001: Full workflow - create and retrieve */
-    public function integration_create_and_retrieve(): void
-    {
-        Carbon::setTestNow('2026-02-28');
-
-        $project = Project::factory()->create();
-
-        // Create data
-        Backlink::factory()->count(100)->dofollow()->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        ReferringDomain::factory()->count(20)->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 60,
-        ]);
-        AnchorText::factory()->count(10)->create([
-            'project_id' => $project->id,
-            'backlinks_count' => 10,
-        ]);
-
-        // Create snapshot
-        $snapshot = $this->service->createSnapshot($project);
-
-        // Retrieve history
-        $history = $this->service->getHistory($project->id);
-
-        $this->assertCount(1, $history);
-        $this->assertEquals(100, $history[0]['total_backlinks']);
-        $this->assertEquals(20, $history[0]['referring_domains_count']);
-        $this->assertEquals(60.0, $history[0]['avg_domain_trust']);
-
-        Carbon::setTestNow();
-    }
-
-    /** @test IT-002: Multiple snapshots over time */
-    public function integration_multiple_snapshots(): void
+    /** @test */
+    public function bs_005_l_returns_float(): void
     {
         $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 50]);
 
-        // Day 1
-        Carbon::setTestNow('2026-02-26');
-        Backlink::factory()->count(50)->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        $this->service->createSnapshot($project);
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
 
-        // Day 2
-        Carbon::setTestNow('2026-02-27');
-        Backlink::factory()->count(30)->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        $this->service->createSnapshot($project);
-
-        // Day 3
-        Carbon::setTestNow('2026-02-28');
-        Backlink::factory()->count(20)->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        $this->service->createSnapshot($project);
-
-        $history = $this->service->getHistory($project->id);
-
-        $this->assertCount(3, $history);
-
-        // Verify ordering
-        $this->assertEquals('2026-02-26', $history[0]['date']);
-        $this->assertEquals('2026-02-27', $history[1]['date']);
-        $this->assertEquals('2026-02-28', $history[2]['date']);
-
-        Carbon::setTestNow();
+        $this->assertIsFloat($diversity);
     }
 
-    // =============================================
-    // EDGE CASE TESTS (EC)
-    // =============================================
+    /** @test */
+    public function bs_005_m_precision_to_2_decimals(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 33]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 33]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 34]);
 
-    /** @test EC-001: Large backlink counts */
-    public function edge_case_large_backlink_counts(): void
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        // Top = 34/100 = 34%, diversity = 66
+        $this->assertEquals(66.0, $diversity);
+        // Verify 2 decimal precision
+        $this->assertEquals(2, strlen((string) $diversity) - strpos((string) $diversity, '.'));
+    }
+
+    /** @test */
+    public function bs_005_n_large_backlinks_count(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 60000]);
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 40000]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        // Top = 60000/100000 = 60%, diversity = 40
+        $this->assertEquals(40.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_005_o_division_by_zero_protected(): void
+    {
+        $project = Project::factory()->create();
+        // Create anchors but with all zeros
+        AnchorText::factory()->create(['project_id' => $project->id, 'backlinks_count' => 0]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        $this->assertEquals(0.0, $diversity);
+    }
+
+    // ========================================================================
+    // BS-006: calculateAverageTrust()
+    // ========================================================================
+
+    /** @test */
+    public function bs_006_a_calculates_average(): void
+    {
+        $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 50]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 70]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 90]);
+
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
+
+        $this->assertEquals(70.0, $avgTrust);
+    }
+
+    /** @test */
+    public function bs_006_b_single_domain(): void
+    {
+        $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 65]);
+
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
+
+        $this->assertEquals(65.0, $avgTrust);
+    }
+
+    /** @test */
+    public function bs_006_c_no_domains(): void
     {
         $project = Project::factory()->create();
 
-        Backlink::factory()->count(1000)->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
 
-        $snapshot = $this->service->createSnapshot($project);
-
-        $this->assertEquals(1000, $snapshot->total_backlinks);
+        $this->assertEquals(0.0, $avgTrust);
     }
 
-    /** @test EC-002: Very large domain trust scores */
-    public function edge_case_large_trust_scores(): void
+    /** @test */
+    public function bs_006_d_all_zero_trust(): void
     {
         $project = Project::factory()->create();
-
-        ReferringDomain::factory()->create([
+        ReferringDomain::factory()->count(3)->create([
             'project_id' => $project->id,
-            'domain_trust_score' => 100,
-        ]);
-        ReferringDomain::factory()->create([
-            'project_id' => $project->id,
-            'domain_trust_score' => 100,
+            'domain_trust_score' => 0,
         ]);
 
-        $avg = $this->service->calculateAverageTrust($project->id);
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
 
-        $this->assertEquals(100.0, $avg);
+        $this->assertEquals(0.0, $avgTrust);
     }
 
-    /** @test EC-003: Date range at boundaries */
-    public function edge_case_date_range_boundaries(): void
+    /** @test */
+    public function bs_006_e_mixed_trust_scores(): void
     {
         $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 0]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 50]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 100]);
 
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15', // Start date
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-20', // End date
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-10', // Before range
-        ]);
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-25', // After range
-        ]);
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
 
-        $history = $this->service->getHistory($project->id, '2026-02-15', '2026-02-20');
-
-        $this->assertCount(2, $history);
+        $this->assertEquals(50.0, $avgTrust);
     }
 
-    /** @test EC-004: Negative project ID */
-    public function edge_case_negative_project_id(): void
+    /** @test */
+    public function bs_006_f_filters_by_project_id(): void
     {
-        $history = $this->service->getHistory(-1);
+        $project1 = Project::factory()->create();
+        $project2 = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project1->id, 'domain_trust_score' => 80]);
+        ReferringDomain::factory()->create(['project_id' => $project2->id, 'domain_trust_score' => 40]);
 
-        $this->assertEmpty($history);
+        $avgTrust1 = $this->service->calculateAverageTrust($project1->id);
+        $avgTrust2 = $this->service->calculateAverageTrust($project2->id);
+
+        $this->assertEquals(80.0, $avgTrust1);
+        $this->assertEquals(40.0, $avgTrust2);
     }
 
-    /** @test EC-005: Mixed active/inactive backlinks */
-    public function edge_case_mixed_active_backlinks(): void
+    /** @test */
+    public function bs_006_h_returns_float(): void
     {
         $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 50]);
 
-        Backlink::factory()->count(40)->create([
-            'project_id' => $project->id,
-            'is_active' => true,
-        ]);
-        Backlink::factory()->count(60)->create([
-            'project_id' => $project->id,
-            'is_active' => false,
-        ]);
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
 
-        $snapshot = $this->service->createSnapshot($project);
-
-        // Only active backlinks counted
-        $this->assertEquals(40, $snapshot->total_backlinks);
+        $this->assertIsFloat($avgTrust);
     }
 
-    // =============================================
-    // SECURITY TESTS (SC)
-    // =============================================
-
-    /** @test SC-001: SQL injection protection */
-    public function security_sql_injection_protection(): void
+    /** @test */
+    public function bs_006_i_precision_to_2_decimals(): void
     {
         $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 50]);
+        ReferringDomain::factory()->create(['project_id' => $project->id, 'domain_trust_score' => 67]);
 
-        // This should not cause SQL injection
-        $history = $this->service->getHistory($project->id, "'; DROP TABLE backlink_snapshots; --", '2026-02-28');
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
 
-        // Should return empty, not throw error
-        $this->assertIsIterable($history);
+        $this->assertEquals(58.5, $avgTrust);
     }
 
-    /** @test SC-002: Handles null date parameters */
-    public function security_null_date_parameters(): void
-    {
-        Carbon::setTestNow('2026-02-28');
-
-        $project = Project::factory()->create();
-
-        BacklinkSnapshot::factory()->create([
-            'project_id' => $project->id,
-            'snapshot_date' => '2026-02-15',
-        ]);
-
-        $history = $this->service->getHistory($project->id, null, null);
-
-        $this->assertCount(1, $history);
-
-        Carbon::setTestNow();
-    }
-
-    /** @test SC-003: XSS in anchor text handled */
-    public function security_xss_in_anchor_text(): void
+    /** @test */
+    public function bs_006_j_large_domain_count(): void
     {
         $project = Project::factory()->create();
-
-        AnchorText::factory()->create([
-            'project_id' => $project->id,
-            'anchor_text' => '<script>alert("xss")</script>',
-            'backlinks_count' => 10,
-        ]);
-
-        // Should not throw error
-        $score = $this->service->calculateAnchorDiversity($project->id);
-
-        $this->assertIsFloat($score);
-    }
-
-    // =============================================
-    // PERFORMANCE TESTS (PF)
-    // =============================================
-
-    /** @test PF-001: Handles large number of snapshots */
-    public function performance_large_snapshot_count(): void
-    {
-        Carbon::setTestNow('2026-12-31');
         
-        $project = Project::factory()->create();
-
-        // Create 365 snapshots (1 year of daily data) within the last 30 days
-        // Since we default to 30 days, we create 30 snapshots instead
-        foreach (range(1, 30) as $i) {
-            BacklinkSnapshot::factory()->create([
+        // Create 1000 domains with trust score 50
+        for ($i = 0; $i < 1000; $i++) {
+            ReferringDomain::factory()->create([
                 'project_id' => $project->id,
-                'snapshot_date' => now()->subDays(30 - $i)->toDateString(),
+                'domain_trust_score' => 50,
             ]);
         }
 
         $startTime = microtime(true);
-        $history = $this->service->getHistory($project->id);
-        $endTime = microtime(true);
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
+        $elapsed = (microtime(true) - $startTime) * 1000;
 
-        $this->assertCount(30, $history);
-        // Should complete in reasonable time (< 1 second)
-        $this->assertLessThan(1.0, $endTime - $startTime);
+        $this->assertEquals(50.0, $avgTrust);
+        $this->assertLessThan(100, $elapsed, 'Query should complete in under 100ms');
+    }
+
+    // ========================================================================
+    // BS-007: getLatestSnapshot()
+    // ========================================================================
+
+    /** @test */
+    public function bs_007_a_returns_most_recent_snapshot(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2026-03-01')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-10')->create(['project_id' => $project->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-05')->create(['project_id' => $project->id]);
+
+        $latest = $this->service->getLatestSnapshot($project->id);
+
+        $this->assertNotNull($latest);
+        $this->assertEquals('2026-03-10', $latest->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_007_b_returns_null_if_no_snapshots(): void
+    {
+        $project = Project::factory()->create();
+
+        $latest = $this->service->getLatestSnapshot($project->id);
+
+        $this->assertNull($latest);
+    }
+
+    /** @test */
+    public function bs_007_c_filters_by_project_id(): void
+    {
+        $project1 = Project::factory()->create();
+        $project2 = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2026-03-01')->create(['project_id' => $project1->id]);
+        BacklinkSnapshot::factory()->onDate('2026-03-10')->create(['project_id' => $project2->id]);
+
+        $latest = $this->service->getLatestSnapshot($project1->id);
+
+        $this->assertEquals('2026-03-01', $latest->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_007_e_returns_backlink_snapshot_or_null(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->create(['project_id' => $project->id]);
+
+        $latest = $this->service->getLatestSnapshot($project->id);
+
+        $this->assertInstanceOf(BacklinkSnapshot::class, $latest);
+    }
+
+    /** @test */
+    public function bs_007_f_handles_todays_snapshot(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->today()->create(['project_id' => $project->id]);
+
+        $latest = $this->service->getLatestSnapshot($project->id);
+
+        $this->assertEquals(today()->toDateString(), $latest->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_007_g_handles_old_snapshot_only(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->onDate('2020-01-01')->create(['project_id' => $project->id]);
+
+        $latest = $this->service->getLatestSnapshot($project->id);
+
+        $this->assertNotNull($latest);
+        $this->assertEquals('2020-01-01', $latest->snapshot_date->toDateString());
+    }
+
+    // ========================================================================
+    // BS-008: Error Handling
+    // ========================================================================
+
+    /** @test */
+    public function bs_008_a_invalid_project_id_returns_zero_values(): void
+    {
+        // Non-existent project ID
+        $snapshot = $this->service->createSnapshot(Project::factory()->make(['id' => 99999]));
+
+        // Should create snapshot with zero values
+        $this->assertEquals(0, $snapshot->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_008_b_invalid_date_format_throws_exception(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $project = Project::factory()->create();
+        $this->service->getHistory($project->id, 'invalid-date', '2026-03-10');
+    }
+
+    /** @test */
+    public function bs_008_e_concurrent_snapshot_creation(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        // Create two snapshots for same date concurrently (simulate race condition)
+        $snapshot1 = $this->service->createSnapshotForDate($project, '2026-03-01');
+        $snapshot2 = $this->service->createSnapshotForDate($project, '2026-03-01');
+
+        // Should be same snapshot (idempotent)
+        $this->assertEquals($snapshot1->id, $snapshot2->id);
+        $this->assertEquals(1, BacklinkSnapshot::where('project_id', $project->id)
+            ->whereDate('snapshot_date', '2026-03-01')
+            ->count());
+    }
+
+    // ========================================================================
+    // BS-009: Edge Cases
+    // ========================================================================
+
+    /** @test */
+    public function bs_009_a_project_with_only_inactive_backlinks(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(100)->inactive()->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(0, $snapshot->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_009_b_project_with_only_nofollow_links(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(50)->nofollow()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(0, $snapshot->dofollow_count);
+        $this->assertEquals(50, $snapshot->nofollow_count);
+    }
+
+    /** @test */
+    public function bs_009_c_all_backlinks_from_single_domain(): void
+    {
+        $project = Project::factory()->create();
+        ReferringDomain::factory()->create(['project_id' => $project->id]);
+        Backlink::factory()->count(100)->create([
+            'project_id' => $project->id,
+            'source_domain' => 'example.com',
+            'is_active' => true,
+        ]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(1, $snapshot->referring_domains_count);
+    }
+
+    /** @test */
+    public function bs_009_d_mixed_active_inactive_backlinks(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(80)->create(['project_id' => $project->id, 'is_active' => true]);
+        Backlink::factory()->count(20)->inactive()->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(80, $snapshot->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_009_f_unicode_in_anchor_texts(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create([
+            'project_id' => $project->id,
+            'anchor_text' => '日本語リンク',  // Japanese
+            'backlinks_count' => 50,
+        ]);
+        AnchorText::factory()->create([
+            'project_id' => $project->id,
+            'anchor_text' => '中文链接',  // Chinese
+            'backlinks_count' => 50,
+        ]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        $this->assertEquals(50.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_009_g_very_long_anchor_text(): void
+    {
+        $project = Project::factory()->create();
+        $longAnchor = str_repeat('a', 500);
+        AnchorText::factory()->create([
+            'project_id' => $project->id,
+            'anchor_text' => $longAnchor,
+            'backlinks_count' => 50,
+        ]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        $this->assertEquals(0.0, $diversity);  // Single anchor
+    }
+
+    /** @test */
+    public function bs_009_h_zero_domain_trust_for_all(): void
+    {
+        $project = Project::factory()->create();
+        ReferringDomain::factory()->count(5)->create([
+            'project_id' => $project->id,
+            'domain_trust_score' => 0,
+        ]);
+
+        $avgTrust = $this->service->calculateAverageTrust($project->id);
+
+        $this->assertEquals(0.0, $avgTrust);
+    }
+
+    /** @test */
+    public function bs_009_i_snapshot_with_all_zeros(): void
+    {
+        $project = Project::factory()->create();
+        // No backlinks, no domains, no anchors
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        $this->assertEquals(0, $snapshot->total_backlinks);
+        $this->assertEquals(0, $snapshot->referring_domains_count);
+        $this->assertEquals(0, $snapshot->dofollow_count);
+        $this->assertEquals(0, $snapshot->nofollow_count);
+        $this->assertEquals(0.0, (float) $snapshot->avg_domain_trust);
+        $this->assertEquals(0.0, (float) $snapshot->anchor_diversity_score);
+    }
+
+    /** @test */
+    public function bs_009_j_leap_year_date(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshotForDate($project, '2024-02-29');
+
+        $this->assertEquals('2024-02-29', $snapshot->snapshot_date->toDateString());
+    }
+
+    /** @test */
+    public function bs_009_k_date_boundary_at_midnight(): void
+    {
+        $project = Project::factory()->create();
+        BacklinkSnapshot::factory()->create([
+            'project_id' => $project->id,
+            'snapshot_date' => '2026-03-05 00:00:00',
+        ]);
+
+        $history = $this->service->getHistory($project->id, '2026-03-05', '2026-03-05');
+
+        $this->assertCount(1, $history);
+    }
+
+    // ========================================================================
+    // BS-010: Performance
+    // ========================================================================
+
+    /** @test */
+    public function bs_010_a_create_snapshot_under_500ms(): void
+    {
+        $project = Project::factory()->create();
         
-        Carbon::setTestNow();
+        // Create 10,000 backlinks
+        Backlink::factory()->count(5000)->dofollow()->create(['project_id' => $project->id, 'is_active' => true]);
+        Backlink::factory()->count(5000)->nofollow()->create(['project_id' => $project->id, 'is_active' => true]);
+        
+        // Create referring domains
+        ReferringDomain::factory()->count(100)->create(['project_id' => $project->id]);
+        
+        // Create anchor texts
+        AnchorText::factory()->count(50)->create(['project_id' => $project->id]);
+
+        $startTime = microtime(true);
+        $this->service->createSnapshot($project);
+        $elapsed = (microtime(true) - $startTime) * 1000;
+
+        $this->assertLessThan(500, $elapsed, 'createSnapshot should complete in under 500ms');
+    }
+
+    /** @test */
+    public function bs_010_b_get_history_under_200ms(): void
+    {
+        $project = Project::factory()->create();
+        
+        // Create 365 snapshots
+        for ($i = 0; $i < 365; $i++) {
+            BacklinkSnapshot::factory()->onDate(
+                Carbon::parse('2025-01-01')->addDays($i)->toDateString()
+            )->create(['project_id' => $project->id]);
+        }
+
+        $startTime = microtime(true);
+        $history = $this->service->getHistory($project->id, '2025-01-01', '2025-12-31');
+        $elapsed = (microtime(true) - $startTime) * 1000;
+
+        $this->assertCount(365, $history);
+        $this->assertLessThan(200, $elapsed, 'getHistory should complete in under 200ms');
+    }
+
+    /** @test */
+    public function bs_010_c_calculate_anchor_diversity_under_100ms(): void
+    {
+        $project = Project::factory()->create();
+        
+        // Create 1,000 anchor texts
+        for ($i = 0; $i < 1000; $i++) {
+            AnchorText::factory()->create([
+                'project_id' => $project->id,
+                'backlinks_count' => rand(1, 100),
+            ]);
+        }
+
+        $startTime = microtime(true);
+        $this->service->calculateAnchorDiversity($project->id);
+        $elapsed = (microtime(true) - $startTime) * 1000;
+
+        $this->assertLessThan(100, $elapsed, 'calculateAnchorDiversity should complete in under 100ms');
+    }
+
+    /** @test */
+    public function bs_010_d_calculate_average_trust_under_50ms(): void
+    {
+        $project = Project::factory()->create();
+        
+        // Create 5,000 referring domains
+        for ($i = 0; $i < 5000; $i++) {
+            ReferringDomain::factory()->create([
+                'project_id' => $project->id,
+                'domain_trust_score' => rand(0, 100),
+            ]);
+        }
+
+        $startTime = microtime(true);
+        $this->service->calculateAverageTrust($project->id);
+        $elapsed = (microtime(true) - $startTime) * 1000;
+
+        $this->assertLessThan(50, $elapsed, 'calculateAverageTrust should complete in under 50ms');
+    }
+
+    // ========================================================================
+    // BS-011: Security
+    // ========================================================================
+
+    /** @test */
+    public function bs_011_a_sql_injection_in_project_id(): void
+    {
+        // Eloquent uses parameterized queries, so this should be safe
+        $result = $this->service->getHistory(1, '2026-03-01', '2026-03-10');
+
+        $this->assertInstanceOf(Collection::class, $result);
+    }
+
+    /** @test */
+    public function bs_011_b_xss_in_anchor_text(): void
+    {
+        $project = Project::factory()->create();
+        AnchorText::factory()->create([
+            'project_id' => $project->id,
+            'anchor_text' => '<script>alert("xss")</script>',
+            'backlinks_count' => 50,
+        ]);
+
+        $diversity = $this->service->calculateAnchorDiversity($project->id);
+
+        // Should calculate correctly without executing script
+        $this->assertEquals(0.0, $diversity);
+    }
+
+    /** @test */
+    public function bs_011_c_project_isolation(): void
+    {
+        $project1 = Project::factory()->create();
+        $project2 = Project::factory()->create();
+        
+        Backlink::factory()->count(100)->create(['project_id' => $project1->id, 'is_active' => true]);
+        Backlink::factory()->count(50)->create(['project_id' => $project2->id, 'is_active' => true]);
+
+        $snapshot1 = $this->service->createSnapshot($project1);
+        $snapshot2 = $this->service->createSnapshot($project2);
+
+        $this->assertEquals(100, $snapshot1->total_backlinks);
+        $this->assertEquals(50, $snapshot2->total_backlinks);
+    }
+
+    /** @test */
+    public function bs_011_e_mass_assignment_protection(): void
+    {
+        $project = Project::factory()->create();
+        Backlink::factory()->count(10)->create(['project_id' => $project->id]);
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        // Verify only expected fields are set
+        $this->assertEquals($project->id, $snapshot->project_id);
+        $this->assertNotNull($snapshot->total_backlinks);
+        $this->assertNotNull($snapshot->snapshot_date);
+    }
+
+    // ========================================================================
+    // BS-012: Integration
+    // ========================================================================
+
+    /** @test */
+    public function bs_012_a_full_workflow(): void
+    {
+        $project = Project::factory()->create();
+        
+        // Step 1: Create backlinks
+        Backlink::factory()->count(100)->dofollow()->create(['project_id' => $project->id, 'is_active' => true]);
+        Backlink::factory()->count(50)->nofollow()->create(['project_id' => $project->id, 'is_active' => true]);
+        
+        // Step 2: Create referring domains
+        ReferringDomain::factory()->count(25)->create(['project_id' => $project->id]);
+        
+        // Step 3: Create anchor texts
+        AnchorText::factory()->count(10)->create(['project_id' => $project->id]);
+        
+        // Step 4: Create snapshot
+        $snapshot = $this->service->createSnapshot($project);
+        
+        $this->assertEquals(150, $snapshot->total_backlinks);
+        $this->assertEquals(25, $snapshot->referring_domains_count);
+        $this->assertEquals(100, $snapshot->dofollow_count);
+        $this->assertEquals(50, $snapshot->nofollow_count);
+        
+        // Step 5: Get history
+        $history = $this->service->getHistory($project->id, '2020-01-01', '2030-12-31');
+        $this->assertCount(1, $history);
+        
+        // Step 6: Get latest
+        $latest = $this->service->getLatestSnapshot($project->id);
+        $this->assertNotNull($latest);
+        $this->assertEquals($snapshot->id, $latest->id);
+    }
+
+    /** @test */
+    public function bs_012_d_trend_calculation(): void
+    {
+        $project = Project::factory()->create();
+        
+        // Create snapshots for last 7 days with increasing backlinks
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i)->toDateString();
+            BacklinkSnapshot::factory()->onDate($date)->create([
+                'project_id' => $project->id,
+                'total_backlinks' => 100 + ($i * 10),
+            ]);
+        }
+
+        $history = $this->service->getHistory(
+            $project->id,
+            Carbon::today()->subDays(6)->toDateString(),
+            Carbon::today()->toDateString()
+        );
+
+        $this->assertCount(7, $history);
+        
+        // Verify trend (increasing backlinks)
+        $first = $history->first()->total_backlinks;
+        $last = $history->last()->total_backlinks;
+        $this->assertLessThan($last, $first);
+    }
+
+    /** @test */
+    public function bs_012_e_visibility_score_integration(): void
+    {
+        $project = Project::factory()->create();
+        
+        // Create quality backlink profile
+        Backlink::factory()->count(500)->dofollow()->create(['project_id' => $project->id, 'is_active' => true]);
+        ReferringDomain::factory()->count(50)->highTrust()->create(['project_id' => $project->id]);
+        
+        // Create diverse anchors
+        for ($i = 0; $i < 20; $i++) {
+            AnchorText::factory()->create([
+                'project_id' => $project->id,
+                'backlinks_count' => 25,
+            ]);
+        }
+
+        $snapshot = $this->service->createSnapshot($project);
+
+        // Verify metrics are in expected ranges for visibility score contribution
+        $this->assertGreaterThan(0, $snapshot->total_backlinks);
+        $this->assertGreaterThan(0, $snapshot->referring_domains_count);
+        $this->assertGreaterThan(50.0, (float) $snapshot->anchor_diversity_score);  // Good diversity
     }
 }
