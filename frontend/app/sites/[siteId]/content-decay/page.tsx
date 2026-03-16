@@ -1,20 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  RefreshCw,
-  Download,
-  Settings,
-  LayoutDashboard,
-  Columns,
-  BarChart3,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import {
   DecaySummaryCards,
   DecayQueueTable,
@@ -25,175 +13,114 @@ import {
   useContentDecayCandidates,
   useContentDecayCandidate,
   useRunContentDecayScan,
-  useUpdateCandidateStatus,
   useExportContentDecay,
 } from "@/lib/hooks/useContentDecay";
-import type {
-  DecayCandidate,
-  ContentDecayCandidateStatus,
-} from "@/lib/types/content-decay";
-import { cn } from "@/lib/utils";
+import type { DecayCandidate, DecayQueueFilterState } from "@/lib/types/content-decay";
+import { RefreshCw, Download, Settings, LayoutDashboard, Columns, BarChart3 } from "lucide-react";
 
-export default function ContentDecayQueuePage() {
+/**
+ * Content Decay Refresh Queue Page
+ * Route: /sites/[siteId]/content-decay
+ */
+export default function ContentDecayPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const siteId = params.siteId as string;
 
-  // State
-  const [selectedCandidateId, setSelectedCandidateId] = React.useState<number | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Data hooks
+  const filters: DecayQueueFilterState = {
+    severity: (searchParams.get("severity") as DecayQueueFilterState["severity"]) || "all",
+    status: (searchParams.get("status") as DecayQueueFilterState["status"]) || "all",
+    pageType: (searchParams.get("pageType") as DecayQueueFilterState["pageType"]) || "all",
+    search: searchParams.get("search") || "",
+    sortBy: (searchParams.get("sortBy") as DecayQueueFilterState["sortBy"]) || "decay_score",
+    sortOrder: (searchParams.get("sortOrder") as DecayQueueFilterState["sortOrder"]) || "desc",
+    page: parseInt(searchParams.get("page") || "1"),
+    perPage: parseInt(searchParams.get("perPage") || "25"),
+  };
+
   const { summary, isLoading: isSummaryLoading } = useContentDecaySummary(siteId);
-  const { candidates, isLoading: isCandidatesLoading } = useContentDecayCandidates(siteId);
-  const { candidate: selectedCandidate, isLoading: isCandidateLoading } = useContentDecayCandidate(selectedCandidateId ?? 0);
-  
-  // Mutations
-  const { runScan, isRunning } = useRunContentDecayScan(siteId);
-  const { updateStatus, isUpdating } = useUpdateCandidateStatus(selectedCandidateId ?? 0);
-  const { exportData, isExporting } = useExportContentDecay(siteId);
+  const { candidates, meta, isLoading: isCandidatesLoading } = useContentDecayCandidates(siteId, filters);
+  const { candidate: selectedCandidate, isLoading: isCandidateLoading } = useContentDecayCandidate(selectedCandidateId);
+  const { trigger: runScan, isMutating: isScanning } = useRunContentDecayScan(siteId);
+  const { trigger: exportData, isMutating: isExporting } = useExportContentDecay(siteId);
 
-  // Handlers
-  const handleRowClick = React.useCallback((candidate: DecayCandidate) => {
+  const handleCandidateClick = (candidate: DecayCandidate) => {
     setSelectedCandidateId(candidate.id);
     setIsDrawerOpen(true);
-  }, []);
+  };
 
-  const handleDrawerClose = React.useCallback(() => {
+  const handleRunScan = async () => {
+    try { await runScan(); } catch (error) { console.error("Failed to trigger scan:", error); }
+  };
+
+  const handleExport = async () => {
+    try { await exportData({ format: "csv" }); } catch (error) { console.error("Failed to export:", error); }
+  };
+
+  const handleFilterChange = (newFilters: Partial<DecayQueueFilterState>) => {
+    const updatedFilters = { ...filters, ...newFilters };
+    const params = new URLSearchParams();
+    Object.entries(updatedFilters).forEach(([key, value]) => {
+      if (value && value !== "all" && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+    router.push(`/sites/${siteId}/content-decay?${params.toString()}`);
+  };
+
+  const handleDrawerClose = () => {
     setIsDrawerOpen(false);
     setSelectedCandidateId(null);
-  }, []);
+  };
 
-  const handleStatusChange = React.useCallback(async (status: ContentDecayCandidateStatus) => {
-    const result = await updateStatus(status);
-    if (result.success) {
-      toast.success(`Status updated to ${status.replace("_", " ")}`);
-      setIsDrawerOpen(false);
-      setSelectedCandidateId(null);
-    } else {
-      toast.error("Failed to update status");
-    }
-  }, [updateStatus]);
-
-  const handleRunScan = React.useCallback(async () => {
-    const result = await runScan();
-    if (result.success) {
-      toast.success("Content decay scan started");
-    } else {
-      toast.error(result.message || "Failed to start scan");
-    }
-  }, [runScan]);
-
-  const handleExport = React.useCallback(async () => {
-    const result = await exportData("csv");
-    if (!result.success) {
-      toast.error("Failed to export data");
-    }
-  }, [exportData]);
-
-  // Loading state
-  if (isSummaryLoading && isCandidatesLoading) {
-    return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-24" />
-          </div>
-        </div>
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
+  const tabs = [
+    { id: "queue", label: "Queue", href: `/sites/${siteId}/content-decay`, icon: LayoutDashboard, active: true },
+    { id: "board", label: "Board", href: `/sites/${siteId}/content-decay/board`, icon: Columns },
+    { id: "recovery", label: "Recovery", href: `/sites/${siteId}/content-decay/recovery`, icon: BarChart3 },
+  ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="content-decay-page">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Content Decay</h1>
-          <p className="text-muted-foreground text-sm">
-            Identify and recover pages with declining performance
-          </p>
+          <h1 className="text-2xl font-bold text-white">Content Decay</h1>
+          <p className="text-slate-400 text-sm mt-1">Identify and refresh underperforming content</p>
         </div>
-
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRunScan}
-            disabled={isRunning}
-          >
-            <RefreshCw className={cn("h-4 w-4 mr-2", isRunning && "animate-spin")} />
-            {isRunning ? "Scanning..." : "Run Scan"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Link href={`/sites/${siteId}/content-decay/settings`}>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
+          <button onClick={handleRunScan} disabled={isScanning} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors" aria-label="Run manual scan">
+            <RefreshCw className={`w-4 h-4 ${isScanning ? "animate-spin" : ""}`} />
+            {isScanning ? "Scanning..." : "Run Scan"}
+          </button>
+          <button onClick={handleExport} disabled={isExporting} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 text-sm font-medium rounded-lg transition-colors" aria-label="Export to CSV">
+            <Download className="w-4 h-4" />Export
+          </button>
+          <Link href={`/sites/${siteId}/content-decay/settings`} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors" aria-label="Content decay settings">
+            <Settings className="w-4 h-4" />Settings
           </Link>
         </div>
-      </header>
+      </div>
 
-      {/* Navigation Tabs */}
-      <Tabs defaultValue="queue" className="w-full">
-        <TabsList>
-          <TabsTrigger value="queue" asChild>
-            <Link href={`/sites/${siteId}/content-decay`}>
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Queue
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="board" asChild>
-            <Link href={`/sites/${siteId}/content-decay/board`}>
-              <Columns className="h-4 w-4 mr-2" />
-              Board
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="recovery" asChild>
-            <Link href={`/sites/${siteId}/content-decay/recovery`}>
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Recovery
-            </Link>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <nav className="flex gap-1 border-b border-slate-700 pb-2" aria-label="Content decay views">
+        {tabs.map((tab) => (
+          <Link key={tab.id} href={tab.href} className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab.active ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white hover:bg-slate-700"}`} aria-current={tab.active ? "page" : undefined}>
+            <tab.icon className="w-4 h-4" />{tab.label}
+          </Link>
+        ))}
+      </nav>
 
-      {/* Summary Cards */}
       <section aria-label="Summary statistics">
         <DecaySummaryCards summary={summary} isLoading={isSummaryLoading} />
       </section>
 
-      {/* Queue Table */}
-      <section aria-label="Content decay queue">
-        <DecayQueueTable
-          candidates={candidates}
-          isLoading={isCandidatesLoading}
-          onRowClick={handleRowClick}
-          onExport={handleExport}
-        />
+      <section aria-label="Decay candidates queue">
+        <DecayQueueTable candidates={candidates || []} isLoading={isCandidatesLoading} filters={filters} onFilterChange={handleFilterChange} onCandidateClick={handleCandidateClick} meta={meta} />
       </section>
 
-      {/* Candidate Detail Drawer */}
-      <CandidateDetailDrawer
-        candidate={selectedCandidate}
-        isOpen={isDrawerOpen}
-        onClose={handleDrawerClose}
-        onStatusChange={handleStatusChange}
-        isLoading={isCandidateLoading}
-      />
+      <CandidateDetailDrawer candidate={selectedCandidate} isOpen={isDrawerOpen} onClose={handleDrawerClose} isLoading={isCandidateLoading} />
     </div>
   );
 }
