@@ -8,26 +8,26 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock next/navigation
-const mockUseSearchParams = jest.fn();
-const mockNotFound = jest.fn();
-jest.mock('next/navigation', () => ({
-  useSearchParams: () => mockUseSearchParams(),
-  notFound: () => mockNotFound(),
+const mockGet = vi.fn();
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: mockGet,
+  }),
 }));
 
 // Mock fetch
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock PublicAuditPage component
-jest.mock('@/components/audit/PublicAuditPage', () => ({
-  __esModule: true,
-  default: ({ audit, hash }: { audit: { siteUrl: string; overallScore: number }; hash: string }) => (
+vi.mock('@/components/audit/PublicAuditPage', () => ({
+  default: ({ initialData, hash }: { initialData: { siteUrl: string; overallScore: number }; hash: string }) => (
     <div data-testid="public-audit-page">
-      <span data-testid="audit-site">{audit.siteUrl}</span>
-      <span data-testid="audit-score">{audit.overallScore}</span>
+      <span data-testid="audit-site">{initialData.siteUrl}</span>
+      <span data-testid="audit-score">{initialData.overallScore}</span>
       <span data-testid="audit-hash">{hash}</span>
     </div>
   ),
@@ -35,7 +35,7 @@ jest.mock('@/components/audit/PublicAuditPage', () => ({
 }));
 
 // Import after mocks
-import Page from '@/app/audit/page';
+import AuditPageClient from '@/app/audit/AuditPageClient';
 
 // Test data
 const mockAuditData = {
@@ -57,21 +57,16 @@ const mockFetchResponse = (data: unknown, success = true) => ({
   json: () => Promise.resolve({ success, data }),
 });
 
-// Helper to create mock search params
-const createMockSearchParams = (hash: string | null) => ({
-  get: (key: string) => key === 'h' ? hash : null,
-});
-
 describe('Public Audit Route - Query Parameter Approach', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseSearchParams.mockReturnValue(createMockSearchParams('testhash123'));
+    vi.clearAllMocks();
+    mockGet.mockReturnValue('testhash123');
     // Reset document state
     document.title = '';
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // ============================================================================
@@ -82,7 +77,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
@@ -92,17 +87,17 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
-      expect(mockUseSearchParams).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalledWith('h');
     });
 
     it('passes hash to PublicAuditPage component', async () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -115,7 +110,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       // If this renders without error, it's a client component
@@ -127,7 +122,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
@@ -142,7 +137,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       // Don't resolve fetch immediately
       mockFetch.mockImplementation(() => new Promise(() => {}));
       
-      render(<Page />);
+      render(<AuditPageClient />);
       
       expect(screen.getByText('Loading audit...')).toBeInTheDocument();
     });
@@ -153,7 +148,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
         resolveFetch = resolve;
       }));
       
-      render(<Page />);
+      render(<AuditPageClient />);
       
       expect(screen.getByText('Loading audit...')).toBeInTheDocument();
       
@@ -176,7 +171,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       expect(mockFetch).toHaveBeenCalledWith(
@@ -188,7 +183,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -197,7 +192,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
     });
 
-    it('handles API error (404)', async () => {
+    it('handles API error (404) - shows not found state', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
@@ -205,15 +200,15 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
-    it('handles API error (500)', async () => {
+    it('handles API error (500) - shows not found state', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -221,11 +216,11 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
@@ -233,7 +228,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -248,11 +243,11 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
@@ -263,11 +258,11 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
   });
@@ -277,19 +272,104 @@ describe('Public Audit Route - Query Parameter Approach', () => {
   // ============================================================================
   describe('No Hash State', () => {
     it('shows "No Audit Specified" when no hash provided', async () => {
-      mockUseSearchParams.mockReturnValue(createMockSearchParams(null));
+      mockGet.mockReturnValue(null);
       
-      render(<Page />);
+      render(<AuditPageClient />);
       
       expect(screen.getByText('No Audit Specified')).toBeInTheDocument();
     });
 
     it('shows message about valid hash when no hash provided', async () => {
-      mockUseSearchParams.mockReturnValue(createMockSearchParams(null));
+      mockGet.mockReturnValue(null);
       
-      render(<Page />);
+      render(<AuditPageClient />);
       
       expect(screen.getByText(/provide a valid audit hash/i)).toBeInTheDocument();
+    });
+  });
+
+  // ============================================================================
+  // Not Found State Tests
+  // ============================================================================
+  describe('Not Found State', () => {
+    it('shows "Audit Not Found" heading', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ success: false }),
+      });
+      
+      await act(async () => {
+        render(<AuditPageClient />);
+      });
+      
+      await waitFor(() => {
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
+      });
+    });
+
+    it('shows helpful description', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ success: false }),
+      });
+      
+      await act(async () => {
+        render(<AuditPageClient />);
+      });
+      
+      await waitFor(() => {
+        expect(screen.getByText(/private or doesn't exist/i)).toBeInTheDocument();
+      });
+    });
+
+    it('has "Go Home" link', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ success: false }),
+      });
+      
+      await act(async () => {
+        render(<AuditPageClient />);
+      });
+      
+      await waitFor(() => {
+        expect(screen.getByRole('link', { name: /go home/i })).toBeInTheDocument();
+      });
+    });
+
+    it('has "Get Your Free Audit" CTA', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ success: false }),
+      });
+      
+      await act(async () => {
+        render(<AuditPageClient />);
+      });
+      
+      await waitFor(() => {
+        expect(screen.getByRole('link', { name: /get your free audit/i })).toBeInTheDocument();
+      });
+    });
+
+    it('has contact support link', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ success: false }),
+      });
+      
+      await act(async () => {
+        render(<AuditPageClient />);
+      });
+      
+      await waitFor(() => {
+        expect(screen.getByRole('link', { name: /contact support/i })).toBeInTheDocument();
+      });
     });
   });
 
@@ -301,7 +381,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockRejectedValue(new Error('Failed to fetch'));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -314,7 +394,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockRejectedValue('Unknown error');
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -328,7 +408,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
   // ============================================================================
   describe('Security', () => {
     it('handles XSS in hash parameter gracefully', async () => {
-      mockUseSearchParams.mockReturnValue(createMockSearchParams('<script>alert(1)</script>'));
+      mockGet.mockReturnValue('<script>alert(1)</script>');
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -336,12 +416,12 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
-      // Should call notFound, not execute script
+      // Should show not found, not execute script
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
@@ -349,7 +429,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockRejectedValue(new Error('Database password: secret123'));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -359,11 +439,11 @@ describe('Public Audit Route - Query Parameter Approach', () => {
     });
 
     it('sanitizes hash in API call', async () => {
-      mockUseSearchParams.mockReturnValue(createMockSearchParams('test-hash-123'));
+      mockGet.mockReturnValue('test-hash-123');
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       // Hash should be URL-safe in API call
@@ -378,7 +458,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
   // ============================================================================
   describe('Edge Cases', () => {
     it('handles empty hash', async () => {
-      mockUseSearchParams.mockReturnValue(createMockSearchParams(''));
+      mockGet.mockReturnValue('');
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -386,7 +466,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       // Empty string is falsy, so should show no hash state
@@ -395,7 +475,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
 
     it('handles very long hash', async () => {
       const longHash = 'a'.repeat(1000);
-      mockUseSearchParams.mockReturnValue(createMockSearchParams(longHash));
+      mockGet.mockReturnValue(longHash);
       mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
@@ -403,17 +483,17 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       // Should not crash
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
     it('handles unicode in hash', async () => {
-      mockUseSearchParams.mockReturnValue(createMockSearchParams('тест-ハッシュ'));
+      mockGet.mockReturnValue('тест-ハッシュ');
       mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
@@ -421,11 +501,11 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
@@ -434,7 +514,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(zeroScoreAudit));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -447,7 +527,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(perfectScoreAudit));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
@@ -464,7 +544,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
@@ -476,14 +556,14 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       // If it renders, no auth is required
       expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
     });
 
-    it('AC-3: 404 handling for invalid audits', async () => {
+    it('AC-3: 404 handling for invalid audits (shows Not Found UI)', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
@@ -491,11 +571,11 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
@@ -503,7 +583,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       expect(mockFetch).toHaveBeenCalledWith(
@@ -516,7 +596,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       // Verify client-side rendering works
@@ -529,46 +609,46 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
-      expect(mockUseSearchParams).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalledWith('h');
     });
 
-    it('AC-7: Handles unpublished audit (shows 404)', async () => {
+    it('AC-7: Handles unpublished audit (shows Not Found)', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ success: false, message: 'Not published' }),
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
-    it('AC-8: Handles null/invalid data (shows 404)', async () => {
+    it('AC-8: Handles null/invalid data (shows Not Found)', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ success: true, data: null }),
       });
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
-        expect(mockNotFound).toHaveBeenCalled();
+        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
       });
     });
 
     it('AC-9: Shows loading state during fetch', async () => {
       mockFetch.mockImplementation(() => new Promise(() => {}));
       
-      render(<Page />);
+      render(<AuditPageClient />);
       
       expect(screen.getByText('Loading audit...')).toBeInTheDocument();
     });
@@ -578,7 +658,7 @@ describe('Public Audit Route - Query Parameter Approach', () => {
       mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
       
       await act(async () => {
-        render(<Page />);
+        render(<AuditPageClient />);
       });
       
       await waitFor(() => {
