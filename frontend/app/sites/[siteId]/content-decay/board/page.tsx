@@ -1,30 +1,20 @@
-﻿/**
- * Content Decay Recovery Board Page
- * Kanban-style board for managing content decay candidates through the recovery workflow
- * 
- * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
- * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
- */
-
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import {
-  Settings,
+  Columns,
   LayoutDashboard,
-  KanbanSquare,
   BarChart3,
   AlertTriangle,
-  Filter,
   GripVertical,
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -32,20 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import { X } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { SeverityBadge } from "@/components/content-decay/SeverityBadge";
-import { DecayReasonBadges } from "@/components/content-decay/DecayReasonBadges";
-import { StatusWorkflowButtons } from "@/components/content-decay/StatusWorkflowButtons";
+  SeverityBadge,
+  StatusWorkflowButtons,
+} from "@/components/content-decay";
 import {
-  useContentDecaySummary,
   useContentDecayCandidates,
-  useContentDecayCandidate,
   useUpdateCandidateStatus,
 } from "@/lib/hooks/useContentDecay";
 import type {
@@ -53,246 +38,184 @@ import type {
   ContentDecayCandidateStatus,
   ContentDecaySeverity,
   ContentDecayPageType,
-  SEVERITY_CONFIG,
 } from "@/lib/types/content-decay";
+import { SEVERITY_CONFIG, PAGE_TYPE_CONFIG } from "@/lib/types/content-decay";
 import { cn } from "@/lib/utils";
 
-// ============================================================
-// Column Configuration
-// ============================================================
-
-const COLUMNS: Array<{
-  id: ContentDecayCandidateStatus;
-  title: string;
-  color: string;
-}> = [
-  { id: "backlog", title: "Backlog", color: "border-slate-500" },
-  { id: "planned", title: "Planned", color: "border-blue-500" },
-  { id: "in_progress", title: "In Progress", color: "border-yellow-500" },
-  { id: "refreshed", title: "Refreshed", color: "border-purple-500" },
-  { id: "recovered", title: "Recovered", color: "border-green-500" },
+// Kanban columns
+const KANBAN_COLUMNS: { id: ContentDecayCandidateStatus; title: string; color: string }[] = [
+  { id: "backlog", title: "Backlog", color: "bg-slate-500" },
+  { id: "planned", title: "Planned", color: "bg-blue-500" },
+  { id: "in_progress", title: "In Progress", color: "bg-yellow-500" },
+  { id: "refreshed", title: "Refreshed", color: "bg-purple-500" },
+  { id: "recovered", title: "Recovered", color: "bg-green-500" },
 ];
 
-// ============================================================
-// Loading Skeleton
-// ============================================================
+const SEVERITY_OPTIONS: { value: ContentDecaySeverity | "all"; label: string }[] = [
+  { value: "all", label: "All Severities" },
+  { value: "critical", label: "Critical" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
 
-function PageSkeleton() {
+const PAGE_TYPE_OPTIONS: { value: ContentDecayPageType | "all"; label: string }[] = [
+  { value: "all", label: "All Types" },
+  { value: "home", label: "Homepage" },
+  { value: "blog", label: "Blog" },
+  { value: "landing", label: "Landing Page" },
+  { value: "product", label: "Product" },
+  { value: "tool", label: "Tool" },
+  { value: "compare", label: "Comparison" },
+  { value: "docs", label: "Documentation" },
+  { value: "other", label: "Other" },
+];
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toString();
+}
+
+interface KanbanCardProps {
+  candidate: DecayCandidate;
+  onClick: () => void;
+  onDragStart: (e: React.DragEvent, candidate: DecayCandidate) => void;
+}
+
+function KanbanCard({ candidate, onClick, onDragStart }: KanbanCardProps) {
+  const severityConfig = SEVERITY_CONFIG[candidate.severity];
+
   return (
-    <div className="space-y-6 p-6" data-testid="page-skeleton">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-10 w-64" />
-      </div>
-      <div className="grid grid-cols-5 gap-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-24" />
+    <div
+      role="article"
+      aria-label={candidate.pageTitle || candidate.pageUrl}
+      draggable
+      onDragStart={(e) => onDragStart(e, candidate)}
+      onClick={onClick}
+      className="bg-card border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow group"
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm truncate">
+            {candidate.pageTitle || "Untitled"}
           </div>
-        ))}
+          <a
+            href={candidate.pageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-primary truncate block"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {candidate.pageUrl}
+          </a>
+        </div>
+        <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+
+      <div className="flex items-center gap-2 mb-2">
+        <SeverityBadge severity={candidate.severity} size="sm" />
+        <Badge variant="outline" className="text-xs">
+          {PAGE_TYPE_CONFIG[candidate.pageType]?.label ?? candidate.pageType}
+        </Badge>
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="text-red-600">-{formatNumber(candidate.lostClickEstimate)} clicks</span>
+        <span className="font-mono">Score: {candidate.decayScore.toFixed(1)}</span>
       </div>
     </div>
   );
 }
 
-// ============================================================
-// Navigation Tabs
-// ============================================================
-
-interface NavTabsProps {
-  siteId: string;
-  activeTab: string;
-}
-
-function NavTabs({ siteId, activeTab }: NavTabsProps) {
-  const router = useRouter();
-
-  return (
-    <Tabs value={activeTab} className="w-auto">
-      <TabsList>
-        <TabsTrigger
-          value="queue"
-          onClick={() => router.push(`/sites/${siteId}/content-decay`)}
-          className="gap-1.5"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Queue
-        </TabsTrigger>
-        <TabsTrigger
-          value="board"
-          onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
-          className="gap-1.5"
-        >
-          <KanbanSquare className="h-4 w-4" />
-          Board
-        </TabsTrigger>
-        <TabsTrigger
-          value="recovery"
-          onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
-          className="gap-1.5"
-        >
-          <BarChart3 className="h-4 w-4" />
-          Recovery
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
-}
-
-// ============================================================
-// Candidate Card
-// ============================================================
-
-interface CandidateCardProps {
-  candidate: DecayCandidate;
-  onClick: () => void;
-}
-
-function CandidateCard({ candidate, onClick }: CandidateCardProps) {
-  return (
-    <Card
-      data-testid={`candidate-card-${candidate.id}`}
-      className="cursor-pointer hover:border-primary/50 transition-colors bg-slate-900 border-slate-700"
-      onClick={onClick}
-    >
-      <CardContent className="p-3 space-y-2">
-        {/* Title */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">
-              {candidate.pageTitle || "Untitled"}
-            </p>
-            <a
-              href={candidate.pageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1 truncate"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {candidate.pageUrl.length > 30
-                ? candidate.pageUrl.substring(0, 30) + "..."
-                : candidate.pageUrl}
-              <ExternalLink className="h-3 w-3 flex-shrink-0" />
-            </a>
-          </div>
-          <SeverityBadge severity={candidate.severity} size="sm" />
-        </div>
-
-        {/* Metrics */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-red-400">
-            -{candidate.lostClickEstimate.toLocaleString()} clicks
-          </span>
-          <span className="text-green-400">
-            +{candidate.recoveryUpsideEstimate.toLocaleString()} upside
-          </span>
-        </div>
-
-        {/* Reasons */}
-        <DecayReasonBadges
-          reasons={candidate.reasonCodes}
-          primaryReason={candidate.primaryReasonCode}
-          maxSupporting={1}
-          size="sm"
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================================
-// Kanban Column
-// ============================================================
-
 interface KanbanColumnProps {
-  column: (typeof COLUMNS)[number];
+  column: typeof KANBAN_COLUMNS[0];
   candidates: DecayCandidate[];
   onCardClick: (candidate: DecayCandidate) => void;
+  onDragStart: (e: React.DragEvent, candidate: DecayCandidate) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent, status: ContentDecayCandidateStatus) => void;
+  isOver: boolean;
 }
 
-function KanbanColumn({ column, candidates, onCardClick }: KanbanColumnProps) {
+function KanbanColumn({
+  column,
+  candidates,
+  onCardClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isOver,
+}: KanbanColumnProps) {
   return (
     <div
-      data-testid={`column-${column.id}`}
-      className="flex flex-col min-w-[280px] max-w-[320px]"
+      role="region"
+      aria-label={`${column.title} column with ${candidates.length} items`}
+      className="flex-1 min-w-[280px] max-w-[350px]"
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, column.id)}
     >
       {/* Column Header */}
-      <div
-        className={cn(
-          "flex items-center justify-between p-3 rounded-t-lg border-t-2 bg-slate-800/50",
-          column.color
-        )}
-      >
-        <h3 className="text-sm font-medium text-slate-200">{column.title}</h3>
-        <Badge variant="secondary" className="text-xs">
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <div className={cn("w-3 h-3 rounded-full", column.color)} />
+        <h3 className="font-semibold text-sm">{column.title}</h3>
+        <Badge variant="secondary" className="text-xs ml-auto">
           {candidates.length}
         </Badge>
       </div>
 
       {/* Column Content */}
       <div
-        className="flex-1 p-2 space-y-2 bg-slate-800/30 rounded-b-lg border border-t-0 border-slate-700 min-h-[400px]"
-        role="list"
-        aria-label={`${column.title} candidates`}
+        className={cn(
+          "space-y-2 min-h-[400px] p-2 rounded-lg transition-colors",
+          isOver ? "bg-muted/50 ring-2 ring-primary" : "bg-muted/30"
+        )}
       >
-        {candidates.length === 0 ? (
-          <div className="text-center text-slate-500 text-sm py-8">
-            No candidates
+        {candidates.map((candidate) => (
+          <KanbanCard
+            key={candidate.id}
+            candidate={candidate}
+            onClick={() => onCardClick(candidate)}
+            onDragStart={onDragStart}
+          />
+        ))}
+        {candidates.length === 0 && (
+          <div className="text-center text-muted-foreground text-sm py-8">
+            No items
           </div>
-        ) : (
-          candidates.map((candidate) => (
-            <CandidateCard
-              key={candidate.id}
-              candidate={candidate}
-              onClick={() => onCardClick(candidate)}
-            />
-          ))
         )}
       </div>
     </div>
   );
 }
 
-// ============================================================
-// Recovery Board Content
-// ============================================================
+export default function ContentDecayBoardPage() {
+  const params = useParams();
+  const siteId = params.siteId as string;
 
-function RecoveryBoardContent({ siteId }: { siteId: string }) {
-  const router = useRouter();
-
-  // Filter state
+  // State
   const [severityFilter, setSeverityFilter] = React.useState<ContentDecaySeverity | "all">("all");
   const [pageTypeFilter, setPageTypeFilter] = React.useState<ContentDecayPageType | "all">("all");
+  const [selectedCandidate, setSelectedCandidate] = React.useState<DecayCandidate | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const [dragOverColumn, setDragOverColumn] = React.useState<ContentDecayCandidateStatus | null>(null);
+  const [draggedCandidate, setDraggedCandidate] = React.useState<DecayCandidate | null>(null);
 
-  // Hooks
-  const {
-    summary,
-    isLoading: isSummaryLoading,
-  } = useContentDecaySummary(siteId);
+  // Data hooks
+  const { candidates, isLoading } = useContentDecayCandidates(siteId);
+  const { updateStatus } = useUpdateCandidateStatus(selectedCandidate?.id ?? 0);
 
-  const {
-    candidates,
-    isLoading: isCandidatesLoading,
-    mutate: mutateCandidates,
-  } = useContentDecayCandidates(siteId, {
-    status: "all",
-    severity: severityFilter,
-    pageType: pageTypeFilter,
-  });
+  // Filter candidates
+  const filteredCandidates = React.useMemo(() => {
+    return candidates.filter((c) => {
+      if (severityFilter !== "all" && c.severity !== severityFilter) return false;
+      if (pageTypeFilter !== "all" && c.pageType !== pageTypeFilter) return false;
+      // Only show board statuses (not ignored)
+      return !["ignored"].includes(c.status);
+    });
+  }, [candidates, severityFilter, pageTypeFilter]);
 
-  // Selected candidate for detail sheet
-  const [selectedCandidateId, setSelectedCandidateId] = React.useState<number | null>(null);
-
-  const {
-    candidate: selectedCandidate,
-    isLoading: isCandidateLoading,
-  } = useContentDecayCandidate(selectedCandidateId ?? 0);
-
-  const { updateStatus, isUpdating } = useUpdateCandidateStatus(selectedCandidateId ?? 0);
-
-  // Group candidates by status
+  // Group by status
   const candidatesByStatus = React.useMemo(() => {
     const grouped: Record<ContentDecayCandidateStatus, DecayCandidate[]> = {
       backlog: [],
@@ -302,91 +225,135 @@ function RecoveryBoardContent({ siteId }: { siteId: string }) {
       recovered: [],
       ignored: [],
     };
-
-    candidates.forEach((candidate) => {
-      if (candidate.status in grouped) {
-        grouped[candidate.status].push(candidate);
+    filteredCandidates.forEach((c) => {
+      if (grouped[c.status]) {
+        grouped[c.status].push(c);
       }
     });
-
     return grouped;
-  }, [candidates]);
+  }, [filteredCandidates]);
+
+  // Stats
+  const stats = React.useMemo(() => ({
+    total: filteredCandidates.length,
+    critical: filteredCandidates.filter((c) => c.severity === "critical").length,
+    high: filteredCandidates.filter((c) => c.severity === "high").length,
+  }), [filteredCandidates]);
 
   // Handlers
-  const handleCardClick = (candidate: DecayCandidate) => {
-    setSelectedCandidateId(candidate.id);
-  };
+  const handleCardClick = React.useCallback((candidate: DecayCandidate) => {
+    setSelectedCandidate(candidate);
+    setIsSheetOpen(true);
+  }, []);
 
-  const handleCloseSheet = () => {
-    setSelectedCandidateId(null);
-  };
+  const handleDragStart = React.useCallback((e: React.DragEvent, candidate: DecayCandidate) => {
+    setDraggedCandidate(candidate);
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
 
-  const handleStatusChange = async (status: ContentDecayCandidateStatus) => {
-    const result = await updateStatus(status);
-    if (result.success) {
-      mutateCandidates();
+  const handleDragOver = React.useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const handleDrop = React.useCallback(async (
+    e: React.DragEvent,
+    newStatus: ContentDecayCandidateStatus
+  ) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+
+    if (draggedCandidate && draggedCandidate.status !== newStatus) {
+      const { updateStatus } = await import("@/lib/hooks/useContentDecay").then((m) =>
+        m.useUpdateCandidateStatus(draggedCandidate.id)
+      );
+      // Direct API call for drag-drop
+      try {
+        const response = await fetch(`/api/v1/content-decay/candidates/${draggedCandidate.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (response.ok) {
+          toast.success(`Moved to ${newStatus.replace("_", " ")}`);
+        } else {
+          toast.error("Failed to update status");
+        }
+      } catch {
+        toast.error("Failed to update status");
+      }
     }
-  };
+    setDraggedCandidate(null);
+  }, [draggedCandidate]);
 
-  const isLoading = isSummaryLoading || isCandidatesLoading;
+  const handleStatusChange = React.useCallback(async (status: ContentDecayCandidateStatus) => {
+    if (!selectedCandidate) return;
+    try {
+      const response = await fetch(`/api/v1/content-decay/candidates/${selectedCandidate.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (response.ok) {
+        toast.success(`Status updated to ${status.replace("_", " ")}`);
+        setIsSheetOpen(false);
+        setSelectedCandidate(null);
+      } else {
+        toast.error("Failed to update status");
+      }
+    } catch {
+      toast.error("Failed to update status");
+    }
+  }, [selectedCandidate]);
 
-  // Stats at bottom
-  const stats = React.useMemo(() => {
-    return {
-      total: candidates.length,
-      critical: candidates.filter((c) => c.severity === "critical").length,
-      high: candidates.filter((c) => c.severity === "high").length,
-    };
-  }, [candidates]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {KANBAN_COLUMNS.map((col) => (
+            <div key={col.id} className="flex-1 min-w-[280px]">
+              <Skeleton className="h-8 w-32 mb-3" />
+              <Skeleton className="h-[400px] w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <KanbanSquare className="h-6 w-6 text-blue-500" />
-              Recovery Board
-            </h1>
-            <p className="text-sm text-slate-400">
-              Drag candidates through the recovery workflow
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <NavTabs siteId={siteId} activeTab="board" />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/sites/${siteId}/content-decay/settings`)}
-              className="border-slate-700 text-slate-300"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className="container mx-auto py-6 space-y-6">
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Recovery Board</h1>
+          <p className="text-muted-foreground text-sm">
+            Drag cards between columns to update status
+          </p>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-400" />
-            <span className="text-sm text-slate-400">Filters:</span>
-          </div>
-
+        <div className="flex items-center gap-3">
           <Select
             value={severityFilter}
             onValueChange={(v) => setSeverityFilter(v as ContentDecaySeverity | "all")}
           >
-            <SelectTrigger className="w-32 bg-slate-800 border-slate-700 text-slate-200">
+            <SelectTrigger
+              className="w-36"
+              aria-label="Filter by severity"
+            >
               <SelectValue placeholder="Severity" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Severities</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
+              {SEVERITY_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -394,148 +361,141 @@ function RecoveryBoardContent({ siteId }: { siteId: string }) {
             value={pageTypeFilter}
             onValueChange={(v) => setPageTypeFilter(v as ContentDecayPageType | "all")}
           >
-            <SelectTrigger className="w-36 bg-slate-800 border-slate-700 text-slate-200">
+            <SelectTrigger
+              className="w-36"
+              aria-label="Filter by page type"
+            >
               <SelectValue placeholder="Page Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="blog">Blog</SelectItem>
-              <SelectItem value="landing">Landing</SelectItem>
-              <SelectItem value="product">Product</SelectItem>
-              <SelectItem value="tool">Tool</SelectItem>
-              <SelectItem value="docs">Docs</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              {PAGE_TYPE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
+      </header>
 
-        {/* Kanban Board */}
-        {isLoading ? (
-          <PageSkeleton />
-        ) : (
-          <div
-            className="flex gap-4 overflow-x-auto pb-4"
-            role="region"
-            aria-label="Kanban board"
-          >
-            {COLUMNS.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                candidates={candidatesByStatus[column.id] || []}
-                onCardClick={handleCardClick}
-              />
-            ))}
-          </div>
+      {/* Navigation Tabs */}
+      <Tabs defaultValue="board" className="w-full">
+        <TabsList>
+          <TabsTrigger value="queue" asChild>
+            <Link href={`/sites/${siteId}/content-decay`}>
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Queue
+            </Link>
+          </TabsTrigger>
+          <TabsTrigger value="board" asChild>
+            <Link href={`/sites/${siteId}/content-decay/board`}>
+              <Columns className="h-4 w-4 mr-2" />
+              Board
+            </Link>
+          </TabsTrigger>
+          <TabsTrigger value="recovery" asChild>
+            <Link href={`/sites/${siteId}/content-decay/recovery`}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Recovery
+            </Link>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Quick Stats */}
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-muted-foreground">
+          Total: <span className="font-medium text-foreground">{stats.total}</span>
+        </span>
+        {stats.critical > 0 && (
+          <span className="text-red-600 flex items-center gap-1">
+            <AlertTriangle className="h-4 w-4" />
+            {stats.critical} Critical
+          </span>
         )}
+        {stats.high > 0 && (
+          <span className="text-orange-600">
+            {stats.high} High
+          </span>
+        )}
+      </div>
 
-        {/* Quick Stats */}
-        <div className="mt-6 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-          <div className="flex items-center gap-6 text-sm">
-            <div>
-              <span className="text-slate-400">Total Candidates:</span>
-              <span className="ml-2 font-medium text-slate-200">{stats.total}</span>
-            </div>
-            <div>
-              <span className="text-slate-400">Critical:</span>
-              <span className="ml-2 font-medium text-red-400">{stats.critical}</span>
-            </div>
-            <div>
-              <span className="text-slate-400">High:</span>
-              <span className="ml-2 font-medium text-orange-400">{stats.high}</span>
-            </div>
-          </div>
-        </div>
+      {/* Kanban Board */}
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {KANBAN_COLUMNS.map((column) => (
+          <KanbanColumn
+            key={column.id}
+            column={column}
+            candidates={candidatesByStatus[column.id]}
+            onCardClick={handleCardClick}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            isOver={dragOverColumn === column.id}
+          />
+        ))}
+      </div>
 
-        {/* Candidate Detail Sheet */}
-        <Sheet
-          open={selectedCandidateId !== null}
-          onOpenChange={(open) => !open && handleCloseSheet()}
-        >
-          <SheetContent className="w-[500px] sm:max-w-[600px] bg-slate-900 border-slate-700">
-            <SheetHeader>
-              <SheetTitle className="text-slate-200">
-                {selectedCandidate?.pageTitle || "Candidate Details"}
-              </SheetTitle>
-              <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="absolute right-4 top-4">
-                  <span className="sr-only">Close</span>
-                </Button>
-              </SheetClose>
-            </SheetHeader>
+      {/* Candidate Detail Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="w-[400px] sm:max-w-[500px]">
+          <SheetHeader>
+            <SheetTitle>
+              {selectedCandidate?.pageTitle || "Candidate Details"}
+            </SheetTitle>
+            <SheetClose asChild>
+              <Button variant="ghost" size="icon" className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </Button>
+            </SheetClose>
+          </SheetHeader>
 
-            {isCandidateLoading ? (
-              <div className="space-y-4 pt-4">
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
+          {selectedCandidate && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <SeverityBadge severity={selectedCandidate.severity} />
+                <Badge variant="outline">
+                  {selectedCandidate.status.replace("_", " ")}
+                </Badge>
               </div>
-            ) : selectedCandidate ? (
-              <div className="space-y-4 pt-4">
-                {/* URL */}
+
+              <div className="text-sm">
+                <span className="text-muted-foreground">URL:</span>
                 <a
                   href={selectedCandidate.pageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-slate-400 hover:text-slate-300 flex items-center gap-1"
+                  className="text-primary hover:underline ml-2 flex items-center gap-1"
                 >
                   {selectedCandidate.pageUrl}
                   <ExternalLink className="h-3 w-3" />
                 </a>
+              </div>
 
-                {/* Severity & Metrics */}
-                <div className="flex items-center gap-4">
-                  <SeverityBadge severity={selectedCandidate.severity} />
-                  <span className="text-sm text-red-400">
-                    -{selectedCandidate.lostClickEstimate.toLocaleString()} clicks
-                  </span>
-                  <span className="text-sm text-green-400">
-                    +{selectedCandidate.recoveryUpsideEstimate.toLocaleString()} upside
-                  </span>
-                </div>
-
-                {/* Reasons */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">Reasons</h4>
-                  <DecayReasonBadges
-                    reasons={selectedCandidate.reasonCodes}
-                    primaryReason={selectedCandidate.primaryReasonCode}
-                  />
+                  <span className="text-muted-foreground">Decay Score:</span>
+                  <span className="font-medium ml-2">{selectedCandidate.decayScore.toFixed(1)}</span>
                 </div>
-
-                {/* Status Workflow */}
-                <div className="pt-4 border-t border-slate-700">
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">Status</h4>
-                  <StatusWorkflowButtons
-                    status={selectedCandidate.status}
-                    onStatusChange={handleStatusChange}
-                    isLoading={isUpdating}
-                  />
+                <div>
+                  <span className="text-muted-foreground">Lost Clicks:</span>
+                  <span className="font-medium text-red-600 ml-2">
+                    -{formatNumber(selectedCandidate.lostClickEstimate)}
+                  </span>
                 </div>
               </div>
-            ) : null}
-          </SheetContent>
-        </Sheet>
-      </div>
+
+              <div className="pt-4 border-t">
+                <h4 className="font-medium text-sm mb-3">Change Status</h4>
+                <StatusWorkflowButtons
+                  status={selectedCandidate.status}
+                  onStatusChange={handleStatusChange}
+                />
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
-}
-
-// ============================================================
-// Page Component
-// ============================================================
-
-export default function RecoveryBoardPage() {
-  const params = useParams();
-  const siteId = params.siteId as string;
-
-  if (!siteId) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400">Site not found</p>
-      </div>
-    );
-  }
-
-  return <RecoveryBoardContent siteId={siteId} />;
 }

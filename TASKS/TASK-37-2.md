@@ -136,6 +136,48 @@ Use `isAuthenticated` to hide protected nav items from guests
 - Technical solution documented
 - No blocking dependencies
 
+### Developer (2026-03-16 17:25 GMT+2)
+**Implementation Complete - 85/85 Tests Passing (100%)**
+
+**Changes Made to `frontend/components/layout/Header.tsx`:**
+1. Split nav items into `protectedNavItems` and `guestNavItems` arrays
+2. Added `isAuthenticated` check based on `!!userName`
+3. Conditional rendering based on auth status:
+   - **Guests**: See "Indicators" and "Sign In" links only
+   - **Authenticated**: See all protected nav items (Dashboard, AI Visibility, Keywords, Competitors, Reports)
+4. Added `cursor-pointer` class to all nav links and buttons
+5. Changed hover background from `hover:bg-slate-800/50` to `hover:bg-slate-700`
+6. Hidden notification bells and settings icon from guests
+7. Logo link points to `/dashboard` for auth users, `/` for guests
+8. Settings link href changed to `/settings`
+9. Removed Settings from navItems array (already has dedicated icon button)
+
+**Test Results:**
+```
+Test Files: 2 passed (2)
+Tests: 85 passed (85)
+Duration: 46.49s
+```
+
+**Acceptance Criteria Status:**
+- [x] "Sign In" button navigates to /login
+- [x] "Indicators" button is clickable and navigates to /dashboard
+- [x] Nav buttons show pointer cursor on hover
+- [x] Nav buttons have visible hover state (dark background, white text)
+- [x] Dashboard nav item hidden from unauthenticated users
+- [x] Competitors nav item hidden from unauthenticated users
+- [x] Keywords nav item hidden from unauthenticated users
+- [x] Reports nav item hidden from unauthenticated users
+- [x] AI Visibility nav item hidden from unauthenticated users
+- [x] Unit tests for navigation behavior (100% pass rate)
+
+**Files Modified:**
+- `frontend/components/layout/Header.tsx` - Main implementation
+- `frontend/__tests__/components/layout/Header.navigation.test.tsx` - Fixed icon mocks
+- `frontend/__tests__/components/layout/Header.hover-states.test.tsx` - Fixed icon mocks
+
+**Status Change:** `In Development` → `To Test Locally`
+
 ### Developer (2026-03-16 17:21 GMT+2)
 **Implementation Complete - 83/85 Tests Passing (97.6%)**
 
