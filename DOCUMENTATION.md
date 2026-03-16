@@ -1519,6 +1519,157 @@ Password reset flow implementation for the Core Authentication feature (FEAT-025
 - TASK-25-3: Login/Logout
 
 ---
+## Email Verification (TASK-25-5)
+
+### Feature Description
+Email verification flow implementation for the Core Authentication feature (FEAT-025) that ensures newly registered users have valid email addresses. Provides secure verification through signed URLs with timing-safe hash comparison, rate-limited resend functionality, and seamless integration with Laravel's MustVerifyEmail interface.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/EmailVerificationController.php`
+- **Model:** `backend/app/Models/User.php` (implements `MustVerifyEmail`)
+- **Tests:** `backend/tests/Feature/Controllers/Api/V1/EmailVerificationControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-25-5.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/auth/verify-email/{id}/{hash}` | Verify email via signed URL |
+| POST | `/api/v1/auth/resend-verification` | Resend verification email |
+
+### Verify Email Endpoint
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | integer | User ID |
+| `hash` | string | SHA-256 hash of user's email |
+
+**Required Middleware:**
+- `signed` - Validates URL signature to prevent tampering
+
+**Response Codes:**
+| Code | Condition |
+|------|-----------|
+| 200 | Email verified successfully |
+| 200 | Already verified (idempotent) |
+| 403 | Invalid signature or hash |
+| 404 | User not found |
+
+**Success Response:**
+```json
+{
+  "message": "Email verified successfully."
+}
+```
+
+**Already Verified Response:**
+```json
+{
+  "message": "Email already verified."
+}
+```
+
+### Resend Verification Endpoint
+
+**Authentication:** Required (Sanctum token)
+
+**Response Codes:**
+| Code | Condition |
+|------|-----------|
+| 200 | Verification email sent |
+| 400 | Email already verified |
+| 401 | Unauthenticated |
+| 429 | Rate limit exceeded (1/minute) |
+
+**Success Response:**
+```json
+{
+  "message": "Verification email sent."
+}
+```
+
+**Rate Limit Headers:**
+```
+X-RateLimit-Limit: 1
+X-RateLimit-Remaining: 0
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Signed URL Validation | Laravel `signed` middleware prevents URL tampering |
+| Timing-Safe Comparison | `hash_equals()` prevents timing attacks |
+| IDOR Prevention | Hash tied to user's email address |
+| Rate Limiting | 1 request per minute per user on resend |
+| SQL Injection | Parameterized queries via Eloquent |
+| Path Traversal | Route constraints block malicious inputs |
+
+### Verification Flow
+
+1. **Registration:** AuthController sends verification email after user creation
+2. **Email Sent:** Laravel's built-in VerifyEmail notification with signed URL
+3. **User Clicks Link:** Frontend redirects to API endpoint
+4. **Signature Validation:** `signed` middleware validates URL integrity
+5. **Hash Validation:** Controller compares hash with `hash_equals()`
+6. **Email Marked Verified:** `markEmailAsVerified()` called on User model
+7. **Event Dispatched:** Laravel `Verified` event fired
+
+### User Model Integration
+
+```php
+class User extends Authenticatable implements MustVerifyEmail
+{
+    use Notifiable, Verifiable;
+    
+    // hasVerifiedEmail() - Check if verified
+    // markEmailAsVerified() - Mark as verified
+    // sendEmailVerificationNotification() - Send verification email
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| EmailVerificationControllerTest | 35 | 64 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Verification (VER-*) | 8 | Verify endpoint success/failure |
+| Resend (RES-*) | 7 | Resend endpoint with rate limiting |
+| Model (MOD-*) | 4 | User model verification methods |
+| Middleware (MID-*) | 2 | Verified middleware checks |
+| Security (SEC-*) | 6 | SQL injection, IDOR, timing attacks |
+| Edge Cases (EC-*) | 6 | Non-existent user, unicode, boundaries |
+| Integration (INT-*) | 2 | Full verification flow |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-01 |
+| Commit | `74e0597` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 35/35 passing (64 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-25-3 | Done ✅ | AuthController (registration sends verification) |
+
+### Related Tasks
+
+- TASK-25-1: User Registration
+- TASK-25-3: Login/Logout
+- TASK-25-4: Password Reset Flow
+
+---
 ## AI Retry Policy (TASK-31-9)
 
 ### Feature Description
