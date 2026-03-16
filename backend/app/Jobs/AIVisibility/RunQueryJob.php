@@ -205,6 +205,12 @@ class RunQueryJob implements ShouldQueue
             // Try using the engine first
             $result = $engine->query($this->platform, $this->queryText);
 
+            // Check if the result was successful
+            if ($result && is_object($result) && isset($result->success) && !$result->success) {
+                $errorMessage = $result->errorMessage ?? 'Unknown error';
+                throw new \RuntimeException("AI query failed: {$errorMessage}");
+            }
+
             if ($result && is_object($result) && method_exists($result, 'getResponseText')) {
                 return $result->getResponseText();
             }
@@ -252,7 +258,11 @@ class RunQueryJob implements ShouldQueue
             return $data['choices'][0]['message']['content'] ?? '';
         }
 
-        return '';
+        // Throw exception for error responses
+        $statusCode = $response->status();
+        $errorData = $response->json();
+        $errorMessage = $errorData['error'] ?? "HTTP error {$statusCode}";
+        throw new \RuntimeException("OpenRouter API error ({$statusCode}): {$errorMessage}");
     }
 
     /**

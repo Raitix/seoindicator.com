@@ -191,7 +191,7 @@ class MentionParser
      * Detect the type of mention based on context.
      *
      * @param string $context The context around the mention
-     * @return string One of: list, comparison, recommendation, neutral
+     * @return string One of: recommendation, comparison, mention, neutral
      */
     public function detectMentionType(string $context): string
     {
@@ -201,10 +201,10 @@ class MentionParser
 
         $contextLower = mb_strtolower($context, 'UTF-8');
 
-        // Check for list patterns (highest priority)
-        foreach (self::LIST_PATTERNS as $pattern) {
+        // Check for recommendation patterns (highest priority)
+        foreach (self::RECOMMENDATION_PATTERNS as $pattern) {
             if (preg_match('/' . $pattern . '/i', $contextLower)) {
-                return 'list';
+                return 'recommendation';
             }
         }
 
@@ -215,10 +215,10 @@ class MentionParser
             }
         }
 
-        // Check for recommendation patterns
-        foreach (self::RECOMMENDATION_PATTERNS as $pattern) {
+        // Check for list patterns - these are regular mentions in a list context
+        foreach (self::LIST_PATTERNS as $pattern) {
             if (preg_match('/' . $pattern . '/i', $contextLower)) {
-                return 'recommendation';
+                return 'mention';
             }
         }
 
