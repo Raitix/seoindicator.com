@@ -1,542 +1,174 @@
-﻿/**
- * Content Decay Settings Page
- * Configuration page for content decay detection settings
- * 
- * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
- * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
- */
-
 "use client";
 
-import * as React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Settings,
-  LayoutDashboard,
-  KanbanSquare,
-  BarChart3,
-  Save,
-  RotateCcw,
-  AlertCircle,
-  Check,
-  Info,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Alert,
-  AlertDescription,
-} from "@/components/ui/alert";
-import {
-  useContentDecaySettings,
-  useSaveContentDecaySettings,
-} from "@/lib/hooks/useContentDecay";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useContentDecaySettings, useSaveContentDecaySettings } from "@/lib/hooks/useContentDecay";
+import type { ContentDecayProjectSettings } from "@/lib/hooks/useContentDecay";
+import { LayoutDashboard, Columns, BarChart3, Save, RotateCcw, AlertCircle } from "lucide-react";
 
-// ============================================================
-// Loading Skeleton
-// ============================================================
+const WINDOW_OPTIONS = [{ value: 7, label: "7 days" }, { value: 14, label: "14 days" }, { value: 28, label: "28 days" }, { value: 56, label: "56 days" }];
+const DIGEST_FREQUENCY_OPTIONS = [{ value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }];
 
-function PageSkeleton() {
-  return (
-    <div className="space-y-6 p-6" data-testid="page-skeleton">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-10 w-24" />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-48" data-testid="skeleton" />
-        <Skeleton className="h-48" data-testid="skeleton" />
-        <Skeleton className="h-32" data-testid="skeleton" />
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// Navigation Tabs
-// ============================================================
-
-interface NavTabsProps {
-  siteId: string;
-}
-
-function NavTabs({ siteId }: NavTabsProps) {
+export default function ContentDecaySettingsPage() {
+  const params = useParams();
   const router = useRouter();
+  const siteId = params.siteId as string;
 
-  return (
-    <Tabs value="settings" className="w-auto">
-      <TabsList>
-        <TabsTrigger
-          value="queue"
-          onClick={() => router.push(`/sites/${siteId}/content-decay`)}
-          className="gap-1.5"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Queue
-        </TabsTrigger>
-        <TabsTrigger
-          value="board"
-          onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
-          className="gap-1.5"
-        >
-          <KanbanSquare className="h-4 w-4" />
-          Board
-        </TabsTrigger>
-        <TabsTrigger
-          value="recovery"
-          onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
-          className="gap-1.5"
-        >
-          <BarChart3 className="h-4 w-4" />
-          Recovery
-        </TabsTrigger>
-        <TabsTrigger value="settings" className="gap-1.5">
-          <Settings className="h-4 w-4" />
-          Settings
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
-}
+  const { settings, isLoading } = useContentDecaySettings(siteId);
+  const { trigger: saveSettings, isMutating: isSaving } = useSaveContentDecaySettings(siteId);
 
-// ============================================================
-// Form Field Components
-// ============================================================
-
-interface FormFieldProps {
-  label: string;
-  description?: string;
-  htmlFor: string;
-  children: React.ReactNode;
-  error?: string;
-}
-
-function FormField({ label, description, htmlFor, children, error }: FormFieldProps) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={htmlFor} className="text-slate-200">
-          {label}
-        </Label>
-        {description && (
-          <span className="text-xs text-slate-400">{description}</span>
-        )}
-      </div>
-      {children}
-      {error && (
-        <p className="text-xs text-red-400 flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ============================================================
-// Settings Content
-// ============================================================
-
-function SettingsContent({ siteId }: { siteId: string }) {
-  const router = useRouter();
-
-  // Form state
-  const [formData, setFormData] = React.useState({
-    detectionEnabled: true,
-    windowDays: 28,
-    minClicksThreshold: 100,
-    minImpressionsThreshold: 1000,
-    digestEnabled: false,
-    digestFrequency: "weekly" as "weekly" | "monthly",
+  const [formData, setFormData] = useState<ContentDecayProjectSettings>({
+    detectionEnabled: true, windowDays: 28, minClicksThreshold: 10, minImpressionsThreshold: 100, digestEnabled: true, digestFrequency: "weekly",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasChanges, setHasChanges] = useState(false);
 
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [hasChanges, setHasChanges] = React.useState(false);
+  const initialSettings = useMemo(() => settings, [settings]);
 
-  // Hooks
-  const {
-    settings,
-    isLoading,
-  } = useContentDecaySettings(siteId);
-
-  const { saveSettings, isSaving } = useSaveContentDecaySettings(siteId);
-
-  // Memoize settings to prevent infinite loops when mock returns new object each render
-  const settingsKey = React.useMemo(() => {
-    if (!settings) return null;
-    return JSON.stringify({
-      detectionEnabled: settings.detectionEnabled,
-      windowDays: settings.windowDays,
-      minClicksThreshold: settings.minClicksThreshold,
-      minImpressionsThreshold: settings.minImpressionsThreshold,
-      digestEnabled: settings.digestEnabled,
-      digestFrequency: settings.digestFrequency,
-    });
-  }, [settings]);
-
-  // Load existing settings into form
-  React.useEffect(() => {
-    if (settings) {
+  useEffect(() => {
+    if (initialSettings) {
       setFormData({
-        detectionEnabled: settings.detectionEnabled ?? true,
-        windowDays: settings.windowDays ?? 28,
-        minClicksThreshold: settings.minClicksThreshold ?? 100,
-        minImpressionsThreshold: settings.minImpressionsThreshold ?? 1000,
-        digestEnabled: settings.digestEnabled ?? false,
-        digestFrequency: settings.digestFrequency ?? "weekly",
+        detectionEnabled: initialSettings.detectionEnabled,
+        windowDays: initialSettings.windowDays,
+        minClicksThreshold: initialSettings.minClicksThreshold,
+        minImpressionsThreshold: initialSettings.minImpressionsThreshold,
+        digestEnabled: initialSettings.digestEnabled,
+        digestFrequency: initialSettings.digestFrequency,
       });
-      setHasChanges(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settingsKey]);
+  }, [initialSettings]);
 
-  // Update form field
-  const updateField = <K extends keyof typeof formData>(
-    field: K,
-    value: (typeof formData)[K]
-  ) => {
+  useEffect(() => {
+    if (initialSettings) setHasChanges(JSON.stringify(formData) !== JSON.stringify(initialSettings));
+  }, [formData, initialSettings]);
+
+  const handleChange = (field: keyof ContentDecayProjectSettings, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setHasChanges(true);
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    }
+    setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // Validate form
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (formData.minClicksThreshold < 0) {
-      newErrors.minClicksThreshold = "Must be 0 or greater";
-    }
-    if (formData.minImpressionsThreshold < 0) {
-      newErrors.minImpressionsThreshold = "Must be 0 or greater";
-    }
-
+    if (formData.minClicksThreshold < 0) newErrors.minClicksThreshold = "Must be 0 or greater";
+    if (formData.minImpressionsThreshold < 0) newErrors.minImpressionsThreshold = "Must be 0 or greater";
+    if (formData.windowDays < 7 || formData.windowDays > 56) newErrors.windowDays = "Must be between 7 and 56 days";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Save handler
   const handleSave = async () => {
     if (!validate()) return;
-
-    const result = await saveSettings(formData);
-    if (result.success) {
-      setHasChanges(false);
-    }
+    try { await saveSettings(formData); setHasChanges(false); } catch (error) { console.error("Failed to save settings:", error); }
   };
 
-  // Reset handler
   const handleReset = () => {
-    if (settings) {
+    if (initialSettings) {
       setFormData({
-        detectionEnabled: settings.detectionEnabled ?? true,
-        windowDays: settings.windowDays ?? 28,
-        minClicksThreshold: settings.minClicksThreshold ?? 100,
-        minImpressionsThreshold: settings.minImpressionsThreshold ?? 1000,
-        digestEnabled: settings.digestEnabled ?? false,
-        digestFrequency: settings.digestFrequency ?? "weekly",
+        detectionEnabled: initialSettings.detectionEnabled, windowDays: initialSettings.windowDays,
+        minClicksThreshold: initialSettings.minClicksThreshold, minImpressionsThreshold: initialSettings.minImpressionsThreshold,
+        digestEnabled: initialSettings.digestEnabled, digestFrequency: initialSettings.digestFrequency,
       });
-      setHasChanges(false);
       setErrors({});
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
-        <PageSkeleton />
-      </div>
-    );
-  }
+  const tabs = [
+    { id: "queue", label: "Queue", href: `/sites/${siteId}/content-decay`, icon: LayoutDashboard },
+    { id: "board", label: "Board", href: `/sites/${siteId}/content-decay/board`, icon: Columns },
+    { id: "recovery", label: "Recovery", href: `/sites/${siteId}/content-decay/recovery`, icon: BarChart3 },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Settings className="h-6 w-6 text-slate-400" />
-              Content Decay Settings
-            </h1>
-            <p className="text-sm text-slate-400">
-              Configure content decay detection for this site
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <NavTabs siteId={siteId} />
-          </div>
+    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="settings-page">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Content Decay Settings</h1>
+          <p className="text-slate-400 text-sm mt-1">Configure detection and notification preferences</p>
         </div>
-
-        {/* Unsaved Changes Indicator */}
-        {hasChanges && (
-          <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
-            <AlertCircle className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-200">
-              You have unsaved changes. Remember to save your settings.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Detection Settings */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-6">
-          <CardHeader>
-            <CardTitle className="text-slate-200">Detection Settings</CardTitle>
-            <CardDescription className="text-slate-400">
-              Configure how content decay is detected for this site
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Detection Toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="detection-enabled" className="text-slate-200">
-                  Enable Content Decay Detection
-                </Label>
-                <p className="text-xs text-slate-400 mt-1">
-                  Automatically scan for pages with declining performance
-                </p>
-              </div>
-              <Switch
-                id="detection-enabled"
-                checked={formData.detectionEnabled}
-                onCheckedChange={(checked) => updateField("detectionEnabled", checked)}
-                data-testid="detection-toggle"
-              />
-            </div>
-
-            {/* Window Size */}
-            <FormField
-              label="Detection Window"
-              description="Time period for comparison"
-              htmlFor="window-days"
-            >
-              <Select
-                value={formData.windowDays.toString()}
-                onValueChange={(v) => updateField("windowDays", parseInt(v, 10))}
-              >
-                <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-slate-200">
-                  <SelectValue placeholder="Select window size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">7 days</SelectItem>
-                  <SelectItem value="14">14 days</SelectItem>
-                  <SelectItem value="28">28 days</SelectItem>
-                  <SelectItem value="56">56 days</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-slate-500 mt-1">
-                Compare current performance to the previous window
-              </p>
-            </FormField>
-
-            {/* Thresholds */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                label="Minimum Clicks Threshold"
-                htmlFor="min-clicks"
-                error={errors.minClicksThreshold}
-              >
-                <Input
-                  id="min-clicks"
-                  type="number"
-                  value={formData.minClicksThreshold}
-                  onChange={(e) =>
-                    updateField("minClicksThreshold", parseInt(e.target.value, 10) || 0)
-                  }
-                  className="bg-slate-700 border-slate-600 text-slate-200"
-                  data-testid="min-clicks-input"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Pages below this threshold are excluded from detection
-                </p>
-              </FormField>
-
-              <FormField
-                label="Minimum Impressions Threshold"
-                htmlFor="min-impressions"
-                error={errors.minImpressionsThreshold}
-              >
-                <Input
-                  id="min-impressions"
-                  type="number"
-                  value={formData.minImpressionsThreshold}
-                  onChange={(e) =>
-                    updateField("minImpressionsThreshold", parseInt(e.target.value, 10) || 0)
-                  }
-                  className="bg-slate-700 border-slate-600 text-slate-200"
-                  data-testid="min-impressions-input"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Pages below this threshold are excluded from detection
-                </p>
-              </FormField>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Digest Settings */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-6">
-          <CardHeader>
-            <CardTitle className="text-slate-200">Notification Digest</CardTitle>
-            <CardDescription className="text-slate-400">
-              Receive periodic updates about content decay
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Digest Toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="digest-enabled" className="text-slate-200">
-                  Enable Email Digest
-                </Label>
-                <p className="text-xs text-slate-400 mt-1">
-                  Receive regular summaries of content decay activity
-                </p>
-              </div>
-              <Switch
-                id="digest-enabled"
-                checked={formData.digestEnabled}
-                onCheckedChange={(checked) => updateField("digestEnabled", checked)}
-                data-testid="digest-toggle"
-              />
-            </div>
-
-            {/* Digest Frequency */}
-            {formData.digestEnabled && (
-              <FormField
-                label="Digest Frequency"
-                htmlFor="digest-frequency"
-              >
-                <Select
-                  value={formData.digestFrequency}
-                  onValueChange={(v) => updateField("digestFrequency", v as "weekly" | "monthly")}
-                >
-                  <SelectTrigger className="w-full bg-slate-700 border-slate-600 text-slate-200">
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Info Card */}
-        <Card className="bg-slate-800/30 border-slate-700 mb-6">
-          <CardContent className="p-4">
-            <div className="flex gap-3">
-              <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-slate-300">
-                <p className="font-medium mb-1">How Detection Works</p>
-                <p className="text-slate-400">
-                  Content decay detection compares current page performance to a previous period.
-                  Pages showing significant declines in clicks, impressions, or rankings are flagged
-                  as candidates for refresh. Adjust thresholds to focus on pages that matter most to
-                  your traffic.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3">
-          {hasChanges && (
-            <Button
-              variant="outline"
-              onClick={handleReset}
-              disabled={isSaving}
-              className="border-slate-700 text-slate-300"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
-            </Button>
-          )}
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !hasChanges}
-            className="bg-primary text-primary-foreground"
-          >
-            {isSaving ? (
-              <>
-                <span className="animate-spin mr-2">ΓÅ│</span>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Settings
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Status Badge */}
-        <div className="mt-6 flex items-center gap-2">
-          <Badge
-            variant={formData.detectionEnabled ? "default" : "secondary"}
-            className={cn(
-              formData.detectionEnabled
-                ? "bg-green-500/20 text-green-400 border-green-500/30"
-                : "bg-slate-700 text-slate-400"
-            )}
-          >
-            {formData.detectionEnabled ? (
-              <>
-                <Check className="h-3 w-3 mr-1" />
-                Detection Active
-              </>
-            ) : (
-              "Detection Paused"
-            )}
-          </Badge>
-        </div>
+        {hasChanges && <div className="flex items-center gap-2 text-sm text-yellow-400"><AlertCircle className="w-4 h-4" />Unsaved changes</div>}
       </div>
+
+      <nav className="flex gap-1 border-b border-slate-700 pb-2" aria-label="Content decay views">
+        {tabs.map((tab) => (
+          <Link key={tab.id} href={tab.href} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors text-slate-400 hover:text-white hover:bg-slate-700">
+            <tab.icon className="w-4 h-4" />{tab.label}
+          </Link>
+        ))}
+      </nav>
+
+      {isLoading ? (
+        <div className="space-y-4">{[1, 2, 3].map((i) => (<div key={i} className="h-32 bg-slate-800/50 animate-pulse rounded-lg" />))}</div>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
+          <section className="bg-slate-800/50 border border-slate-700 rounded-lg p-4" aria-labelledby="detection-heading">
+            <h2 id="detection-heading" className="text-lg font-medium text-white mb-4">Detection Settings</h2>
+
+            <div className="flex items-center justify-between py-3 border-b border-slate-700">
+              <div><p className="text-slate-200 font-medium">Enable Detection</p><p className="text-sm text-slate-400">Automatically detect decaying content</p></div>
+              <button type="button" role="switch" aria-checked={formData.detectionEnabled} onClick={() => handleChange("detectionEnabled", !formData.detectionEnabled)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.detectionEnabled ? "bg-blue-600" : "bg-slate-600"}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.detectionEnabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+
+            <div className="py-3 border-b border-slate-700">
+              <label className="block text-slate-200 font-medium mb-2">Detection Window</label>
+              <p className="text-sm text-slate-400 mb-3">Number of days to analyze for decay detection</p>
+              <div className="flex gap-2">
+                {WINDOW_OPTIONS.map((option) => (
+                  <button key={option.value} type="button" onClick={() => handleChange("windowDays", option.value)} className={`px-4 py-2 text-sm rounded-lg transition-colors ${formData.windowDays === option.value ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}>{option.label}</button>
+                ))}
+              </div>
+              {errors.windowDays && <p className="text-red-400 text-sm mt-1">{errors.windowDays}</p>}
+            </div>
+
+            <div className="py-3">
+              <p className="text-slate-200 font-medium mb-3">Thresholds</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="minClicks" className="block text-sm text-slate-400 mb-1">Minimum Clicks</label>
+                  <input id="minClicks" type="number" value={formData.minClicksThreshold} onChange={(e) => handleChange("minClicksThreshold", parseInt(e.target.value) || 0)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none" min="0" />
+                  {errors.minClicksThreshold && <p className="text-red-400 text-sm mt-1">{errors.minClicksThreshold}</p>}
+                </div>
+                <div>
+                  <label htmlFor="minImpressions" className="block text-sm text-slate-400 mb-1">Minimum Impressions</label>
+                  <input id="minImpressions" type="number" value={formData.minImpressionsThreshold} onChange={(e) => handleChange("minImpressionsThreshold", parseInt(e.target.value) || 0)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none" min="0" />
+                  {errors.minImpressionsThreshold && <p className="text-red-400 text-sm mt-1">{errors.minImpressionsThreshold}</p>}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="bg-slate-800/50 border border-slate-700 rounded-lg p-4" aria-labelledby="digest-heading">
+            <h2 id="digest-heading" className="text-lg font-medium text-white mb-4">Digest Settings</h2>
+
+            <div className="flex items-center justify-between py-3 border-b border-slate-700">
+              <div><p className="text-slate-200 font-medium">Enable Digest</p><p className="text-sm text-slate-400">Receive periodic decay summary emails</p></div>
+              <button type="button" role="switch" aria-checked={formData.digestEnabled} onClick={() => handleChange("digestEnabled", !formData.digestEnabled)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.digestEnabled ? "bg-blue-600" : "bg-slate-600"}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.digestEnabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+
+            {formData.digestEnabled && (
+              <div className="py-3">
+                <label htmlFor="digestFrequency" className="block text-sm text-slate-400 mb-2">Digest Frequency</label>
+                <select id="digestFrequency" value={formData.digestFrequency} onChange={(e) => handleChange("digestFrequency", e.target.value)} className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none">
+                  {DIGEST_FREQUENCY_OPTIONS.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                </select>
+              </div>
+            )}
+          </section>
+
+          <div className="flex items-center gap-3 pt-4">
+            <button type="submit" disabled={isSaving || !hasChanges} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors">
+              <Save className="w-4 h-4" />{isSaving ? "Saving..." : "Save Settings"}
+            </button>
+            <button type="button" onClick={handleReset} disabled={!hasChanges} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:cursor-not-allowed text-slate-200 text-sm font-medium rounded-lg transition-colors">
+              <RotateCcw className="w-4 h-4" />Reset
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
-}
-
-// ============================================================
-// Page Component
-// ============================================================
-
-export default function SettingsPage() {
-  const params = useParams();
-  const siteId = params.siteId as string;
-
-  if (!siteId) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400">Site not found</p>
-      </div>
-    );
-  }
-
-  return <SettingsContent siteId={siteId} />;
 }

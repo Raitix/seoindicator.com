@@ -108,6 +108,31 @@ class BacklinkRepository
     }
 
     /**
+     * Count active backlinks for a project (alias for getActiveCount).
+     * Used by BacklinkSnapshotService.
+     */
+    public function countActiveByProject(int $projectId): int
+    {
+        return $this->getActiveCount($projectId);
+    }
+
+    /**
+     * Count backlinks by link type for a project.
+     * Used by BacklinkSnapshotService.
+     *
+     * @param int $projectId The project ID
+     * @param string $type The link type ('dofollow' or 'nofollow')
+     * @return int
+     */
+    public function countByType(int $projectId, string $type): int
+    {
+        return Backlink::where('project_id', $projectId)
+            ->where('is_active', true)
+            ->where('link_type', $type)
+            ->count();
+    }
+
+    /**
      * Get count of dofollow backlinks for a project.
      */
     public function getDofollowCount(int $projectId): int

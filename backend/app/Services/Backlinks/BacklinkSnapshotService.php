@@ -33,8 +33,7 @@ class BacklinkSnapshotService
         return BacklinkSnapshot::forProject($projectId)
             ->dateRange($fromDate, $toDate)
             ->orderByDateAsc()
-            ->get()
-            ->map(fn ($snapshot) => $snapshot->toApiResponse());
+            ->get();
     }
 
     /**
@@ -93,15 +92,68 @@ class BacklinkSnapshotService
      * Calculate average domain trust for a project.
      *
      * @param int $projectId
-     * @return float|null
+     * @return float
      */
-    public function calculateAverageTrust(int $projectId): ?float
+    public function calculateAverageTrust(int $projectId): float
     {
         $avgTrust = \App\Models\ReferringDomain::where('project_id', $projectId)
-            ->where('domain_trust_score', '>', 0)
             ->avg('domain_trust_score');
 
-        return $avgTrust ? round($avgTrust, 2) : null;
+        return $avgTrust ? round($avgTrust, 2) : 0.0;
+    }
+
+    /**
+     * Create a snapshot for a specific date.
+     *
+     * @param Project $project
+     * @param string $date Date in Y-m-d format
+     * @return BacklinkSnapshot
+     */
+    public function createSnapshotForDate(Project $project, string $date): BacklinkSnapshot
+    {
+        $metrics = $this->calculateMetrics($project);
+
+        // Check if snapshot exists for this project and date
+        $existing = BacklinkSnapshot::where('project_id', $project->id)
+            ->whereDate('snapshot_date', $date)
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'total_backlinks' => $metrics['total_backlinks'],
+                'referring_domains_count' => $metrics['referring_domains_count'],
+                'dofollow_count' => $metrics['dofollow_count'],
+                'nofollow_count' => $metrics['nofollow_count'],
+                'avg_domain_trust' => $metrics['avg_domain_trust'],
+                'anchor_diversity_score' => $metrics['anchor_diversity_score'],
+            ]);
+            return $existing->fresh();
+        }
+
+        return BacklinkSnapshot::create([
+            'project_id' => $project->id,
+            'total_backlinks' => $metrics['total_backlinks'],
+            'referring_domains_count' => $metrics['referring_domains_count'],
+            'dofollow_count' => $metrics['dofollow_count'],
+            'nofollow_count' => $metrics['nofollow_count'],
+            'avg_domain_trust' => $metrics['avg_domain_trust'],
+            'anchor_diversity_score' => $metrics['anchor_diversity_score'],
+            'snapshot_date' => $date,
+            'created_at' => now(),
+        ]);
+    }
+
+    /**
+     * Get the latest snapshot for a project.
+     *
+     * @param int $projectId
+     * @return BacklinkSnapshot|null
+     */
+    public function getLatestSnapshot(int $projectId): ?BacklinkSnapshot
+    {
+        return BacklinkSnapshot::where('project_id', $projectId)
+            ->orderBy('snapshot_date', 'desc')
+            ->first();
     }
 
     /**
