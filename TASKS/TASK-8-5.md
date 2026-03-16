@@ -1,7 +1,7 @@
 # TASK-8-5: Implement Global Project Scope
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -103,3 +103,17 @@ Applied `HasProjectScope` trait to all required models:
 - `backend/app/Models/AlertSettings.php`
 
 **Status changed:** `In Development` → `To Test Locally`
+
+### [2026-03-16 23:12 GMT+2] Agent: Developer
+**Fix Applied - Competitor.php Missing Trait**
+
+Found and fixed issue: `Competitor.php` had the `HasProjectScope` import but was not using it in the trait list.
+
+**Fix:**
+- Changed `use HasFactory, SoftDeletes;` → `use HasFactory, SoftDeletes, HasProjectScope;`
+
+**Verification:**
+- All 18 tests passed
+- 1 test skipped (integration test requires TASK-8-2 migration)
+
+**Task ready for LocalTester.**
