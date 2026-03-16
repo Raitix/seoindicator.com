@@ -17391,8 +17391,61 @@ All admin endpoints require authentication and admin role. Rate limited to 60 re
 | Method | Endpoint | Description | Response Fields |
 |--------|----------|-------------|-----------------|
 | GET | `/api/v1/admin/users/stats` | User counts and growth metrics | `total`, `active`, `newThisMonth`, `newThisWeek`, `newToday`, `growthRate`, `byPlan` |
-| GET | `/api/v1/admin/users/recent` | Recently registered users | `users[]` (id, email, created_at, plan) |
-| GET | `/api/v1/admin/users/active` | Active users (logged in last 30 days) | `users[]` (id, email, last_login_at) |
+| GET | `/api/v1/admin/users/recent` | Recently registered users (paginated) | `data[]` (id, masked_name, created_at, plan, is_active), `meta` (pagination) |
+| GET | `/api/v1/admin/users/active` | Active users (logged in last 30 days, paginated) | `data[]` (id, masked_name, last_login_at, plan), `meta` (pagination) |
+
+**PII Protection:** All endpoints exclude email addresses and mask user names (e.g., "John Doe" → "J*** D**") for privacy compliance.
+
+**Recent Users Response Example:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1250,
+      "masked_name": "J*** D**",
+      "created_at": "2026-03-16T10:30:00Z",
+      "plan": "pro",
+      "is_active": true
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 156,
+    "last_page": 8
+  }
+}
+```
+
+**Active Users Response Example:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1189,
+      "masked_name": "A*** S***",
+      "last_login_at": "2026-03-15T14:22:00Z",
+      "plan": "free"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 890,
+    "last_page": 45
+  }
+}
+```
+
+**Query Parameters (Active Users):**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `plan` | string | all | Filter by plan: `free`, `pro`, `enterprise` |
+| `is_active` | boolean | true | Filter active status (accepts "true"/"false" strings) |
+| `per_page` | integer | 20 | Items per page (1-100) |
+| `page` | integer | 1 | Page number |
 
 **Users Stats Response Example:**
 ```json
