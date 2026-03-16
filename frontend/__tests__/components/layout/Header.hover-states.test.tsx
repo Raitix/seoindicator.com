@@ -5,23 +5,23 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock Next.js navigation
-const mockPathname = jest.fn(() => '/');
+const mockPathname = vi.fn(() => '/');
 
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   usePathname: () => mockPathname(),
   useRouter: () => ({
-    push: jest.fn(),
-    refresh: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
+    push: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
   }),
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
+vi.mock('next/link', () => {
   const MockLink = ({ children, href, className, ...props }: { 
     children: React.ReactNode; 
     href: string; 
@@ -32,20 +32,20 @@ jest.mock('next/link', () => {
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return MockLink;
+  return { default: MockLink };
 });
 
 // Mock notification hooks
-jest.mock('@/lib/api/notifications', () => ({
-  useUnreadCount: () => ({ count: 0, mutate: jest.fn() }),
+vi.mock('@/lib/api/notifications', () => ({
+  useUnreadCount: () => ({ count: 0, mutate: vi.fn() }),
 }));
 
-jest.mock('@/hooks/useAIVisibilityUnreadCount', () => ({
-  useAIVisibilityUnreadCount: () => ({ count: 0, mutate: jest.fn() }),
+vi.mock('@/hooks/useAIVisibilityUnreadCount', () => ({
+  useAIVisibilityUnreadCount: () => ({ count: 0, mutate: vi.fn() }),
 }));
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   LayoutDashboard: () => <span data-testid="dashboard-icon">Dashboard</span>,
   FolderKanban: () => <span data-testid="competitors-icon">Competitors</span>,
   Key: () => <span data-testid="keywords-icon">Keywords</span>,
@@ -56,10 +56,12 @@ jest.mock('lucide-react', () => ({
   LogOut: () => <span data-testid="logout-icon">Logout</span>,
   ChevronDown: () => <span data-testid="chevron-icon">Chevron</span>,
   Eye: () => <span data-testid="eye-icon">Eye</span>,
+  Menu: () => <span data-testid="menu-icon">Menu</span>,
+  X: () => <span data-testid="x-icon">X</span>,
 }));
 
 // Mock dropdown menu
-jest.mock('@/components/ui/dropdown-menu', () => ({
+vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -71,7 +73,7 @@ jest.mock('@/components/ui/dropdown-menu', () => ({
 }));
 
 // Mock MobileNav component
-jest.mock('./MobileNav', () => ({
+vi.mock('./MobileNav', () => ({
   MobileNav: () => <div data-testid="mobile-nav">Mobile Nav</div>,
   NavItem: {},
   UserInfo: {},
@@ -82,7 +84,7 @@ import Header from '@/components/layout/Header';
 
 describe('Header Hover States - TASK-37-2', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockPathname.mockReturnValue('/');
   });
 

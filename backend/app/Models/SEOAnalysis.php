@@ -331,7 +331,7 @@ class SEOAnalysis extends Model
      */
     public function wasUnifiedAnalysis(): bool
     {
-        return !is_null($this->ai_model);
+        return !empty($this->ai_model);
     }
 
     /**
