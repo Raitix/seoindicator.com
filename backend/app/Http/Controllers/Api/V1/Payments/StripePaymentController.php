@@ -222,7 +222,7 @@ class StripePaymentController extends Controller
 
         return CreditTransaction::create([
             'user_id' => $userId,
-            'amount' => $credits, // Credits to be added
+            'amount' => $amount, // Package price in USD
             'balance_after' => 0, // Will be updated on webhook
             'type' => CreditTransaction::TYPE_PURCHASE,
             'status' => CreditTransaction::STATUS_PENDING,

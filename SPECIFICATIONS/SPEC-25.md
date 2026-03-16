@@ -1,7 +1,7 @@
 # SPEC-025: User Accounts + Dashboard + Analysis History
 
 ## STATUS
-`To Prioritize`
+`In Progress`
 
 ## PRIORITY
 `High`
