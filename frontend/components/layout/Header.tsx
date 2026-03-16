@@ -56,14 +56,19 @@ export interface HeaderProps {
   onLogout?: () => void;
 }
 
-// Navigation items configuration
-const navItems: NavItem[] = [
+// Navigation items configuration (protected - only for authenticated users)
+const protectedNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "AI Visibility", href: "/ai-visibility", icon: Eye },
   { label: "Keywords", href: "/keywords", icon: Key },
   { label: "Competitors", href: "/competitors", icon: FolderKanban },
   { label: "Reports", href: "/reports", icon: FileBarChart },
-  { label: "Settings", href: "/settings", icon: Settings },
+];
+
+// Navigation items for guests
+const guestNavItems: NavItem[] = [
+  { label: "Indicators", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Sign In", href: "/login", icon: LogOut },
 ];
 
 export default function Header({
@@ -76,6 +81,9 @@ export default function Header({
   const router = useRouter();
   const { count: unreadCount, mutate: refreshCount } = useUnreadCount();
   const { count: aiVisibilityUnreadCount, mutate: refreshAIVisibilityCount } = useAIVisibilityUnreadCount();
+
+  // Determine if user is authenticated
+  const isAuthenticated = !!userName;
 
   // Prepare user info for mobile nav
   const user: UserInfo | null = userName
@@ -107,7 +115,10 @@ export default function Header({
     return pathname?.startsWith(path);
   };
 
-  // Update nav items with badge for AI Visibility alerts
+  // Select nav items based on authentication status
+  const navItems = isAuthenticated ? protectedNavItems : guestNavItems;
+
+  // Update nav items with badge for AI Visibility alerts (only for authenticated users)
   const navItemsWithBadge = navItems.map((item) => {
     if (item.href === "/ai-visibility" && aiVisibilityUnreadCount > 0) {
       return { ...item, badge: aiVisibilityUnreadCount };
@@ -128,8 +139,8 @@ export default function Header({
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link
-            href="/dashboard"
-            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded"
+            href={isAuthenticated ? "/dashboard" : "/"}
+            className="flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded"
             aria-label="SEOIndicator Home"
           >
             <span className="text-xl font-bold text-white">SEOIndicator</span>
@@ -146,10 +157,10 @@ export default function Header({
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`text-sm transition-all duration-200 relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                    className={`text-sm transition-all duration-200 relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                       isActive(item.href)
                         ? "text-white bg-slate-800/50"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                        : "text-slate-400 hover:text-white hover:bg-slate-700"
                     }`}
                     aria-current={isActive(item.href) ? "page" : undefined}
                   >
@@ -171,63 +182,69 @@ export default function Header({
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-1">
-            {/* AI Visibility Alerts Bell */}
-            <div className="relative">
-              <button
-                onClick={handleAIVisibilityAlertsClick}
-                className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                aria-label={`AI Visibility Alerts${aiVisibilityUnreadCount > 0 ? ` (${aiVisibilityUnreadCount} unread)` : ""}`}
-                aria-live="polite"
-                aria-atomic="true"
+            {/* AI Visibility Alerts Bell - Only for authenticated users */}
+            {isAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={handleAIVisibilityAlertsClick}
+                  className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                  aria-label={`AI Visibility Alerts${aiVisibilityUnreadCount > 0 ? ` (${aiVisibilityUnreadCount} unread)` : ""}`}
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <Eye className="w-5 h-5" aria-hidden="true" />
+                  {aiVisibilityUnreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-blue-500 rounded-full" aria-hidden="true">
+                      {aiVisibilityUnreadCount > 99 ? "99+" : aiVisibilityUnreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Notification Bell - Only for authenticated users */}
+            {isAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={handleNotificationClick}
+                  className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                  aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <Bell className="w-5 h-5" aria-hidden="true" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full" aria-hidden="true">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Settings Link - Desktop - Only for authenticated users */}
+            {isAuthenticated && (
+              <Link
+                href="/settings"
+                className={`hidden md:flex p-2 rounded-lg cursor-pointer transition-all duration-200 min-h-[44px] min-w-[44px] items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                  isActive("/settings") 
+                    ? "text-white bg-slate-800/50" 
+                    : "text-slate-400 hover:text-white hover:bg-slate-700"
+                }`}
+                aria-label="Settings"
+                aria-current={isActive("/settings") ? "page" : undefined}
               >
-                <Eye className="w-5 h-5" aria-hidden="true" />
-                {aiVisibilityUnreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-blue-500 rounded-full" aria-hidden="true">
-                    {aiVisibilityUnreadCount > 99 ? "99+" : aiVisibilityUnreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
+                <Settings className="w-5 h-5" aria-hidden="true" />
+              </Link>
+            )}
 
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                onClick={handleNotificationClick}
-                className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                <Bell className="w-5 h-5" aria-hidden="true" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full" aria-hidden="true">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* Settings Link - Desktop */}
-            <Link
-              href="/settings/alerts"
-              className={`hidden md:flex p-2 rounded-lg transition-all duration-200 min-h-[44px] min-w-[44px] items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
-                isActive("/settings") 
-                  ? "text-white bg-slate-800/50" 
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-              }`}
-              aria-label="Settings"
-              aria-current={isActive("/settings") ? "page" : undefined}
-            >
-              <Settings className="w-5 h-5" aria-hidden="true" />
-            </Link>
-
-            {/* User Menu Dropdown (Desktop) */}
-            {userName && (
+            {/* User Menu Dropdown (Desktop) - Only for authenticated users */}
+            {isAuthenticated && (
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="flex items-center gap-2 p-1.5 pr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[44px]"
+                      className="flex items-center gap-2 p-1.5 pr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[44px]"
                       aria-label="User menu"
                     >
                       {userAvatar ? (
