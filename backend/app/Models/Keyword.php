@@ -37,7 +37,7 @@ use App\Traits\HasProjectScope;
  */
 class Keyword extends Model
 {
-    use HasFactory;
+    use HasFactory, HasProjectScope;
 
     public const STATUSES = ['active', 'paused', 'deleted'];
     public const SEARCH_ENGINES = ['google'];
