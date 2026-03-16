@@ -8,6 +8,9 @@
 import { Suspense } from 'react';
 import AIVisibilityDashboardPage from './page.client';
 
+// Required for static export compatibility with dynamic routes
+export const dynamicParams = false;
+
 /**
  * Static params for dynamic route - client-side rendering
  * Provides a placeholder path for static export compatibility.
