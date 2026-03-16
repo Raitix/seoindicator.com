@@ -1042,7 +1042,7 @@ class PaymentIntentControllerTest extends TestCase
      * 
      * Note: This test verifies the endpoint allows multiple sequential requests.
      * Rate limiting is handled at the application/route level, not by this controller.
-     * We test with a single fresh mock instance to avoid mock count conflicts.
+     * We test with a single mock that allows multiple calls.
      */
     public function test_rate_limiting_allows_reasonable_requests(): void
     {
@@ -1050,15 +1050,19 @@ class PaymentIntentControllerTest extends TestCase
 
         // Allow multiple sequential requests (rate limiting is handled elsewhere)
         // We make 3 requests to verify the endpoint can handle repeated calls
+        // Use a single mock that allows multiple calls to avoid mock lifecycle issues
+        $mock = Mockery::mock(PaymentGatewayInterface::class);
+        $mock->shouldReceive('createPaymentIntent')
+            ->times(3)
+            ->andReturnUsing(function () {
+                static $i = 0;
+                return $this->mockPaymentIntentResponse("pi_rate_" . $i++);
+            });
+        $this->app->instance(PaymentGatewayInterface::class, $mock);
+
         for ($i = 0; $i < 3; $i++) {
             // Fresh user for each request to avoid idempotency check
             $user = User::factory()->create();
-            
-            $mock = Mockery::mock(PaymentGatewayInterface::class);
-            $mock->shouldReceive('createPaymentIntent')
-                ->once()
-                ->andReturn($this->mockPaymentIntentResponse("pi_rate_{$i}"));
-            $this->app->instance(PaymentGatewayInterface::class, $mock);
 
             $response = $this->actingAs($user)
                 ->postJson('/api/v1/payments/stripe/intent', [
@@ -1066,14 +1070,10 @@ class PaymentIntentControllerTest extends TestCase
                 ]);
 
             $response->assertOk();
-            
-            // Close mockery to clean up for next iteration
-            Mockery::close();
         }
         
-        // Re-instantiate mock for tearDown
-        $this->paymentGatewayMock = Mockery::mock(PaymentGatewayInterface::class);
-        $this->app->instance(PaymentGatewayInterface::class, $this->paymentGatewayMock);
+        // Reset mock for tearDown (Mockery::close called in tearDown)
+        $this->paymentGatewayMock = $mock;
     }
 
     // ==================== INTEGRATION TESTS ====================
