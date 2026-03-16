@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useContentDecayCandidates, useContentDecayCandidate, useUpdateCandidateStatus } from "@/lib/hooks/useContentDecay";
@@ -16,7 +16,31 @@ const COLUMNS: Array<{ id: ContentDecayCandidateStatus; title: string; color: st
   { id: "recovered", title: "Recovered", color: "bg-emerald-600" },
 ];
 
-export default function RecoveryBoardPage() {
+// Loading fallback for Suspense
+function BoardLoadingFallback() {
+  return (
+    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="recovery-board-page-loading">
+      <div className="animate-pulse">
+        <div className="h-8 w-48 bg-slate-700 rounded mb-2" />
+        <div className="h-4 w-64 bg-slate-700 rounded" />
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {COLUMNS.map((column) => (
+          <div key={column.id} className="flex-shrink-0 w-72 md:w-80">
+            <div className="animate-pulse space-y-3">
+              <div className="h-6 w-24 bg-slate-700 rounded" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 bg-slate-700 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RecoveryBoardContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -184,4 +208,13 @@ function getNextStatus(current: ContentDecayCandidateStatus): ContentDecayCandid
 function getNextStatusLabel(current: ContentDecayCandidateStatus): string {
   const next = getNextStatus(current);
   return COLUMNS.find((c) => c.id === next)?.title || next;
+}
+
+// Wrap with Suspense for static export compatibility with useSearchParams
+export default function RecoveryBoardPage() {
+  return (
+    <Suspense fallback={<BoardLoadingFallback />}>
+      <RecoveryBoardContent />
+    </Suspense>
+  );
 }
