@@ -103,4 +103,39 @@ _(Document local environment quirks)_
 
 ---
 
-Last updated: 2026-03-15
+Last updated: 2026-03-16
+
+---
+
+## Migration Test Schema Mismatch (TASK-34-1) - 2026-03-16
+
+### Test vs Implementation Divergence
+**Issue:** Migration tests failed because test expectations didn't match actual migration schema.
+**Root Cause:** Test file (`AIVisibilityTablesMigrationTest.php`) was written against TEST-34-1.md specification, but Developer implemented a different schema in the migration file.
+**Example Discrepancies:**
+- `model` column → actual: `model_used`
+- `brand_mentioned` → doesn't exist in migration
+- `brand_sentiment` → actual: `sentiment`
+- `competitor_mentions` → actual: `mentions`
+- FULLTEXT index on `response_text` → not implemented
+**Detection:** Test failures on column existence assertions.
+**Fix Options:**
+1. Update migration to match test specification (adds missing columns/indexes)
+2. Update tests to match actual migration schema (loses test coverage)
+**Prevention:** 
+- Developer should verify implementation matches specification before handoff
+- PreTester should cross-reference migration file when designing tests
+- Consider running `php artisan migrate` and inspecting schema with `Schema::getColumnListing()` before finalizing tests
+
+### SQLite vs MySQL Column Detection
+**Issue:** Tests use `Schema::getColumnListing()` which returns actual column names from database.
+**Root Cause:** The test was written expecting column names that don't exist in the migration.
+**Lesson:** Always verify actual migration schema before writing tests. Run migration and inspect with:
+```php
+php artisan tinker
+>>> Schema::getColumnListing('ai_query_results');
+```
+
+### Decision Point for Test Failures
+**Rule:** When tests fail due to spec/implementation mismatch, document the discrepancy and return for alignment decision rather than modifying tests or implementation unilaterally.
+**Rationale:** LocalTester's role is to verify, not to change specifications or implementations.

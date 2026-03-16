@@ -38,7 +38,7 @@ export interface AuditListProps {
 // ============================================================
 
 const statusOptions: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
+  { value: 'all', label: 'All Statuses' },
   { value: 'pending', label: 'Pending' },
   { value: 'running', label: 'Running' },
   { value: 'completed', label: 'Completed' },
@@ -56,7 +56,7 @@ export function AuditList({
   className,
 }: AuditListProps) {
   // State
-  const [statusFilter, setStatusFilter] = React.useState<string>('');
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [page, setPage] = React.useState(1);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [cancellingId, setCancellingId] = React.useState<number | null>(null);
@@ -64,7 +64,7 @@ export function AuditList({
   // Hooks
   const { audits, meta, isLoading, error, refetch } = useAudits(siteId, {
     page,
-    status: statusFilter as AuditStatus || undefined,
+    status: statusFilter === 'all' ? undefined : statusFilter as AuditStatus,
   });
 
   const startAudit = useStartAudit();

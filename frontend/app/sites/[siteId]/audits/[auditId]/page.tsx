@@ -12,6 +12,20 @@ import { AuditDetailPage } from '@/components/audit/AuditDetailPage';
 import { ErrorBoundary } from '@/components/audit/ErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// ============================================================
+// Static Params for Dynamic Routes (required for output: export)
+// ============================================================
+
+export function generateStaticParams() {
+  // Return empty array - pages are client-side rendered
+  // This allows the dev server to handle dynamic routes
+  return [];
+}
+
+// ============================================================
+// Skeleton Component
+// ============================================================
+
 function AuditDetailSkeleton() {
   return (
     <div className="min-h-screen bg-slate-950 p-4 sm:p-6 lg:p-8">
@@ -60,11 +74,17 @@ function AuditDetailSkeleton() {
   );
 }
 
-export default function Page() {
+// ============================================================
+// Page Component
+// ============================================================
+
+export default async function Page({ params }: { params: Promise<{ siteId: string; auditId: string }> }) {
+  const { siteId, auditId } = await params;
+  
   return (
     <ErrorBoundary>
       <Suspense fallback={<AuditDetailSkeleton />}>
-        <AuditDetailPage />
+        <AuditDetailPage siteId={siteId} auditId={auditId} />
       </Suspense>
     </ErrorBoundary>
   );

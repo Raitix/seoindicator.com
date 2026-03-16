@@ -69,10 +69,36 @@ class BacklinkSnapshotService
      * @param string $from Start date (YYYY-MM-DD)
      * @param string $to End date (YYYY-MM-DD)
      * @return Collection<int, BacklinkSnapshot>
+     * @throws \InvalidArgumentException If date format is invalid
      */
     public function getHistory(int $projectId, string $from, string $to): Collection
     {
+        // Validate date format
+        if (!$this->isValidDateFormat($from) || !$this->isValidDateFormat($to)) {
+            throw new \InvalidArgumentException('Invalid date format. Expected YYYY-MM-DD.');
+        }
+
         return $this->snapshotRepository->getByDateRange($projectId, $from, $to);
+    }
+
+    /**
+     * Validate if a string is a valid date in YYYY-MM-DD format.
+     *
+     * @param string $date The date string to validate
+     * @return bool True if valid, false otherwise
+     */
+    private function isValidDateFormat(string $date): bool
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return false;
+        }
+
+        try {
+            \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -90,6 +116,12 @@ class BacklinkSnapshotService
     public function calculateAnchorDiversity(int $projectId): float
     {
         $topAnchorPercentage = $this->anchorTextRepository->getTopAnchorPercentage($projectId);
+
+        // Edge case: when top anchor is 100% (all same anchor) or no anchors exist (0%),
+        // diversity should be 0.0
+        if ($topAnchorPercentage >= 1.0 || $topAnchorPercentage <= 0.0) {
+            return 0.0;
+        }
 
         return 100.0 - ($topAnchorPercentage * 100.0);
     }
