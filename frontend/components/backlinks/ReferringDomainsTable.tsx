@@ -302,7 +302,7 @@ const ReferringDomainsTable: React.FC<ReferringDomainsTableProps> = ({
     if (onSort) {
       onSort(field, newOrder);
     } else {
-      setInternalSort({ field, newOrder });
+      setInternalSort({ field, order: newOrder });
     }
   };
 
