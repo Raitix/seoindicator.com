@@ -1,7 +1,7 @@
 # TASK-23-6: Backlink Snapshot Service
 
 ## STATUS
-`Testing Locally`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -24,10 +24,10 @@ Create service to generate and manage historical backlink snapshots. Enables tre
 
 ## Acceptance Criteria
 - [x] `BacklinkSnapshotService` class created
-- [ ] Generates daily snapshots with all metrics
-- [ ] Calculates anchor diversity score
-- [ ] Handles missing data gracefully
-- [ ] Provides historical data retrieval
+- [ ] Generates daily snapshots with all metrics (tests pass)
+- [ ] Calculates anchor diversity score (edge case bug: returns 100 instead of 0)
+- [ ] Handles missing data gracefully (bugs: FK violation, no date validation)
+- [ ] Provides historical data retrieval (mock type issues)
 - [x] Unit tests for snapshot generation
 
 ---
@@ -129,6 +129,59 @@ TASK-23-2 (Models) → TASK-23-3 (GSC Service) → TASK-23-4 (Sync Job)
 **Execution Order:** TASK-23-6 can proceed immediately (dependency satisfied).
 
 **Status:** `To Write Tests` — Ready for PreTester
+
+### [2026-03-16 22:45] Agent: LocalTester
+**Local Test Results: 21 FAILED, 149 PASSED**
+
+Test execution: `php artisan test --filter=BacklinkSnapshotServiceTest`
+
+**Critical Issues Found:**
+
+| Issue | Severity | Tests Affected | Root Cause |
+|-------|----------|----------------|------------|
+| Mock collection type mismatch | High | 10 tests | Tests mock `EloquentCollection` but repository returns `Collection` |
+| `calculateAnchorDiversity()` edge case | High | 3 tests | Returns 100.0 instead of 0.0 when no anchors exist |
+| Service not singleton | Medium | 2 tests | Service instantiated without DI/singleton binding |
+| Missing date validation | Medium | 2 tests | Invalid date format doesn't throw `InvalidArgumentException` |
+| Invalid project FK violation | Medium | 1 test | FK constraint instead of graceful zero values |
+| History ordering issue | Low | 1 test | Trend calculation expects ascending order |
+| Inclusive date range | Low | 1 test | Single-day range returns empty instead of including that day |
+
+**Bug Categories:**
+
+**BUG-1: Mock Type Mismatch (10 tests)**
+```
+TypeError: Mockery::getByDateRange(): Return value must be of type 
+Illuminate\Database\Eloquent\Collection, Illuminate\Support\Collection returned
+```
+Tests mock `EloquentCollection::make()` but service returns generic `Collection`.
+
+**BUG-2: `calculateAnchorDiversity()` Returns Wrong Value (3 tests)**
+- Tests: `cadc_004`, `cade_001`, `eh_004`
+- Expected: `0.0` when no anchors exist
+- Actual: `100.0`
+- Fix: Handle empty anchors case explicitly
+
+**BUG-3: Service Not Registered as Singleton (2 tests)**
+- Tests: `bs_001_c`, `bs_001_d`
+- Service lacks constructor DI and singleton binding
+- Fix: Add to service provider and inject dependencies
+
+**BUG-4: Missing Date Validation (2 tests)**
+- Tests: `bs_004_g`, `bs_008_b`
+- Expected: `InvalidArgumentException` for invalid date format
+- Actual: No exception thrown
+- Fix: Validate date format in `getHistory()`
+
+**BUG-5: Invalid Project ID Handling (1 test)**
+- Test: `bs_008_a`
+- Expected: Zero values for non-existent project
+- Actual: `QueryException` FK constraint violation
+- Fix: Validate project exists before creating snapshot
+
+**Action Required:** Return to Developer for fixes.
+
+**Status:** `To Develop` — Bug fixes required
 
 ### [2026-03-16 17:20] Agent: PreTester
 **Test Coverage Complete**

@@ -558,7 +558,11 @@ describe("Token Expiry Handler", () => {
       const sanitized = sanitizePath(maliciousPath);
 
       expect(sanitized).not.toContain("<script>");
-      expect(sanitized).toBe("/dashboardalert('xss')");
+      // Script tags removed, content outside tags preserved (double quotes from original)
+      expect(sanitized).toBe('/dashboardalert("xss")');
+      // Verify no executable script remains
+      expect(sanitized).not.toContain("<");
+      expect(sanitized).not.toContain(">");
     });
 
     it("SEC-005: Open redirect prevention", () => {
