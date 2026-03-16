@@ -9,6 +9,13 @@ import { Suspense } from 'react';
 import AIVisibilityDashboardPage from './page.client';
 
 /**
+ * Static params for dynamic route - client-side rendering
+ */
+export function generateStaticParams() {
+  return [];
+}
+
+/**
  * Loading fallback component
  */
 function LoadingFallback() {
