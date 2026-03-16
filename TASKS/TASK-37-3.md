@@ -12,6 +12,9 @@
 ## Specification
 SPEC-037
 
+## BLOCKED_BY
+TASK-37-1
+
 ## Description
 Fix the dashboard page to handle authentication errors gracefully. Currently, when a user's session expires or token is invalid, the dashboard shows "Failed to load dashboard data" instead of redirecting to login.
 
@@ -66,3 +69,30 @@ if (error) {
 ## Related Issues
 - FEAT-037
 - SPEC-037
+
+---
+
+## Comments
+
+### ProjectManager Assessment (2026-03-16 13:16 GMT+2)
+**Status:** Remains `To Prioritize` — blocked on dependency
+**Priority:** HIGH (confirmed) - Authentication UX is critical for user experience
+**Risk:** MEDIUM (confirmed) - Frontend-only changes, standard error handling patterns
+
+**Blocker Analysis:**
+- TASK-37-1 (Token Validation in AuthContext) is at `To Prioritize` - NOT IMPLEMENTED
+- This task depends on TASK-37-1 because:
+  1. TASK-37-1 validates tokens BEFORE redirecting to dashboard
+  2. This task handles 401 errors ONCE the user is already on dashboard
+  3. Logical flow requires prevention (TASK-37-1) before handling (TASK-37-3)
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Technical Files:**
+- TASK-37-1 modifies: `frontend/lib/contexts/AuthContext.tsx`
+- This task modifies: `frontend/app/dashboard/page.tsx`
+- Files are different, allowing parallel development once TASK-37-1 is ready
+
+**Effort:** Small (1-2 hours) - straightforward error handling logic
+
+**Next Agent:** Developer (after TASK-37-1 completes PreTester phase)
