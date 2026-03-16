@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // Only use static export for production builds, not for dev/testing
+  ...(process.env.NODE_ENV === 'production' && !process.env.PLAYWRIGHT_TEST ? { output: 'export' as const } : {}),
   trailingSlash: true,
   typescript: {
     ignoreBuildErrors: true,

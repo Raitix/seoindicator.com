@@ -440,11 +440,12 @@ describe('DD: Date Display', () => {
 // TEST CATEGORY: VIEW ALL LINK (VA)
 // ============================================
 describe('VA: View All Link', () => {
-  test('VA-001: Link renders when provided', () => {
+  test('VA-001: Link renders when provided and mentions exceed maxVisible', () => {
     render(
       <RecentMentionsList
         mentions={mockMentions}
         viewAllHref="/ai-visibility/123/queries"
+        maxVisible={3}
       />
     );
 
@@ -466,6 +467,7 @@ describe('VA: View All Link', () => {
       <RecentMentionsList
         mentions={mockMentions}
         viewAllHref="/ai-visibility/123/queries"
+        maxVisible={3}
       />
     );
 
@@ -617,6 +619,7 @@ describe('A11Y: Accessibility', () => {
       <RecentMentionsList
         mentions={mockMentions}
         viewAllHref="/ai-visibility/123/queries"
+        maxVisible={3}
       />
     );
 
@@ -684,6 +687,7 @@ describe('AC: Acceptance Criteria', () => {
       <RecentMentionsList
         mentions={mockMentions}
         viewAllHref="/ai-visibility/123/queries"
+        maxVisible={3}
       />
     );
 

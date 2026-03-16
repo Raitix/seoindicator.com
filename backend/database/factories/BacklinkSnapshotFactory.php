@@ -33,7 +33,7 @@ class BacklinkSnapshotFactory extends Factory
             'nofollow_count' => $this->faker->numberBetween(10, 1000),
             'avg_domain_trust' => $this->faker->randomFloat(2, 0, 100),
             'anchor_diversity_score' => $this->faker->randomFloat(2, 0, 100),
-            'snapshot_date' => $this->faker->date(),
+            'snapshot_date' => $this->faker->dateTimeBetween('-30 days', '+30 days')->format('Y-m-d'),
             'created_at' => now(),
         ];
     }

@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\BacklinkSnapshot;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
