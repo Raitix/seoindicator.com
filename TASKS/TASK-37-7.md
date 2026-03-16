@@ -1,7 +1,7 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -60,3 +60,13 @@ Convert button to a Link component that navigates to `/dashboard/` or `/indicato
 - FEAT-037
 - SPEC-037
 - TASK-37-2 (Header Navigation - combined task)
+
+## Comments
+
+### ProjectManager Assessment (2026-03-16 15:11 GMT+2)
+- **Priority:** HIGH (confirmed) — User-facing navigation issue affecting core UX. Users cannot access indicators dashboard.
+- **Risk:** LOW (confirmed) — Simple frontend-only fix. Single file modification, no backend changes, no external APIs.
+- **Dependencies:** None — Independent task, can proceed immediately.
+- **Effort:** XSmall (0.5h) — Straightforward conversion from button to Next.js Link component.
+- **Status Changed:** `To Prioritize` → `To Write Tests`
+- **Ready for:** PreTester (test design with mocked Link component behavior)
