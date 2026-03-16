@@ -1,7 +1,10 @@
 # TASK-27-5: Admin User Stats API Endpoint
 
 ## STATUS
-`To Deploy`
+`In Deployment`
+
+### 2026-03-16 - DevOps
+**Deployment in progress...**
 
 ## PRIORITY
 `High`
