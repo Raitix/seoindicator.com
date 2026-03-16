@@ -7,73 +7,50 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock next/navigation
-const mockUseRouter = jest.fn();
-const mockReplace = jest.fn();
-jest.mock('next/navigation', () => ({
-  useRouter: () => mockUseRouter(),
-  redirect: jest.fn(),
+const mockReplace = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+  }),
 }));
 
-// Mock fetch - not used in redirect component
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
-
 // Import after mocks
-import Page from '@/app/audit/[hash]/page';
-
-// Test data
-const mockAuditData = {
-  id: 1,
-  hash: 'testhash123',
-  siteUrl: 'https://example.com',
-  overallScore: 85,
-  seoScore: 88,
-  performanceScore: 82,
-  accessibilityScore: 90,
-  bestPracticesScore: 85,
-  createdAt: '2024-01-01T00:00:00Z',
-  expiresAt: '2025-01-01T00:00:00Z',
-  isPublished: true,
-};
+import LegacyAuditRedirect from '@/app/audit/[hash]/LegacyAuditRedirect';
 
 describe('Legacy Public Audit Route - Redirect Handler', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseRouter.mockReturnValue({
-      replace: mockReplace,
-    });
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // ============================================================================
   // Route Structure Tests
   // ============================================================================
   describe('Route Structure', () => {
-    it('renders without crashing', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
-      render(page);
-      
+    it('renders without crashing', () => {
+      render(<LegacyAuditRedirect hash="testhash" />);
       expect(screen.getByText('Redirecting...')).toBeInTheDocument();
     });
 
-    it('has generateStaticParams function', () => {
-      const { generateStaticParams } = require('@/app/audit/[hash]/page');
+    it('has generateStaticParams function', async () => {
+      const { generateStaticParams } = await import('@/app/audit/[hash]/page');
       expect(typeof generateStaticParams).toBe('function');
     });
 
-    it('generateStaticParams returns placeholder for static export', () => {
-      const { generateStaticParams } = require('@/app/audit/[hash]/page');
+    it('generateStaticParams returns placeholder for static export', async () => {
+      const { generateStaticParams } = await import('@/app/audit/[hash]/page');
       const params = generateStaticParams();
       expect(params).toEqual([{ hash: '_' }]);
     });
 
-    it('has dynamicParams = false for static export', () => {
-      const { dynamicParams } = require('@/app/audit/[hash]/page');
+    it('has dynamicParams = false for static export', async () => {
+      const { dynamicParams } = await import('@/app/audit/[hash]/page');
       expect(dynamicParams).toBe(false);
     });
   });
@@ -82,23 +59,20 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
   // Redirect Behavior Tests
   // ============================================================================
   describe('Redirect Behavior', () => {
-    it('shows redirecting state initially', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
-      render(page);
-      
+    it('shows redirecting state initially', () => {
+      render(<LegacyAuditRedirect hash="testhash" />);
       expect(screen.getByText('Redirecting...')).toBeInTheDocument();
     });
 
-    it('shows loading spinner during redirect', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
-      render(page);
-      
-      expect(screen.getByRole('img', { hidden: true })).toBeInTheDocument();
+    it('shows loading spinner during redirect', () => {
+      render(<LegacyAuditRedirect hash="testhash" />);
+      // Loader2 is rendered as an SVG with animate-spin class
+      const spinner = document.querySelector('.animate-spin');
+      expect(spinner).toBeInTheDocument();
     });
 
     it('uses router.replace for client-side redirect', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
-      render(page);
+      render(<LegacyAuditRedirect hash="testhash" />);
       
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith('/audit/?h=testhash');
@@ -106,8 +80,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
     });
 
     it('redirects with correct query parameter format', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'abc123xyz' }) });
-      render(page);
+      render(<LegacyAuditRedirect hash="abc123xyz" />);
       
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith('/audit/?h=abc123xyz');
@@ -120,8 +93,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
   // ============================================================================
   describe('Edge Cases', () => {
     it('handles special characters in hash', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'test-hash_123' }) });
-      render(page);
+      render(<LegacyAuditRedirect hash="test-hash_123" />);
       
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith('/audit/?h=test-hash_123');
@@ -130,8 +102,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
 
     it('handles long hash values', async () => {
       const longHash = 'a'.repeat(64);
-      const page = await Page({ params: Promise.resolve({ hash: longHash }) });
-      render(page);
+      render(<LegacyAuditRedirect hash={longHash} />);
       
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith(`/audit/?h=${longHash}`);
@@ -139,8 +110,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
     });
 
     it('handles placeholder hash', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: '_' }) });
-      render(page);
+      render(<LegacyAuditRedirect hash="_" />);
       
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith('/audit/?h=_');
@@ -153,7 +123,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
   // ============================================================================
   describe('Static Export Compatibility', () => {
     it('only generates placeholder for static export', async () => {
-      const { generateStaticParams } = require('@/app/audit/[hash]/page');
+      const { generateStaticParams } = await import('@/app/audit/[hash]/page');
       const params = generateStaticParams();
       
       // Only the placeholder should be generated
@@ -162,7 +132,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
     });
 
     it('dynamicParams is disabled', async () => {
-      const { dynamicParams } = require('@/app/audit/[hash]/page');
+      const { dynamicParams } = await import('@/app/audit/[hash]/page');
       
       // This ensures other hashes won't be generated
       expect(dynamicParams).toBe(false);
@@ -173,16 +143,13 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
   // Acceptance Criteria Tests
   // ============================================================================
   describe('Acceptance Criteria', () => {
-    it('AC-1: Route exists for backward compatibility', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'test' }) });
-      render(page);
-      
+    it('AC-1: Route exists for backward compatibility', () => {
+      render(<LegacyAuditRedirect hash="test" />);
       expect(screen.getByText('Redirecting...')).toBeInTheDocument();
     });
 
     it('AC-2: Redirects to new URL format', async () => {
-      const page = await Page({ params: Promise.resolve({ hash: 'abc123' }) });
-      render(page);
+      render(<LegacyAuditRedirect hash="abc123" />);
       
       await waitFor(() => {
         expect(mockReplace).toHaveBeenCalledWith('/audit/?h=abc123');
@@ -190,7 +157,7 @@ describe('Legacy Public Audit Route - Redirect Handler', () => {
     });
 
     it('AC-3: Static export compatible (only placeholder generated)', async () => {
-      const { generateStaticParams, dynamicParams } = require('@/app/audit/[hash]/page');
+      const { generateStaticParams, dynamicParams } = await import('@/app/audit/[hash]/page');
       
       expect(generateStaticParams()).toEqual([{ hash: '_' }]);
       expect(dynamicParams).toBe(false);

@@ -22,12 +22,12 @@ vi.mock('next/navigation', () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// Mock PublicAuditPage component
+// Mock PublicAuditPage component - matches actual export structure
 vi.mock('@/components/audit/PublicAuditPage', () => ({
-  default: ({ initialData, hash }: { initialData: { siteUrl: string; overallScore: number }; hash: string }) => (
+  PublicAuditPage: ({ initialData, hash }: { initialData: { siteUrl: string; overallScore: number }; hash: string }) => (
     <div data-testid="public-audit-page">
-      <span data-testid="audit-site">{initialData.siteUrl}</span>
-      <span data-testid="audit-score">{initialData.overallScore}</span>
+      <span data-testid="audit-site">{initialData?.siteUrl}</span>
+      <span data-testid="audit-score">{initialData?.overallScore}</span>
       <span data-testid="audit-hash">{hash}</span>
     </div>
   ),

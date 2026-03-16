@@ -1,7 +1,7 @@
 # TASK-27-5: Admin User Stats API Endpoint
 
 ## STATUS
-`To Document`
+`Done`
 
 ### 2026-03-16 18:00 UTC+2 - DevOps
 **Deployment Complete ✅**
@@ -252,6 +252,27 @@ GET api/v1/admin/users/active  → UserStatsController@active
 **Documentation Note:** DOCUMENTATION.md:16451-16453 mentions `email` in response fields. Minor update needed for accuracy.
 
 **READY FOR:** DocSystemAnalyst to update documentation.
+
+### 2026-03-16 21:30 UTC+2 - DocSystemAnalyst
+**Documentation Complete ✅**
+
+- **Status:** `To Document` → `Done`
+- **Changes Made:**
+  - Fixed PII accuracy in DOCUMENTATION.md (lines 17393-17396)
+  - Removed `email` from response fields for `/api/v1/admin/users/recent` and `/api/v1/admin/users/active`
+  - Added `masked_name` field (e.g., "John Doe" → "J*** D**")
+  - Added pagination metadata (`meta` object with `current_page`, `per_page`, `total`, `last_page`)
+  - Added complete response examples for recent and active users endpoints
+  - Added query parameters documentation for active users endpoint (`plan`, `is_active`, `per_page`, `page`)
+  - Added PII protection note to all user stats endpoints
+
+**Documentation Updated:**
+- `PROJECT-SEOINDICATOR/DOCUMENTATION.md` - Admin Dashboard → User Statistics Endpoints section
+
+**Task Closure:**
+- All acceptance criteria met
+- API documentation now accurately reflects implementation
+- PII protection properly documented
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*

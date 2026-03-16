@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Annotation;
+use App\Traits\HasProjectScope;
 
 /**
  * Keyword model for tracking keyword rankings.
