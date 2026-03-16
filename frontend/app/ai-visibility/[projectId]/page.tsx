@@ -8,10 +8,14 @@
 import { Suspense } from 'react';
 import AIVisibilityDashboardPage from './page.client';
 
+// Enable dynamic params for client-side routing
+export const dynamicParams = true;
+
 /**
  * Static params for dynamic route - client-side rendering
+ * Returns empty array to allow all dynamic params at runtime
  */
-export function generateStaticParams() {
+export async function generateStaticParams() {
   return [];
 }
 
