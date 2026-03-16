@@ -269,10 +269,11 @@ export interface ComparisonSchemaProps {
 
 /**
  * Props for comparison page components (Next.js dynamic route).
+ * In Next.js 16, params is a Promise that must be awaited.
  */
 export interface ComparisonPageProps {
-  /** Route parameters */
-  params: { slug: string };
+  /** Route parameters (Promise in Next.js 16) */
+  params: Promise<{ slug: string }>;
 }
 
 // ============================================================================
