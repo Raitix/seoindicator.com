@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use App\Services\Admin\Contracts\UserStatsRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -15,9 +17,10 @@ use Carbon\Carbon;
  * new registrations, growth metrics, and plan distribution.
  *
  * @see TASK-27-4
+ * @see TASK-27-5
  * @see SPEC-027
  */
-class UserStatsRepository
+class UserStatsRepository implements UserStatsRepositoryInterface
 {
     /**
      * Cache TTL in seconds (5 minutes).
@@ -227,21 +230,90 @@ class UserStatsRepository
     /**
      * Get full user statistics.
      *
-     * Returns all user statistics in the format specified by SPEC-027.
+     * Returns all user statistics in the format specified by SPEC-027 and TASK-27-5.
      *
-     * @return array
+     * @return array{
+     *     total_users: int,
+     *     active_users: int,
+     *     new_today: int,
+     *     new_this_week: int,
+     *     new_this_month: int,
+     *     growth_rates: array{daily: float, weekly: float, monthly: float},
+     *     users_by_plan: array{free: int, pro: int, enterprise: int}
+     * }
      */
     public function getFullStats(): array
     {
         return [
-            'total' => $this->getTotalUserCount(),
-            'active' => $this->getActiveUsersCount(),
-            'newThisMonth' => $this->getNewRegistrationsThisMonth(),
-            'newThisWeek' => $this->getNewRegistrationsThisWeek(),
-            'newToday' => $this->getNewRegistrationsToday(),
-            'growthRate' => $this->getGrowthRates(),
-            'byPlan' => $this->getUsersByPlan(),
+            'total_users' => $this->getTotalUserCount(),
+            'active_users' => $this->getActiveUsersCount(),
+            'new_today' => $this->getNewRegistrationsToday(),
+            'new_this_week' => $this->getNewRegistrationsThisWeek(),
+            'new_this_month' => $this->getNewRegistrationsThisMonth(),
+            'growth_rates' => $this->getGrowthRates(),
+            'users_by_plan' => $this->getUsersByPlan(),
         ];
+    }
+
+    /**
+     * Get recent users with pagination.
+     *
+     * @param int $perPage Number of items per page
+     * @param array $filters Optional filters (plan, is_active)
+     * @return LengthAwarePaginator
+     */
+    public function getRecentUsers(int $perPage = 20, array $filters = []): LengthAwarePaginator
+    {
+        $perPage = min(max(1, $perPage), 100);
+
+        $query = User::query()
+            ->orderBy('created_at', 'desc')
+            ->select(['id', 'name', 'created_at', 'plan', 'last_login_at']);
+
+        // Apply plan filter
+        if (isset($filters['plan'])) {
+            $query->where('plan', $filters['plan']);
+        }
+
+        // Apply is_active filter
+        if (isset($filters['is_active'])) {
+            if ($filters['is_active']) {
+                $query->where('last_login_at', '>=', Carbon::now()->subDays(30));
+            } else {
+                $query->where(function ($q) {
+                    $q->whereNull('last_login_at')
+                        ->orWhere('last_login_at', '<', Carbon::now()->subDays(30));
+                });
+            }
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Get active users with pagination.
+     *
+     * @param int $perPage Number of items per page
+     * @param int $daysWithin Number of days to consider for "active" (default 30)
+     * @param array $filters Optional filters (plan)
+     * @return LengthAwarePaginator
+     */
+    public function getActiveUsers(int $perPage = 20, int $daysWithin = 30, array $filters = []): LengthAwarePaginator
+    {
+        $perPage = min(max(1, $perPage), 100);
+
+        $query = User::query()
+            ->where('last_login_at', '>=', Carbon::now()->subDays($daysWithin))
+            ->whereNotNull('last_login_at')
+            ->orderBy('last_login_at', 'desc')
+            ->select(['id', 'name', 'last_login_at', 'plan']);
+
+        // Apply plan filter
+        if (isset($filters['plan'])) {
+            $query->where('plan', $filters['plan']);
+        }
+
+        return $query->paginate($perPage);
     }
 
     /**

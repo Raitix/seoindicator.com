@@ -1,7 +1,7 @@
 # TASK-27-5: Admin User Stats API Endpoint
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -133,6 +133,29 @@ See TASK-27-4 for stats response format.
 - TASK-27-4 (UserStatsRepository) - Mocked via interface
 
 **TDD Pattern:** Tests use mocked repository interface, ready for Developer implementation.
+
+### 2026-03-16 - Developer
+**Implementation Complete ✅**
+
+- **Status:** To Test Locally
+- **Files:**
+  - `app/Http/Controllers/Api/V1/Admin/UserStatsController.php` - Controller with 3 endpoints
+  - `app/Services/Admin/Contracts/UserStatsRepositoryInterface.php` - Repository interface
+
+**Implementation Details:**
+- Three endpoints implemented: `stats()`, `recent()`, `active()`
+- PII masking: `maskName()` method preserves first character of each word, replaces rest with asterisks
+- Validation: Plan filter accepts only `free|pro|enterprise`, per_page 1-100
+- String boolean handling: `is_active` query param converted via `filter_var(..., FILTER_VALIDATE_BOOLEAN)`
+- Error handling: 500 response on service exceptions
+- Pagination: Default 20 items per page
+
+**Test Results:**
+- 59 tests pass (167 assertions)
+- All categories: route structure, auth, authorization, stats, recent users, active users, PII, rate limiting, security, edge cases
+
+**Fix Applied:**
+- Changed `is_active` validation from Laravel's `boolean` rule (which fails on string "true") to manual `filter_var()` conversion, since query params come as strings.
 
 ---
 *Created by SpecSystemAnalyst from SPEC-027*
