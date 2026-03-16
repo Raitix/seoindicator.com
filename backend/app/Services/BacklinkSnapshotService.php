@@ -36,8 +36,27 @@ class BacklinkSnapshotService
      */
     public function createSnapshot(Project $project): BacklinkSnapshot
     {
-        // Implementation required
-        // Should aggregate metrics and call snapshotRepository->upsert()
+        // Aggregate metrics
+        $totalBacklinks = $this->backlinkRepository->countActiveByProject($project->id);
+        $referringDomainsCount = $this->referringDomainRepository->countByProject($project->id);
+        $dofollowCount = $this->backlinkRepository->countByType($project->id, 'dofollow');
+        $nofollowCount = $this->backlinkRepository->countByType($project->id, 'nofollow');
+        $avgDomainTrust = $this->referringDomainRepository->getAverageTrustScore($project->id);
+        $anchorDiversityScore = $this->calculateAnchorDiversity($project->id);
+
+        // Prepare snapshot data
+        $data = [
+            'project_id' => $project->id,
+            'snapshot_date' => now()->toDateString(),
+            'total_backlinks' => $totalBacklinks,
+            'referring_domains_count' => $referringDomainsCount,
+            'dofollow_count' => $dofollowCount,
+            'nofollow_count' => $nofollowCount,
+            'avg_domain_trust' => $avgDomainTrust,
+            'anchor_diversity_score' => $anchorDiversityScore,
+        ];
+
+        return $this->snapshotRepository->upsert($data);
     }
 
     /**
@@ -53,8 +72,7 @@ class BacklinkSnapshotService
      */
     public function getHistory(int $projectId, string $from, string $to): Collection
     {
-        // Implementation required
-        // Should call snapshotRepository->getByDateRange()
+        return $this->snapshotRepository->getByDateRange($projectId, $from, $to);
     }
 
     /**
@@ -71,8 +89,9 @@ class BacklinkSnapshotService
      */
     public function calculateAnchorDiversity(int $projectId): float
     {
-        // Implementation required
-        // Should use anchorTextRepository->getTopAnchorPercentage()
+        $topAnchorPercentage = $this->anchorTextRepository->getTopAnchorPercentage($projectId);
+
+        return 100.0 - ($topAnchorPercentage * 100.0);
     }
 
     /**
@@ -86,7 +105,6 @@ class BacklinkSnapshotService
      */
     public function calculateAverageTrust(int $projectId): float
     {
-        // Implementation required
-        // Should use referringDomainRepository->getAverageTrustScore()
+        return $this->referringDomainRepository->getAverageTrustScore($projectId);
     }
 }

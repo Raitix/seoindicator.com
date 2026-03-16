@@ -454,7 +454,7 @@ class ApiKeyModelTest extends TestCase
         $apiKey = ApiKey::factory()->create(['permissions' => $permissions]);
 
         $this->assertEquals($permissions, $apiKey->permissions);
-        $this->assertCount(7, $apiKey->permissions);
+        $this->assertCount(8, $apiKey->permissions);
     }
 
     /**
@@ -494,6 +494,7 @@ class ApiKeyModelTest extends TestCase
             'keywords:read',
             'keywords:write',
             'rankings:read',
+            'sites:read',
             'reports:read',
             'reports:write',
             'webhooks:read',

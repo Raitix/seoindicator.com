@@ -641,13 +641,13 @@ class UserStatsRepositoryTest extends TestCase
         $stats = $this->repository->getFullStats();
 
         $this->assertIsArray($stats);
-        $this->assertArrayHasKey('total', $stats);
-        $this->assertArrayHasKey('active', $stats);
-        $this->assertArrayHasKey('newThisMonth', $stats);
-        $this->assertArrayHasKey('newThisWeek', $stats);
-        $this->assertArrayHasKey('newToday', $stats);
-        $this->assertArrayHasKey('growthRate', $stats);
-        $this->assertArrayHasKey('byPlan', $stats);
+        $this->assertArrayHasKey('total_users', $stats);
+        $this->assertArrayHasKey('active_users', $stats);
+        $this->assertArrayHasKey('new_this_month', $stats);
+        $this->assertArrayHasKey('new_this_week', $stats);
+        $this->assertArrayHasKey('new_today', $stats);
+        $this->assertArrayHasKey('growth_rates', $stats);
+        $this->assertArrayHasKey('users_by_plan', $stats);
     }
 
     /** @test */
@@ -655,10 +655,10 @@ class UserStatsRepositoryTest extends TestCase
     {
         $stats = $this->repository->getFullStats();
 
-        $this->assertIsArray($stats['growthRate']);
-        $this->assertArrayHasKey('monthly', $stats['growthRate']);
-        $this->assertArrayHasKey('weekly', $stats['growthRate']);
-        $this->assertArrayHasKey('daily', $stats['growthRate']);
+        $this->assertIsArray($stats['growth_rates']);
+        $this->assertArrayHasKey('monthly', $stats['growth_rates']);
+        $this->assertArrayHasKey('weekly', $stats['growth_rates']);
+        $this->assertArrayHasKey('daily', $stats['growth_rates']);
     }
 
     /** @test */
@@ -666,10 +666,10 @@ class UserStatsRepositoryTest extends TestCase
     {
         $stats = $this->repository->getFullStats();
 
-        $this->assertIsArray($stats['byPlan']);
-        $this->assertArrayHasKey('free', $stats['byPlan']);
-        $this->assertArrayHasKey('pro', $stats['byPlan']);
-        $this->assertArrayHasKey('enterprise', $stats['byPlan']);
+        $this->assertIsArray($stats['users_by_plan']);
+        $this->assertArrayHasKey('free', $stats['users_by_plan']);
+        $this->assertArrayHasKey('pro', $stats['users_by_plan']);
+        $this->assertArrayHasKey('enterprise', $stats['users_by_plan']);
     }
 
     /** @test */
@@ -683,11 +683,11 @@ class UserStatsRepositoryTest extends TestCase
         $stats = $this->repository->getFullStats();
 
         // Verify response matches expected format from SPEC-027
-        $this->assertEquals(3, $stats['total']);
-        $this->assertIsInt($stats['active']);
-        $this->assertIsInt($stats['newThisMonth']);
-        $this->assertIsInt($stats['newThisWeek']);
-        $this->assertIsInt($stats['newToday']);
+        $this->assertEquals(3, $stats['total_users']);
+        $this->assertIsInt($stats['active_users']);
+        $this->assertIsInt($stats['new_this_month']);
+        $this->assertIsInt($stats['new_this_week']);
+        $this->assertIsInt($stats['new_today']);
     }
 
     /** @test */
@@ -696,16 +696,16 @@ class UserStatsRepositoryTest extends TestCase
         $stats = $this->repository->getFullStats();
 
         // Integer fields
-        $this->assertIsInt($stats['total']);
-        $this->assertIsInt($stats['active']);
-        $this->assertIsInt($stats['newThisMonth']);
-        $this->assertIsInt($stats['newThisWeek']);
-        $this->assertIsInt($stats['newToday']);
+        $this->assertIsInt($stats['total_users']);
+        $this->assertIsInt($stats['active_users']);
+        $this->assertIsInt($stats['new_this_month']);
+        $this->assertIsInt($stats['new_this_week']);
+        $this->assertIsInt($stats['new_today']);
 
-        // Float fields in growthRate
-        $this->assertIsFloat($stats['growthRate']['monthly']);
-        $this->assertIsFloat($stats['growthRate']['weekly']);
-        $this->assertIsFloat($stats['growthRate']['daily']);
+        // Float fields in growth_rates
+        $this->assertIsFloat($stats['growth_rates']['monthly']);
+        $this->assertIsFloat($stats['growth_rates']['weekly']);
+        $this->assertIsFloat($stats['growth_rates']['daily']);
     }
 
     // =========================================================================
@@ -817,7 +817,7 @@ class UserStatsRepositoryTest extends TestCase
         $stats = $this->repository->getFullStats();
 
         $this->assertIsArray($stats);
-        $this->assertEquals(1, $stats['total']);
+        $this->assertEquals(1, $stats['total_users']);
     }
 
     /** @test */
@@ -836,14 +836,14 @@ class UserStatsRepositoryTest extends TestCase
     {
         $stats = $this->repository->getFullStats();
 
-        $this->assertEquals(0, $stats['total']);
-        $this->assertEquals(0, $stats['active']);
-        $this->assertEquals(0, $stats['newThisMonth']);
-        $this->assertEquals(0, $stats['newThisWeek']);
-        $this->assertEquals(0, $stats['newToday']);
-        $this->assertEquals(0.0, $stats['growthRate']['daily']);
-        $this->assertEquals(0.0, $stats['growthRate']['weekly']);
-        $this->assertEquals(0.0, $stats['growthRate']['monthly']);
+        $this->assertEquals(0, $stats['total_users']);
+        $this->assertEquals(0, $stats['active_users']);
+        $this->assertEquals(0, $stats['new_this_month']);
+        $this->assertEquals(0, $stats['new_this_week']);
+        $this->assertEquals(0, $stats['new_today']);
+        $this->assertEquals(0.0, $stats['growth_rates']['daily']);
+        $this->assertEquals(0.0, $stats['growth_rates']['weekly']);
+        $this->assertEquals(0.0, $stats['growth_rates']['monthly']);
     }
 
     // =========================================================================

@@ -1,7 +1,7 @@
 # TASK-23-6: Backlink Snapshot Service
 
 ## STATUS
-`To Develop`
+`Testing Locally`
 
 ## PRIORITY
 `High`
