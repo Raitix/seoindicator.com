@@ -1,9 +1,9 @@
-﻿/**
+/**
  * Content Decay Recovery Report Page
  * Shows recovery statistics, timeline, and before/after comparisons
  * 
- * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
- * Spec: SPEC-036 - Content Decay Detection & Refresh Planner
+ * @see TASK-36-13 for implementation requirements
+ * @see SPEC-036 for architectural details
  */
 
 "use client";
@@ -11,23 +11,20 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Settings,
   LayoutDashboard,
-  KanbanSquare,
+  Kanban,
   BarChart3,
-  Download,
   TrendingUp,
-  TrendingDown,
+  MousePointerClick,
   Clock,
   Target,
-  Calendar,
-  ExternalLink,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -35,571 +32,413 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { RecoveryComparisonCard } from "@/components/content-decay/RecoveryComparisonCard";
-import { useContentDecayRecovery } from "@/lib/hooks/useContentDecay";
+import {
+  useContentDecayRecovery,
+  useExportContentDecay,
+} from "@/lib/hooks/useContentDecay";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-// ============================================================
-// Loading Skeleton
-// ============================================================
+type DateRangeValue = "7d" | "30d" | "90d" | "all";
 
-function PageSkeleton() {
-  return (
-    <div className="space-y-6 p-6" data-testid="page-skeleton">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-10 w-64" />
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24" data-testid="skeleton" />
-        ))}
-      </div>
-      <Skeleton className="h-64" />
-      <Skeleton className="h-96" />
-    </div>
-  );
+const DATE_RANGE_OPTIONS: { value: DateRangeValue; label: string }[] = [
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "90d", label: "Last 90 days" },
+  { value: "all", label: "All time" },
+];
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return num.toString();
 }
 
-// ============================================================
-// Navigation Tabs
-// ============================================================
-
-interface NavTabsProps {
-  siteId: string;
-  activeTab: string;
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  } catch {
+    return dateStr;
+  }
 }
-
-function NavTabs({ siteId, activeTab }: NavTabsProps) {
-  const router = useRouter();
-
-  return (
-    <Tabs value={activeTab} className="w-auto">
-      <TabsList>
-        <TabsTrigger
-          value="queue"
-          onClick={() => router.push(`/sites/${siteId}/content-decay`)}
-          className="gap-1.5"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Queue
-        </TabsTrigger>
-        <TabsTrigger
-          value="board"
-          onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
-          className="gap-1.5"
-        >
-          <KanbanSquare className="h-4 w-4" />
-          Board
-        </TabsTrigger>
-        <TabsTrigger
-          value="recovery"
-          onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
-          className="gap-1.5"
-        >
-          <BarChart3 className="h-4 w-4" />
-          Recovery
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
-}
-
-// ============================================================
-// Summary Stat Card
-// ============================================================
 
 interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
+  iconColor: string;
   description?: string;
-  trend?: "up" | "down" | "neutral";
-  className?: string;
 }
 
-function StatCard({ title, value, icon, description, trend, className }: StatCardProps) {
+function StatCard({ title, value, icon, iconColor, description }: StatCardProps) {
   return (
-    <Card className={cn("bg-slate-800/50 border-slate-700", className)}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-400">{title}</span>
-          {icon}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        <div className={cn("p-2 rounded-lg", iconColor)}>{icon}</div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+          {value}
         </div>
-        <div className="mt-2">
-          <span
-            className={cn(
-              "text-2xl font-bold",
-              trend === "up" && "text-green-400",
-              trend === "down" && "text-red-400"
-            )}
-          >
-            {value}
-          </span>
-          {description && (
-            <p className="text-xs text-slate-500 mt-1">{description}</p>
-          )}
-        </div>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-// ============================================================
-// Timeline Chart (Simple Bar Visualization)
-// ============================================================
-
-interface TimelineChartProps {
-  data: Array<{
-    date: string;
-    recovered: number;
-    clicks: number;
-  }>;
-}
-
-function TimelineChart({ data }: TimelineChartProps) {
-  if (!data || data.length === 0) {
-    return (
-      <div className="text-center text-slate-500 py-12">
-        No timeline data available
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...data.map((d) => d.recovered), 1);
-
-  return (
-    <div className="space-y-4">
-      {/* Chart */}
-      <div className="flex items-end gap-2 h-40" data-testid="timeline-chart">
-        {data.slice(-14).map((item, index) => {
-          const height = (item.recovered / maxValue) * 100;
-          return (
-            <div
-              key={index}
-              className="flex-1 flex flex-col items-center gap-1"
-              data-testid={`bar-${index}`}
-            >
-              <div
-                className="w-full bg-green-500/80 rounded-t"
-                style={{ height: `${Math.max(height, 4)}%` }}
-                title={`${item.recovered} recovered on ${item.date}`}
-              />
-              <span className="text-xs text-slate-500 truncate w-full text-center">
-                {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-500/80 rounded" />
-          <span>Pages Recovered</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// Comparison Table
-// ============================================================
-
-interface ComparisonTableProps {
-  comparisons: Array<{
-    id: number;
-    pageUrl: string;
-    pageTitle: string;
-    pageType: string;
-    before: {
-      clicks: number;
-      impressions: number;
-      ctr: number;
-      position: number;
-    };
-    after: {
-      clicks: number;
-      impressions: number;
-      ctr: number;
-      position: number;
-    };
-    delta: {
-      clicks: number;
-      impressions: number;
-      ctr: number;
-      position: number;
-    };
-  }>;
-}
-
-function ComparisonTable({ comparisons }: ComparisonTableProps) {
-  if (!comparisons || comparisons.length === 0) {
-    return (
-      <div className="text-center text-slate-500 py-12">
-        No recovery comparisons available
-      </div>
-    );
-  }
-
-  const formatNumber = (n: number) => n.toLocaleString();
-  const formatPercent = (n: number) => `${(n * 100).toFixed(2)}%`;
-
-  return (
-    <div className="rounded-lg border border-slate-700 overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-slate-800/50 hover:bg-slate-800/50">
-            <TableHead className="text-slate-300">Page</TableHead>
-            <TableHead className="text-slate-300 text-right">Before Clicks</TableHead>
-            <TableHead className="text-slate-300 text-right">After Clicks</TableHead>
-            <TableHead className="text-slate-300 text-right">Clicks Change</TableHead>
-            <TableHead className="text-slate-300 text-right">Position Change</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {comparisons.map((item) => (
-            <TableRow key={item.id} className="border-slate-700">
-              <TableCell>
-                <div className="max-w-xs">
-                  <p className="text-sm font-medium text-slate-200 truncate">
-                    {item.pageTitle || "Untitled"}
-                  </p>
-                  <a
-                    href={item.pageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
-                  >
-                    {item.pageUrl.length > 40
-                      ? item.pageUrl.substring(0, 40) + "..."
-                      : item.pageUrl}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              </TableCell>
-              <TableCell className="text-right text-slate-400">
-                {formatNumber(item.before.clicks)}
-              </TableCell>
-              <TableCell className="text-right text-slate-300 font-medium">
-                {formatNumber(item.after.clicks)}
-              </TableCell>
-              <TableCell className="text-right">
-                <span
-                  className={cn(
-                    "font-medium",
-                    item.delta.clicks >= 0 ? "text-green-400" : "text-red-400"
-                  )}
-                >
-                  {item.delta.clicks >= 0 ? "+" : ""}
-                  {formatNumber(item.delta.clicks)}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <span
-                  className={cn(
-                    "font-medium",
-                    item.delta.position <= 0 ? "text-green-400" : "text-red-400"
-                  )}
-                >
-                  {item.delta.position <= 0 ? "+" : ""}
-                  {Math.abs(item.delta.position).toFixed(1)}
-                </span>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-// ============================================================
-// Recovery Stories
-// ============================================================
-
-interface RecoveryStoriesProps {
-  stories: Array<{
-    id: number;
-    pageUrl: string;
-    pageTitle: string;
-    clicksRecovered: number;
-    recoveryRate: number;
-    daysToRecovery: number;
-    summary: string;
-  }>;
-}
-
-function RecoveryStories({ stories }: RecoveryStoriesProps) {
-  if (!stories || stories.length === 0) {
-    return (
-      <div className="text-center text-slate-500 py-12">
-        No recovery stories available yet
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2" data-testid="recovery-stories">
-      {stories.slice(0, 4).map((story) => (
-        <Card
-          key={story.id}
-          className="bg-slate-800/50 border-slate-700"
-          data-testid={`story-${story.id}`}
-        >
-          <CardContent className="p-4 space-y-3">
-            {/* Title */}
-            <div>
-              <h4 className="text-sm font-medium text-slate-200 truncate">
-                {story.pageTitle || "Untitled"}
-              </h4>
-              <a
-                href={story.pageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
-              >
-                View page <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-
-            {/* Metrics */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="text-center p-2 rounded bg-slate-700/50">
-                <div className="text-lg font-bold text-green-400">
-                  +{story.clicksRecovered.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-400">Clicks Recovered</div>
-              </div>
-              <div className="text-center p-2 rounded bg-slate-700/50">
-                <div className="text-lg font-bold text-slate-200">
-                  {Math.round(story.recoveryRate * 100)}%
-                </div>
-                <div className="text-xs text-slate-400">Recovery Rate</div>
-              </div>
-              <div className="text-center p-2 rounded bg-slate-700/50">
-                <div className="text-lg font-bold text-slate-200">
-                  {story.daysToRecovery}
-                </div>
-                <div className="text-xs text-slate-400">Days</div>
-              </div>
-            </div>
-
-            {/* Summary */}
-            {story.summary && (
-              <p className="text-xs text-slate-400 line-clamp-2">
-                {story.summary}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-// ============================================================
-// Recovery Report Content
-// ============================================================
-
-function RecoveryReportContent({ siteId }: { siteId: string }) {
+export default function ContentDecayRecoveryPage() {
+  const params = useParams();
   const router = useRouter();
+  const siteId = params.siteId as string;
 
-  // Date range state
-  const [dateRange, setDateRange] = React.useState<"7d" | "30d" | "90d" | "all">("30d");
+  // State
+  const [dateRange, setDateRange] = React.useState<DateRangeValue>("30d");
 
   // Calculate date range for API
   const dateRangeParams = React.useMemo(() => {
     if (dateRange === "all") return undefined;
-
+    
     const end = new Date();
     const start = new Date();
-
+    
     switch (dateRange) {
       case "7d":
-        start.setDate(end.getDate() - 7);
+        start.setDate(start.getDate() - 7);
         break;
       case "30d":
-        start.setDate(end.getDate() - 30);
+        start.setDate(start.getDate() - 30);
         break;
       case "90d":
-        start.setDate(end.getDate() - 90);
+        start.setDate(start.getDate() - 90);
         break;
     }
-
+    
     return {
       start: start.toISOString().split("T")[0],
       end: end.toISOString().split("T")[0],
     };
   }, [dateRange]);
 
-  // Hooks
+  // Data hooks
   const { recovery, isLoading } = useContentDecayRecovery(siteId, dateRangeParams);
+  const { exportData, isExporting } = useExportContentDecay(siteId);
 
-  // Export handler (placeholder)
-  const handleExport = () => {
-    // Would call export API
-    console.log("Export recovery report");
-  };
+  // Handlers
+  const handleExportPdf = React.useCallback(async () => {
+    const result = await exportData("pdf");
+    if (result.success) {
+      toast.success("Recovery report exported");
+    } else {
+      toast.error("Failed to export report");
+    }
+  }, [exportData]);
 
+  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
-        <PageSkeleton />
+      <div className="container mx-auto py-6 space-y-6" data-testid="loading-state">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-64" />
+        <Skeleton className="h-96" />
       </div>
     );
   }
 
+  // Default recovery data for empty state
   const summary = recovery?.summary ?? {
     totalRecovered: 0,
     totalClicksRecovered: 0,
     avgRecoveryRate: 0,
     avgDaysToRecovery: 0,
   };
+  const timeline = recovery?.timeline ?? [];
+  const comparisons = recovery?.comparisons ?? [];
+  const stories = recovery?.stories ?? [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-green-500" />
-              Recovery Report
-            </h1>
-            <p className="text-sm text-slate-400">
-              Track content recovery progress and results
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <NavTabs siteId={siteId} activeTab="recovery" />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/sites/${siteId}/content-decay/settings`)}
-              className="border-slate-700 text-slate-300"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              className="border-slate-700 text-slate-300"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-          </div>
+    <div className="container mx-auto py-6 space-y-6" data-testid="content-decay-recovery">
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="page-title">
+            Recovery Report
+          </h1>
+          <p className="text-muted-foreground">
+            Track content refresh outcomes and recovered traffic
+          </p>
         </div>
 
-        {/* Date Range Filter */}
-        <div className="flex items-center gap-2 mb-6">
-          <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
-          <label htmlFor="date-range-select" className="sr-only">Date range</label>
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
-            <SelectTrigger 
-              id="date-range-select"
-              className="w-32 bg-slate-800 border-slate-700 text-slate-200"
+        <div className="flex items-center gap-3">
+          <Select
+            value={dateRange}
+            onValueChange={(value) => setDateRange(value as DateRangeValue)}
+          >
+            <SelectTrigger
+              className="w-32"
               aria-label="Date range"
+              id="date-range-select"
+              data-testid="date-range-filter"
             >
-              <SelectValue placeholder="Date Range" />
+              <SelectValue placeholder="Date range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="all">All time</SelectItem>
+              {DATE_RANGE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-        </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" data-testid="summary-stats">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={isExporting}
+            data-testid="export-pdf-button"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav aria-label="Content decay navigation">
+        <Tabs defaultValue="recovery" className="w-full">
+          <TabsList data-testid="navigation-tabs">
+            <TabsTrigger
+              value="queue"
+              onClick={() => router.push(`/sites/${siteId}/content-decay`)}
+              className="flex items-center gap-2"
+              aria-label="Refresh Queue"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Queue
+            </TabsTrigger>
+            <TabsTrigger
+              value="board"
+              onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
+              className="flex items-center gap-2"
+              aria-label="Recovery Board"
+            >
+              <Kanban className="h-4 w-4" />
+              Board
+            </TabsTrigger>
+            <TabsTrigger
+              value="recovery"
+              onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
+              className="flex items-center gap-2"
+              aria-label="Recovery Report"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Recovery
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </nav>
+
+      {/* Summary Statistics */}
+      <section aria-label="Recovery summary statistics">
+        <div className="grid gap-4 sm:grid-cols-4">
           <StatCard
             title="Total Recovered"
             value={summary.totalRecovered}
-            icon={<TrendingUp className="h-4 w-4 text-green-500" />}
-            trend="up"
+            icon={<Target className="h-4 w-4 text-white" />}
+            iconColor="bg-green-500"
           />
           <StatCard
             title="Clicks Recovered"
-            value={summary.totalClicksRecovered.toLocaleString()}
-            icon={<Target className="h-4 w-4 text-blue-500" />}
-            trend="up"
+            value={formatNumber(summary.totalClicksRecovered)}
+            icon={<MousePointerClick className="h-4 w-4 text-white" />}
+            iconColor="bg-blue-500"
           />
           <StatCard
             title="Avg Recovery Rate"
-            value={`${Math.round(summary.avgRecoveryRate * 100)}%`}
-            icon={<BarChart3 className="h-4 w-4 text-purple-500" />}
+            value={`${Math.round(summary.avgRecoveryRate)}%`}
+            icon={<TrendingUp className="h-4 w-4 text-white" />}
+            iconColor="bg-purple-500"
           />
           <StatCard
             title="Avg Days to Recovery"
-            value={summary.avgDaysToRecovery.toFixed(1)}
-            icon={<Clock className="h-4 w-4 text-amber-500" />}
+            value={summary.avgDaysToRecovery}
+            icon={<Clock className="h-4 w-4 text-white" />}
+            iconColor="bg-orange-500"
           />
         </div>
+      </section>
 
-        {/* Timeline Chart */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-6">
+      {/* Recovery Timeline Chart */}
+      <section aria-label="Recovery timeline">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-slate-200">Recovery Timeline</CardTitle>
+            <CardTitle>Recovery Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <TimelineChart data={recovery?.timeline ?? []} />
+            {timeline.length > 0 ? (
+              <div className="space-y-4">
+                {/* Bar Chart Visualization */}
+                <div className="flex items-end gap-2 h-48" role="img" aria-label="Recovery timeline bar chart">
+                  {timeline.slice(-14).map((item, index) => {
+                    const maxClicks = Math.max(...timeline.map((t) => t.clicks), 1);
+                    const heightPercent = (item.clicks / maxClicks) * 100;
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="flex-1 flex flex-col items-center"
+                        data-testid={`timeline-bar-${index}`}
+                      >
+                        <div className="text-xs text-muted-foreground mb-1">
+                          {formatNumber(item.clicks)}
+                        </div>
+                        <div
+                          className="w-full bg-green-500 rounded-t-sm min-h-[4px] transition-all hover:bg-green-400"
+                          style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                          title={`${formatDate(item.date)}: ${item.recovered} recovered, ${formatNumber(item.clicks)} clicks`}
+                        />
+                        <div className="text-xs text-muted-foreground mt-1 truncate w-full text-center">
+                          {formatDate(item.date)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                No recovery data available for the selected period
+              </div>
+            )}
           </CardContent>
         </Card>
+      </section>
 
-        {/* Comparison Table */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-6">
+      {/* Before/After Comparison Table */}
+      <section aria-label="Before and after comparison">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-slate-200">Before/After Comparison</CardTitle>
+            <CardTitle>Before & After Comparison</CardTitle>
           </CardHeader>
           <CardContent>
-            <ComparisonTable comparisons={recovery?.comparisons ?? []} />
+            {comparisons.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" role="table" aria-label="Before and after comparison table">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-2 font-medium">Page</th>
+                      <th className="text-right py-3 px-2 font-medium">Clicks Before</th>
+                      <th className="text-right py-3 px-2 font-medium">Clicks After</th>
+                      <th className="text-right py-3 px-2 font-medium">Change</th>
+                      <th className="text-right py-3 px-2 font-medium">Position Before</th>
+                      <th className="text-right py-3 px-2 font-medium">Position After</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisons.slice(0, 10).map((comp, index) => (
+                      <tr key={comp.id} className="border-b hover:bg-muted/50">
+                        <td className="py-3 px-2">
+                          <div className="max-w-xs truncate font-medium">
+                            {comp.pageTitle || comp.pageUrl}
+                          </div>
+                        </td>
+                        <td className="text-right py-3 px-2 text-muted-foreground">
+                          {formatNumber(comp.before.clicks)}
+                        </td>
+                        <td className="text-right py-3 px-2">
+                          {formatNumber(comp.after.clicks)}
+                        </td>
+                        <td className="text-right py-3 px-2">
+                          <span
+                            className={cn(
+                              "font-medium",
+                              comp.delta.clicks > 0 ? "text-green-600" : "text-red-600"
+                            )}
+                            data-testid={`delta-clicks-${index}`}
+                          >
+                            {comp.delta.clicks > 0 ? "+" : ""}
+                            {formatNumber(comp.delta.clicks)}
+                          </span>
+                        </td>
+                        <td className="text-right py-3 px-2 text-muted-foreground">
+                          {comp.before.position.toFixed(1)}
+                        </td>
+                        <td className="text-right py-3 px-2">
+                          {comp.after.position.toFixed(1)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                No comparison data available
+              </div>
+            )}
           </CardContent>
         </Card>
+      </section>
 
-        {/* Recovery Stories */}
-        <Card className="bg-slate-800/50 border-slate-700">
+      {/* Recovery Stories */}
+      <section aria-label="Recovery stories">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-slate-200">Recovery Stories</CardTitle>
+            <CardTitle>Recovery Stories</CardTitle>
           </CardHeader>
           <CardContent>
-            <RecoveryStories stories={recovery?.stories ?? []} />
+            {stories.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {stories.map((story) => (
+                  <div
+                    key={story.id}
+                    className="p-4 border rounded-lg space-y-2"
+                    data-testid={`story-${story.id}`}
+                  >
+                    <div className="font-medium truncate">
+                      {story.pageTitle || story.pageUrl}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="text-green-600 font-medium">
+                        +{formatNumber(story.clicksRecovered)} clicks
+                      </div>
+                      <div className="text-muted-foreground">
+                        {Math.round(story.recoveryRate)}% recovery
+                      </div>
+                      <div className="text-muted-foreground">
+                        {story.daysToRecovery} days
+                      </div>
+                    </div>
+                    {story.summary && (
+                      <p className="text-sm text-muted-foreground">
+                        {story.summary}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                No recovery stories yet. Completed refreshes will appear here.
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   );
-}
-
-// ============================================================
-// Page Component
-// ============================================================
-
-export default function RecoveryReportPage() {
-  const params = useParams();
-  const siteId = params.siteId as string;
-
-  if (!siteId) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400">Site not found</p>
-      </div>
-    );
-  }
-
-  return <RecoveryReportContent siteId={siteId} />;
 }

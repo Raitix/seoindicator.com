@@ -2274,6 +2274,216 @@ interface CostEstimateProps {
 - TASK-26-19: User Model Preferences API (default model storage)
 
 ---
+## Stripe Payment Intent Endpoint (TASK-26-9)
+
+### Feature Description
+REST API endpoint for the Billing, Credits & Model Selection feature (FEAT-026) that initiates Stripe payment flows for credit purchases. Creates a Stripe payment intent with client secret for frontend Stripe.js integration, validates credit packages, calculates bonus credits, and creates pending transaction records for webhook confirmation.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Payments/StripePaymentController.php`
+- **Request:** `backend/app/Http/Requests/Api/V1/Payments/CreateStripeIntentRequest.php`
+- **Service:** `backend/app/Services/Billing/StripeGatewayService.php`
+- **Route:** `backend/routes/api.php` - `POST /api/v1/payments/stripe/intent`
+- **Tests:** `backend/tests/Feature/Api/V1/PaymentIntentControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-26-9.md`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/payments/stripe/intent` | Create Stripe payment intent for credit purchase |
+
+### Request Body
+
+```json
+{
+  "package_id": 2,
+  "return_url": "https://example.com/credits/success"
+}
+```
+
+### Validation Rules
+
+| Field | Rules |
+|-------|-------|
+| `package_id` | Required, integer, must exist in `credit_packages` table, must be active |
+| `return_url` | Optional, URL format, max 500 characters |
+
+### Response Format
+
+**Success (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "client_secret": "pi_xxx_secret_xxx",
+    "payment_intent_id": "pi_xxx",
+    "amount": 10.00,
+    "credits": 10.50,
+    "package_name": "Basic"
+  }
+}
+```
+
+**Validation Error (422 Unprocessable Entity):**
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": {
+    "package_id": ["Invalid package selected"]
+  }
+}
+```
+
+**Inactive Package (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "Invalid package selected"
+}
+```
+
+**Stripe Error (500 Internal Server Error):**
+```json
+{
+  "success": false,
+  "message": "Payment could not be initiated"
+}
+```
+
+### Business Logic
+
+| Step | Action |
+|------|--------|
+| 1 | Validate user is authenticated |
+| 2 | Validate package exists and is active |
+| 3 | Calculate credits: `base + (base * bonus_percent / 100)` |
+| 4 | Create Stripe payment intent via gateway |
+| 5 | Create pending `CreditTransaction` record with `payment_intent_id` |
+| 6 | Return `client_secret` for frontend Stripe.js |
+
+### Credit Calculation Formula
+
+```php
+$credits = $package->credits + ($package->credits * $package->bonus_percent / 100);
+```
+
+| Package | Base Credits | Bonus % | Effective Credits |
+|---------|-------------|---------|-------------------|
+| Basic ($10) | 10 | 5% | 10.50 |
+| Pro ($90) | 100 | 20% | 120.00 |
+| Enterprise ($500) | 1000 | 25% | 1250.00 |
+
+### Idempotency
+
+The endpoint prevents duplicate payment intents for the same user/package combination:
+
+| Scenario | Behavior |
+|----------|----------|
+| Pending transaction exists for same user + package | Returns existing payment intent |
+| Previous transaction completed or failed | Creates new payment intent |
+
+### Transaction Storage
+
+| Field | Value |
+|-------|-------|
+| `user_id` | Authenticated user ID |
+| `amount` | Package price (USD) |
+| `type` | `purchase` |
+| `status` | `pending` |
+| `payment_id` | Stripe payment intent ID |
+| `payment_method` | `stripe` |
+| `metadata.package_id` | Credit package ID |
+| `metadata.credits` | Calculated credits including bonus |
+| `metadata.return_url` | Optional return URL |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | `auth:sanctum` middleware (Bearer token) |
+| Amount Validation | Package price read from database, never from request |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | Input validation, no HTML allowed |
+| Idempotency | Check for existing pending transaction before creating |
+| User Context | Payment intent created with authenticated user context |
+
+### Error Responses
+
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated (no valid bearer token) |
+| 422 | Validation error (invalid/missing package_id, invalid return_url) |
+| 400 | Inactive package selected |
+| 500 | Stripe API error or internal server error |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| PaymentIntentControllerTest | 52 | 111 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Success tests | 7 | Payment intent creation, client secret return |
+| Authentication tests | 2 | 401 for unauthenticated, bearer token auth |
+| Validation tests | 7 | Package exists, is active, required fields |
+| Error handling tests | 4 | 422, 400, 500 responses |
+| Security tests | 6 | Server-side amount validation, idempotency |
+| Idempotency tests | 4 | Duplicate intent prevention |
+| Edge cases | 6 | Missing fields, invalid data |
+| HTTP method tests | 1 | POST only |
+| Performance tests | 1 | Response time under 500ms |
+| Rate limiting tests | 1 | Reasonable request handling |
+| Integration tests | 3 | Full flow, transaction creation |
+| Acceptance criteria tests | 10 | All AC items verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T125809Z-1768e202` |
+| Commit | `44cc5c222c098337729e3227612e8eee9bf64854` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-16 |
+| Status | Complete |
+
+### Configuration Requirements
+
+**Required Environment Variables:**
+```env
+STRIPE_SECRET=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+| Variable | Source | Purpose |
+|----------|--------|---------|
+| `STRIPE_SECRET` | Stripe Dashboard → API Keys | Payment intent creation |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Dashboard → Webhooks | Payment confirmation |
+
+**Without Stripe Configuration:**
+- Endpoint returns 500 Internal Server Error
+- Error message: "Payment could not be initiated"
+- All validation and authentication still work correctly
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-26-3 | Done ✅ | Credit Packages (package validation) |
+| TASK-26-8 | Done ✅ | StripeGatewayService (Stripe integration) |
+
+### Related Tasks
+
+- TASK-26-10: Stripe Webhook Handler (confirms payment and credits)
+- TASK-26-5: CreditService (credit balance management)
+- TASK-26-17: Models List API
+- TASK-26-18: Model Pricing API
+
+---
 ## Current Deployment Baseline (2026-03-10)
 
 ### Active deployment model
@@ -7417,6 +7627,189 @@ QueueMonitoringService integrates with HealthCheckService:
 - TASK-27-6: Request Tracking Middleware (usage metrics)
 
 ---
+## Admin Health API Endpoints (TASK-27-13)
+
+### Feature Description
+REST API endpoints for the Admin Dashboard (FEAT-027) that provide health monitoring data for system administrators. Exposes overall health status, queue metrics, database statistics, and active alerts through four optimized endpoints designed for 30-second dashboard polling.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Admin/HealthController.php`
+- **Routes:** `backend/routes/api.php` (admin middleware group)
+- **Tests:** `backend/tests/Feature/Api/V1/Admin/HealthControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-27-13.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/admin/health/overview` | Overall health summary | 120/min |
+| GET | `/api/v1/admin/health/queues` | Queue status details | 120/min |
+| GET | `/api/v1/admin/health/database` | Database metrics | 120/min |
+| GET | `/api/v1/admin/health/alerts` | Active alerts/warnings | 120/min |
+
+### Endpoint Details
+
+#### GET /api/v1/admin/health/overview
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "overall_score": 100,
+    "services": [
+      { "name": "database", "status": "healthy", "latency_ms": 5 },
+      { "name": "cache", "status": "healthy", "latency_ms": 2 },
+      { "name": "queue", "status": "healthy", "latency_ms": 10 },
+      { "name": "storage", "status": "healthy", "latency_ms": 1 }
+    ],
+    "last_check": "2026-03-16T13:20:00Z"
+  }
+}
+```
+
+**Status Values:** `healthy`, `degraded`, `unhealthy`
+**Overall Score:** 0-100 (calculated from service statuses)
+
+#### GET /api/v1/admin/health/queues
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "queues": [
+      { "name": "default", "size": 5, "pending": 5, "processed": 0, "failed": 0, "workers": 1 },
+      { "name": "high", "size": 0, "pending": 0, "processed": 0, "failed": 0, "workers": 0 },
+      { "name": "low", "size": 2, "pending": 2, "processed": 0, "failed": 0, "workers": 0 }
+    ],
+    "total_pending": 7,
+    "total_failed": 0
+  }
+}
+```
+
+#### GET /api/v1/admin/health/database
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "connection": "mysql",
+    "database": "seoindicator",
+    "size_mb": 45.67,
+    "tables": [
+      { "name": "users", "rows": 1250, "size_mb": 2.34 },
+      { "name": "sites", "rows": 340, "size_mb": 1.56 }
+    ],
+    "connections": { "active": 3, "idle": 7, "max": 100 },
+    "performance": { "query_time_ms": 5.23, "slow_queries": 0 }
+  }
+}
+```
+
+#### GET /api/v1/admin/health/alerts
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "alerts": [
+      {
+        "id": "queue-backlog",
+        "type": "queue_backup",
+        "severity": "warning",
+        "message": "Queue has 75 pending jobs",
+        "source": "queue_monitor",
+        "created_at": "2026-03-16T13:15:00Z",
+        "acknowledged": false
+      }
+    ],
+    "total": 1,
+    "unacknowledged": 1
+  }
+}
+```
+
+**Alert Severity Levels:** `info`, `warning`, `critical`
+
+### Polling Optimization
+
+| Feature | Implementation |
+|---------|----------------|
+| Cache TTL | 15 seconds (server-side) |
+| Cache-Control | `public, max-age=15` header |
+| Response Time | < 500ms target |
+| Polling Interval | 30 seconds recommended |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Authentication | AdminAuthorizationMiddleware required |
+| Authorization | Admin role verification |
+| Rate Limiting | 120 requests/minute per endpoint |
+| Input Validation | Query parameters ignored (no injection vector) |
+| Sensitive Data | No passwords, tokens, or secrets exposed |
+
+### Alert Types
+
+| Alert ID | Type | Severity Trigger |
+|----------|------|------------------|
+| `queue-backlog` | `queue_backup` | > 50 pending (warning), > 100 (critical) |
+| `failed-jobs` | `failed_jobs` | > 0 failed jobs (warning), > 10 (critical) |
+| `storage-space` | `storage_full` | > 90% used (warning), > 95% (critical) |
+| `database-connection` | `database_error` | Connection failure (critical) |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| HealthControllerTest | 42 | 281 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Health Overview | 7 | Overview endpoint, authentication, structure |
+| Queue Status | 7 | Queue endpoint, values, auth |
+| Database Metrics | 8 | Database endpoint, stats, performance |
+| Alerts | 7 | Alerts endpoint, severities, counts |
+| Rate Limiting | 2 | 120 req/min, per-endpoint tracking |
+| HTTP Methods | 1 | GET-only restriction |
+| Security | 3 | No sensitive data, injection handling |
+| Performance | 2 | <500ms response, JSON content type |
+| Error Handling | 3 | 401/403 formats, graceful fallbacks |
+| Integration | 4 | Status aggregation, polling, timestamps |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T131858Z-6bfb2b2e` |
+| Commit | `cf8757f983491c30a00a126d33b839878fb34ca1` |
+| Tests | 42/42 passing (281 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-27-2 | Done ✅ | AdminAuthorizationMiddleware |
+| TASK-27-11 | Done ✅ | HealthCheckService |
+| TASK-27-12 | Done ✅ | QueueMonitoringService |
+
+### Related Tasks
+
+- TASK-27-11: HealthCheckService (backend health checks)
+- TASK-27-12: QueueMonitoringService (queue monitoring)
+- TASK-27-14: Admin Dashboard Layout (layout wrapper)
+- TASK-27-17: System Health Monitoring Panel (frontend UI)
+
+---
 ## System Health Monitoring Panel (TASK-27-17)
 
 ### Component Description
@@ -7675,6 +8068,206 @@ const mockHealthResponse = {
 - TASK-27-13: Admin Health API (API endpoints)
 - TASK-27-14: Admin Dashboard Layout (layout wrapper)
 - TASK-27-15: Metric Cards and Overview Section (user/usage metrics)
+
+---
+## Admin Health API Endpoints (TASK-27-13)
+
+### API Description
+REST API endpoints for the Admin Health Dashboard that expose system health metrics, queue status, and application statistics. Provides secure endpoints for admin users to monitor application health in real-time. Part of the Admin Health Dashboard feature (FEAT-027).
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Admin/HealthController.php`
+- **Routes:** `backend/routes/api.php` (admin prefix group)
+- **Middleware:** `auth:sanctum`, `role:admin`, `throttle:60,1`
+- **Tests:** `backend/tests/Feature/Api/V1/Admin/HealthControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-27-13.md`
+
+### API Endpoints
+
+| Method | Endpoint | Auth | Rate Limit | Purpose |
+|--------|----------|------|------------|---------|
+| GET | `/api/v1/admin/health` | admin | 60/min | System health overview |
+| GET | `/api/v1/admin/health/queue` | admin | 60/min | Queue metrics and status |
+| GET | `/api/v1/admin/health/database` | admin | 60/min | Database connection stats |
+| GET | `/api/v1/admin/health/cache` | admin | 60/min | Cache hit/miss statistics |
+
+### Response Formats
+
+**GET /api/v1/admin/health:**
+```json
+{
+  "status": "healthy|degraded|unhealthy",
+  "timestamp": "2026-03-16T10:30:00Z",
+  "checks": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
+    },
+    "cache": {
+      "status": "healthy",
+      "driver": "redis"
+    },
+    "queue": {
+      "status": "healthy",
+      "pending": 5,
+      "failed": 0
+    }
+  },
+  "metrics": {
+    "users_total": 1234,
+    "sites_total": 567,
+    "audits_total": 8901,
+    "audits_today": 42
+  }
+}
+```
+
+**GET /api/v1/admin/health/queue:**
+```json
+{
+  "status": "healthy|degraded|unhealthy",
+  "queues": {
+    "default": {
+      "pending": 5,
+      "processing": 2,
+      "failed": 0,
+      "workers": 3
+    },
+    "audits": {
+      "pending": 12,
+      "processing": 4,
+      "failed": 1,
+      "workers": 2
+    }
+  },
+  "failed_jobs": [
+    {
+      "id": 123,
+      "queue": "audits",
+      "error": "Connection timeout",
+      "failed_at": "2026-03-16T09:45:00Z"
+    }
+  ],
+  "oldest_pending_job": {
+    "id": 456,
+    "age_seconds": 1800,
+    "type": "ProcessAudit"
+  }
+}
+```
+
+**GET /api/v1/admin/health/database:**
+```json
+{
+  "status": "healthy|degraded|unhealthy",
+  "connections": {
+    "active": 15,
+    "idle": 85,
+    "max": 100
+  },
+  "latency_ms": 12,
+  "query_stats": {
+    "total_queries_today": 45678,
+    "slow_queries": 5,
+    "slow_query_threshold_ms": 100
+  },
+  "table_sizes": [
+    { "name": "audits", "rows": 125000, "size": "45MB" },
+    { "name": "rankings", "rows": 500000, "size": "120MB" }
+  ]
+}
+```
+
+**GET /api/v1/admin/health/cache:**
+```json
+{
+  "status": "healthy|degraded|unhealthy",
+  "driver": "redis",
+  "stats": {
+    "hits": 125000,
+    "misses": 5000,
+    "hit_rate": 96.2,
+    "memory_usage": "128MB",
+    "keys_count": 3421
+  },
+  "latency_ms": 2
+}
+```
+
+### Health Status Definitions
+
+| Status | Description | Conditions |
+|--------|-------------|------------|
+| `healthy` | All systems operational | All checks pass, no warnings |
+| `degraded` | Partial functionality | Some checks failing or thresholds exceeded |
+| `unhealthy` | Critical issues | Core services unavailable |
+
+### Thresholds and Alerts
+
+| Metric | Warning | Critical | Alert |
+|--------|---------|----------|-------|
+| Database latency | > 50ms | > 100ms | Yellow/Red indicator |
+| Queue pending | > 100 | > 500 | Degraded/Unhealthy |
+| Queue failed | > 0 | > 10 | Yellow/Red highlight |
+| Cache hit rate | < 90% | < 70% | Degraded/Unhealthy |
+| DB connections | > 80% | > 95% | Warning/Critical |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum (`auth:sanctum` middleware) |
+| Authorization | Role-based (`role:admin` middleware) |
+| Rate Limiting | Throttle middleware (60 requests/minute) |
+| Input Validation | No user input accepted (read-only endpoints) |
+| SQL Injection | Eloquent ORM with parameterized queries |
+
+### Error Responses
+
+| Code | Description |
+|------|-------------|
+| 401 | Unauthenticated - Valid token required |
+| 403 | Forbidden - Admin role required |
+| 500 | Server Error - Health check failed |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `HealthControllerTest.php` | 45 | 120+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Route Registration | 6 | All 4 endpoints registered with admin prefix |
+| Authentication | 8 | 401 for unauthenticated requests |
+| Authorization | 8 | 403 for non-admin users |
+| Health Overview | 8 | Response structure and status logic |
+| Queue Metrics | 6 | Queue status and job details |
+| Database Metrics | 5 | Connection stats and latency |
+| Cache Metrics | 4 | Hit rate and memory stats |
+| HTTP Methods | 6 | Method restrictions (GET only) |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Commit | `admin-health-api-endpoints` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 45/45 passing |
+| Status | Complete |
+
+### Dependencies
+- TASK-27-11 (HealthCheckService) - Health check logic
+- TASK-27-12 (QueueMonitoringService) - Queue metrics
+
+### Related Tasks
+- TASK-27-11: HealthCheckService (backend health checks)
+- TASK-27-12: QueueMonitoringService (queue metrics)
+- TASK-27-14: Admin Dashboard Layout (frontend consumer)
+- TASK-27-15: Metric Cards and Overview Section (frontend display)
 
 ---
 ## ScoreOverview Component (TASK-33-9)
@@ -63126,6 +63719,234 @@ Comprehensive integration tests for the OAuth 2.0 authentication flow in the SEO
 - TASK-25-4: Session Handling (backend)
 - TASK-25-24: Frontend Component Tests (frontend)
 - TASK-25-25: Security Audit for Authentication System
+
+---
+## HealthCheckService (TASK-27-11)
+
+### Feature Description
+System health monitoring service for the Admin Dashboard feature (FEAT-027) that provides real-time health checks for database, cache, storage, and queue infrastructure. Monitors system components with configurable thresholds, cascade failure prevention, and 30-second result caching.
+
+### Component Locations
+- **Service:** `backend/app/Services/Admin/HealthCheckService.php`
+- **Configuration:** `backend/config/health-check.php`
+- **Tests:** `backend/tests/Unit/Services/Admin/HealthCheckServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-27-11.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `checkHealth(bool $forceRefresh = false): array` | Returns overall system health with all service checks |
+| `checkDatabase(): array` | Database connectivity, latency, and connection count |
+| `checkCache(): array` | Redis connectivity, hit rate, and read/write test |
+| `checkStorage(): array` | Disk usage, free space, and total space |
+| `checkQueue(): array` | Pending jobs, failed jobs, and worker status |
+| `getOverallStatus(array $services): string` | Computes overall status from individual checks |
+
+### Health Check Response Format
+
+```json
+{
+  "status": "healthy",
+  "uptime": 99.98,
+  "lastChecked": "2026-03-16T10:00:00Z",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latencyMs": 12,
+      "connections": 45,
+      "message": "Database connection successful"
+    },
+    "cache": {
+      "status": "healthy",
+      "hitRate": 94.5,
+      "latencyMs": 2,
+      "message": "Cache operating normally"
+    },
+    "storage": {
+      "status": "healthy",
+      "usedPercent": 34,
+      "freeSpace": 107374182400,
+      "totalSpace": 256000000000,
+      "message": "Storage usage within limits"
+    },
+    "queue": {
+      "status": "healthy",
+      "pendingJobs": 5,
+      "failedJobs": 0,
+      "workers": 2,
+      "message": "Queue processing normally"
+    }
+  }
+}
+```
+
+### Status Levels
+
+| Status | Description |
+|--------|-------------|
+| `healthy` | All metrics within normal thresholds |
+| `degraded` | Some metrics approaching warning thresholds |
+| `unhealthy` | Critical threshold exceeded or service unavailable |
+
+### Default Thresholds
+
+| Service | Metric | Degraded Threshold | Unhealthy Threshold |
+|---------|--------|-------------------|---------------------|
+| Database | Latency | > 100ms | > 500ms |
+| Cache | Hit Rate | < 80% | < 50% |
+| Storage | Used Percent | > 80% | > 95% |
+| Queue | Pending Jobs | > 100 | > 500 |
+| Queue | Failed Jobs | > 10 | > 50 |
+
+### Caching Strategy
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| Cache TTL | 30 seconds | Prevents overwhelming system checks |
+| Cache Key | `health_check:full` | Stores full health check result |
+| Force Refresh | `$forceRefresh = true` | Bypasses cache for immediate check |
+
+### Cascade Failure Prevention
+
+Each health check is wrapped in try-catch to prevent one failing service from affecting others:
+
+```php
+// Each check returns error status on failure, not exception
+"database": {
+  "status": "unhealthy",
+  "message": "Connection refused",
+  "latencyMs": null,
+  "connections": null
+}
+```
+
+### Configuration
+
+```php
+// config/health-check.php
+return [
+    'thresholds' => [
+        'database' => [
+            'latency_degraded_ms' => 100,
+            'latency_unhealthy_ms' => 500,
+        ],
+        'cache' => [
+            'hit_rate_degraded_percent' => 80,
+            'hit_rate_unhealthy_percent' => 50,
+        ],
+        'storage' => [
+            'usage_degraded_percent' => 80,
+            'usage_unhealthy_percent' => 95,
+        ],
+        'queue' => [
+            'pending_degraded' => 100,
+            'pending_unhealthy' => 500,
+            'failed_degraded' => 10,
+            'failed_unhealthy' => 50,
+        ],
+    ],
+];
+```
+
+### Individual Check Details
+
+#### Database Health Check
+| Metric | Method | Description |
+|--------|--------|-------------|
+| Connectivity | `SELECT 1` query | Tests database connection |
+| Latency | Query execution time | Milliseconds for simple query |
+| Connections | `SHOW STATUS` or equivalent | Active connection count |
+
+#### Cache Health Check
+| Metric | Method | Description |
+|--------|--------|-------------|
+| Connectivity | SET/GET test key | Tests Redis connection |
+| Hit Rate | Cache statistics | Percentage of cache hits |
+| Latency | SET/GET timing | Milliseconds for cache operations |
+
+#### Storage Health Check
+| Metric | Method | Description |
+|--------|--------|-------------|
+| Used Percent | `disk_free_space()` / `disk_total_space()` | Percentage of disk used |
+| Free Space | `disk_free_space()` | Bytes available |
+| Total Space | `disk_total_space()` | Total disk capacity |
+
+#### Queue Health Check
+| Metric | Method | Description |
+|--------|--------|-------------|
+| Pending Jobs | Count from `jobs` table | Jobs waiting to be processed |
+| Failed Jobs | Count from `failed_jobs` table | Jobs that failed processing |
+| Workers | Process count or configuration | Active queue workers |
+
+### Error Handling
+
+| Error Type | Behavior |
+|------------|----------|
+| Database connection failure | Returns `unhealthy` with error message |
+| Cache connection failure | Returns `unhealthy` with error message |
+| Storage check failure | Returns `unhealthy` with error message |
+| Missing queue tables | Returns `healthy` with 0 counts |
+| Timeout | Returns `unhealthy` with timeout message |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| No sensitive data exposure | Returns only health metrics, no credentials |
+| Cascade failure prevention | Try-catch for each service check |
+| Rate limiting via cache | 30-second cache prevents abuse |
+| Admin-only access | Exposed via admin-protected API endpoints |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| HealthCheckServiceTest | 78 | 196 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 3 | Container binding, public methods |
+| Full Health Check | 9 | Response structure, caching, force refresh |
+| Database Health | 8 | Connectivity, latency, thresholds, errors |
+| Cache Health | 8 | Connectivity, hit rate, thresholds, errors |
+| Storage Health | 10 | Disk usage, thresholds, errors |
+| Queue Health | 8 | Pending/failed jobs, workers, missing tables |
+| Overall Status | 6 | Status computation, prioritization |
+| Threshold Configuration | 5 | Configurable thresholds |
+| Edge Cases | 5 | Partial failures, timeouts, all services down |
+| Integration | 3 | Full workflow, JSON format |
+| Performance | 3 | Speed benchmarks |
+| Acceptance Criteria | 10 | All ACs verified |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T125809Z-1768e202` |
+| Commit | `44cc5c222c098337729e3227612e8eee9bf64854` |
+| Tests | 78/78 passing (196 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| None | - | Standalone infrastructure service |
+
+### Consumers
+
+- TASK-27-12: QueueMonitoringService (uses HealthCheckService)
+- TASK-27-13: Health API Endpoints (exposes health checks)
+- TASK-27-14: Admin Dashboard Frontend (displays health status)
+
+### Related Tasks
+
+- TASK-27-12: QueueMonitoringService (queue-specific monitoring)
+- TASK-27-13: Health API Endpoints (REST API exposure)
+- TASK-27-14: Admin Dashboard Frontend (UI display)
 
 ---
 *Last updated: 2026-03-16*

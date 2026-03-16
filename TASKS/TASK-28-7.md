@@ -1,7 +1,7 @@
 # TASK-28-7: IndicatorCatalog Main Container
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`

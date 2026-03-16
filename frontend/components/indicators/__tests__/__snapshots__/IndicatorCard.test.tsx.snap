@@ -1,4 +1,722 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Snapshots > SN-001: Good status card snapshot 1`] = `
+<div>
+  <a
+    aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    data-loading="false"
+    data-slot="indicator-card"
+    data-state="closed"
+    data-status="good"
+    data-testid="indicator-card-keyword-rankings"
+    href="/dashboard"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+      >
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+          data-color="default"
+          data-size="md"
+          data-slot="indicator-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-trending-up"
+            fill="none"
+            focusable="false"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M16 7h6v6"
+            />
+            <path
+              d="m22 7-8.5 8.5-5-5L2 17"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        aria-label="Status: Good"
+        class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+        data-slot="badge"
+        data-status="good"
+        data-variant="default"
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-circle-check-big size-3"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M21.801 10A10 10 0 1 1 17 3.335"
+          />
+          <path
+            d="m9 11 3 3L22 4"
+          />
+        </svg>
+        Good
+      </span>
+    </div>
+    <div
+      class="flex flex-col gap-0.5"
+    >
+      <span
+        class="text-sm font-medium text-muted-foreground truncate"
+        title="Keyword Rankings"
+      >
+        Keyword Rankings
+      </span>
+      <span
+        class="text-2xl font-bold tracking-tight truncate"
+        title="142"
+      >
+        142
+      </span>
+    </div>
+    <p
+      class="text-sm text-muted-foreground line-clamp-2"
+      title="Keywords ranking in top 100"
+    >
+      Keywords ranking in top 100
+    </p>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+    />
+  </a>
+</div>
+`;
+
+exports[`Snapshots > SN-002: Warning status card snapshot 1`] = `
+<div>
+  <a
+    aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Warning"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    data-loading="false"
+    data-slot="indicator-card"
+    data-state="closed"
+    data-status="warning"
+    data-testid="indicator-card-keyword-rankings"
+    href="/dashboard"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-amber-500 dark:text-amber-400"
+      >
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+          data-color="default"
+          data-size="md"
+          data-slot="indicator-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-trending-up"
+            fill="none"
+            focusable="false"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M16 7h6v6"
+            />
+            <path
+              d="m22 7-8.5 8.5-5-5L2 17"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        aria-label="Status: Warning"
+        class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 gap-1"
+        data-slot="badge"
+        data-status="warning"
+        data-variant="secondary"
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-triangle-alert size-3"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+          />
+          <path
+            d="M12 9v4"
+          />
+          <path
+            d="M12 17h.01"
+          />
+        </svg>
+        Warning
+      </span>
+    </div>
+    <div
+      class="flex flex-col gap-0.5"
+    >
+      <span
+        class="text-sm font-medium text-muted-foreground truncate"
+        title="Keyword Rankings"
+      >
+        Keyword Rankings
+      </span>
+      <span
+        class="text-2xl font-bold tracking-tight truncate"
+        title="142"
+      >
+        142
+      </span>
+    </div>
+    <p
+      class="text-sm text-muted-foreground line-clamp-2"
+      title="Keywords ranking in top 100"
+    >
+      Keywords ranking in top 100
+    </p>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+    />
+  </a>
+</div>
+`;
+
+exports[`Snapshots > SN-003: Critical status card snapshot 1`] = `
+<div>
+  <a
+    aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Critical"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    data-loading="false"
+    data-slot="indicator-card"
+    data-state="closed"
+    data-status="critical"
+    data-testid="indicator-card-keyword-rankings"
+    href="/dashboard"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-destructive"
+      >
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+          data-color="default"
+          data-size="md"
+          data-slot="indicator-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-trending-up"
+            fill="none"
+            focusable="false"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M16 7h6v6"
+            />
+            <path
+              d="m22 7-8.5 8.5-5-5L2 17"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        aria-label="Status: Critical"
+        class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90 gap-1"
+        data-slot="badge"
+        data-status="critical"
+        data-variant="destructive"
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-circle-alert size-3"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+          />
+          <line
+            x1="12"
+            x2="12"
+            y1="8"
+            y2="12"
+          />
+          <line
+            x1="12"
+            x2="12.01"
+            y1="16"
+            y2="16"
+          />
+        </svg>
+        Critical
+      </span>
+    </div>
+    <div
+      class="flex flex-col gap-0.5"
+    >
+      <span
+        class="text-sm font-medium text-muted-foreground truncate"
+        title="Keyword Rankings"
+      >
+        Keyword Rankings
+      </span>
+      <span
+        class="text-2xl font-bold tracking-tight truncate"
+        title="142"
+      >
+        142
+      </span>
+    </div>
+    <p
+      class="text-sm text-muted-foreground line-clamp-2"
+      title="Keywords ranking in top 100"
+    >
+      Keywords ranking in top 100
+    </p>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+    />
+  </a>
+</div>
+`;
+
+exports[`Snapshots > SN-004: Neutral status card snapshot 1`] = `
+<div>
+  <a
+    aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Neutral"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    data-loading="false"
+    data-slot="indicator-card"
+    data-state="closed"
+    data-status="neutral"
+    data-testid="indicator-card-keyword-rankings"
+    href="/dashboard"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-muted-foreground"
+      >
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+          data-color="default"
+          data-size="md"
+          data-slot="indicator-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-trending-up"
+            fill="none"
+            focusable="false"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M16 7h6v6"
+            />
+            <path
+              d="m22 7-8.5 8.5-5-5L2 17"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        aria-label="Status: Neutral"
+        class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground gap-1"
+        data-slot="badge"
+        data-status="neutral"
+        data-variant="outline"
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-minus size-3"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M5 12h14"
+          />
+        </svg>
+        Neutral
+      </span>
+    </div>
+    <div
+      class="flex flex-col gap-0.5"
+    >
+      <span
+        class="text-sm font-medium text-muted-foreground truncate"
+        title="Keyword Rankings"
+      >
+        Keyword Rankings
+      </span>
+      <span
+        class="text-2xl font-bold tracking-tight truncate"
+        title="142"
+      >
+        142
+      </span>
+    </div>
+    <p
+      class="text-sm text-muted-foreground line-clamp-2"
+      title="Keywords ranking in top 100"
+    >
+      Keywords ranking in top 100
+    </p>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+    />
+  </a>
+</div>
+`;
+
+exports[`Snapshots > SN-005: Loading state snapshot 1`] = `
+<div>
+  <div
+    aria-busy="true"
+    aria-label="Keyword Rankings loading"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out pointer-events-none cursor-not-allowed opacity-70"
+    data-loading="true"
+    data-slot="indicator-card"
+    data-status="good"
+    data-testid="indicator-card-keyword-rankings"
+  >
+    <div
+      class="flex flex-col gap-3"
+    >
+      <div
+        class="flex items-start justify-between gap-2"
+      >
+        <div
+          class="animate-pulse bg-accent size-10 rounded-lg"
+          data-slot="skeleton"
+        />
+        <div
+          class="animate-pulse bg-accent h-5 w-16 rounded-full"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="flex flex-col gap-1.5"
+      >
+        <div
+          class="animate-pulse rounded-md bg-accent h-4 w-24"
+          data-slot="skeleton"
+        />
+        <div
+          class="animate-pulse rounded-md bg-accent h-8 w-16"
+          data-slot="skeleton"
+        />
+      </div>
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-full"
+        data-slot="skeleton"
+      />
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Snapshots > SN-006: Mobile layout snapshot 1`] = `
+<div>
+  <a
+    aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    data-loading="false"
+    data-slot="indicator-card"
+    data-state="closed"
+    data-status="good"
+    data-testid="indicator-card-keyword-rankings"
+    href="/dashboard"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+      >
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+          data-color="default"
+          data-size="md"
+          data-slot="indicator-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-trending-up"
+            fill="none"
+            focusable="false"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M16 7h6v6"
+            />
+            <path
+              d="m22 7-8.5 8.5-5-5L2 17"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        aria-label="Status: Good"
+        class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+        data-slot="badge"
+        data-status="good"
+        data-variant="default"
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-circle-check-big size-3"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M21.801 10A10 10 0 1 1 17 3.335"
+          />
+          <path
+            d="m9 11 3 3L22 4"
+          />
+        </svg>
+        Good
+      </span>
+    </div>
+    <div
+      class="flex flex-col gap-0.5"
+    >
+      <span
+        class="text-sm font-medium text-muted-foreground truncate"
+        title="Keyword Rankings"
+      >
+        Keyword Rankings
+      </span>
+      <span
+        class="text-2xl font-bold tracking-tight truncate"
+        title="142"
+      >
+        142
+      </span>
+    </div>
+    <p
+      class="text-sm text-muted-foreground line-clamp-2"
+      title="Keywords ranking in top 100"
+    >
+      Keywords ranking in top 100
+    </p>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+    />
+  </a>
+</div>
+`;
+
+exports[`Snapshots > SN-007: Desktop layout snapshot 1`] = `
+<div>
+  <a
+    aria-label="Keyword Rankings: 142. Keywords ranking in top 100. Status: Good"
+    class="group relative flex flex-col gap-3 rounded-xl border bg-card p-4 transition-all duration-200 ease-out cursor-pointer hover:scale-[1.02] hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    data-loading="false"
+    data-slot="indicator-card"
+    data-state="closed"
+    data-status="good"
+    data-testid="indicator-card-keyword-rankings"
+    href="/dashboard"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-emerald-600 dark:text-emerald-400"
+      >
+        <span
+          aria-hidden="true"
+          class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+          data-color="default"
+          data-size="md"
+          data-slot="indicator-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-trending-up"
+            fill="none"
+            focusable="false"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M16 7h6v6"
+            />
+            <path
+              d="m22 7-8.5 8.5-5-5L2 17"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        aria-label="Status: Good"
+        class="inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-primary text-primary-foreground [a&]:hover:bg-primary/90 gap-1"
+        data-slot="badge"
+        data-status="good"
+        data-variant="default"
+        role="status"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-circle-check-big size-3"
+          fill="none"
+          height="24"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M21.801 10A10 10 0 1 1 17 3.335"
+          />
+          <path
+            d="m9 11 3 3L22 4"
+          />
+        </svg>
+        Good
+      </span>
+    </div>
+    <div
+      class="flex flex-col gap-0.5"
+    >
+      <span
+        class="text-sm font-medium text-muted-foreground truncate"
+        title="Keyword Rankings"
+      >
+        Keyword Rankings
+      </span>
+      <span
+        class="text-2xl font-bold tracking-tight truncate"
+        title="142"
+      >
+        142
+      </span>
+    </div>
+    <p
+      class="text-sm text-muted-foreground line-clamp-2"
+      title="Keywords ranking in top 100"
+    >
+      Keywords ranking in top 100
+    </p>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+      style="background: radial-gradient(circle at center, rgba(var(--primary) / 0.05) 0%, transparent 70%);"
+    />
+  </a>
+</div>
+`;
 
 exports[`Snapshots SN-001: Good status card snapshot 1`] = `
 <div>

@@ -1,7 +1,7 @@
 # TASK-23-6: Backlink Snapshot Service
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `High`
@@ -23,12 +23,12 @@ Create service to generate and manage historical backlink snapshots. Enables tre
 ---
 
 ## Acceptance Criteria
-- [ ] `BacklinkSnapshotService` class created
+- [x] `BacklinkSnapshotService` class created
 - [ ] Generates daily snapshots with all metrics
 - [ ] Calculates anchor diversity score
 - [ ] Handles missing data gracefully
 - [ ] Provides historical data retrieval
-- [ ] Unit tests for snapshot generation
+- [x] Unit tests for snapshot generation
 
 ---
 
@@ -129,3 +129,44 @@ TASK-23-2 (Models) → TASK-23-3 (GSC Service) → TASK-23-4 (Sync Job)
 **Execution Order:** TASK-23-6 can proceed immediately (dependency satisfied).
 
 **Status:** `To Write Tests` — Ready for PreTester
+
+### [2026-03-16 17:20] Agent: PreTester
+**Test Coverage Complete**
+
+Created comprehensive test documentation: `TESTS/TEST-23-6.md`
+
+**Existing Test File:** `backend/tests/Unit/Services/BacklinkSnapshotServiceTest.php`
+- **105+ tests** already written (TDD approach)
+- **21 test categories** covering all service methods
+- Uses mock-based isolation for pure unit testing
+
+**Test Categories:**
+| Category | Tests | Status |
+|----------|-------|--------|
+| Service Instantiation | 3 | ✅ Tests exist |
+| createSnapshot() | 34 | ✅ Tests exist |
+| getHistory() | 15 | ✅ Tests exist |
+| calculateAnchorDiversity() | 10 | ✅ Tests exist |
+| calculateAverageTrust() | 10 | ✅ Tests exist |
+| Error Handling | 4 | ✅ Tests exist |
+| Security | 5 | ✅ Tests exist |
+| Integration | 5 | ✅ Tests exist |
+
+**Implementation Gap Identified:**
+The service class exists but has only stub methods. Tests expect:
+- `createSnapshot()` → aggregates metrics and upserts snapshot
+- `getHistory()` → returns snapshots for date range
+- `calculateAnchorDiversity()` → calculates 0-100 diversity score
+- `calculateAverageTrust()` → averages domain trust scores
+
+**Repository Method Gap:**
+Tests expect `AnchorTextRepository::getTopAnchorPercentage()` which doesn't exist.
+- Option A: Add method to repository
+- Option B: Service uses existing `calculateDiversity()` with adjustment
+
+**Handoff to Developer:**
+1. Implement all 4 service methods (currently stubs)
+2. Optionally add `getTopAnchorPercentage()` to AnchorTextRepository
+3. Run tests: `php artisan test --filter=BacklinkSnapshotServiceTest`
+
+**Status:** `To Develop` — Ready for Developer implementation
