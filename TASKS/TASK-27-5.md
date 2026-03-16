@@ -1,10 +1,21 @@
 # TASK-27-5: Admin User Stats API Endpoint
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
-### 2026-03-16 - DevOps
-**Deployment in progress...**
+### 2026-03-16 18:00 UTC+2 - DevOps
+**Deployment Complete ✅**
+
+- **Commit:** `76cd73ea` - TASK-27-5: Fix is_active filter validation for string query params
+- **Status:** Already deployed to origin/main
+- **Endpoints live:**
+  - GET `/api/v1/admin/users/stats`
+  - GET `/api/v1/admin/users/recent`
+  - GET `/api/v1/admin/users/active`
+- **Tests:** 59 passed, 167 assertions
+- **PII Protection:** Verified - emails excluded, names masked
+
+**Handoff:** Ready for ProdTester to validate in production.
 
 ## PRIORITY
 `High`
