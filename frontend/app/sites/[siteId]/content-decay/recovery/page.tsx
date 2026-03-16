@@ -1,444 +1,182 @@
-/**
- * Content Decay Recovery Report Page
- * Shows recovery statistics, timeline, and before/after comparisons
- * 
- * @see TASK-36-13 for implementation requirements
- * @see SPEC-036 for architectural details
- */
-
 "use client";
 
-import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Kanban,
-  BarChart3,
-  TrendingUp,
-  MousePointerClick,
-  Clock,
-  Target,
-  Download,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { RecoveryComparisonCard } from "@/components/content-decay/RecoveryComparisonCard";
-import {
-  useContentDecayRecovery,
-  useExportContentDecay,
-} from "@/lib/hooks/useContentDecay";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import React from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useContentDecayRecovery, useExportContentDecay } from "@/lib/hooks/useContentDecay";
+import { LayoutDashboard, Columns, BarChart3, Download, TrendingUp, Calendar, Target } from "lucide-react";
 
-type DateRangeValue = "7d" | "30d" | "90d" | "all";
-
-const DATE_RANGE_OPTIONS: { value: DateRangeValue; label: string }[] = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "all", label: "All time" },
-];
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  } catch {
-    return dateStr;
-  }
-}
-
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  iconColor: string;
-  description?: string;
-}
-
-function StatCard({ title, value, icon, iconColor, description }: StatCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <div className={cn("p-2 rounded-lg", iconColor)}>{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, "-")}`}>
-          {value}
-        </div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function ContentDecayRecoveryPage() {
+export default function RecoveryReportPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const siteId = params.siteId as string;
+  const dateRange = searchParams.get("range") || "30d";
 
-  // State
-  const [dateRange, setDateRange] = React.useState<DateRangeValue>("30d");
+  const { recovery, isLoading } = useContentDecayRecovery(siteId, getDateRangeParams(dateRange));
+  const { trigger: exportData, isMutating: isExporting } = useExportContentDecay(siteId);
 
-  // Calculate date range for API
-  const dateRangeParams = React.useMemo(() => {
-    if (dateRange === "all") return undefined;
-    
-    const end = new Date();
-    const start = new Date();
-    
-    switch (dateRange) {
-      case "7d":
-        start.setDate(start.getDate() - 7);
-        break;
-      case "30d":
-        start.setDate(start.getDate() - 30);
-        break;
-      case "90d":
-        start.setDate(start.getDate() - 90);
-        break;
-    }
-    
-    return {
-      start: start.toISOString().split("T")[0],
-      end: end.toISOString().split("T")[0],
-    };
-  }, [dateRange]);
-
-  // Data hooks
-  const { recovery, isLoading } = useContentDecayRecovery(siteId, dateRangeParams);
-  const { exportData, isExporting } = useExportContentDecay(siteId);
-
-  // Handlers
-  const handleExportPdf = React.useCallback(async () => {
-    const result = await exportData("pdf");
-    if (result.success) {
-      toast.success("Recovery report exported");
-    } else {
-      toast.error("Failed to export report");
-    }
-  }, [exportData]);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-6 space-y-6" data-testid="loading-state">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-        <Skeleton className="h-64" />
-        <Skeleton className="h-96" />
-      </div>
-    );
-  }
-
-  // Default recovery data for empty state
-  const summary = recovery?.summary ?? {
-    totalRecovered: 0,
-    totalClicksRecovered: 0,
-    avgRecoveryRate: 0,
-    avgDaysToRecovery: 0,
+  const handleDateRangeChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set("range", value);
+    router.push(`/sites/${siteId}/content-decay/recovery?${newParams.toString()}`);
   };
-  const timeline = recovery?.timeline ?? [];
-  const comparisons = recovery?.comparisons ?? [];
-  const stories = recovery?.stories ?? [];
+
+  const handleExport = async () => {
+    try { await exportData({ format: "pdf" }); } catch (error) { console.error("Failed to export:", error); }
+  };
+
+  const tabs = [
+    { id: "queue", label: "Queue", href: `/sites/${siteId}/content-decay`, icon: LayoutDashboard },
+    { id: "board", label: "Board", href: `/sites/${siteId}/content-decay/board`, icon: Columns },
+    { id: "recovery", label: "Recovery", href: `/sites/${siteId}/content-decay/recovery`, icon: BarChart3, active: true },
+  ];
+
+  const summary = recovery?.summary || { totalRecovered: 0, totalClicksRecovered: 0, avgRecoveryRate: 0, avgDaysToRecovery: 0 };
 
   return (
-    <div className="container mx-auto py-6 space-y-6" data-testid="content-decay-recovery">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="recovery-report-page">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="page-title">
-            Recovery Report
-          </h1>
-          <p className="text-muted-foreground">
-            Track content refresh outcomes and recovered traffic
-          </p>
+          <h1 className="text-2xl font-bold text-white">Recovery Report</h1>
+          <p className="text-slate-400 text-sm mt-1">Track content refresh outcomes and recovered traffic</p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <Select
-            value={dateRange}
-            onValueChange={(value) => setDateRange(value as DateRangeValue)}
-          >
-            <SelectTrigger
-              className="w-32"
-              aria-label="Date range"
-              id="date-range-select"
-              data-testid="date-range-filter"
-            >
-              <SelectValue placeholder="Date range" />
-            </SelectTrigger>
-            <SelectContent>
-              {DATE_RANGE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPdf}
-            disabled={isExporting}
-            data-testid="export-pdf-button"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
+        <div className="flex items-center gap-2">
+          <select value={dateRange} onChange={(e) => handleDateRangeChange(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm" aria-label="Date range" id="date-range-select">
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="all">All time</option>
+          </select>
+          <label htmlFor="date-range-select" className="sr-only">Date range</label>
+          <button onClick={handleExport} disabled={isExporting} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 text-sm font-medium rounded-lg transition-colors" aria-label="Export to PDF">
+            <Download className="w-4 h-4" />Export PDF
+          </button>
         </div>
-      </header>
+      </div>
 
-      {/* Navigation Tabs */}
-      <nav aria-label="Content decay navigation">
-        <Tabs defaultValue="recovery" className="w-full">
-          <TabsList data-testid="navigation-tabs">
-            <TabsTrigger
-              value="queue"
-              onClick={() => router.push(`/sites/${siteId}/content-decay`)}
-              className="flex items-center gap-2"
-              aria-label="Refresh Queue"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Queue
-            </TabsTrigger>
-            <TabsTrigger
-              value="board"
-              onClick={() => router.push(`/sites/${siteId}/content-decay/board`)}
-              className="flex items-center gap-2"
-              aria-label="Recovery Board"
-            >
-              <Kanban className="h-4 w-4" />
-              Board
-            </TabsTrigger>
-            <TabsTrigger
-              value="recovery"
-              onClick={() => router.push(`/sites/${siteId}/content-decay/recovery`)}
-              className="flex items-center gap-2"
-              aria-label="Recovery Report"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Recovery
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <nav className="flex gap-1 border-b border-slate-700 pb-2" aria-label="Content decay views">
+        {tabs.map((tab) => (
+          <Link key={tab.id} href={tab.href} className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab.active ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white hover:bg-slate-700"}`} aria-current={tab.active ? "page" : undefined}>
+            <tab.icon className="w-4 h-4" />{tab.label}
+          </Link>
+        ))}
       </nav>
 
-      {/* Summary Statistics */}
-      <section aria-label="Recovery summary statistics">
-        <div className="grid gap-4 sm:grid-cols-4">
-          <StatCard
-            title="Total Recovered"
-            value={summary.totalRecovered}
-            icon={<Target className="h-4 w-4 text-white" />}
-            iconColor="bg-green-500"
-          />
-          <StatCard
-            title="Clicks Recovered"
-            value={formatNumber(summary.totalClicksRecovered)}
-            icon={<MousePointerClick className="h-4 w-4 text-white" />}
-            iconColor="bg-blue-500"
-          />
-          <StatCard
-            title="Avg Recovery Rate"
-            value={`${Math.round(summary.avgRecoveryRate)}%`}
-            icon={<TrendingUp className="h-4 w-4 text-white" />}
-            iconColor="bg-purple-500"
-          />
-          <StatCard
-            title="Avg Days to Recovery"
-            value={summary.avgDaysToRecovery}
-            icon={<Clock className="h-4 w-4 text-white" />}
-            iconColor="bg-orange-500"
-          />
+      <section aria-label="Recovery summary">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SummaryCard title="Total Recovered" value={summary.totalRecovered} icon={<TrendingUp className="w-5 h-5" />} isLoading={isLoading} />
+          <SummaryCard title="Clicks Recovered" value={summary.totalClicksRecovered} icon={<Target className="w-5 h-5" />} isLoading={isLoading} />
+          <SummaryCard title="Avg Recovery Rate" value={`${summary.avgRecoveryRate}%`} icon={<BarChart3 className="w-5 h-5" />} isLoading={isLoading} />
+          <SummaryCard title="Avg Days to Recovery" value={summary.avgDaysToRecovery} icon={<Calendar className="w-5 h-5" />} isLoading={isLoading} />
         </div>
       </section>
 
-      {/* Recovery Timeline Chart */}
       <section aria-label="Recovery timeline">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recovery Timeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {timeline.length > 0 ? (
-              <div className="space-y-4">
-                {/* Bar Chart Visualization */}
-                <div className="flex items-end gap-2 h-48" role="img" aria-label="Recovery timeline bar chart">
-                  {timeline.slice(-14).map((item, index) => {
-                    const maxClicks = Math.max(...timeline.map((t) => t.clicks), 1);
-                    const heightPercent = (item.clicks / maxClicks) * 100;
-                    
-                    return (
-                      <div
-                        key={index}
-                        className="flex-1 flex flex-col items-center"
-                        data-testid={`timeline-bar-${index}`}
-                      >
-                        <div className="text-xs text-muted-foreground mb-1">
-                          {formatNumber(item.clicks)}
-                        </div>
-                        <div
-                          className="w-full bg-green-500 rounded-t-sm min-h-[4px] transition-all hover:bg-green-400"
-                          style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                          title={`${formatDate(item.date)}: ${item.recovered} recovered, ${formatNumber(item.clicks)} clicks`}
-                        />
-                        <div className="text-xs text-muted-foreground mt-1 truncate w-full text-center">
-                          {formatDate(item.date)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No recovery data available for the selected period
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+          <h2 className="text-lg font-medium text-white mb-4">Recovery Timeline</h2>
+          {isLoading ? <div className="h-48 bg-slate-700/50 animate-pulse rounded" /> : <TimelineChart data={recovery?.timeline || []} />}
+        </div>
       </section>
 
-      {/* Before/After Comparison Table */}
       <section aria-label="Before and after comparison">
-        <Card>
-          <CardHeader>
-            <CardTitle>Before & After Comparison</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {comparisons.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" role="table" aria-label="Before and after comparison table">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-2 font-medium">Page</th>
-                      <th className="text-right py-3 px-2 font-medium">Clicks Before</th>
-                      <th className="text-right py-3 px-2 font-medium">Clicks After</th>
-                      <th className="text-right py-3 px-2 font-medium">Change</th>
-                      <th className="text-right py-3 px-2 font-medium">Position Before</th>
-                      <th className="text-right py-3 px-2 font-medium">Position After</th>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-slate-700"><h2 className="text-lg font-medium text-white">Before & After Comparison</h2></div>
+          {isLoading ? (
+            <div className="p-4 space-y-2">{[1, 2, 3].map((i) => (<div key={i} className="h-16 bg-slate-700/50 animate-pulse rounded" />))}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left p-4 text-slate-400 font-medium">Page</th>
+                    <th className="text-right p-4 text-slate-400 font-medium">Before Clicks</th>
+                    <th className="text-right p-4 text-slate-400 font-medium">After Clicks</th>
+                    <th className="text-right p-4 text-slate-400 font-medium">Recovery</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recovery?.comparisons?.slice(0, 10).map((item) => (
+                    <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                      <td className="p-4"><div><p className="text-slate-200 font-medium line-clamp-1">{item.pageTitle}</p><p className="text-xs text-slate-500">{item.pageUrl}</p></div></td>
+                      <td className="text-right p-4 text-slate-300">{item.before.clicks}</td>
+                      <td className="text-right p-4 text-slate-300">{item.after.clicks}</td>
+                      <td className="text-right p-4"><span className={item.after.clicks > item.before.clicks ? "text-green-400" : "text-red-400"}>{item.after.clicks > item.before.clicks ? "+" : ""}{item.after.clicks - item.before.clicks}</span></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {comparisons.slice(0, 10).map((comp, index) => (
-                      <tr key={comp.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-2">
-                          <div className="max-w-xs truncate font-medium">
-                            {comp.pageTitle || comp.pageUrl}
-                          </div>
-                        </td>
-                        <td className="text-right py-3 px-2 text-muted-foreground">
-                          {formatNumber(comp.before.clicks)}
-                        </td>
-                        <td className="text-right py-3 px-2">
-                          {formatNumber(comp.after.clicks)}
-                        </td>
-                        <td className="text-right py-3 px-2">
-                          <span
-                            className={cn(
-                              "font-medium",
-                              comp.delta.clicks > 0 ? "text-green-600" : "text-red-600"
-                            )}
-                            data-testid={`delta-clicks-${index}`}
-                          >
-                            {comp.delta.clicks > 0 ? "+" : ""}
-                            {formatNumber(comp.delta.clicks)}
-                          </span>
-                        </td>
-                        <td className="text-right py-3 px-2 text-muted-foreground">
-                          {comp.before.position.toFixed(1)}
-                        </td>
-                        <td className="text-right py-3 px-2">
-                          {comp.after.position.toFixed(1)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No comparison data available
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* Recovery Stories */}
       <section aria-label="Recovery stories">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recovery Stories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stories.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {stories.map((story) => (
-                  <div
-                    key={story.id}
-                    className="p-4 border rounded-lg space-y-2"
-                    data-testid={`story-${story.id}`}
-                  >
-                    <div className="font-medium truncate">
-                      {story.pageTitle || story.pageUrl}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="text-green-600 font-medium">
-                        +{formatNumber(story.clicksRecovered)} clicks
-                      </div>
-                      <div className="text-muted-foreground">
-                        {Math.round(story.recoveryRate)}% recovery
-                      </div>
-                      <div className="text-muted-foreground">
-                        {story.daysToRecovery} days
-                      </div>
-                    </div>
-                    {story.summary && (
-                      <p className="text-sm text-muted-foreground">
-                        {story.summary}
-                      </p>
-                    )}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+          <h2 className="text-lg font-medium text-white mb-4">Recovery Stories</h2>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{[1, 2].map((i) => (<div key={i} className="h-32 bg-slate-700/50 animate-pulse rounded" />))}</div>
+          ) : recovery?.stories?.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">No recovery stories yet</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recovery?.stories?.map((story) => (
+                <div key={story.id} className="bg-slate-700/50 border border-slate-600 rounded-lg p-4">
+                  <p className="text-slate-200 font-medium mb-2">{story.pageTitle}</p>
+                  <p className="text-sm text-slate-400 mb-3">{story.summary}</p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-green-400">+{story.clicksRecovered} clicks</span>
+                    <span className="text-slate-500">{story.daysToRecovery} days</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No recovery stories yet. Completed refreshes will appear here.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
+}
+
+function SummaryCard({ title, value, icon, isLoading }: { title: string; value: number | string; icon: React.ReactNode; isLoading: boolean }) {
+  return (
+    <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-blue-600/20 rounded-lg text-blue-400">{icon}</div>
+        <div>
+          <p className="text-sm text-slate-400">{title}</p>
+          {isLoading ? <div className="h-6 w-16 bg-slate-700 animate-pulse rounded mt-1" /> : <p className="text-xl font-bold text-white">{value}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TimelineChart({ data }: { data: Array<{ date: string; recovered: number; clicks: number }> }) {
+  if (!data || data.length === 0) return <p className="text-slate-500 text-center py-8">No data available</p>;
+  const maxValue = Math.max(...data.map((d) => d.clicks), 1);
+  return (
+    <div className="flex items-end gap-2 h-48" role="img" aria-label="Recovery timeline chart">
+      {data.map((item, index) => (
+        <div key={index} className="flex-1 flex flex-col items-center">
+          <div className="w-full bg-blue-500 rounded-t" style={{ height: `${(item.clicks / maxValue) * 100}%`, minHeight: item.clicks > 0 ? "4px" : "0" }} title={`${item.date}: ${item.clicks} clicks`} />
+          {index % 7 === 0 && <span className="text-xs text-slate-500 mt-1">{new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getDateRangeParams(range: string): { from: string; to: string } {
+  const now = new Date();
+  const to = now.toISOString().split("T")[0];
+  let from: string;
+  switch (range) {
+    case "7d": from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]; break;
+    case "90d": from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]; break;
+    case "all": from = "2020-01-01"; break;
+    case "30d":
+    default: from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  }
+  return { from, to };
 }

@@ -1,7 +1,7 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -62,6 +62,31 @@ Convert button to a Link component that navigates to `/dashboard/` or `/indicato
 - TASK-37-2 (Header Navigation - combined task)
 
 ## Comments
+
+### Developer (2026-03-16 17:37 GMT+2)
+**Implementation Complete - Covered by TASK-37-2**
+
+This task was implemented as part of TASK-37-2 (Header Navigation Fix). The changes made to `frontend/components/layout/Header.tsx` include:
+
+1. **Indicators Link for Guests:**
+   - Converted from `<button>` to Next.js `<Link>` component
+   - Added `href="/dashboard"` for navigation
+   - Added `cursor-pointer` class
+   - Changed hover background to `hover:bg-slate-700` (dark, not white)
+
+2. **Test Results:**
+   - All 8 tests pass (NAV-002a-d, HOV-001h, HOV-002f/g, HOV-005c)
+   - Total: 45 tests passing in Header.navigation.test.tsx
+
+3. **Acceptance Criteria Status:**
+   - [x] "Indicators" button is a clickable link
+   - [x] Clicking navigates to `/dashboard`
+   - [x] Button has proper hover state (dark background, white text)
+   - [x] Button shows pointer cursor
+   - [x] Accessible via keyboard navigation (focus-visible styles)
+   - [x] Unit tests pass
+
+**Status Change:** `To Develop` → `To Test Locally`
 
 ### 2026-03-16 15:30 GMT+2 - PreTester
 **Test Design Complete:**

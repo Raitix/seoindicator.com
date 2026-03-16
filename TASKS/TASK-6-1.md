@@ -44,11 +44,11 @@ CREATE TABLE api_keys (
 - `idx_api_keys_revoked` on `revoked_at`
 
 ## Acceptance Criteria
-- [ ] Migration file created
-- [ ] Table created with all columns
-- [ ] All indexes created
-- [ ] Foreign key constraint working
-- [ ] Can insert/retrieve API keys
+- [x] Migration file created
+- [x] Table created with all columns
+- [x] All indexes created
+- [x] Foreign key constraint working
+- [x] Can insert/retrieve API keys
 
 ## Dependencies
 - None (foundation task)

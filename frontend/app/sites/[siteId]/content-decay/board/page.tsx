@@ -1,501 +1,187 @@
 "use client";
 
-import * as React from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useMemo } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Columns,
-  LayoutDashboard,
-  BarChart3,
-  AlertTriangle,
-  GripVertical,
-  ExternalLink,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
-import { X } from "lucide-react";
-import { toast } from "sonner";
-import {
-  SeverityBadge,
-  StatusWorkflowButtons,
-} from "@/components/content-decay";
-import {
-  useContentDecayCandidates,
-  useUpdateCandidateStatus,
-} from "@/lib/hooks/useContentDecay";
-import type {
-  DecayCandidate,
-  ContentDecayCandidateStatus,
-  ContentDecaySeverity,
-  ContentDecayPageType,
-} from "@/lib/types/content-decay";
-import { SEVERITY_CONFIG, PAGE_TYPE_CONFIG } from "@/lib/types/content-decay";
-import { cn } from "@/lib/utils";
+import { useContentDecayCandidates, useContentDecayCandidate, useUpdateCandidateStatus } from "@/lib/hooks/useContentDecay";
+import type { DecayCandidate, ContentDecayCandidateStatus, ContentDecaySeverity } from "@/lib/types/content-decay";
+import { SeverityBadge } from "@/components/content-decay";
+import { LayoutDashboard, Columns, BarChart3, X, ChevronRight } from "lucide-react";
 
-// Kanban columns
-const KANBAN_COLUMNS: { id: ContentDecayCandidateStatus; title: string; color: string }[] = [
-  { id: "backlog", title: "Backlog", color: "bg-slate-500" },
-  { id: "planned", title: "Planned", color: "bg-blue-500" },
-  { id: "in_progress", title: "In Progress", color: "bg-yellow-500" },
-  { id: "refreshed", title: "Refreshed", color: "bg-purple-500" },
-  { id: "recovered", title: "Recovered", color: "bg-green-500" },
+const COLUMNS: Array<{ id: ContentDecayCandidateStatus; title: string; color: string }> = [
+  { id: "backlog", title: "Backlog", color: "bg-slate-600" },
+  { id: "planned", title: "Planned", color: "bg-blue-600" },
+  { id: "in_progress", title: "In Progress", color: "bg-yellow-600" },
+  { id: "refreshed", title: "Refreshed", color: "bg-green-600" },
+  { id: "recovered", title: "Recovered", color: "bg-emerald-600" },
 ];
 
-const SEVERITY_OPTIONS: { value: ContentDecaySeverity | "all"; label: string }[] = [
-  { value: "all", label: "All Severities" },
-  { value: "critical", label: "Critical" },
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-];
-
-const PAGE_TYPE_OPTIONS: { value: ContentDecayPageType | "all"; label: string }[] = [
-  { value: "all", label: "All Types" },
-  { value: "home", label: "Homepage" },
-  { value: "blog", label: "Blog" },
-  { value: "landing", label: "Landing Page" },
-  { value: "product", label: "Product" },
-  { value: "tool", label: "Tool" },
-  { value: "compare", label: "Comparison" },
-  { value: "docs", label: "Documentation" },
-  { value: "other", label: "Other" },
-];
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
-}
-
-interface KanbanCardProps {
-  candidate: DecayCandidate;
-  onClick: () => void;
-  onDragStart: (e: React.DragEvent, candidate: DecayCandidate) => void;
-}
-
-function KanbanCard({ candidate, onClick, onDragStart }: KanbanCardProps) {
-  const severityConfig = SEVERITY_CONFIG[candidate.severity];
-
-  return (
-    <div
-      role="article"
-      aria-label={candidate.pageTitle || candidate.pageUrl}
-      draggable
-      onDragStart={(e) => onDragStart(e, candidate)}
-      onClick={onClick}
-      className="bg-card border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow group"
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm truncate">
-            {candidate.pageTitle || "Untitled"}
-          </div>
-          <a
-            href={candidate.pageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:text-primary truncate block"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {candidate.pageUrl}
-          </a>
-        </div>
-        <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-
-      <div className="flex items-center gap-2 mb-2">
-        <SeverityBadge severity={candidate.severity} size="sm" />
-        <Badge variant="outline" className="text-xs">
-          {PAGE_TYPE_CONFIG[candidate.pageType]?.label ?? candidate.pageType}
-        </Badge>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="text-red-600">-{formatNumber(candidate.lostClickEstimate)} clicks</span>
-        <span className="font-mono">Score: {candidate.decayScore.toFixed(1)}</span>
-      </div>
-    </div>
-  );
-}
-
-interface KanbanColumnProps {
-  column: typeof KANBAN_COLUMNS[0];
-  candidates: DecayCandidate[];
-  onCardClick: (candidate: DecayCandidate) => void;
-  onDragStart: (e: React.DragEvent, candidate: DecayCandidate) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, status: ContentDecayCandidateStatus) => void;
-  isOver: boolean;
-}
-
-function KanbanColumn({
-  column,
-  candidates,
-  onCardClick,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  isOver,
-}: KanbanColumnProps) {
-  return (
-    <div
-      role="region"
-      aria-label={`${column.title} column with ${candidates.length} items`}
-      className="flex-1 min-w-[280px] max-w-[350px]"
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop(e, column.id)}
-    >
-      {/* Column Header */}
-      <div className="flex items-center gap-2 mb-3 px-1">
-        <div className={cn("w-3 h-3 rounded-full", column.color)} />
-        <h3 className="font-semibold text-sm">{column.title}</h3>
-        <Badge variant="secondary" className="text-xs ml-auto">
-          {candidates.length}
-        </Badge>
-      </div>
-
-      {/* Column Content */}
-      <div
-        className={cn(
-          "space-y-2 min-h-[400px] p-2 rounded-lg transition-colors",
-          isOver ? "bg-muted/50 ring-2 ring-primary" : "bg-muted/30"
-        )}
-      >
-        {candidates.map((candidate) => (
-          <KanbanCard
-            key={candidate.id}
-            candidate={candidate}
-            onClick={() => onCardClick(candidate)}
-            onDragStart={onDragStart}
-          />
-        ))}
-        {candidates.length === 0 && (
-          <div className="text-center text-muted-foreground text-sm py-8">
-            No items
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default function ContentDecayBoardPage() {
+export default function RecoveryBoardPage() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const siteId = params.siteId as string;
 
-  // State
-  const [severityFilter, setSeverityFilter] = React.useState<ContentDecaySeverity | "all">("all");
-  const [pageTypeFilter, setPageTypeFilter] = React.useState<ContentDecayPageType | "all">("all");
-  const [selectedCandidate, setSelectedCandidate] = React.useState<DecayCandidate | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
-  const [dragOverColumn, setDragOverColumn] = React.useState<ContentDecayCandidateStatus | null>(null);
-  const [draggedCandidate, setDraggedCandidate] = React.useState<DecayCandidate | null>(null);
+  const severityFilter = searchParams.get("severity") as ContentDecaySeverity | null;
+  const pageTypeFilter = searchParams.get("pageType") as string | null;
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Data hooks
-  const { candidates, isLoading } = useContentDecayCandidates(siteId);
-  const { updateStatus } = useUpdateCandidateStatus(selectedCandidate?.id ?? 0);
+  const { candidates, isLoading } = useContentDecayCandidates(siteId, {
+    severity: severityFilter || "all",
+    pageType: pageTypeFilter || "all",
+    status: "all",
+  });
 
-  // Filter candidates
-  const filteredCandidates = React.useMemo(() => {
-    return candidates.filter((c) => {
-      if (severityFilter !== "all" && c.severity !== severityFilter) return false;
-      if (pageTypeFilter !== "all" && c.pageType !== pageTypeFilter) return false;
-      // Only show board statuses (not ignored)
-      return !["ignored"].includes(c.status);
-    });
-  }, [candidates, severityFilter, pageTypeFilter]);
+  const { candidate: selectedCandidate } = useContentDecayCandidate(selectedCandidateId);
+  const { trigger: updateStatus } = useUpdateCandidateStatus(selectedCandidateId);
 
-  // Group by status
-  const candidatesByStatus = React.useMemo(() => {
-    const grouped: Record<ContentDecayCandidateStatus, DecayCandidate[]> = {
-      backlog: [],
-      planned: [],
-      in_progress: [],
-      refreshed: [],
-      recovered: [],
-      ignored: [],
-    };
-    filteredCandidates.forEach((c) => {
-      if (grouped[c.status]) {
-        grouped[c.status].push(c);
-      }
+  const columnsData = useMemo(() => {
+    const grouped: Record<string, DecayCandidate[]> = { backlog: [], planned: [], in_progress: [], refreshed: [], recovered: [] };
+    candidates?.forEach((candidate) => {
+      const status = candidate.status || "backlog";
+      if (grouped[status]) grouped[status].push(candidate);
     });
     return grouped;
-  }, [filteredCandidates]);
+  }, [candidates]);
 
-  // Stats
-  const stats = React.useMemo(() => ({
-    total: filteredCandidates.length,
-    critical: filteredCandidates.filter((c) => c.severity === "critical").length,
-    high: filteredCandidates.filter((c) => c.severity === "high").length,
-  }), [filteredCandidates]);
-
-  // Handlers
-  const handleCardClick = React.useCallback((candidate: DecayCandidate) => {
-    setSelectedCandidate(candidate);
+  const handleCardClick = (candidate: DecayCandidate) => {
+    setSelectedCandidateId(candidate.id);
     setIsSheetOpen(true);
-  }, []);
+  };
 
-  const handleDragStart = React.useCallback((e: React.DragEvent, candidate: DecayCandidate) => {
-    setDraggedCandidate(candidate);
-    e.dataTransfer.effectAllowed = "move";
-  }, []);
+  const handleStatusChange = async (candidateId: number, newStatus: ContentDecayCandidateStatus) => {
+    try { await updateStatus({ status: newStatus }); } catch (error) { console.error("Failed to update status:", error); }
+  };
 
-  const handleDragOver = React.useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
+  const handleFilterChange = (key: string, value: string | null) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    if (value && value !== "all") newParams.set(key, value);
+    else newParams.delete(key);
+    router.push(`/sites/${siteId}/content-decay/board?${newParams.toString()}`);
+  };
 
-  const handleDrop = React.useCallback(async (
-    e: React.DragEvent,
-    newStatus: ContentDecayCandidateStatus
-  ) => {
-    e.preventDefault();
-    setDragOverColumn(null);
+  const handleCloseSheet = () => { setIsSheetOpen(false); setSelectedCandidateId(null); };
 
-    if (draggedCandidate && draggedCandidate.status !== newStatus) {
-      const { updateStatus } = await import("@/lib/hooks/useContentDecay").then((m) =>
-        m.useUpdateCandidateStatus(draggedCandidate.id)
-      );
-      // Direct API call for drag-drop
-      try {
-        const response = await fetch(`/api/v1/content-decay/candidates/${draggedCandidate.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        });
-        if (response.ok) {
-          toast.success(`Moved to ${newStatus.replace("_", " ")}`);
-        } else {
-          toast.error("Failed to update status");
-        }
-      } catch {
-        toast.error("Failed to update status");
-      }
-    }
-    setDraggedCandidate(null);
-  }, [draggedCandidate]);
-
-  const handleStatusChange = React.useCallback(async (status: ContentDecayCandidateStatus) => {
-    if (!selectedCandidate) return;
-    try {
-      const response = await fetch(`/api/v1/content-decay/candidates/${selectedCandidate.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (response.ok) {
-        toast.success(`Status updated to ${status.replace("_", " ")}`);
-        setIsSheetOpen(false);
-        setSelectedCandidate(null);
-      } else {
-        toast.error("Failed to update status");
-      }
-    } catch {
-      toast.error("Failed to update status");
-    }
-  }, [selectedCandidate]);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {KANBAN_COLUMNS.map((col) => (
-            <div key={col.id} className="flex-1 min-w-[280px]">
-              <Skeleton className="h-8 w-32 mb-3" />
-              <Skeleton className="h-[400px] w-full rounded-lg" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const tabs = [
+    { id: "queue", label: "Queue", href: `/sites/${siteId}/content-decay`, icon: LayoutDashboard },
+    { id: "board", label: "Board", href: `/sites/${siteId}/content-decay/board`, icon: Columns, active: true },
+    { id: "recovery", label: "Recovery", href: `/sites/${siteId}/content-decay/recovery`, icon: BarChart3 },
+  ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="recovery-board-page">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Recovery Board</h1>
-          <p className="text-muted-foreground text-sm">
-            Drag cards between columns to update status
-          </p>
+          <h1 className="text-2xl font-bold text-white">Recovery Board</h1>
+          <p className="text-slate-400 text-sm mt-1">Manage content refresh workflow</p>
         </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <Select
-            value={severityFilter}
-            onValueChange={(v) => setSeverityFilter(v as ContentDecaySeverity | "all")}
-          >
-            <SelectTrigger
-              className="w-36"
-              aria-label="Filter by severity"
-            >
-              <SelectValue placeholder="Severity" />
-            </SelectTrigger>
-            <SelectContent>
-              {SEVERITY_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={pageTypeFilter}
-            onValueChange={(v) => setPageTypeFilter(v as ContentDecayPageType | "all")}
-          >
-            <SelectTrigger
-              className="w-36"
-              aria-label="Filter by page type"
-            >
-              <SelectValue placeholder="Page Type" />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_TYPE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <select value={severityFilter || "all"} onChange={(e) => handleFilterChange("severity", e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm" aria-label="Filter by severity">
+            <option value="all">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select value={pageTypeFilter || "all"} onChange={(e) => handleFilterChange("pageType", e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm" aria-label="Filter by page type">
+            <option value="all">All Page Types</option>
+            <option value="blog">Blog</option>
+            <option value="product">Product</option>
+            <option value="landing">Landing Page</option>
+            <option value="category">Category</option>
+          </select>
         </div>
-      </header>
-
-      {/* Navigation Tabs */}
-      <Tabs defaultValue="board" className="w-full">
-        <TabsList>
-          <TabsTrigger value="queue" asChild>
-            <Link href={`/sites/${siteId}/content-decay`}>
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Queue
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="board" asChild>
-            <Link href={`/sites/${siteId}/content-decay/board`}>
-              <Columns className="h-4 w-4 mr-2" />
-              Board
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="recovery" asChild>
-            <Link href={`/sites/${siteId}/content-decay/recovery`}>
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Recovery
-            </Link>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Quick Stats */}
-      <div className="flex items-center gap-4 text-sm">
-        <span className="text-muted-foreground">
-          Total: <span className="font-medium text-foreground">{stats.total}</span>
-        </span>
-        {stats.critical > 0 && (
-          <span className="text-red-600 flex items-center gap-1">
-            <AlertTriangle className="h-4 w-4" />
-            {stats.critical} Critical
-          </span>
-        )}
-        {stats.high > 0 && (
-          <span className="text-orange-600">
-            {stats.high} High
-          </span>
-        )}
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {KANBAN_COLUMNS.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            candidates={candidatesByStatus[column.id]}
-            onCardClick={handleCardClick}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            isOver={dragOverColumn === column.id}
-          />
+      <nav className="flex gap-1 border-b border-slate-700 pb-2" aria-label="Content decay views">
+        {tabs.map((tab) => (
+          <Link key={tab.id} href={tab.href} className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab.active ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white hover:bg-slate-700"}`} aria-current={tab.active ? "page" : undefined}>
+            <tab.icon className="w-4 h-4" />{tab.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="flex gap-4 overflow-x-auto pb-4" role="region" aria-label="Kanban board">
+        {COLUMNS.map((column) => (
+          <div key={column.id} className="flex-shrink-0 w-72 md:w-80" data-testid={`column-${column.id}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${column.color}`} />
+                <h2 className="font-medium text-white">{column.title}</h2>
+              </div>
+              <span className="text-sm text-slate-400 bg-slate-800 px-2 py-0.5 rounded">{columnsData[column.id]?.length || 0}</span>
+            </div>
+            <div className="space-y-2 min-h-[200px] bg-slate-800/50 rounded-lg p-2">
+              {isLoading ? (
+                <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => (<div key={i} className="h-24 bg-slate-700 rounded-lg" />))}</div>
+              ) : columnsData[column.id]?.length === 0 ? (
+                <div className="text-center text-slate-500 text-sm py-8">No items</div>
+              ) : (
+                columnsData[column.id]?.map((candidate) => (
+                  <CandidateCard key={candidate.id} candidate={candidate} onClick={() => handleCardClick(candidate)} onStatusChange={(newStatus) => handleStatusChange(candidate.id, newStatus)} />
+                ))
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Candidate Detail Sheet */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-[400px] sm:max-w-[500px]">
-          <SheetHeader>
-            <SheetTitle>
-              {selectedCandidate?.pageTitle || "Candidate Details"}
-            </SheetTitle>
-            <SheetClose asChild>
-              <Button variant="ghost" size="icon" className="absolute right-4 top-4">
-                <X className="h-4 w-4" />
-              </Button>
-            </SheetClose>
-          </SheetHeader>
-
-          {selectedCandidate && (
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <SeverityBadge severity={selectedCandidate.severity} />
-                <Badge variant="outline">
-                  {selectedCandidate.status.replace("_", " ")}
-                </Badge>
-              </div>
-
-              <div className="text-sm">
-                <span className="text-muted-foreground">URL:</span>
-                <a
-                  href={selectedCandidate.pageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline ml-2 flex items-center gap-1"
-                >
-                  {selectedCandidate.pageUrl}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Decay Score:</span>
-                  <span className="font-medium ml-2">{selectedCandidate.decayScore.toFixed(1)}</span>
+      {isSheetOpen && selectedCandidate && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/50" onClick={handleCloseSheet} />
+          <div className="relative w-full max-w-md bg-slate-900 border-l border-slate-700 overflow-y-auto">
+            <div className="sticky top-0 flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900">
+              <h3 className="font-medium text-white">Candidate Details</h3>
+              <button onClick={handleCloseSheet} className="p-1 hover:bg-slate-800 rounded" aria-label="Close"><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div><p className="text-sm text-slate-400">Page URL</p><a href={selectedCandidate.pageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm break-all">{selectedCandidate.pageUrl}</a></div>
+              <div><p className="text-sm text-slate-400">Severity</p><SeverityBadge severity={selectedCandidate.severity} /></div>
+              <div><p className="text-sm text-slate-400">Clicks Lost</p><p className="text-white font-medium">{selectedCandidate.clicksLost}</p></div>
+              <div><p className="text-sm text-slate-400">Decay Score</p><p className="text-white font-medium">{selectedCandidate.decayScore}</p></div>
+              <div className="pt-4 border-t border-slate-700">
+                <p className="text-sm text-slate-400 mb-2">Change Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {COLUMNS.filter((c) => c.id !== selectedCandidate.status).map((col) => (
+                    <button key={col.id} onClick={() => handleStatusChange(selectedCandidate.id, col.id)} className="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg">{col.title}</button>
+                  ))}
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Lost Clicks:</span>
-                  <span className="font-medium text-red-600 ml-2">
-                    -{formatNumber(selectedCandidate.lostClickEstimate)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t">
-                <h4 className="font-medium text-sm mb-3">Change Status</h4>
-                <StatusWorkflowButtons
-                  status={selectedCandidate.status}
-                  onStatusChange={handleStatusChange}
-                />
               </div>
             </div>
-          )}
-        </SheetContent>
-      </Sheet>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function CandidateCard({ candidate, onClick, onStatusChange }: { candidate: DecayCandidate; onClick: () => void; onStatusChange: (status: ContentDecayCandidateStatus) => void }) {
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 cursor-pointer hover:border-slate-500 transition-colors" onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick()}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <SeverityBadge severity={candidate.severity} />
+        <span className="text-xs text-slate-400">{candidate.pageType}</span>
+      </div>
+      <p className="text-sm text-slate-200 line-clamp-2 mb-2">{candidate.pageTitle || candidate.pageUrl}</p>
+      <div className="flex items-center gap-3 text-xs text-slate-400">
+        <span>-{candidate.clicksLost} clicks</span>
+        <span>Score: {candidate.decayScore}</span>
+      </div>
+      <button onClick={(e) => { e.stopPropagation(); onStatusChange(getNextStatus(candidate.status)); }} className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300">
+        Next: {getNextStatusLabel(candidate.status)}<ChevronRight className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+function getNextStatus(current: ContentDecayCandidateStatus): ContentDecayCandidateStatus {
+  const order: ContentDecayCandidateStatus[] = ["backlog", "planned", "in_progress", "refreshed", "recovered"];
+  const idx = order.indexOf(current);
+  return idx < order.length - 1 ? order[idx + 1] : current;
+}
+
+function getNextStatusLabel(current: ContentDecayCandidateStatus): string {
+  const next = getNextStatus(current);
+  return COLUMNS.find((c) => c.id === next)?.title || next;
 }

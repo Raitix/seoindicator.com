@@ -132,6 +132,15 @@ class ReferringDomainRepository
     }
 
     /**
+     * Count referring domains for a project (alias for getTotalCount).
+     * Used by BacklinkSnapshotService.
+     */
+    public function countByProject(int $projectId): int
+    {
+        return $this->getTotalCount($projectId);
+    }
+
+    /**
      * Calculate total backlinks from all domains.
      */
     public function getTotalBacklinks(int $projectId): int

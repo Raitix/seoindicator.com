@@ -197,6 +197,32 @@ class AnchorTextRepository
     }
 
     /**
+     * Get the percentage of the top anchor text for a project.
+     * Used by BacklinkSnapshotService to calculate anchor diversity score.
+     *
+     * @param int $projectId The project ID
+     * @return float The percentage as a decimal (0.0 to 1.0)
+     */
+    public function getTopAnchorPercentage(int $projectId): float
+    {
+        $totalBacklinks = $this->getTotalBacklinks($projectId);
+
+        if ($totalBacklinks === 0) {
+            return 0.0;
+        }
+
+        $topAnchor = AnchorText::where('project_id', $projectId)
+            ->orderBy('backlinks_count', 'desc')
+            ->first();
+
+        if (!$topAnchor) {
+            return 0.0;
+        }
+
+        return round($topAnchor->backlinks_count / $totalBacklinks, 4);
+    }
+
+    /**
      * Get branded vs non-branded ratio.
      */
     public function getBrandedRatio(int $projectId): array

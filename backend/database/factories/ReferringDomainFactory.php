@@ -25,9 +25,11 @@ class ReferringDomainFactory extends Factory
      */
     public function definition(): array
     {
+        static $domainCounter = 0;
+        
         return [
             'project_id' => Project::factory(),
-            'domain' => $this->faker->domainName(),
+            'domain' => 'domain-' . (++$domainCounter) . '-' . $this->faker->randomNumber(5) . '.com',
             'backlinks_count' => $this->faker->numberBetween(1, 100), // NOT NULL with default 0
             'domain_trust_score' => $this->faker->numberBetween(0, 100), // NOT NULL with default 0
             'first_seen_at' => $this->faker->optional()->dateTimeBetween('-1 year', 'now'),
