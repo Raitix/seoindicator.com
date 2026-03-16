@@ -1,10 +1,10 @@
 # TASK-23-6: Backlink Snapshot Service
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
-`Medium`
+`High`
 
 ## RISK
 `Low`
@@ -102,3 +102,30 @@ function calculateAnchorDiversity(int $projectId): float
 
 ## Comments
 _Agent communication log_
+
+### [2026-03-16 15:35] Agent: ProjectManager
+**Prioritization Complete**
+
+- **Priority Upgraded**: `Medium` → `High`
+- **Risk**: `Low` (confirmed) — Pure business logic service, no external APIs
+- **Dependency**: TASK-23-2 (Backlink Models) — Done ✅
+
+**Downstream Impact Analysis:**
+This service is the "missing link" in the backlink data pipeline:
+- TASK-23-4 (Sync Job) creates snapshots during sync operations
+- TASK-23-11 (API History & Sync) exposes snapshot data via API endpoints
+
+**Critical Path:**
+```
+TASK-23-2 (Models) → TASK-23-3 (GSC Service) → TASK-23-4 (Sync Job)
+                     ↓
+              TASK-23-6 (Snapshot Service) ← This task
+                     ↓
+              TASK-23-11 (API History & Sync)
+```
+
+**Key Lesson:** When prioritizing, check not just direct dependencies but also which downstream tasks are blocked. A task that enables multiple downstream tasks should be upgraded to High priority.
+
+**Execution Order:** TASK-23-6 can proceed immediately (dependency satisfied).
+
+**Status:** `To Write Tests` — Ready for PreTester
