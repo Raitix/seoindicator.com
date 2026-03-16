@@ -29,7 +29,7 @@ use App\Traits\HasProjectScope;
  */
 class Competitor extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasProjectScope;
 
     /**
      * The attributes that are mass assignable.
