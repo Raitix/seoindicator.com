@@ -1,7 +1,7 @@
 # TASK-26-9: Create Stripe Payment Intent Endpoint
 
 ## STATUS
-`In Development`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -342,3 +342,41 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
 ```
 
 **Action:** Task returned to Developer for middleware fix. Status set to `To Develop`.
+
+---
+
+### Developer (2026-03-16)
+**Status Changed:** `To Develop` → `To Test Locally`
+
+**Investigation Results:**
+The middleware issue reported by ProdTester was already fixed. The route uses `auth:sanctum` middleware correctly:
+```
+POST api/v1/payments/stripe/intent
+Middleware: api, Illuminate\Auth\Middleware\Authenticate:sanctum ✅
+```
+
+**Additional Fixes Applied:**
+
+1. **Transaction Amount Field Fix:**
+   - Changed `CreditTransaction.amount` to store package price (`$amount`) instead of credits (`$credits`)
+   - This aligns with the acceptance criteria where `amount` in response is the price
+   - Credits are now stored only in `metadata.credits`
+
+2. **Rate Limiting Test Fix:**
+   - Fixed mock lifecycle issue in `test_rate_limiting_allows_reasonable_requests`
+   - Changed from creating new mocks inside loop to using single mock with `times(3)`
+   - Prevents `Mockery::close()` from invalidating the mock binding mid-test
+
+**Test Results:**
+```
+Tests:    52 passed (111 assertions)
+Duration: 28.79s
+```
+
+**Files Modified:**
+- `app/Http/Controllers/Api/V1/Payments/StripePaymentController.php` - amount field fix
+- `tests/Feature/Api/V1/PaymentIntentControllerTest.php` - rate limiting test fix
+
+**Commit:** `884bb5e8`
+
+**Handoff to LocalTester:** All 52 tests pass. The middleware issue was already resolved. Ready for local testing verification.
