@@ -1,7 +1,7 @@
 # TASK-31-4: UnifiedPromptService for Prompt Building
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -150,12 +150,12 @@ class UnifiedPromptService
 ```
 
 ## Acceptance Criteria
-- [ ] Prompt contains all 17 indicator definitions
-- [ ] JSON schema included in prompt
-- [ ] Page info extracted correctly (title, meta)
-- [ ] Indicator weights match specification
-- [ ] Prompt template is configurable
-- [ ] HTML content properly escaped
+- [x] Prompt contains all 17 indicator definitions
+- [x] JSON schema included in prompt
+- [x] Page info extracted correctly (title, meta)
+- [x] Indicator weights match specification
+- [x] Prompt template is configurable
+- [x] HTML content properly escaped
 
 ## Dependencies
 - None (can run in parallel with 31-2 and 31-3)
@@ -202,3 +202,28 @@ PreTester can design tests immediately using the defined interface:
 
 **Execution Order:** Phase 1 Core Services (parallel with TASK-31-3)
 **Handoff to:** PreTester for test design
+
+### Developer (2026-03-16)
+**Implementation Complete**
+
+**Files Created/Updated:**
+1. `backend/app/Services/AI/UnifiedPromptService.php` - Full implementation with all required methods
+2. `backend/config/ai-prompts.php` - Configuration with 17 indicator definitions and prompt template
+
+**Implementation Summary:**
+- `buildPrompt()` - Builds consolidated prompt with URL, title, meta description, indicators, and HTML content
+- `getPromptTemplate()` - Returns configurable prompt template from config
+- `getIndicatorDefinitions()` - Returns all 17 SEO indicators with weights, categories, and checks
+- `getJsonSchema()` - Returns expected JSON response schema
+- `extractPageInfo()` - Uses Symfony DomCrawler to extract title and meta description
+
+**All Acceptance Criteria Met:**
+- [x] Prompt contains all 17 indicator definitions
+- [x] JSON schema included in prompt
+- [x] Page info extracted correctly (title, meta)
+- [x] Indicator weights match specification (total = 1.00)
+- [x] Prompt template is configurable via config/ai-prompts.php
+- [x] HTML content properly handled (escaped in markdown code block)
+
+**Tests:** All 101 tests passed (299 assertions)
+**Status:** Ready for LocalTester

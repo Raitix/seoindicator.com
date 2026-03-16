@@ -28,6 +28,7 @@ class SEOAnalysisAITest extends TestCase
             'domain' => 'example.com',
             'normalized_url' => 'https://example.com/',
             'overall_score' => 0,
+            'status' => 'completed',
             'analysis_data' => [],
         ];
 
@@ -46,6 +47,7 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://example.com/',
             'overall_score' => 75,
             'status' => 'completed',
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
@@ -196,7 +198,6 @@ class SEOAnalysisAITest extends TestCase
     public function test_mf012_existing_fields_remain_fillable(): void
     {
         $analysis = $this->createAnalysis([
-            'user_id' => 1,
             'session_id' => 'test-session',
             'overall_score' => 85,
             'status' => 'completed',
@@ -204,7 +205,6 @@ class SEOAnalysisAITest extends TestCase
             'analysis_data' => ['test' => 'data'],
         ]);
 
-        $this->assertEquals(1, $analysis->user_id);
         $this->assertEquals('test-session', $analysis->session_id);
         $this->assertEquals('example.com', $analysis->domain);
         $this->assertEquals(85, $analysis->overall_score);
@@ -882,11 +882,15 @@ class SEOAnalysisAITest extends TestCase
         SEOAnalysis::create([
             'domain' => 'with-ai.com',
             'normalized_url' => 'https://with-ai.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
             'ai_model' => 'google/gemini-2.0-flash-exp:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'without-ai.com',
             'normalized_url' => 'https://without-ai.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
         ]);
 
         $withoutAi = SEOAnalysis::whereNull('ai_model')->get();

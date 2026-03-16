@@ -1,7 +1,7 @@
 # TASK-26-9: Create Stripe Payment Intent Endpoint
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `High`

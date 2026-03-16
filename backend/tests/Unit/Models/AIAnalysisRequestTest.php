@@ -19,6 +19,21 @@ class AIAnalysisRequestTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
 
+    /**
+     * Create an SEOAnalysis with minimal required fields.
+     */
+    private function createAnalysis(array $attributes = []): SEOAnalysis
+    {
+        $defaults = [
+            'domain' => 'example.com',
+            'normalized_url' => 'https://example.com/',
+            'overall_score' => 0,
+            'analysis_data' => [],
+        ];
+
+        return SEOAnalysis::create(array_merge($defaults, $attributes));
+    }
+
     // =========================================================================
     // CATEGORY 1: MODEL INSTANTIATION & FILLABLES (MF-001 to MF-015)
     // =========================================================================
@@ -26,10 +41,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-001: Model can be instantiated */
     public function test_mf001_model_can_be_instantiated(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -43,10 +55,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-002: analysis_id is fillable */
     public function test_mf002_analysis_id_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -59,10 +68,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-003: model is fillable */
     public function test_mf003_model_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -75,10 +81,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-004: prompt_tokens is fillable */
     public function test_mf004_prompt_tokens_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -92,10 +95,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-005: response_tokens is fillable */
     public function test_mf005_response_tokens_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -109,10 +109,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-006: total_tokens is fillable */
     public function test_mf006_total_tokens_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -126,10 +123,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-007: latency_ms is fillable */
     public function test_mf007_latency_ms_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -143,10 +137,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-008: truncation_strategies is fillable */
     public function test_mf008_truncation_strategies_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $strategies = ['primary' => 'summarize', 'fallback' => 'truncate'];
 
@@ -162,10 +153,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-009: request_hash is fillable */
     public function test_mf009_request_hash_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $hash = hash('sha256', 'test-request-data');
 
@@ -181,10 +169,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-010: status is fillable */
     public function test_mf010_status_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -198,10 +183,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-011: error_message is fillable */
     public function test_mf011_error_message_is_fillable(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -216,10 +198,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-012: All fields can be filled together */
     public function test_mf012_all_fields_fillable_together(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $data = [
             'analysis_id' => $analysis->id,
@@ -246,33 +225,29 @@ class AIAnalysisRequestTest extends TestCase
         $this->assertEquals($data['status'], $request->status);
     }
 
-    /** @test MF-013: Status defaults to pending */
-    public function test_mf013_status_defaults_to_pending(): void
+    /** @test MF-013: Status can be set explicitly */
+    public function test_mf013_status_can_be_set_explicitly(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
             'model' => 'google/gemini-2.0-flash-exp:free',
+            'status' => 'pending',
         ]);
 
         $this->assertEquals('pending', $request->status);
     }
 
-    /** @test MF-014: Minimal required fields */
-    public function test_mf014_minimal_required_fields(): void
+    /** @test MF-014: Minimal required fields with status */
+    public function test_mf014_minimal_required_fields_with_status(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
             'model' => 'google/gemini-2.0-flash-exp:free',
+            'status' => 'pending',
         ]);
 
         $this->assertNotNull($request->id);
@@ -285,10 +260,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test MF-015: Model update with all fields */
     public function test_mf015_model_update_with_all_fields(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -320,10 +292,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-001: prompt_tokens is cast to integer */
     public function test_ca001_prompt_tokens_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -337,10 +306,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-002: response_tokens is cast to integer */
     public function test_ca002_response_tokens_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -354,10 +320,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-003: total_tokens is cast to integer */
     public function test_ca003_total_tokens_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -371,10 +334,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-004: latency_ms is cast to integer */
     public function test_ca004_latency_ms_is_cast_to_integer(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -388,10 +348,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-005: truncation_strategies is cast to array */
     public function test_ca005_truncation_strategies_is_cast_to_array(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -405,10 +362,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-006: Null truncation_strategies returns null */
     public function test_ca006_null_truncation_strategies_returns_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -421,10 +375,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-007: Nested JSON in truncation_strategies */
     public function test_ca007_nested_json_in_truncation_strategies(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $nested = [
             'primary' => 'summarize',
@@ -446,10 +397,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-008: Timestamps are cast to datetime */
     public function test_ca008_timestamps_are_cast_to_datetime(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -463,10 +411,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-009: Integer preservation after refresh */
     public function test_ca009_integer_preservation_after_refresh(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -488,10 +433,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test CA-010: Zero values stored correctly */
     public function test_ca010_zero_values_stored_correctly(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -522,10 +464,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-002: analysis returns BelongsTo relationship */
     public function test_re002_analysis_returns_belongs_to_relationship(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -539,10 +478,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-003: analysis relationship returns parent model */
     public function test_re003_analysis_relationship_returns_parent_model(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -556,10 +492,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-004: analysis uses correct foreign key */
     public function test_re004_analysis_uses_correct_foreign_key(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -573,10 +506,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-005: Eager loading analysis */
     public function test_re005_eager_loading_analysis(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -592,10 +522,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-006: Deleting parent cascades to request */
     public function test_re006_deleting_parent_cascades_to_request(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -611,10 +538,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-007: Multiple requests for same analysis (if allowed) */
     public function test_re007_multiple_requests_for_same_analysis(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         // Create first request
         $request1 = AIAnalysisRequest::create([
@@ -638,11 +562,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-008: Query with analysis relationship */
     public function test_re008_query_with_analysis_relationship(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'test.com',
-            'normalized_url' => 'https://test.com/',
-            'overall_score' => 85,
-        ]);
+        $analysis = $this->createAnalysis(['domain' => 'test.com', 'overall_score' => 85]);
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -661,14 +581,8 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-009: Request belongs to correct analysis */
     public function test_re009_request_belongs_to_correct_analysis(): void
     {
-        $analysis1 = SEOAnalysis::create([
-            'domain' => 'one.com',
-            'normalized_url' => 'https://one.com/',
-        ]);
-        $analysis2 = SEOAnalysis::create([
-            'domain' => 'two.com',
-            'normalized_url' => 'https://two.com/',
-        ]);
+        $analysis1 = $this->createAnalysis(['domain' => 'one.com']);
+        $analysis2 = $this->createAnalysis(['domain' => 'two.com']);
 
         $request1 = AIAnalysisRequest::create([
             'analysis_id' => $analysis1->id,
@@ -686,11 +600,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test RE-010: Relationship query constraints */
     public function test_re010_relationship_query_constraints(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-            'overall_score' => 90,
-        ]);
+        $analysis = $this->createAnalysis(['overall_score' => 90]);
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -720,10 +630,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-002: wasSuccessful returns true for completed status */
     public function test_ac002_was_successful_returns_true_for_completed(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -737,10 +644,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-003: wasSuccessful returns false for non-completed status */
     public function test_ac003_was_successful_returns_false_for_non_completed(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $pending = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -768,10 +672,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-005: wasTruncated returns true when truncation_strategies not empty */
     public function test_ac005_was_truncated_returns_true_when_strategies_not_empty(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -785,10 +686,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-006: wasTruncated returns false when truncation_strategies empty */
     public function test_ac006_was_truncated_returns_false_when_strategies_empty(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -802,10 +700,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-007: wasTruncated returns false when truncation_strategies null */
     public function test_ac007_was_truncated_returns_false_when_strategies_null(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -825,10 +720,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-009: getLatencySeconds converts ms to seconds */
     public function test_ac009_get_latency_seconds_converts_ms_to_seconds(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -842,10 +734,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test AC-010: getLatencySeconds handles null latency */
     public function test_ac010_get_latency_seconds_handles_null_latency(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -869,10 +758,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-002: scopeSuccessful filters by completed status */
     public function test_sc002_scope_successful_filters_by_completed(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -906,10 +792,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-004: scopeFailed filters by failed status */
     public function test_sc004_scope_failed_filters_by_failed(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -931,10 +814,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-005: Query by specific model */
     public function test_sc005_query_by_specific_model(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -953,10 +833,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-006: Query by latency threshold */
     public function test_sc006_query_by_latency_threshold(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -978,10 +855,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-007: Query by token usage */
     public function test_sc007_query_by_token_usage(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1003,10 +877,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-008: Query by request_hash */
     public function test_sc008_query_by_request_hash(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $hash1 = hash('sha256', 'request-1');
         $hash2 = hash('sha256', 'request-2');
@@ -1031,10 +902,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-009: Count by status */
     public function test_sc009_count_by_status(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1063,10 +931,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test SC-010: Order by latency */
     public function test_sc010_order_by_latency(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1092,10 +957,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-001: Very long model name */
     public function test_es001_very_long_model_name(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $longName = str_repeat('a', 100);
 
@@ -1110,10 +972,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-002: SHA-256 hash storage */
     public function test_es002_sha256_hash_storage(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $hash = hash('sha256', 'test-data');
 
@@ -1130,12 +989,9 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-003: Unicode in error_message */
     public function test_es003_unicode_in_error_message(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
-        $message = 'エラーが発生しました: Ошибка 错误 🎉';
+        $message = 'エラーが発生しました: ошибка 错误 🎉';
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1150,10 +1006,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-004: XSS in error_message */
     public function test_es004_xss_in_error_message(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $malicious = '<script>alert("xss")</script>Error message';
 
@@ -1171,10 +1024,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-005: SQL injection in model */
     public function test_es005_sql_injection_in_model(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $malicious = "'; DROP TABLE ai_analysis_requests; --";
 
@@ -1191,10 +1041,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-006: Large error message */
     public function test_es006_large_error_message(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $largeMessage = str_repeat('Error: ', 1000);
 
@@ -1211,10 +1058,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-007: Negative latency (app-level validation) */
     public function test_es007_negative_latency(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1229,10 +1073,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-008: Negative tokens (app-level validation) */
     public function test_es008_negative_tokens(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1251,10 +1092,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-009: Empty truncation_strategies */
     public function test_es009_empty_truncation_strategies(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1269,10 +1107,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test ES-010: Concurrent updates */
     public function test_es010_concurrent_updates(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1297,10 +1132,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-001: Full request lifecycle */
     public function test_in001_full_request_lifecycle(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         // Create pending request
         $request = AIAnalysisRequest::create([
@@ -1330,10 +1162,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-002: Failed request with error */
     public function test_in002_failed_request_with_error(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1349,10 +1178,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-003: Request with truncation */
     public function test_in003_request_with_truncation(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1371,10 +1197,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-004: Statistics aggregation */
     public function test_in004_statistics_aggregation(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         for ($i = 0; $i < 5; $i++) {
             AIAnalysisRequest::create([
@@ -1404,10 +1227,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-005: Request hash deduplication simulation */
     public function test_in005_request_hash_deduplication(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $hash = hash('sha256', 'duplicate-request');
 
@@ -1427,10 +1247,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-006: Multiple models comparison */
     public function test_in006_multiple_models_comparison(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1455,24 +1272,32 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-007: Date range queries */
     public function test_in007_date_range_queries(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
-        // Create requests with different timestamps
+        // Create a request with an older timestamp
         $old = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
             'model' => 'google/gemini-2.0-flash-exp:free',
-            'created_at' => now()->subDays(7),
         ]);
+        // Manually update the timestamp to simulate an older record using direct DB update
+        \DB::table('ai_analysis_requests')
+            ->where('id', $old->id)
+            ->update(['created_at' => now()->subDays(7)]);
+
+        // Create a new request
         $new = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
             'model' => 'google/gemini-2.0-flash-exp:free',
-            'created_at' => now(),
         ]);
 
-        $recent = AIAnalysisRequest::where('created_at', '>=', now()->subDay())->get();
+        // Refresh to get the actual timestamps
+        $old->refresh();
+        $new->refresh();
+
+        // Filter by this specific analysis to avoid test pollution
+        $recent = AIAnalysisRequest::where('analysis_id', $analysis->id)
+            ->where('created_at', '>=', now()->subDay())
+            ->get();
 
         $this->assertCount(1, $recent);
         $this->assertEquals($new->id, $recent->first()->id);
@@ -1481,10 +1306,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-008: Relationship integrity on delete */
     public function test_in008_relationship_integrity_on_delete(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1501,10 +1323,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-009: Token calculation consistency */
     public function test_in009_token_calculation_consistency(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
@@ -1523,10 +1342,7 @@ class AIAnalysisRequestTest extends TestCase
     /** @test IN-010: Performance test with many records */
     public function test_in010_performance_test_with_many_records(): void
     {
-        $analysis = SEOAnalysis::create([
-            'domain' => 'example.com',
-            'normalized_url' => 'https://example.com/',
-        ]);
+        $analysis = $this->createAnalysis();
 
         $startTime = microtime(true);
 

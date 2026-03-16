@@ -8,9 +8,10 @@
 
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileQuestion, Home, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // ============================================================
 // Data Fetching Hook
@@ -48,12 +49,11 @@ function useAuditData(hash: string | null) {
         if (!mounted) return;
 
         if (!res.ok) {
-          if (res.status === 404) {
-            setData(null);
-            setLoading(false);
-            return;
-          }
-          throw new Error(`Failed to fetch audit: ${res.status}`);
+          // Any error status (400, 404, 500, etc.) means the audit is not accessible
+          // Show "Not Found" UI instead of technical error messages
+          setData(null);
+          setLoading(false);
+          return;
         }
 
         const json = await res.json();
@@ -124,6 +124,74 @@ function NoHashState() {
       <div className="text-center">
         <h1 className="text-2xl font-bold text-slate-200">No Audit Specified</h1>
         <p className="mt-2 text-slate-400">Please provide a valid audit hash in the URL.</p>
+        <Link href="/tools" className="mt-4 inline-block">
+          <Button>
+            <Search className="mr-2 h-4 w-4" />
+            Get Your Free Audit
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Not Found State - Client-side fallback
+ * Displayed when audit is not found or is private
+ */
+function NotFoundState() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-16">
+      <div className="max-w-md text-center">
+        {/* Icon */}
+        <div className="mb-6 flex justify-center">
+          <div className="rounded-full bg-slate-800 p-6">
+            <FileQuestion
+              className="h-16 w-16 text-slate-400"
+              data-testid="file-question-icon"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="mb-4 text-4xl font-bold text-white">
+          Audit Not Found
+        </h1>
+
+        {/* Description */}
+        <p className="mb-8 text-lg text-slate-400">
+          This audit is either private or doesn&apos;t exist.
+          The audit may have been removed or the link is incorrect.
+        </p>
+
+        {/* Actions */}
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <Link href="/">
+            <Button variant="outline" className="w-full sm:w-auto">
+              <Home className="mr-2 h-4 w-4" aria-hidden="true" />
+              Go Home
+            </Button>
+          </Link>
+          <Link href="/tools">
+            <Button className="w-full sm:w-auto">
+              <Search className="mr-2 h-4 w-4" aria-hidden="true" />
+              Get Your Free Audit
+            </Button>
+          </Link>
+        </div>
+
+        {/* Additional Help */}
+        <p className="mt-8 text-sm text-slate-500">
+          If you believe this is an error, please{' '}
+          <Link
+            href="/contact"
+            className="text-emerald-400 hover:text-emerald-300 hover:underline"
+          >
+            contact support
+          </Link>
+          .
+        </p>
       </div>
     </div>
   );
@@ -143,21 +211,27 @@ export default function AuditPageClient() {
   const hash = searchParams.get('h');
   const { data, loading, error } = useAuditData(hash);
 
+  // No hash provided
   if (!hash) {
     return <NoHashState />;
   }
 
+  // Loading state
   if (loading) {
     return <LoadingState />;
   }
 
+  // Error state
   if (error) {
     return <ErrorState message={error} />;
   }
 
+  // Not found state - show proper UI instead of calling notFound()
+  // This works with static export where notFound() doesn't function
   if (!data) {
-    notFound();
+    return <NotFoundState />;
   }
 
+  // Render audit page
   return <PublicAuditPage hash={hash} initialData={data} />;
 }

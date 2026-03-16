@@ -1,6 +1,6 @@
 /**
- * Public Audit Route Tests
- * Client-side rendered page for public SEO audit pages
+ * Legacy Public Audit Route Tests
+ * Tests the redirect from old URL format /audit/{hash}/ to new format /audit/?h={hash}
  * @module __tests__/app/audit/[hash]/page.test
  */
 
@@ -9,26 +9,16 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock next/navigation
-const mockUseParams = jest.fn();
+const mockUseRouter = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({
-  useParams: () => mockUseParams(),
+  useRouter: () => mockUseRouter(),
+  redirect: jest.fn(),
 }));
 
-// Mock fetch
+// Mock fetch - not used in redirect component
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
-
-// Mock PublicAuditPage component
-jest.mock('@/components/audit/PublicAuditPage', () => ({
-  __esModule: true,
-  default: ({ audit, hash }: { audit: { siteUrl: string; overallScore: number }; hash: string }) => (
-    <div data-testid="public-audit-page">
-      <span data-testid="audit-site">{audit.siteUrl}</span>
-      <span data-testid="audit-score">{audit.overallScore}</span>
-      <span data-testid="audit-hash">{hash}</span>
-    </div>
-  ),
-}));
 
 // Import after mocks
 import Page from '@/app/audit/[hash]/page';
@@ -48,17 +38,12 @@ const mockAuditData = {
   isPublished: true,
 };
 
-const mockFetchResponse = (data: unknown, success = true) => ({
-  ok: true,
-  json: () => Promise.resolve({ success, data }),
-});
-
-describe('Public Audit Route - Client-Side Rendering', () => {
+describe('Legacy Public Audit Route - Redirect Handler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseParams.mockReturnValue({ hash: 'testhash123' });
-    // Reset document state
-    document.title = '';
+    mockUseRouter.mockReturnValue({
+      replace: mockReplace,
+    });
   });
 
   afterEach(() => {
@@ -70,369 +55,63 @@ describe('Public Audit Route - Client-Side Rendering', () => {
   // ============================================================================
   describe('Route Structure', () => {
     it('renders without crashing', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
+      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
+      render(page);
       
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
+      expect(screen.getByText('Redirecting...')).toBeInTheDocument();
     });
 
-    it('uses useParams to get hash', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      expect(mockUseParams).toHaveBeenCalled();
+    it('has generateStaticParams function', () => {
+      const { generateStaticParams } = require('@/app/audit/[hash]/page');
+      expect(typeof generateStaticParams).toBe('function');
     });
 
-    it('passes hash to PublicAuditPage component', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByTestId('audit-hash')).toHaveTextContent('testhash123');
-      });
+    it('generateStaticParams returns placeholder for static export', () => {
+      const { generateStaticParams } = require('@/app/audit/[hash]/page');
+      const params = generateStaticParams();
+      expect(params).toEqual([{ hash: '_' }]);
     });
 
-    it('is a client component (has use client directive)', async () => {
-      // Client components can use hooks like useParams
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      // If this renders without error, it's a client component
-      expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
+    it('has dynamicParams = false for static export', () => {
+      const { dynamicParams } = require('@/app/audit/[hash]/page');
+      expect(dynamicParams).toBe(false);
     });
   });
 
   // ============================================================================
-  // Loading State Tests
+  // Redirect Behavior Tests
   // ============================================================================
-  describe('Loading State', () => {
-    it('shows loading spinner initially', () => {
-      // Don't resolve fetch immediately
-      mockFetch.mockImplementation(() => new Promise(() => {}));
+  describe('Redirect Behavior', () => {
+    it('shows redirecting state initially', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
+      render(page);
       
-      render(<Page />);
-      
-      expect(screen.getByText('Loading audit...')).toBeInTheDocument();
+      expect(screen.getByText('Redirecting...')).toBeInTheDocument();
     });
 
-    it('shows spinner while fetching data', async () => {
-      let resolveFetch: (value: unknown) => void;
-      mockFetch.mockImplementation(() => new Promise((resolve) => {
-        resolveFetch = resolve;
-      }));
+    it('shows loading spinner during redirect', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
+      render(page);
       
-      render(<Page />);
-      
-      expect(screen.getByText('Loading audit...')).toBeInTheDocument();
-      
-      // Resolve fetch
-      await act(async () => {
-        resolveFetch!(mockFetchResponse(mockAuditData));
-      });
+      expect(screen.getByRole('img', { hidden: true })).toBeInTheDocument();
+    });
+
+    it('uses router.replace for client-side redirect', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'testhash' }) });
+      render(page);
       
       await waitFor(() => {
-        expect(screen.queryByText('Loading audit...')).not.toBeInTheDocument();
+        expect(mockReplace).toHaveBeenCalledWith('/audit/?h=testhash');
       });
     });
-  });
 
-  // ============================================================================
-  // Data Fetching Tests
-  // ============================================================================
-  describe('Data Fetching', () => {
-    it('fetches data from correct API endpoint', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/public-audit/testhash123')
-      );
-    });
-
-    it('renders audit data after successful fetch', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
+    it('redirects with correct query parameter format', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'abc123xyz' }) });
+      render(page);
       
       await waitFor(() => {
-        expect(screen.getByTestId('audit-site')).toHaveTextContent('https://example.com');
-        expect(screen.getByTestId('audit-score')).toHaveTextContent('85');
+        expect(mockReplace).toHaveBeenCalledWith('/audit/?h=abc123xyz');
       });
-    });
-
-    it('handles API error (404)', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false, message: 'Not found' }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('handles API error (500)', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ success: false, message: 'Server error' }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('handles network error', async () => {
-      mockFetch.mockRejectedValue(new Error('Network error'));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Error Loading Audit')).toBeInTheDocument();
-      });
-    });
-
-    it('handles null data response', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: true, data: null }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('handles unsuccessful response', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: false, message: 'Audit is private' }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-  });
-
-  // ============================================================================
-  // 404 Handling Tests
-  // ============================================================================
-  describe('404 Handling', () => {
-    it('shows 404 for invalid hash', async () => {
-      mockUseParams.mockReturnValue({ hash: 'invalid' });
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('shows 404 for non-existent audit', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('shows 404 for private audit', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: false, message: 'Audit is private' }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('shows 404 for unpublished audit', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: false, message: 'Audit not published' }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('404 page has "Go Home" link', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByRole('link', { name: /go home/i })).toBeInTheDocument();
-      });
-    });
-
-    it('404 page has "Get Free Audit" CTA', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByRole('link', { name: /get your free audit/i })).toBeInTheDocument();
-      });
-    });
-  });
-
-  // ============================================================================
-  // Metadata Tests (Client-Side)
-  // ============================================================================
-  describe('Client-Side Metadata', () => {
-    it('updates document title after fetch', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(document.title).toContain('example.com');
-        expect(document.title).toContain('SEO Audit Report');
-      });
-    });
-
-    it('sets not found title when audit not found', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(document.title).toContain('Not Found');
-      });
-    });
-  });
-
-  // ============================================================================
-  // Security Tests
-  // ============================================================================
-  describe('Security', () => {
-    it('handles XSS in hash parameter gracefully', async () => {
-      mockUseParams.mockReturnValue({ hash: '<script>alert(1)</script>' });
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      // Should show 404, not execute script
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('does not expose sensitive data in errors', async () => {
-      mockFetch.mockRejectedValue(new Error('Database password: secret123'));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        // Error message should be generic
-        expect(screen.queryByText('secret123')).not.toBeInTheDocument();
-      });
-    });
-
-    it('sanitizes hash in API call', async () => {
-      mockUseParams.mockReturnValue({ hash: 'test-hash-123' });
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      // Hash should be URL-safe in API call
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('test-hash-123')
-      );
     });
   });
 
@@ -440,83 +119,53 @@ describe('Public Audit Route - Client-Side Rendering', () => {
   // Edge Cases
   // ============================================================================
   describe('Edge Cases', () => {
-    it('handles empty hash', async () => {
-      mockUseParams.mockReturnValue({ hash: '' });
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
+    it('handles special characters in hash', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'test-hash_123' }) });
+      render(page);
       
       await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
+        expect(mockReplace).toHaveBeenCalledWith('/audit/?h=test-hash_123');
       });
     });
 
-    it('handles very long hash', async () => {
-      const longHash = 'a'.repeat(1000);
-      mockUseParams.mockReturnValue({ hash: longHash });
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({ success: false }),
-      });
+    it('handles long hash values', async () => {
+      const longHash = 'a'.repeat(64);
+      const page = await Page({ params: Promise.resolve({ hash: longHash }) });
+      render(page);
       
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      // Should not crash
       await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
+        expect(mockReplace).toHaveBeenCalledWith(`/audit/?h=${longHash}`);
       });
     });
 
-    it('handles unicode in hash', async () => {
-      mockUseParams.mockReturnValue({ hash: 'тест-ハッシュ' });
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
+    it('handles placeholder hash', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: '_' }) });
+      render(page);
       
       await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
+        expect(mockReplace).toHaveBeenCalledWith('/audit/?h=_');
       });
     });
+  });
 
-    it('handles audit with zero score', async () => {
-      const zeroScoreAudit = { ...mockAuditData, overallScore: 0 };
-      mockFetch.mockResolvedValue(mockFetchResponse(zeroScoreAudit));
+  // ============================================================================
+  // Static Export Compatibility Tests
+  // ============================================================================
+  describe('Static Export Compatibility', () => {
+    it('only generates placeholder for static export', async () => {
+      const { generateStaticParams } = require('@/app/audit/[hash]/page');
+      const params = generateStaticParams();
       
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByTestId('audit-score')).toHaveTextContent('0');
-      });
+      // Only the placeholder should be generated
+      expect(params.length).toBe(1);
+      expect(params[0].hash).toBe('_');
     });
 
-    it('handles audit with perfect score', async () => {
-      const perfectScoreAudit = { ...mockAuditData, overallScore: 100 };
-      mockFetch.mockResolvedValue(mockFetchResponse(perfectScoreAudit));
+    it('dynamicParams is disabled', async () => {
+      const { dynamicParams } = require('@/app/audit/[hash]/page');
       
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByTestId('audit-score')).toHaveTextContent('100');
-      });
+      // This ensures other hashes won't be generated
+      expect(dynamicParams).toBe(false);
     });
   });
 
@@ -524,138 +173,27 @@ describe('Public Audit Route - Client-Side Rendering', () => {
   // Acceptance Criteria Tests
   // ============================================================================
   describe('Acceptance Criteria', () => {
-    it('AC-1: Route at /audit/[hash]/page.tsx exists', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
+    it('AC-1: Route exists for backward compatibility', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'test' }) });
+      render(page);
       
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
+      expect(screen.getByText('Redirecting...')).toBeInTheDocument();
     });
 
-    it('AC-2: Layout exists (no auth required)', async () => {
-      // Layout is tested separately
-      // This test verifies the route can render without auth context
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      // If it renders, no auth is required
-      expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
-    });
-
-    it('AC-3: 404 page exists for invalid audits', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: () => Promise.resolve({ success: false }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
+    it('AC-2: Redirects to new URL format', async () => {
+      const page = await Page({ params: Promise.resolve({ hash: 'abc123' }) });
+      render(page);
       
       await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
+        expect(mockReplace).toHaveBeenCalledWith('/audit/?h=abc123');
       });
     });
 
-    it('AC-4: Client-side data fetching via public API', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
+    it('AC-3: Static export compatible (only placeholder generated)', async () => {
+      const { generateStaticParams, dynamicParams } = require('@/app/audit/[hash]/page');
       
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/public-audit/')
-      );
-    });
-
-    it('AC-5: Client-side rendering (replaces ISR for static export)', async () => {
-      // ISR is not possible with static export for dynamic routes
-      // Client-side rendering is used instead
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      // Verify client-side rendering works
-      await waitFor(() => {
-        expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
-      });
-    });
-
-    it('AC-6: Metadata updated via JavaScript (client-side)', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(document.title).toContain('SEO Audit Report');
-      });
-    });
-
-    it('AC-7: OG image URL constructed dynamically', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(document.title).toContain('example.com');
-      });
-      
-      // OG image URL is set in metadata update
-      // Verify it was constructed correctly
-      expect(mockAuditData.hash).toBe('testhash123');
-    });
-
-    it('AC-8: Canonical URL handled via JavaScript', async () => {
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(document.title).toContain('SEO Audit Report');
-      });
-    });
-
-    it('AC-9: Handles unpublished audit (shows 404)', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: false, message: 'Not published' }),
-      });
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Audit Not Found')).toBeInTheDocument();
-      });
-    });
-
-    it('AC-10: Unit tests for route rendering', async () => {
-      // This test itself validates the route
-      mockFetch.mockResolvedValue(mockFetchResponse(mockAuditData));
-      
-      await act(async () => {
-        render(<Page />);
-      });
-      
-      await waitFor(() => {
-        expect(screen.getByTestId('public-audit-page')).toBeInTheDocument();
-      });
+      expect(generateStaticParams()).toEqual([{ hash: '_' }]);
+      expect(dynamicParams).toBe(false);
     });
   });
 });
