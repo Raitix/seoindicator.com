@@ -60,3 +60,16 @@ Convert button to a Link component that navigates to `/login/`.
 - FEAT-037
 - SPEC-037
 - TASK-37-2 (Header Navigation - combined task)
+
+## Cancellation Reason
+**Cancelled by:** ProjectManager
+**Date:** 2026-03-16
+**Reason:** Task scope merged into TASK-37-2 (Header Navigation - combined task). The Sign In button functionality is being implemented as part of the broader Header Navigation task rather than as a standalone fix.
+
+## Comments
+### ProjectManager Assessment — 2026-03-16 15:06 GMT+2
+Task already in `Cancelled` status. No prioritization needed.
+- Priority: High (as set)
+- Risk: Low (as set)
+- Dependencies: None
+- Lock removed ✅
