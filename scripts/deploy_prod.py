@@ -256,10 +256,16 @@ def fetch_origin(log: DeploymentLog):
 def build_frontend(temp_dir: Path, log: DeploymentLog):
     log.start_step('Build frontend')
     frontend_temp = temp_dir / 'frontend'
-    ensure_dependency_link(temp_dir, PROJECT_ROOT, 'frontend/node_modules')
     env = {
         'NEXT_TELEMETRY_DISABLED': '1',
     }
+
+    # Install dependencies directly in temp worktree (more reliable than symlinks on Windows)
+    install_result = run_local(['npm', 'install', '--prefer-offline'], cwd=frontend_temp, timeout=600)
+    if install_result.returncode != 0:
+        details = shorten_output((install_result.stdout or '') + '\n' + (install_result.stderr or ''))
+        log.finish_step('Build frontend', 'failed', f'npm install failed:\n{details}')
+        raise DeployError(f'npm install failed:\n{details}')
 
     commands = [
         ['node', 'scripts/generate-og-images.mjs'],
