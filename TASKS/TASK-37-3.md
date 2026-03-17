@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`To Prioritize`
+`Blocked`
 
 ## PRIORITY
 `High`
@@ -385,5 +385,24 @@ if (error) {
 **Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
 
 **Effort:** Small (1-2 hours) - straightforward error handling logic
+
+**Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
+
+### ProjectManager Status Correction (2026-03-17 12:35 GMT+2)
+**Status Changed:** `To Prioritize` → `Blocked` (22nd assessment, status field corrected)
+**Priority:** HIGH - Authentication UX is critical for user experience
+**Risk:** MEDIUM - Frontend-only changes, standard error handling patterns
+
+**Dependency Status:**
+- TASK-37-1: `To Write Tests` - PreTester designing tests, NOT IMPLEMENTED ❌
+
+**Blocker Analysis:**
+- TASK-37-1 must reach `To Test Locally` or later before this task can proceed
+- The BLOCKED_BY field correctly identifies this dependency
+- Status field was incorrectly showing `To Prioritize`, causing infinite orchestrator loops
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Effort:** Small (1-2 hours)
 
 **Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
