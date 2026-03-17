@@ -17,6 +17,11 @@ import { AuditList } from '@/components/audit/AuditList';
 // Force dynamic rendering to ensure the route works in dev mode and E2E tests
 export const dynamic = 'force-dynamic';
 
+// Required for static export with dynamic routes - returns empty array for client-side rendering
+export function generateStaticParams() {
+  return [];
+}
+
 // ============================================================
 // Page Component
 // ============================================================
