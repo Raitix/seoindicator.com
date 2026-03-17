@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 /**
  * AI Visibility Project Model.
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read array $competitor_list
  *
  * @see TASK-34-2
  * @see SPEC-034
@@ -46,6 +48,14 @@ class AIVisibilityProject extends Model
      * The table associated with the model.
      */
     protected $table = 'ai_visibility_projects';
+
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'is_active' => true,
+        'tracking_frequency' => 'weekly',
+    ];
 
     /**
      * The attributes that are mass assignable.
@@ -108,6 +118,42 @@ class AIVisibilityProject extends Model
     }
 
     /**
+     * Scope to get only active projects.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope to get projects that are due for querying.
+     * 
+     * A project is due for query if:
+     * - It's active
+     * - It has never been queried (last_queried_at is null), OR
+     * - The time since last query exceeds the tracking frequency
+     */
+    public function scopeDueForQuery($query)
+    {
+        return $query->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('last_queried_at')
+                    ->orWhere(function ($subQ) {
+                        $subQ->where('tracking_frequency', 'daily')
+                            ->where('last_queried_at', '<', now()->subDay());
+                    })
+                    ->orWhere(function ($subQ) {
+                        $subQ->where('tracking_frequency', 'weekly')
+                            ->where('last_queried_at', '<', now()->subWeek());
+                    })
+                    ->orWhere(function ($subQ) {
+                        $subQ->where('tracking_frequency', 'monthly')
+                            ->where('last_queried_at', '<', now()->subMonth());
+                    });
+            });
+    }
+
+    /**
      * Check if the project belongs to a specific user.
      */
     public function belongsToUser(int $userId): bool
@@ -117,6 +163,8 @@ class AIVisibilityProject extends Model
 
     /**
      * Get the competitor names as a flat array.
+     * 
+     * This is a method version for programmatic access.
      */
     public function getCompetitorNames(): array
     {
@@ -124,6 +172,18 @@ class AIVisibilityProject extends Model
             ->pluck('name')
             ->filter()
             ->toArray();
+    }
+
+    /**
+     * Accessor: Get the competitor names as a flat array.
+     * 
+     * Provides $project->competitor_list syntax.
+     *
+     * @return array
+     */
+    public function getCompetitorListAttribute(): array
+    {
+        return $this->getCompetitorNames();
     }
 
     /**

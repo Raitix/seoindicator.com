@@ -177,4 +177,25 @@ class AIVisibilityAlert extends Model
     {
         return $this->alert_type === self::TYPE_COMPETITOR_GAIN;
     }
+
+    /**
+     * Get a formatted summary of the alert.
+     *
+     * @return string
+     */
+    public function getSummaryAttribute(): string
+    {
+        $direction = $this->change_percent >= 0 ? 'increased' : 'decreased';
+        $absChange = abs($this->change_percent);
+        
+        return sprintf(
+            '%s alert: value %s from %.2f to %.2f (%.2f%% %s)',
+            ucfirst(str_replace('_', ' ', $this->alert_type)),
+            $direction,
+            $this->previous_value,
+            $this->current_value,
+            $absChange,
+            $this->change_percent >= 0 ? 'increase' : 'decrease'
+        );
+    }
 }
