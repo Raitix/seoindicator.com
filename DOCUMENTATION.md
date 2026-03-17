@@ -17397,6 +17397,214 @@ return [
 - TASK-31-13: AnalysisRunnerService (uses AIAnalysisService with caching)
 
 ---
+## API Endpoint for Model Selection (TASK-31-14)
+
+### Feature Description
+REST API endpoint for the Unified AI Prompt + Context Management feature (FEAT-031) that returns available AI models with their context windows and pricing information. Enables the frontend to display model options and support user model selection for AI-powered SEO analyses.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/AIModelController.php`
+- **Service:** `backend/app/Services/AI/ModelSelectionService.php` (TASK-31-8)
+- **Route:** `backend/routes/api.php`
+- **Tests:** `backend/tests/Feature/Api/V1/AIModelControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-31-14.md`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/ai/models` | Get available AI models with context windows and pricing |
+
+### Response Structure
+
+**Success (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "models": [
+      {
+        "id": "google/gemini-2.0-flash-exp:free",
+        "name": "Gemini 2.0 Flash",
+        "provider": "Google",
+        "context_window": 1000000,
+        "is_free": true,
+        "is_recommended": true,
+        "capabilities": ["text", "json"],
+        "avg_latency_ms": 3000,
+        "best_for": "Large pages (100K+ characters)"
+      },
+      {
+        "id": "qwen/qwen-2-7b-instruct:free",
+        "name": "Qwen 2 7B",
+        "provider": "Alibaba",
+        "context_window": 32768,
+        "is_free": true,
+        "is_recommended": false,
+        "capabilities": ["text", "json"],
+        "avg_latency_ms": 2500,
+        "best_for": "Medium pages"
+      },
+      {
+        "id": "mistralai/mistral-7b-instruct:free",
+        "name": "Mistral 7B",
+        "provider": "Mistral AI",
+        "context_window": 32768,
+        "is_free": true,
+        "is_recommended": false,
+        "capabilities": ["text", "json"],
+        "avg_latency_ms": 2000,
+        "best_for": "Fast analysis"
+      },
+      {
+        "id": "meta-llama/llama-3-8b-instruct:free",
+        "name": "Llama 3 8B",
+        "provider": "Meta",
+        "context_window": 8192,
+        "is_free": true,
+        "is_recommended": false,
+        "capabilities": ["text", "json"],
+        "avg_latency_ms": 1500,
+        "best_for": "Small pages only"
+      }
+    ],
+    "default_model": "google/gemini-2.0-flash-exp:free",
+    "user_preference": null
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `models` | array | List of available AI models |
+| `models[].id` | string | OpenRouter model identifier |
+| `models[].name` | string | Display name for UI |
+| `models[].provider` | string | AI provider name |
+| `models[].context_window` | integer | Maximum token context |
+| `models[].is_free` | boolean | Whether free to use |
+| `models[].is_recommended` | boolean | Whether recommended for general use |
+| `models[].capabilities` | array | Supported capabilities |
+| `models[].avg_latency_ms` | integer | Average response latency |
+| `models[].best_for` | string | Recommended use case |
+| `default_model` | string | Default model ID |
+| `user_preference` | string/null | User's saved preference (if authenticated) |
+
+### Model Selection Logic
+
+| Model | Context Window | Recommended For |
+|-------|---------------|-----------------|
+| Gemini 2.0 Flash | 1M tokens | Large pages (100K+ characters) |
+| Qwen 2 7B | 32K tokens | Medium pages |
+| Mistral 7B | 32K tokens | Fast analysis |
+| Llama 3 8B | 8K tokens | Small pages only |
+
+### Authentication
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Authentication | None required (public endpoint) |
+| Authorization | None required |
+| Rate Limiting | 60 requests/minute per IP |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | JSON response encoding |
+| Input Validation | No input parameters required |
+| No Sensitive Data | No API keys, secrets, or tokens exposed |
+
+### Controller Implementation
+
+```php
+class AIModelController extends Controller
+{
+    public function __construct(
+        private ModelSelectionService $modelService,
+    ) {}
+
+    public function index(): JsonResponse
+    {
+        $models = $this->modelService->getAvailableModels();
+        $default = $this->modelService->getDefaultModel();
+        $userPreference = auth()->check()
+            ? $this->modelService->getUserPreference(auth()->user())
+            : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'models' => $models->map(fn ($model) => $this->formatModel($model)),
+                'default_model' => $default,
+                'user_preference' => $userPreference,
+            ],
+        ]);
+    }
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AIModelControllerTest | 66 | 276 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| BE (Basic Endpoint) | 8 | Route, response structure, public access |
+| ML (Model List) | 12 | All 4 models, required fields |
+| GR (Gemini Specifics) | 5 | Context window, is_recommended |
+| OM (Other Models) | 6 | Qwen, Mistral, Llama specifics |
+| DM (Default Model) | 3 | Default model validation |
+| UP (User Preference) | 6 | Authenticated vs unauthenticated |
+| RL (Rate Limiting) | 4 | Rate limit verification |
+| HM (HTTP Methods) | 4 | Method restrictions |
+| SE (Security) | 5 | No sensitive data, XSS, SQL injection |
+| EC (Edge Cases) | 6 | Empty list, invalid params |
+| AC (Acceptance Criteria) | 7 | All ACs covered |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `f70abc0d` |
+| Production URL | https://seoindicator.com/api/v1/ai/models |
+| Health Check | ✅ 200 OK |
+| Tests | 66/66 passing (276 assertions) |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Endpoint returns 200 | 200 OK | 200 OK | ✅ |
+| Response structure valid | JSON with data | JSON with data | ✅ |
+| Default model set | `google/gemini-2.0-flash-exp:free` | Correct | ✅ |
+| Public access allowed | 200 without auth | 200 OK | ✅ |
+| POST method blocked | 405 Method Not Allowed | 405 | ✅ |
+| No sensitive data | No keys/secrets | Clean | ✅ |
+
+**Data Note:** The `models` array may be empty if the `ai_models` table has not been seeded in production. This is a data issue, not a code issue. The endpoint correctly returns an empty array with the default model.
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-31-8 | Done ✅ | ModelSelectionService (backend service) |
+| TASK-26-16 | Done ✅ | ModelPricingService (optional) |
+
+### Related Tasks
+
+- TASK-31-15: ModelPicker Component (frontend consumer)
+- TASK-31-8: ModelSelectionService (backend service)
+- TASK-26-17: Models List API Endpoint (alternative billing endpoint)
+
+---
 ## ModelPicker Component (TASK-31-15)
 
 ### Component Description
@@ -25994,6 +26202,218 @@ export async function generateMetadata({ params }): Promise<Metadata> {
 - TASK-20-3: Guide page template component
 
 ---
+## Error Handling and Recovery (TASK-19-13)
+
+### Feature Description
+Comprehensive error handling and recovery mechanisms for the Progressive Analysis & Job System (FEAT-019). Provides error categorization, user-friendly messages, retry logic with backoff, memory monitoring, partial completion support, and structured logging for the analysis pipeline.
+
+### Component Locations
+- **Service:** `backend/app/Services/Analysis/ErrorHandlingService.php`
+- **Tests:** `backend/tests/Unit/Services/Analysis/ErrorHandlingServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-19-13.md`
+
+### Files Modified
+- `backend/app/Jobs/ProcessIndicatorJob.php` - Integrated ErrorHandlingService
+- `backend/app/Jobs/StartAnalysisJob.php` - Added partial completion support
+- `backend/app/Services/ProgressService.php` - Added `markSkipped()` method
+- `backend/config/logging.php` - Added `analysis-errors` channel
+
+### Error Categories
+
+| Category | Description | Retryable |
+|----------|-------------|-----------|
+| `timeout` | Network or processing timeout | Yes |
+| `rate_limit` | Target site rate limiting (429) | Yes |
+| `invalid_url` | Malformed or blocked URL | No |
+| `ssrf` | SSRF attack attempt blocked | No |
+| `memory` | Memory exhaustion approaching | No |
+| `network` | Connection failure | Yes |
+| `parsing` | HTML/content parsing failure | No |
+| `unknown` | Unclassified error | No |
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `categorizeError(Exception $e): string` | Classifies error into one of 8 categories |
+| `getUserMessage(Exception $e): string` | Returns user-friendly error message |
+| `shouldRetry(string $category): bool` | Determines if error is retryable |
+| `getBackoffSeconds(int $attempt): int` | Calculates exponential backoff delay |
+| `isMemoryExhausted(): bool` | Checks if approaching memory limit |
+| `logError(Exception $e, array $context): void` | Logs to dedicated channel |
+
+### User-Friendly Messages
+
+| Error Category | User Message |
+|----------------|--------------|
+| `timeout` | "The request took too long to complete. Please try again." |
+| `rate_limit` | "The target site is temporarily unavailable. Please try again later." |
+| `invalid_url` | "The URL provided is not valid or accessible." |
+| `ssrf` | "The URL provided cannot be accessed for security reasons." |
+| `memory` | "The analysis is too large to process. Please try with a smaller scope." |
+| `network` | "Unable to connect to the target site. Please check your connection." |
+| `parsing` | "Unable to analyze the page content." |
+| `unknown` | "An unexpected error occurred. Please try again." |
+
+### Retry Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Max retries | 3 | Maximum retry attempts for retryable errors |
+| Base backoff | 1 second | Initial backoff delay |
+| Max backoff | 30 seconds | Maximum backoff cap |
+| Backoff multiplier | 2x | Exponential growth factor |
+
+**Backoff Calculation:**
+```
+delay = min(base * 2^(attempt-1), max_backoff)
+Example: 1s → 2s → 4s → 8s → 16s → 30s (capped)
+```
+
+### Memory Monitoring
+
+| Threshold | Action |
+|-----------|--------|
+| 80% of limit | Warning logged |
+| 90% of limit | Graceful shutdown initiated |
+| 95% of limit | Critical alert, job marked failed |
+
+**Memory Check Implementation:**
+```php
+public function isMemoryExhausted(): bool
+{
+    $usage = memory_get_usage(true);
+    $limit = ini_get('memory_limit');
+    $limitBytes = $this->parseMemoryLimit($limit);
+    
+    return ($usage / $limitBytes) > 0.90;
+}
+```
+
+### Partial Completion Support
+
+Jobs can complete with partial results when some indicators fail:
+
+```php
+// In ProgressService
+public function markSkipped(int $jobId, string $indicatorSlug, string $reason): void
+{
+    $result = AnalysisJobResult::where('job_id', $jobId)
+        ->where('indicator_slug', $indicatorSlug)
+        ->first();
+    
+    $result->update([
+        'status' => 'skipped',
+        'error_message' => $reason,
+    ]);
+    
+    $this->updateProgress($jobId);
+}
+```
+
+### Structured Logging
+
+All errors logged to dedicated `analysis-errors` channel:
+
+**Log Entry Format:**
+```json
+{
+  "level": "error",
+  "message": "Analysis indicator failed",
+  "context": {
+    "job_id": 123,
+    "indicator": "meta_tags",
+    "category": "timeout",
+    "url": "https://example.com",
+    "attempt": 2,
+    "duration_ms": 30000
+  },
+  "channel": "analysis-errors"
+}
+```
+
+### Integration Points
+
+| Component | Integration |
+|-----------|-------------|
+| ProcessIndicatorJob | Wraps indicator processing with error handling |
+| StartAnalysisJob | Handles partial completion scenarios |
+| ProgressService | Provides `markSkipped()` for graceful degradation |
+| IndicatorProcessor | Reports errors with context |
+
+### Error Flow
+
+```
+Indicator Processing
+    │
+    ├─► Success → markComplete()
+    │
+    └─► Failure
+            │
+            ├─► categorizeError()
+            │
+            ├─► shouldRetry()?
+            │       │
+            │       ├─► Yes → backoff → retry
+            │       │
+            │       └─► No → logError() → markFailed()
+            │
+            └─► isMemoryExhausted()?
+                    │
+                    ├─► Yes → graceful shutdown
+                    │
+                    └─► No → continue with next indicator
+```
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| No sensitive data in logs | URLs sanitized, credentials stripped |
+| SSRF errors hidden | Generic message for security-related blocks |
+| Memory safe | Graceful handling before exhaustion |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ErrorHandlingServiceTest | 38 | 128 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Error Categorization | 8 | All 8 categories correctly identified |
+| User Messages | 8 | Friendly messages for each category |
+| Retry Logic | 6 | shouldRetry(), backoff calculation |
+| Memory Handling | 5 | Detection, thresholds, graceful shutdown |
+| Partial Completion | 5 | markSkipped(), progress updates |
+| Error Logging | 4 | Log format, channel, context |
+| Edge Cases | 2 | Empty messages, special characters |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-01 |
+| Commit | `050e963` |
+| Health Check | ✅ 200 OK |
+| Tests | 38/38 passing (128 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-19-7 | Done ✅ | Queue worker |
+| TASK-19-5 | Done ✅ | IndicatorProcessor |
+
+### Related Tasks
+
+- TASK-19-7: Queue Worker (uses error handling)
+- TASK-19-14: Rate Limiting (complementary error handling)
+- TASK-19-15: SSRF Protection (security-related errors)
+
+---
 ## Rate Limiting for Analysis Jobs (TASK-19-14)
 
 ### Service Description
@@ -28374,6 +28794,221 @@ interface IndicatorCardProps {
 - TASK-28-3: shadcn/ui Components
 - TASK-28-4: IndicatorIcon Wrapper
 - TASK-28-6: IndicatorGrid Responsive Layout
+- TASK-28-7: IndicatorCatalog Main Container
+- TASK-28-8: Homepage Integration
+
+---
+## IndicatorGrid Responsive Layout (TASK-28-6)
+
+### Component Description
+React component for displaying multiple SEO indicator cards in a responsive CSS Grid layout. Provides a 12-column grid system with configurable breakpoints, gap spacing variants, and animated transitions. Serves as the container for IndicatorCard components in the homepage indicator catalog. Part of the Modern UI/UX + Indicator Catalog feature (FEAT-028).
+
+### Component Location
+- **File:** `frontend/components/indicators/IndicatorGrid.tsx`
+- **Export:** `frontend/components/indicators/index.ts`
+- **Tests:** `frontend/components/indicators/__tests__/IndicatorGrid.test.tsx`
+- **Test Documentation:** `TESTS/TEST-28-6.md`
+
+### Props Interface
+
+```typescript
+interface IndicatorGridProps {
+  indicators: IndicatorData[];  // Array of indicator data to display
+  columns?: ColumnConfig;       // Responsive column configuration
+  gap?: 'sm' | 'md' | 'lg';     // Gap spacing variant
+  className?: string;           // Additional CSS classes
+}
+
+interface ColumnConfig {
+  mobile?: number;  // Columns at mobile (< 640px)
+  sm?: number;      // Columns at sm (≥ 640px)
+  md?: number;      // Columns at md (≥ 768px)
+  lg?: number;      // Columns at lg (≥ 1024px)
+  xl?: number;      // Columns at xl (≥ 1280px)
+}
+
+interface IndicatorData {
+  id: string;
+  icon: LucideIconName | React.ReactNode;
+  title: string;
+  value: string | number;
+  description: string;
+  status: 'good' | 'warning' | 'critical' | 'neutral';
+  href: string;
+  tooltip?: string;
+}
+```
+
+### Default Responsive Breakpoints
+
+| Breakpoint | Min Width | Columns | Tailwind Class |
+|------------|-----------|---------|----------------|
+| Mobile | 0px | 1 | `grid-cols-1` |
+| sm | 640px | 2 | `sm:grid-cols-2` |
+| md | 768px | 3 | `md:grid-cols-3` |
+| lg | 1024px | 4 | `lg:grid-cols-4` |
+| xl | 1280px | 4 | `xl:grid-cols-4` |
+
+### Gap Spacing Variants
+
+| Gap | Tailwind Class | Size | Use Case |
+|-----|----------------|------|----------|
+| `sm` | `gap-2` | 0.5rem (8px) | Compact layouts |
+| `md` | `gap-4` | 1rem (16px) | Default, standard spacing |
+| `lg` | `gap-6` | 1.5rem (24px) | Spacious layouts |
+
+### Core Features
+
+**CSS Grid Layout:**
+- 12-column grid system using Tailwind CSS
+- Responsive column configuration at all breakpoints
+- Custom column override support via `columns` prop
+
+**Responsive Behavior:**
+- Mobile-first approach (1 column by default)
+- Automatic column adjustment at breakpoints
+- Custom column config merges with defaults
+
+**Animated Transitions:**
+- Smooth layout transitions on resize
+- `transition-all duration-200 ease-out`
+- Respects `prefers-reduced-motion` media query
+- GPU-accelerated transforms
+
+**Loading State:**
+- Displays 8 skeleton cards when `isLoading` context is true
+- `aria-busy="true"` attribute during loading
+- `data-loading="true"` attribute for testing
+
+### Accessibility Implementation
+
+| Feature | Implementation |
+|---------|---------------|
+| Role | `role="grid"` on container |
+| ARIA Label | `aria-label` with indicator count |
+| Row Count | `aria-rowcount` for item count |
+| Cell Roles | `role="gridcell"` on each item |
+| Busy State | `aria-busy` for loading state |
+| Keyboard | Tab navigation through cards |
+
+### CSS Classes Applied
+
+```css
+/* Container classes */
+grid
+grid-cols-1
+sm:grid-cols-2
+md:grid-cols-3
+lg:grid-cols-4
+xl:grid-cols-4
+gap-{sm|md|lg}
+transition-all
+duration-200
+ease-out
+
+/* Data attributes */
+data-testid="indicator-grid"
+data-loading={true|false}
+data-indicator-count={number}
+```
+
+### Usage Example
+
+```tsx
+import { IndicatorGrid } from '@/components/indicators';
+
+const indicators = [
+  {
+    id: 'keyword-rankings',
+    icon: 'TrendingUp',
+    title: 'Keyword Rankings',
+    value: 42,
+    description: 'Track SERP positions',
+    status: 'good',
+    href: '/dashboard'
+  },
+  {
+    id: 'visibility-score',
+    icon: 'Eye',
+    title: 'Visibility Score',
+    value: '78%',
+    description: 'Overall SEO visibility',
+    status: 'warning',
+    href: '/dashboard'
+  },
+  // ... more indicators
+];
+
+<IndicatorGrid
+  indicators={indicators}
+  gap="md"
+  className="my-8"
+/>
+```
+
+### Custom Column Configuration
+
+```tsx
+// Override default columns
+<IndicatorGrid
+  indicators={indicators}
+  columns={{
+    mobile: 1,
+    sm: 2,
+    md: 2,    // 2 columns instead of 3
+    lg: 3,    // 3 columns instead of 4
+    xl: 4
+  }}
+  gap="lg"
+/>
+```
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| IndicatorGrid.test.tsx | 93 | 93+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| TypeScript Types | 2 | Props and IndicatorData interfaces |
+| Component Rendering | 8 | Basic mount, empty/single/multiple indicators |
+| CSS Grid Layout | 7 | Grid display, 12-column system, alignment |
+| Responsive Breakpoints | 8 | 1/2/3/4 columns at all breakpoints |
+| Gap Spacing | 6 | sm/md/lg gap variants |
+| Animated Layout Transitions | 7 | Transitions, duration, reduced motion |
+| Accessibility | 8 | ARIA roles, labels, keyboard navigation |
+| Variable Indicator Count | 7 | 1-25+ indicators, empty state |
+| Integration with IndicatorCard | 8 | Card rendering, props flow, loading state |
+| Loading State | 5 | Skeleton grid, count, loading attribute |
+| Custom Column Configuration | 6 | Override per breakpoint, partial config |
+| Edge Cases | 8 | Invalid inputs, many items, rapid resize |
+| Security | 3 | XSS prevention |
+| Module Exports | 3 | Barrel export, named export, types |
+| Snapshots | 7 | Visual regression baseline |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | React's safe rendering, no `dangerouslySetInnerHTML` |
+| Input Validation | TypeScript type checking |
+| No eval() | No dynamic code execution |
+
+### Production Status
+- **Deployed:** 2026-03-17
+- **Deployment ID:** `20260317T130151Z-16c54842`
+- **Commit:** `aac2d4f3`
+- **Health Check:** Passing (`https://seoindicator.com` → 200 OK)
+- **Tests:** 93/93 passing
+- **Status:** Complete
+
+### Dependencies
+- TASK-28-5 (IndicatorCard Component)
+
+### Related Tasks
+- TASK-28-5: IndicatorCard Component
 - TASK-28-7: IndicatorCatalog Main Container
 - TASK-28-8: Homepage Integration
 
