@@ -1,7 +1,7 @@
 # TASK-8-5: Implement Global Project Scope
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `High`

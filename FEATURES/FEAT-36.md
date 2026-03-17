@@ -1,7 +1,7 @@
 # FEAT-036: Content Decay Detection & Refresh Planner
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`
@@ -263,3 +263,37 @@ It also aligns with how SEO work really happens: not by watching a dashboard for
 |------|------|-----|-------|
 | 2026-03-10 | New Feature | Specification In Progress | Architect |
 | 2026-03-10 | Specification In Progress | To Break Into Tasks | Architect |
+| 2026-03-17 | To Prioritize | Done | DocSystemAnalyst |
+
+---
+
+### DocSystemAnalyst (2026-03-17 17:01 GMT+2)
+**✅ Feature Complete**
+
+FEAT-036 Content Decay Detection & Refresh Planner is now fully implemented and deployed.
+
+**Completion Summary:**
+- **Specification:** SPEC-036 - Done
+- **Tasks:** 16 Done, 2 Cancelled (18 total)
+- **Documentation:** Complete in DOCUMENTATION.md
+
+**Key Deliverables:**
+| Component | Status |
+|-----------|--------|
+| Database Schema | ✅ 4 tables deployed |
+| Backend Services | ✅ 6 services + jobs |
+| API Endpoints | ✅ RESTful API |
+| Frontend Components | ✅ 11 components |
+| Frontend Pages | ✅ 4 pages |
+| Tests | ✅ 99.3% pass rate |
+
+**Production Metrics:**
+- Deploy Date: 2026-03-17
+- Commit: `aac2d4f3ea65788897eaca92b59069ac20c979a4`
+- Routes: All 4 content-decay pages working
+
+**Business Impact:**
+- Detects pages losing organic value
+- Provides actionable refresh recommendations
+- Tracks recovery metrics
+- Enables workflow management via Kanban board

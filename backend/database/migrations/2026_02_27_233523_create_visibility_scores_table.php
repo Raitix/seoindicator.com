@@ -32,14 +32,16 @@ return new class extends Migration
             
             // Metadata
             $table->unsignedInteger('keywords_count')->default(0);
+            $table->date('calculation_date'); // Date-only for unique constraint
             $table->timestamp('calculated_at')->useCurrent();
             
             // Indexes for efficient queries
             $table->index('project_id', 'idx_visibility_project_id');
             $table->index('calculated_at', 'idx_visibility_calculated_at');
+            $table->index('calculation_date', 'idx_visibility_calculation_date');
             
             // Unique constraint: one score per project per day
-            $table->unique(['project_id', \DB::raw('DATE(calculated_at)')], 'unique_project_date');
+            $table->unique(['project_id', 'calculation_date'], 'unique_project_date');
         });
     }
 

@@ -586,10 +586,10 @@ test.describe('Audit Detail Page', () => {
   
   test.beforeEach(async ({ page }) => {
     await mockAuthentication(page);
+    await setupAuditDetailMocks(page);
   });
   
   test('E2E-AUD-010: Audit detail page loads with summary', async ({ page }) => {
-    await setupAuditDetailMocks(page);
     
     await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
