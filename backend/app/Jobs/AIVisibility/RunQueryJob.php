@@ -82,6 +82,7 @@ class RunQueryJob implements ShouldQueue
             $result = $this->callAI($engine);
             $response = $result['response'];
             $error = $result['error'];
+            $tokensUsed = $result['tokens_used'] ?? $this->lastTokensUsed;
 
             $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -144,6 +145,7 @@ class RunQueryJob implements ShouldQueue
                 'response_text' => $response,
                 'success' => true,
                 'brand_mentioned' => $brandMentioned,
+                'tokens_used' => $tokensUsed,
                 'mention_type' => $brandMentioned ? $mentionType : null,
                 'sentiment' => $sentiment,
                 'sentiment_score' => $sentimentScore,
@@ -224,14 +226,20 @@ class RunQueryJob implements ShouldQueue
      * Result from AI call - stores both response and error info.
      */
     protected ?string $lastError = null;
+    
+    /**
+     * Tokens used from last API call.
+     */
+    protected ?int $lastTokensUsed = null;
 
     /**
      * Call the AI API.
-     * Returns an array with 'response' and 'error' keys.
+     * Returns an array with 'response', 'error', and 'tokens_used' keys.
      */
     protected function callAI(AIQueryEngine $engine): array
     {
         $this->lastError = null;
+        $this->lastTokensUsed = null;
 
         try {
             // Try using the engine first
@@ -241,23 +249,31 @@ class RunQueryJob implements ShouldQueue
             if ($result && is_object($result) && isset($result->success) && !$result->success) {
                 $errorMessage = $result->errorMessage ?? 'Unknown error';
                 $this->lastError = "AI query failed: {$errorMessage}";
-                return ['response' => null, 'error' => $this->lastError];
+                return ['response' => null, 'error' => $this->lastError, 'tokens_used' => null];
             }
 
             if ($result && is_object($result) && method_exists($result, 'getResponseText')) {
-                return ['response' => $result->getResponseText(), 'error' => null];
+                $tokensUsed = method_exists($result, 'getTokensUsed') ? $result->getTokensUsed() : null;
+                $this->lastTokensUsed = $tokensUsed;
+                return ['response' => $result->getResponseText(), 'error' => null, 'tokens_used' => $tokensUsed];
             }
 
             if ($result && is_object($result) && isset($result->responseText)) {
-                return ['response' => $result->responseText, 'error' => null];
+                $tokensUsed = $result->tokensUsed ?? null;
+                $this->lastTokensUsed = $tokensUsed;
+                return ['response' => $result->responseText, 'error' => null, 'tokens_used' => $tokensUsed];
             }
 
             if ($result && is_array($result) && isset($result['response'])) {
-                return ['response' => $result['response'], 'error' => null];
+                $tokensUsed = $result['tokens_used'] ?? null;
+                $this->lastTokensUsed = $tokensUsed;
+                return ['response' => $result['response'], 'error' => null, 'tokens_used' => $tokensUsed];
             }
 
             if ($result && is_array($result) && isset($result['responseText'])) {
-                return ['response' => $result['responseText'], 'error' => null];
+                $tokensUsed = $result['tokens_used'] ?? null;
+                $this->lastTokensUsed = $tokensUsed;
+                return ['response' => $result['responseText'], 'error' => null, 'tokens_used' => $tokensUsed];
             }
 
             // Fallback to direct HTTP call
@@ -273,7 +289,7 @@ class RunQueryJob implements ShouldQueue
 
     /**
      * Call OpenRouter API directly.
-     * Returns an array with 'response' and 'error' keys.
+     * Returns an array with 'response', 'error', and 'tokens_used' keys.
      */
     protected function callOpenRouterDirectly(): array
     {
@@ -289,7 +305,16 @@ class RunQueryJob implements ShouldQueue
 
         if ($response->successful()) {
             $data = $response->json();
-            return ['response' => $data['choices'][0]['message']['content'] ?? '', 'error' => null];
+            $tokensUsed = $data['usage']['total_tokens'] ?? null;
+            
+            // Store tokens for later use
+            $this->lastTokensUsed = $tokensUsed;
+            
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'error' => null,
+                'tokens_used' => $tokensUsed,
+            ];
         }
 
         // Return error for non-successful responses
@@ -303,7 +328,7 @@ class RunQueryJob implements ShouldQueue
             'error' => $errorMessage,
         ]);
         
-        return ['response' => null, 'error' => $this->lastError];
+        return ['response' => null, 'error' => $this->lastError, 'tokens_used' => null];
     }
 
     /**
