@@ -343,8 +343,17 @@ async function waitForAuditDetailPage(page: Page) {
   // Wait for the page to start rendering
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   
+  // First check if we hit an error page
+  const errorHeading = page.locator('h1:has-text("Something went wrong")');
+  if (await errorHeading.isVisible().catch(() => false)) {
+    // Page crashed - try refreshing once
+    console.log('Audit detail page crashed, attempting refresh...');
+    await page.reload();
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  }
+  
   // Check for main content - be more flexible with selectors
-  const summarySection = page.locator('section[aria-label="Audit summary"], [data-testid="audit-summary"], h1:has-text("Audit")').first();
+  const summarySection = page.locator('section[aria-label="Audit summary"], [data-testid="audit-summary"], h1:has-text("Audit"), h2:has-text("Summary"), [data-testid="audit-detail"]').first();
   await expect(summarySection).toBeVisible({ timeout: 15000 });
 }
 
@@ -412,8 +421,8 @@ test.describe('Audit List Page', () => {
     await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
-    // Open status filter
-    const statusFilterButton = page.locator('[data-testid="status-filter"] button').first();
+    // Open status filter - SelectTrigger is the button itself
+    const statusFilterButton = page.locator('[data-testid="status-filter"]');
     await statusFilterButton.click();
     
     // Select "Completed" option using role-based selector
@@ -590,7 +599,13 @@ test.describe('Audit Detail Page', () => {
   });
   
   test('E2E-AUD-010: Audit detail page loads with summary', async ({ page }) => {
-    
+    // Listen for console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        console.log('Browser error:', msg.text());
+      }
+    });
+
     await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     

@@ -10,8 +10,18 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import HistoryPage from "@/app/dashboard/history/page";
+
+// Polyfill for Radix UI pointer capture
+beforeEach(() => {
+  // @ts-expect-error - polyfill for Radix UI
+  Element.prototype.hasPointerCapture = vi.fn();
+  // @ts-expect-error - polyfill for Radix UI
+  Element.prototype.setPointerCapture = vi.fn();
+  // @ts-expect-error - polyfill for Radix UI
+  Element.prototype.releasePointerCapture = vi.fn();
+});
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -25,6 +35,9 @@ vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(() => new URLSearchParams()),
   usePathname: vi.fn(() => "/dashboard/history"),
 }));
+
+// Import after mock to get the mocked versions
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 // Mock AuthContext
 vi.mock("@/lib/contexts/AuthContext", () => ({
@@ -175,7 +188,7 @@ const mockUseSWR = (data: any, isLoading = false, error: any = null, mutate = vi
 // Helper to setup search params
 const mockSearchParams = (params: Record<string, string> = {}) => {
   const searchParams = new URLSearchParams(params);
-  vi.mocked(await import("next/navigation")).useSearchParams = vi.fn(() => searchParams as any);
+  vi.mocked(useSearchParams).mockReturnValue(searchParams as any);
 };
 
 // ==================== Test Setup ====================
