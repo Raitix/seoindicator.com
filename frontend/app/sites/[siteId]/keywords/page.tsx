@@ -1,31 +1,30 @@
-"use client";
+/**
+ * Keywords Page Route - Server Component Wrapper
+ * 
+ * This server component exports generateStaticParams for static export compatibility.
+ * The actual client-side logic is in KeywordsClient.tsx
+ */
 
-// Allow dynamic params for client-side routing with static export
-export const dynamicParams = true;
+import KeywordsClient from './KeywordsClient';
 
-import { Suspense } from "react";
-import { useParams } from "next/navigation";
-import KeywordList from "@/components/keywords/KeywordList";
+// Disable dynamic params for static export compatibility
+export const dynamicParams = false;
 
-function KeywordsPageContent({ siteId }: { siteId: string }) {
-  return <KeywordList siteId={siteId} />;
+/**
+ * Generate static params for static export compatibility.
+ * Returns empty array - all routes handled client-side.
+ */
+export function generateStaticParams() {
+  return [];
 }
 
-export default function KeywordsPage() {
-  const params = useParams();
-  const siteId = params.siteId as string;
+interface PageProps {
+  params: Promise<{
+    siteId: string;
+  }>;
+}
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 px-4 py-10">
-      <div className="mx-auto w-full max-w-6xl">
-        <Suspense fallback={
-          <div className="flex items-center justify-center py-20 text-slate-400">
-            Loading keywords...
-          </div>
-        }>
-          <KeywordsPageContent siteId={siteId} />
-        </Suspense>
-      </div>
-    </div>
-  );
+export default async function KeywordsPage({ params }: PageProps) {
+  const { siteId } = await params;
+  return <KeywordsClient siteId={siteId} />;
 }
