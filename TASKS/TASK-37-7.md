@@ -1,7 +1,127 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Test Prod`
+`To Develop`
+
+### DevOps (2026-03-17 13:52 GMT+2)
+**Cannot Deploy - Fix Incomplete**
+
+ProdTester correctly identified that the homepage (`frontend/app/page.tsx`) has its own inline header with a broken "Indicators" button that wasn't fixed.
+
+**Current State:**
+- `Header.tsx`: ✅ Fixed correctly (Link component)
+- `frontend/app/page.tsx` lines 121-123: ❌ Still broken (plain Button without Link)
+
+**Verified from source:**
+```tsx
+// frontend/app/page.tsx lines 121-123 (current broken state)
+<Button variant="ghost" className="text-slate-300 hover:text-white">
+  Indicators
+</Button>
+```
+
+**Required Fix:**
+```tsx
+<Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
+  <Link href="/dashboard">Indicators</Link>
+</Button>
+```
+
+**Status Change:** `To Deploy` → `To Develop` (Developer to fix homepage inline header)
+
+### [2026-03-17 14:19 GMT+2] ProdTester: PRODUCTION TEST FAILED - Homepage Has Separate Header
+
+**Root Cause Analysis:**
+The fix was correctly implemented in `frontend/components/layout/Header.tsx`, but the **homepage** (`frontend/app/page.tsx`) has its own inline header with a separate broken "Indicators" button.
+
+**Issue Location:**
+File: `frontend/app/page.tsx` lines 114-117
+```tsx
+<Button variant="ghost" className="text-slate-300 hover:text-white">
+  Indicators
+</Button>
+```
+
+This button lacks `asChild` and a Link wrapper - it's a non-functional button.
+
+**Why Tests Passed:**
+- Tests verify `Header.tsx` which is correctly implemented
+- Tests don't cover the homepage's inline header
+- `Header.tsx` is used for authenticated pages, homepage has its own header
+
+**Production Verification Results:**
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Element type | `<a>` (Link) | `<button>` | ❌ FAIL |
+| Has href | Yes (`/dashboard`) | No | ❌ FAIL |
+| Has cursor-pointer | Yes | No | ❌ FAIL |
+| Is clickable link | Yes | No (non-functional button) | ❌ FAIL |
+
+**Evidence from Browser Inspection:**
+```javascript
+{
+  tagName: "BUTTON",        // Should be "A"
+  hasHref: false,           // Should be true with href="/dashboard"
+  isLink: false,            // Should be true
+  isButton: true            // Should be false
+}
+```
+
+**Required Fix:**
+Update `frontend/app/page.tsx` lines 114-117 to:
+```tsx
+<Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
+  <Link href="/dashboard">Indicators</Link>
+</Button>
+```
+
+**Action Required:**
+Developer to fix the homepage inline header in `frontend/app/page.tsx`.
+
+**Status Change:** `To Test Prod` → `To Deploy`
+
+### [2026-03-17 14:25 GMT+2] ProdTester: PRODUCTION TEST FAILED - Homepage Fix NOT Deployed
+
+**Verification:**
+After DevOps deployment at 14:57 GMT+2, production still has the broken Indicators button on the homepage.
+
+**Production Test Results (2026-03-17 14:25 GMT+2):**
+| Element | Expected | Actual | Status |
+|---------|----------|--------|--------|
+| Dashboard | `<a>` link | `<A href="/dashboard/">` | ✅ PASS |
+| **Indicators** | `<a>` link | `<BUTTON>` (no href) | ❌ **FAIL** |
+| Competitors | `<a>` link | `<A href="/competitors/">` | ✅ PASS |
+| Comparison | `<a>` link | `<A href="/comparison/">` | ✅ PASS |
+
+**JavaScript Evidence:**
+```javascript
+{
+  tag: "BUTTON",      // Should be "A"
+  text: "Indicators",
+  href: null,         // Should be "/dashboard/"
+  isLink: false,      // Should be true
+  isButton: true,     // Should be false
+  onclick: "no onclick"  // Non-functional
+}
+```
+
+**Root Cause:**
+The commit `2a5be504` deployed by DevOps did NOT include the homepage fix. The `frontend/app/page.tsx` file still has the broken button on lines 115-117:
+```tsx
+<Button variant="ghost" className="text-slate-300 hover:text-white">
+  Indicators
+</Button>
+```
+
+**Action Required:**
+Developer must fix `frontend/app/page.tsx` and commit the change. The fix should be:
+```tsx
+<Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
+  <Link href="/dashboard">Indicators</Link>
+</Button>
+```
+
+**Status:** Remains `To Deploy` - awaiting Developer to fix homepage
 
 ### [2026-03-17 14:57 GMT+2] DevOps: Deployment Complete ✓
 - **Deployment ID:** 20260317T115038Z-0a40ead0
