@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, vi } from 'vitest';
 
 import { IndicatorGrid, type IndicatorGridProps, type IndicatorData, type ColumnConfig } from '../IndicatorGrid';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -10,7 +10,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 // ============================================================================
 
 // Mock IndicatorCard to isolate grid tests
-jest.mock('../IndicatorCard', () => ({
+vi.mock('../IndicatorCard', () => ({
   IndicatorCard: ({ id, title, value, status, href, isLoading }: { id: string; title: string; value: string | number; status: string; href: string; isLoading: boolean }) => (
     <a
       href={href}

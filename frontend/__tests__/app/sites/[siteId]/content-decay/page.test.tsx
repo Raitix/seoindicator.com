@@ -87,15 +87,35 @@ vi.mock("next/navigation", () => ({
   })),
 }));
 
-// Mock Lucide icons
-vi.mock("lucide-react", () => ({
-  RefreshCw: () => <span data-testid="refresh-icon">RefreshCw</span>,
-  Download: () => <span data-testid="download-icon">Download</span>,
-  Settings: () => <span data-testid="settings-icon">Settings</span>,
-  LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
-  Columns: () => <span data-testid="columns-icon">Columns</span>,
-  BarChart3: () => <span data-testid="chart-icon">BarChart3</span>,
-}));
+// Mock Lucide icons - comprehensive mock for all used icons
+vi.mock("lucide-react", () => {
+  const createIcon = (name: string) => () => <span data-testid={`${name.toLowerCase()}-icon`}>{name}</span>;
+  return {
+    RefreshCw: createIcon("RefreshCw"),
+    Download: createIcon("Download"),
+    Settings: createIcon("Settings"),
+    LayoutDashboard: createIcon("LayoutDashboard"),
+    Kanban: createIcon("Kanban"),
+    TrendingUp: createIcon("TrendingUp"),
+    TrendingDown: createIcon("TrendingDown"),
+    AlertTriangle: createIcon("AlertTriangle"),
+    AlertCircle: createIcon("AlertCircle"),
+    Info: createIcon("Info"),
+    Minus: createIcon("Minus"),
+    FileText: createIcon("FileText"),
+    ChevronDown: createIcon("ChevronDown"),
+    ChevronRight: createIcon("ChevronRight"),
+    ExternalLink: createIcon("ExternalLink"),
+    Clock: createIcon("Clock"),
+    X: createIcon("X"),
+    Filter: createIcon("Filter"),
+    Search: createIcon("Search"),
+    ArrowUpDown: createIcon("ArrowUpDown"),
+    Calendar: createIcon("Calendar"),
+    Eye: createIcon("Eye"),
+    MousePointer: createIcon("MousePointer"),
+  };
+});
 
 describe("Content Decay Refresh Queue Page", () => {
   beforeEach(() => {
