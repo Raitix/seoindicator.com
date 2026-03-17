@@ -25,8 +25,8 @@ export default async function AuditsPage({ params }: { params: Promise<{ siteId:
   const { siteId } = await params;
   
   return (
-    <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       <AuditList siteId={siteId} />
-    </main>
+    </div>
   );
 }
