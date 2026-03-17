@@ -7,13 +7,16 @@
 
 import type { ReactNode } from 'react';
 
-// Enable dynamic params for dev mode and E2E testing
-// This allows any audit ID to be accessed without pre-generation
-export const dynamicParams = true;
+// Static export: dynamicParams must be false (or omitted) for static export compatibility
+// generateStaticParams controls which audit paths are pre-built
+// export const dynamicParams = false; // Default is false for static export
 
-// Force dynamic rendering to ensure the route works in dev mode and E2E tests
-// Without this, the page might be statically generated with no paths
-export const dynamic = 'force-dynamic';
+// Generate static params for static export compatibility
+// Returns placeholder auditId to satisfy static export requirements
+// Actual audit data is loaded client-side
+export function generateStaticParams() {
+  return [{ auditId: "1" }];
+}
 
 export default function AuditLayout({ children }: { children: ReactNode }) {
   return children;

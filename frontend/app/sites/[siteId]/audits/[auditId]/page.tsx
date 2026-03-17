@@ -20,6 +20,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Without this, the page might be statically generated with no paths
 export const dynamic = 'force-dynamic';
 
+// Required for static export with dynamic routes - returns empty array for client-side rendering
+export function generateStaticParams() {
+  return [];
+}
+
 // ============================================================
 // Skeleton Component
 // ============================================================
