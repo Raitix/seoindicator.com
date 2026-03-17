@@ -1,7 +1,7 @@
 # TASK-37-5: Login Page Redirect Loop Prevention
 
 ## STATUS
-`To Prioritize`
+`To Write Tests`
 
 ## PRIORITY
 `Critical`
@@ -64,7 +64,7 @@ return <LoginForm />;
 ```
 
 ## Dependencies
-- TASK-37-1 (Token validation)
+- TASK-37-1 (Token validation) - `To Write Tests` ⏳
 
 ## Effort Estimate
 `Small` (1-2 hours)

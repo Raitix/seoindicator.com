@@ -1,7 +1,11 @@
 # TASK-34-2: AIVisibilityProject Model
 
 ## STATUS
-`To Deploy`
+`In Deployment`
+
+### [2026-03-17 12:35 GMT+2] DevOps: Starting Deployment
+- Status changed to In Deployment
+- Running deploy-prod.ps1 to deploy to production
 
 ## PRIORITY
 `High`
