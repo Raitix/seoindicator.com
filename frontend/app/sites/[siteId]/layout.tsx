@@ -1,11 +1,8 @@
 import type { ReactNode } from "react";
 
-// Enable dynamic params to allow E2E tests and dev mode to work with any siteId
-// In production with static export, generateStaticParams controls which pages are pre-built
-export const dynamicParams = true;
-
-// Force dynamic rendering to ensure the route works in dev mode and E2E tests
-export const dynamic = 'force-dynamic';
+// Static export: dynamicParams must be false (or omitted) for static export compatibility
+// generateStaticParams in child pages controls which paths are pre-built
+// export const dynamicParams = false; // Default is false for static export
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return children;
