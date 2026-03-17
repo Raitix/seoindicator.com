@@ -135,6 +135,7 @@ export function StartAuditModal({
       <DialogContent 
         className={cn('sm:max-w-md', className)}
         aria-describedby="start-audit-description"
+        data-testid="start-audit-modal"
       >
         <DialogHeader>
           <DialogTitle>Start New Audit</DialogTitle>
