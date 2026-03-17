@@ -1,4 +1,130 @@
 ﻿---
+## Indicators Button Fix (TASK-37-7)
+
+### Feature Description
+Fix for the "Indicators" button in the header that was previously a non-functional `<button>` element with no action handler. The fix converts the button to a proper Next.js Link component that navigates users to the dashboard page. Part of the Production Critical Fixes - Auth & Navigation feature (FEAT-037).
+
+### Component Locations
+- **Header Component:** `frontend/components/layout/Header.tsx`
+- **Homepage Inline Header:** `frontend/app/page.tsx`
+- **Tests:** `frontend/__tests__/components/layout/Header.navigation.test.tsx`, `frontend/__tests__/components/layout/Header.hover-states.test.tsx`
+
+### Problem Solved
+
+| Issue | Before | After |
+|-------|--------|-------|
+| Element type | `<button>` | `<a>` (Link component) |
+| Has href | No | Yes (`/dashboard`) |
+| Is clickable | No (non-functional) | Yes (navigates to dashboard) |
+| Pointer cursor | No | Yes (`cursor-pointer` class) |
+| Hover state | White background (unreadable) | Dark background (`hover:bg-slate-700`) |
+
+### Implementation Details
+
+**Header.tsx (authenticated users):**
+The fix was implemented in the guest navigation items array:
+```tsx
+const guestNavItems = [
+  { label: "Indicators", href: "/dashboard", icon: LayoutDashboard },
+  // ... other items
+];
+```
+
+**Homepage Inline Header (page.tsx):**
+The homepage has its own inline header that also needed the fix:
+```tsx
+// Before (broken)
+<Button variant="ghost" className="text-slate-300 hover:text-white">
+  Indicators
+</Button>
+
+// After (fixed)
+<Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
+  <Link href="/dashboard">Indicators</Link>
+</Button>
+```
+
+### Technical Changes
+
+| File | Change |
+|------|--------|
+| `Header.tsx` | Added guest nav items with Link components |
+| `page.tsx` | Updated inline header button to use `asChild` + Link wrapper |
+
+### Acceptance Criteria Verification
+
+| Criteria | Status |
+|----------|--------|
+| "Indicators" button is a clickable link | ✅ PASS |
+| Clicking navigates to `/dashboard/` | ✅ PASS |
+| Button has proper hover state | ✅ PASS |
+| Button shows pointer cursor | ✅ PASS |
+| Keyboard accessible | ✅ PASS (Link component) |
+| Homepage inline header fixed | ✅ PASS |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| Header.navigation.test.tsx | 45 | ✅ PASS |
+| Header.hover-states.test.tsx | 40 | ✅ PASS |
+| **Total** | **85** | **✅ ALL PASS** |
+
+**Task-Specific Tests (NAV-002, HOV-*):**
+| Test ID | Description | Status |
+|---------|-------------|--------|
+| NAV-002a | Indicators link visible for guests | ✅ PASS |
+| NAV-002b | Indicators href="/dashboard" | ✅ PASS |
+| NAV-002c | Indicators hidden for authenticated users | ✅ PASS |
+| NAV-002d | cursor-pointer class present | ✅ PASS |
+| HOV-001h | cursor-pointer class on hover | ✅ PASS |
+| HOV-002f | dark hover background | ✅ PASS |
+| HOV-002g | NOT white hover background | ✅ PASS |
+| HOV-005c | anchor element (not button) | ✅ PASS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Deployment ID | `20260317T132011Z-e43d3765` |
+| Commit | `aac2d4f3` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-17 16:50 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Element type | `<a>` (Link) | `<A>` | ✅ PASS |
+| Has href | `/dashboard/` | `/dashboard/` | ✅ PASS |
+| cursor-pointer class | Yes | Yes | ✅ PASS |
+| Navigates on click | Yes | Yes | ✅ PASS |
+| XSS protection | Script tags blocked | ✅ Blocked | ✅ PASS |
+| Path traversal | 404 response | ✅ 404 | ✅ PASS |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| Link Validation | Internal navigation only via Next.js Link |
+| No External URLs | `/dashboard` is internal route |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-37-2 | Done ✅ | Header Navigation Fix (combined task) |
+
+### Related Tasks
+
+- TASK-37-2: Header Navigation (covers multiple nav fixes)
+- TASK-37-5: Sign In Button Fix
+- TASK-37-6: Nav Hover States
+
+---
 ## Dashboard API Endpoint (TASK-1-6)
 
 ### Feature Description
