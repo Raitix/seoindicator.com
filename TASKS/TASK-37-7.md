@@ -3,6 +3,38 @@
 ## STATUS
 `To Deploy`
 
+### DevOps (2026-03-17 15:24 GMT+2)
+**Deployment Complete ✓**
+
+- **Deployment ID:** 20260317T132011Z-e43d3765
+- **Commit:** aac2d4f3 (includes homepage fix `713fb1bc`)
+- **Status:** success
+- **Duration:** 4m 30s
+- **Deployed at:** 2026-03-17T13:24:41 UTC
+
+**Steps Completed:**
+| Step | Status |
+|------|--------|
+| Fetch origin | ✅ success |
+| Build frontend (Next.js 16.1.6) | ✅ success |
+| Deploy to production (SSH) | ✅ success |
+| Production smoke tests | ✅ success |
+
+**Smoke Check Results:**
+- ✓ Homepage loaded
+- ✓ Login page loaded
+- ✓ Production smoke checks passed
+
+**Fix Deployed:**
+The homepage Indicators button fix is now live:
+```tsx
+<Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
+  <Link href="/dashboard">Indicators</Link>
+</Button>
+```
+
+**Status Change:** `To Deploy` → `To Test Prod`
+
 ### LocalTester (2026-03-17 15:10 GMT+2)
 **Local Testing Complete - PASSED**
 
