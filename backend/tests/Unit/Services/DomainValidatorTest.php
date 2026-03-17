@@ -249,7 +249,9 @@ class DomainValidatorTest extends TestCase
     public function test_accessibility_timeout(): void
     {
         Http::fake([
-            'slow-domain.com' => Http::failed('Connection timed out', 0, 'Illuminate\Http\Client\ConnectionException'),
+            'slow-domain.com' => function () {
+                throw new \Illuminate\Http\Client\ConnectionException('Connection timed out');
+            },
         ]);
 
         $result = $this->validator->checkAccessibility('slow-domain.com');

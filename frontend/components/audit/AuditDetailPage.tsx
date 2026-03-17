@@ -52,18 +52,18 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
   const siteId = siteIdProp ?? (params.siteId as string);
   const auditId = auditIdProp ?? (params.auditId as string);
 
-  // Parse URL params for filters
-  const initialFilters: IssueFiltersType = {
-    type: searchParams.get('type') || undefined,
-    severity: (searchParams.get('severity') as IssueSeverity) || undefined,
-    status: (searchParams.get('status') as IssueStatus) || undefined,
-    search: searchParams.get('q') || undefined,
-    sortBy: (searchParams.get('sortBy') as IssueFiltersType['sortBy']) || 'created_at',
-    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
-  };
+  // Parse URL params for filters - use useMemo to prevent re-creation on every render
+  const initialFilters = React.useMemo<IssueFiltersType>(() => ({
+    type: searchParams?.get('type') || undefined,
+    severity: (searchParams?.get('severity') as IssueSeverity) || undefined,
+    status: (searchParams?.get('status') as IssueStatus) || undefined,
+    search: searchParams?.get('q') || undefined,
+    sortBy: (searchParams?.get('sortBy') as IssueFiltersType['sortBy']) || 'created_at',
+    sortOrder: (searchParams?.get('sortOrder') as 'asc' | 'desc') || 'desc',
+  }), [searchParams]);
 
-  const initialPage = parseInt(searchParams.get('page') || '1', 10);
-  const initialPerPage = parseInt(searchParams.get('perPage') || '25', 10);
+  const initialPage = React.useMemo(() => parseInt(searchParams?.get('page') || '1', 10), [searchParams]);
+  const initialPerPage = React.useMemo(() => parseInt(searchParams?.get('perPage') || '25', 10), [searchParams]);
 
   // State
   const [filters, setFilters] = React.useState<IssueFiltersType>(initialFilters);
