@@ -43322,6 +43322,206 @@ unlink($filePath); // Delete file
 - TASK-29-6: ExportResultsButton Component (frontend)
 
 ---
+## Download Token System (TASK-29-4)
+
+### Feature Description
+Secure token-based download system for the Export Results (PDF/XLS) feature (FEAT-029) that generates one-time use tokens with expiration for secure file downloads. Implements IDOR prevention through user ownership validation and prevents replay attacks through token invalidation.
+
+### Component Locations
+- **Service:** `backend/app/Services/Tools/ToolExportService.php` (token methods)
+- **Config:** `backend/config/tools.php` (export config)
+- **Tests:** `backend/tests/Unit/Services/Tools/DownloadTokenSystemTest.php`
+- **Test Documentation:** `TESTS/TEST-29-4.md`
+
+### Token Generation
+
+```php
+$token = Str::random(64);
+Cache::put("export:{$token}", [
+    'file' => $filePath,
+    'format' => $format,
+    'user_id' => auth()->id(),
+    'created_at' => now()->toIso8601String(),
+], now()->addSeconds(config('tools.export_token_ttl', 3600)));
+```
+
+### Token Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Token Length | 64 characters | Cryptographically secure random string |
+| Default TTL | 3600 seconds (1 hour) | Configurable via `TOOL_EXPORT_TOKEN_TTL` |
+| Cache Key | `export:{token}` | Laravel Cache storage |
+
+### Token Metadata Structure
+
+```php
+[
+    'file' => '/storage/exports/meta-tag-analyzer-20260304.pdf',
+    'format' => 'pdf', // or 'xls'
+    'user_id' => 1,
+    'created_at' => '2026-03-04T12:00:00Z'
+]
+```
+
+### Token Validation Flow
+
+```
+1. Token received via GET /api/v1/tools/export/download/{token}
+2. Retrieve token data from cache
+3. Validate token exists (not expired)
+4. Validate user_id matches authenticated user
+5. Stream file for download
+6. Invalidate token (one-time use)
+```
+
+### Validation Methods
+
+**validateToken():**
+```php
+public function validateToken(string $token, int $userId): ?array
+{
+    $tokenData = Cache::get("export:{$token}");
+    
+    if (!$tokenData) {
+        return null; // Token expired or invalid
+    }
+    
+    if ($tokenData['user_id'] !== $userId) {
+        return null; // IDOR prevention
+    }
+    
+    return $tokenData;
+}
+```
+
+**invalidateToken():**
+```php
+public function invalidateToken(string $token): void
+{
+    Cache::forget("export:{$token}");
+}
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| **IDOR Prevention** | Strict user_id comparison (`===`) validates ownership |
+| **One-Time Use** | Token deleted from cache after successful download |
+| **Time-Limited** | Cache TTL ensures automatic expiration |
+| **Type Coercion Protection** | Strict comparison prevents string "1" == int 1 attacks |
+| **Cryptographic Tokens** | `Str::random(64)` uses `random_bytes()` (CSPRNG) |
+| **Replay Attack Prevention** | Token invalidated after first use |
+
+### IDOR Prevention Details
+
+The token system prevents Insecure Direct Object Reference (IDOR) attacks by:
+
+1. **User Binding**: Each token is bound to the creating user's ID
+2. **Strict Comparison**: Uses `===` operator to prevent type coercion attacks
+3. **No Enumeration**: Returns 404 (not 403) for invalid/wrong-user tokens
+4. **Token Secrecy**: 64-character tokens are practically unguessable (~10^98 combinations)
+
+### Error Responses
+
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated request |
+| 404 | Invalid or expired token |
+| 404 | Token belongs to different user (no enumeration) |
+
+**404 Response:**
+```json
+{
+    "message": "Invalid or expired download link"
+}
+```
+
+### Token Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Export Request                                             │
+│  POST /api/v1/tools/export                                  │
+│       ↓                                                     │
+│  Generate 64-char token                                     │
+│  Store metadata in Cache (TTL: 1 hour)                      │
+│  Return download URL to client                              │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Download Request                                           │
+│  GET /api/v1/tools/export/download/{token}                  │
+│       ↓                                                     │
+│  Validate token exists in cache                             │
+│  Validate user_id matches                                   │
+│       ↓                                                     │
+│  Stream file response                                       │
+│  Delete token from cache (one-time use)                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| DownloadTokenSystemTest | 51 | 204 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Token Generation | 6 | Length, randomness, cache storage |
+| Token Storage | 6 | Metadata structure, TTL handling |
+| Token TTL | 6 | Default 1 hour, configurable, expiration |
+| Token Validation | 7 | Existence, user match, expiration |
+| Token Invalidation | 5 | One-time use, replay prevention |
+| IDOR Prevention | 5 | User isolation, type coercion |
+| Security Edge Cases | 9 | SQL injection, brute force, concurrent access |
+| Cache Driver | 3 | File, Redis compatibility |
+| Integration | 4 | Full lifecycle, multiple tokens |
+
+### Key Security Tests
+
+| Test ID | Description |
+|---------|-------------|
+| TKN-003 | Cryptographic randomness (Str::random uses random_bytes) |
+| TKN-004 | Sufficient entropy (1000 unique tokens verified) |
+| TKN-124 | Brute force impractical (~10^98 years to crack) |
+| TKN-082 | Replay attack prevention |
+| TKN-100-104 | IDOR prevention with strict user_id comparison |
+| TKN-103 | Type coercion attack prevention (string "1" != int 1) |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-04 |
+| Commit | `4462d15` |
+| Health Check | ✅ 200 OK |
+| Tests | 51/51 passing (204 assertions) |
+| Status | Complete |
+
+### Configuration
+
+```env
+# .env
+TOOL_EXPORT_TOKEN_TTL=3600  # 1 hour (default)
+```
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-29-3 | Done ✅ | ToolExportService (integration point) |
+
+### Related Tasks
+
+- TASK-29-3: ToolExportService & Controller (uses token system)
+- TASK-29-5: Rate Limiting Integration
+- TASK-29-6: ExportResultsButton Component (frontend)
+
+---
 ## Rate Limiting Integration (TASK-29-5)
 
 ### Description

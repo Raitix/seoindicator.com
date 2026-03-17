@@ -11,11 +11,9 @@ import type { ReactNode } from 'react';
 // This allows any audit ID to be accessed without pre-generation
 export const dynamicParams = true;
 
-export function generateStaticParams(): Array<{ siteId: string; auditId: string }> {
-  // Return empty array for dynamic rendering
-  // Actual audit pages will be client-side rendered
-  return [];
-}
+// Force dynamic rendering to ensure the route works in dev mode and E2E tests
+// Without this, the page might be statically generated with no paths
+export const dynamic = 'force-dynamic';
 
 export default function AuditLayout({ children }: { children: ReactNode }) {
   return children;

@@ -13,14 +13,12 @@ import { ErrorBoundary } from '@/components/audit/ErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // ============================================================
-// Static Params for Dynamic Routes (required for output: export)
+// Route Configuration
 // ============================================================
 
-export function generateStaticParams() {
-  // Return empty array - pages are client-side rendered
-  // This allows the dev server to handle dynamic routes
-  return [];
-}
+// Force dynamic rendering to ensure the route works in dev mode and E2E tests
+// Without this, the page might be statically generated with no paths
+export const dynamic = 'force-dynamic';
 
 // ============================================================
 // Skeleton Component
