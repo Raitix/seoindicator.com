@@ -116,7 +116,8 @@ class CrawlWorkerDispatchTest extends TestCase
         // Verify job has required metadata
         $this->assertEquals($jobId, $job->jobId);
         $this->assertEquals(300, $job->timeout);
-        $this->assertEquals(1, $job->tries);
+        // tries is configurable via crawler.queue.retry_attempts, defaults to 2
+        $this->assertEquals(2, $job->tries);
         $this->assertEquals([60], $job->backoff);
     }
 

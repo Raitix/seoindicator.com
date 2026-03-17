@@ -61,7 +61,8 @@ class CrawlWorkerQueueIntegrationTest extends TestCase
         // Job should have jobId as metadata
         $this->assertEquals('test-job-123', $job->jobId);
         $this->assertEquals(300, $job->timeout);
-        $this->assertEquals(1, $job->tries);
+        // tries is configurable via crawler.queue.retry_attempts, defaults to 2
+        $this->assertEquals(2, $job->tries);
     }
 
     /**
@@ -175,7 +176,8 @@ class CrawlWorkerQueueIntegrationTest extends TestCase
     {
         $job = new CrawlWorker('test-job-123');
 
-        $this->assertEquals(1, $job->maxExceptions);
+        // maxExceptions equals tries (configurable, defaults to 2)
+        $this->assertEquals(2, $job->maxExceptions);
     }
 
     // =========================================================================
@@ -296,7 +298,10 @@ class CrawlWorkerQueueIntegrationTest extends TestCase
     {
         $job = new CrawlWorker('retry-test');
 
-        $this->assertEquals(1, $job->tries);
+        // tries is configurable via crawler.queue.retry_attempts, defaults to 2
+        $this->assertEquals(2, $job->tries);
+        // backoff is calculated: [base_delay * 2^0, base_delay * 2^1, ...] for tries-1 attempts
+        // with default tries=2 and retry_delay=60: [60]
         $this->assertEquals([60], $job->backoff);
     }
 }
