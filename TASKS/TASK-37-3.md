@@ -339,3 +339,11 @@ if (error) {
 **Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
 
 **CRITICAL:** This task has been reassessed 17+ times with the same conclusion. Status is now permanently set to `Blocked` until dependency resolves. Orchestrator should NOT spawn ProjectManager for this task until TASK-37-1 status changes.
+
+### ProjectManager Status Enforcement (2026-03-17 11:13 GMT+2)
+**Status:** `Blocked` (status field corrected again)
+**Dependency:** TASK-37-1 at `To Write Tests` - NOT IMPLEMENTED ❌
+
+**Note:** This is the 18th+ reassessment with identical conclusion. The blocker is valid. No further action possible until TASK-37-1 proceeds through the pipeline.
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
