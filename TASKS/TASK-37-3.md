@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`To Prioritize`
+`Blocked`
 
 ## PRIORITY
 `High`
@@ -442,3 +442,14 @@ if (error) {
 **Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
 
 **No Completion Marker:** Task is blocked - no status change from blocked state
+
+### ProjectManager Status Correction (2026-03-17 13:55 GMT+2)
+**Status Field Corrected:** `To Prioritize` → `Blocked` (25th assessment)
+
+**Dependency Verification:**
+- TASK-37-1: `To Write Tests` - PreTester phase, NOT IMPLEMENTED ❌
+- Blocker is valid: `BLOCKED_BY: TASK-37-1` in task file
+
+**Note:** Status field was incorrectly showing `To Prioritize`, causing repeated orchestrator spawns. Corrected to `Blocked` to match the actual task state.
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
