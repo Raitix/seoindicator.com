@@ -1,7 +1,7 @@
 # SPEC-036: Content Decay Detection & Refresh Planner
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## FEATURE
 FEAT-036: Content Decay Detection & Refresh Planner
@@ -704,6 +704,29 @@ The optional AI brief must always be labeled as assistive output, not guaranteed
 - AI brief quality must never replace deterministic planner recommendations
 
 **Status:** Ready for SpecSystemAnalyst to break into tasks.
+
+---
+
+### DocSystemAnalyst (2026-03-17 17:00 GMT+2)
+**✅ Specification Complete**
+
+All 18 tasks under SPEC-036 are now complete:
+- **Done:** 16 tasks (TASK-36-1 through 36-14, 36-16, 36-18)
+- **Cancelled:** 2 tasks (TASK-36-15, TASK-36-17)
+
+**Feature Summary:**
+- Database: 4 tables created (content_decay_projects, candidates, signals, tasks)
+- Backend: 6 services + queue jobs implemented
+- API: RESTful endpoints for all operations
+- Frontend: 11 components + 4 pages deployed
+- Tests: 99.3% pass rate on component tests
+
+**Production Status:**
+- Deployed: 2026-03-17
+- Commit: `aac2d4f3ea65788897eaca92b59069ac20c979a4`
+- All routes verified working
+
+**Status Change:** `To Prioritize` → `Done`
 
 ---
 

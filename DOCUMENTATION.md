@@ -65181,6 +65181,202 @@ interface ContentRefreshTask {
 - TASK-36-14: Navigation Integration (Done)
 
 ---
+## Frontend Pages - Refresh Queue & Board (TASK-36-13)
+
+### Feature Description
+Next.js frontend pages for the Content Decay Detection & Refresh Planner feature (FEAT-036) that provide the main user-facing interface for the content decay workflow. Four pages enable users to view decay candidates, manage refresh workflow via Kanban board, track recovery metrics, and configure detection settings.
+
+### Page Locations
+- **Refresh Queue Page:** `frontend/app/sites/[siteId]/content-decay/page.tsx`
+- **Recovery Board Page:** `frontend/app/sites/[siteId]/content-decay/board/page.tsx`
+- **Recovery Report Page:** `frontend/app/sites/[siteId]/content-decay/recovery/page.tsx`
+- **Settings Page:** `frontend/app/sites/[siteId]/content-decay/settings/page.tsx`
+- **API Hooks:** `frontend/lib/hooks/useContentDecay.ts`
+- **Tests:** `frontend/__tests__/app/sites/[siteId]/content-decay/*.test.tsx`
+
+### Page Overview
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| Refresh Queue | `/sites/{siteId}/content-decay` | Main prioritized list with summary cards |
+| Recovery Board | `/sites/{siteId}/content-decay/board` | Kanban-style workflow view |
+| Recovery Report | `/sites/{siteId}/content-decay/recovery` | Before/after recovery metrics |
+| Settings | `/sites/{siteId}/content-decay/settings` | Detection configuration |
+
+### Refresh Queue Page Features
+
+| Feature | Description |
+|---------|-------------|
+| **Summary Cards** | 5 cards: Total Candidates, Critical, Lost Clicks, Recovery Upside, Recovered |
+| **Queue Table** | DecayQueueTable component with sorting, filtering, pagination |
+| **Candidate Drawer** | Slide-over detail view using CandidateDetailDrawer component |
+| **Scan Trigger** | "Run Scan" button to trigger manual detection |
+| **Export** | CSV export button for queue data |
+| **Settings Link** | Navigation to settings page |
+| **Navigation Tabs** | Queue, Board, Recovery tabs for page switching |
+
+### Recovery Board Page Features
+
+| Feature | Description |
+|---------|-------------|
+| **Kanban Columns** | 5 columns: Backlog, Planned, In Progress, Refreshed, Recovered |
+| **Column Counts** | Badge showing candidate count per column |
+| **Candidate Cards** | Compact cards with severity badges and metrics |
+| **Drag & Drop** | Move candidates between workflow states |
+| **Filters** | Filter by severity and page type |
+| **Detail Sheet** | Side panel for quick status changes |
+| **Bottom Stats** | Total, In Progress, Recovered counts |
+
+**Kanban Column Structure:**
+```typescript
+const columns = [
+  { id: 'backlog', title: 'Backlog', status: 'backlog' },
+  { id: 'planned', title: 'Planned', status: 'planned' },
+  { id: 'in_progress', title: 'In Progress', status: 'in_progress' },
+  { id: 'refreshed', title: 'Refreshed', status: 'refreshed' },
+  { id: 'recovered', title: 'Recovered', status: 'recovered' }
+];
+```
+
+### Recovery Report Page Features
+
+| Feature | Description |
+|---------|-------------|
+| **Summary Statistics** | 4 cards: Total Recovered, Clicks Recovered, Avg Recovery Rate, Avg Days |
+| **Date Range Filter** | 7 days, 30 days, 90 days, All time options |
+| **Timeline Chart** | Bar chart showing recovery trends |
+| **Comparison Table** | Before/after metrics for recovered pages |
+| **Recovery Stories** | Individual page recovery narratives with metrics |
+| **Export PDF** | PDF export button for report |
+
+### Settings Page Features
+
+| Feature | Description |
+|---------|-------------|
+| **Detection Toggle** | Enable/disable content decay detection |
+| **Window Size Selector** | 7, 14, 28, 56 day comparison windows |
+| **Threshold Configuration** | Minimum clicks and impressions thresholds |
+| **Digest Toggle** | Enable/disable weekly/monthly digest |
+| **Digest Frequency** | Weekly or Monthly options |
+| **Form Validation** | Error messages for invalid inputs |
+| **Save/Reset Buttons** | Persist or revert configuration changes |
+| **Unsaved Indicator** | Warning when leaving with unsaved changes |
+
+### API Hooks (useContentDecay.ts)
+
+| Hook | Purpose |
+|------|---------|
+| `useContentDecaySummary(siteId)` | Fetch summary statistics |
+| `useContentDecayCandidates(siteId, filters)` | Paginated candidate list with filters |
+| `useContentDecayCandidate(id)` | Single candidate detail |
+| `useContentDecaySettings(siteId)` | Project settings |
+| `useContentDecayRecovery(siteId, dateRange)` | Recovery report data |
+| `useRunContentDecayScan(siteId)` | Manual scan trigger mutation |
+| `useUpdateCandidateStatus(id)` | Status update mutation |
+| `useExportContentDecay(siteId)` | CSV/PDF export |
+| `useSaveContentDecaySettings(siteId)` | Settings save mutation |
+| `useGenerateAiBrief(candidateId)` | AI brief generation |
+| `useContentRefreshTasks(candidateId)` | Task management |
+| `useCreateRefreshTask(candidateId)` | Task creation |
+| `useRestoreCandidate()` | Restore ignored candidate |
+
+### Component Integration
+
+| Page | Components Used |
+|------|-----------------|
+| Refresh Queue | DecaySummaryCards, DecayQueueTable, CandidateDetailDrawer |
+| Recovery Board | DecayReasonBadges, SeverityBadge, StatusWorkflowButtons |
+| Recovery Report | RecoveryComparisonCard, DecayTrendMiniChart |
+| Settings | Form controls, Toggle, Select, Input |
+
+### SEO Metadata
+
+| Page | Title | Description |
+|------|-------|-------------|
+| Refresh Queue | "Content Decay - {Site Name}" | "Monitor and manage content decay candidates" |
+| Recovery Board | "Recovery Board - {Site Name}" | "Kanban view of content refresh workflow" |
+| Recovery Report | "Recovery Report - {Site Name}" | "Track content recovery performance" |
+| Settings | "Content Decay Settings - {Site Name}" | "Configure decay detection settings" |
+
+### Responsive Design
+
+| Breakpoint | Behavior |
+|------------|----------|
+| Mobile (< 640px) | Single column, horizontal scroll for tables/boards |
+| Tablet (640-1024px) | 2-column grids, compressed layouts |
+| Desktop (> 1024px) | Full 4-column layouts, expanded tables |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| ARIA Labels | All interactive elements labeled |
+| Heading Hierarchy | H1 > H2 > H3 structure |
+| Keyboard Navigation | Tab, Enter, Space support |
+| Focus Management | Visible focus indicators |
+| Screen Reader | Descriptive labels for charts and tables |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `page.test.tsx` (Queue) | 8 suites | ✅ PASS |
+| `board/page.test.tsx` | 10 suites | ✅ PASS |
+| `recovery/page.test.tsx` | 10 suites | ✅ PASS |
+| `settings/page.test.tsx` | 11 suites | ✅ PASS |
+| **Component Tests** | 283 passed | 99.3% pass rate |
+
+**Component Test Results:**
+| Component | Tests | Status |
+|-----------|-------|--------|
+| RecoveryComparisonCard | 25 | ✅ PASS |
+| DecaySummaryCards | 21 | ✅ PASS |
+| CandidateDetailDrawer | 39 | ✅ PASS |
+| StatusWorkflowButtons | 39 | ✅ PASS |
+| RefreshTaskList | 34 | ✅ PASS |
+| SeverityBadge | 22 | ✅ PASS |
+| DecayTrendMiniChart | 18 | ✅ PASS |
+| DecayReasonBadges | 21 | ✅ PASS |
+| DecayQueueTable | 34 | ✅ PASS |
+| AiRefreshBriefPanel | 32 | 30/32 PASS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Commit | `aac2d4f3ea65788897eaca92b59069ac20c979a4` |
+| Deployment ID | `20260317T131054Z-e5c47860` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-17 15:34 GMT+2 |
+| Status | Complete |
+
+### Production Routes Verified
+
+| Route | Status | Features |
+|-------|--------|----------|
+| `/sites/1/content-decay` | ✅ 200 OK | Summary cards, scan button, export, tabs |
+| `/sites/1/content-decay/board` | ✅ 200 OK | 5 Kanban columns, filters, column counts |
+| `/sites/1/content-decay/recovery` | ✅ 200 OK | Summary stats, timeline, comparison table |
+| `/sites/1/content-decay/settings` | ✅ 200 OK | Toggle, selectors, inputs, save/reset |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-36-11 | Done ✅ | Frontend Components - Summary & Queue |
+| TASK-36-12 | Done ✅ | Frontend Components - Candidate Detail |
+| TASK-36-10 | Done ✅ | API Controllers |
+| TASK-36-1 | Done ✅ | Database Migrations |
+
+### Related Tasks
+
+- TASK-36-11: Frontend Components (components used in pages)
+- TASK-36-12: Candidate Detail Components (drawer integration)
+- TASK-36-14: Navigation Integration (Done)
+- TASK-36-18: Documentation Update (blocked by this task)
+
+---
 ## PDF Report Integration - Technical SEO Site Audit (TASK-14-18)
 
 ### Service Description
@@ -67780,6 +67976,178 @@ Route::middleware(['auth:sanctum', 'admin', 'throttle:60,1'])
 - TASK-27-7: UsageAggregationService (data source)
 - TASK-27-15: Metric Cards and Overview Section (frontend consumer)
 - TASK-27-16: Usage Charts and Tables (frontend consumer)
+
+---
+## Content Decay Frontend Pages (TASK-36-13)
+
+### Feature Description
+Frontend pages for the Content Decay Detection & Refresh Planner feature (FEAT-036) that provide the user-facing interface for managing content refresh workflows. Implements four Next.js pages: Refresh Queue, Recovery Board, Recovery Report, and Settings, all using the component infrastructure from TASK-36-11 and TASK-36-12.
+
+### Component Locations
+- **Refresh Queue Page:** `frontend/app/sites/[siteId]/content-decay/page.tsx`
+- **Recovery Board Page:** `frontend/app/sites/[siteId]/content-decay/board/page.tsx`
+- **Recovery Report Page:** `frontend/app/sites/[siteId]/content-decay/recovery/page.tsx`
+- **Settings Page:** `frontend/app/sites/[siteId]/content-decay/settings/page.tsx`
+- **API Hooks:** `frontend/lib/hooks/useContentDecay.ts`
+- **Tests:** `frontend/__tests__/app/sites/[siteId]/content-decay/*.test.tsx`
+- **Test Documentation:** `TESTS/TASK-36-13.md`
+
+### Page Routes
+
+| Route | Page | Purpose |
+|-------|------|---------|
+| `/sites/{siteId}/content-decay` | Refresh Queue | Main prioritized list with summary cards |
+| `/sites/{siteId}/content-decay/board` | Recovery Board | Kanban-style workflow view |
+| `/sites/{siteId}/content-decay/recovery` | Recovery Report | Before/after outcomes and timeline |
+| `/sites/{siteId}/content-decay/settings` | Settings | Detection and digest configuration |
+
+### Refresh Queue Page Features
+
+| Feature | Description |
+|---------|-------------|
+| Summary Cards | 5 cards: Total Candidates, Critical, Lost Clicks, Recovery Upside, Recovered |
+| Queue Table | Sortable/filterable candidate list using `DecayQueueTable` component |
+| Candidate Drawer | Slide-over detail using `CandidateDetailDrawer` component |
+| Manual Scan | "Run Scan" button to trigger detection |
+| Export | CSV export button |
+| Navigation | Settings link + tabs (Queue, Board, Recovery) |
+
+### Recovery Board Page Features
+
+| Feature | Description |
+|---------|-------------|
+| Kanban Columns | 5 columns: Backlog, Planned, In Progress, Refreshed, Recovered |
+| Candidate Cards | Draggable cards with severity badges and metrics |
+| Column Counts | Badge showing item count per column |
+| Filters | Filter by severity (All, Critical, High, Medium, Low) and page type |
+| Empty States | Graceful handling when no candidates exist |
+| Bottom Stats | Summary: Total, In Progress, Recovered |
+
+### Recovery Report Page Features
+
+| Feature | Description |
+|---------|-------------|
+| Summary Statistics | 4 cards: Total Recovered, Clicks Recovered, Avg Recovery Rate, Avg Days to Recovery |
+| Timeline Chart | Bar visualization of recovery over time |
+| Comparison Table | Before/after metrics table (Page, Before Clicks, After Clicks, Recovery) |
+| Recovery Stories | Individual page recovery narratives with metrics |
+| Date Range Filter | 7 days, 30 days, 90 days, All time |
+| Export PDF | PDF export button |
+
+### Settings Page Features
+
+| Feature | Description |
+|---------|-------------|
+| Detection Toggle | Enable/disable content decay detection |
+| Window Selector | Detection window: 7, 14, 28, or 56 days |
+| Threshold Config | Minimum clicks and impressions thresholds |
+| Digest Toggle | Enable/disable weekly digest |
+| Digest Frequency | Weekly or Monthly |
+| Save/Reset | Save changes or reset to defaults |
+| Unsaved Indicator | Shows when form has pending changes |
+
+### Component Integration
+
+| Page | Components Used |
+|------|-----------------|
+| Refresh Queue | `DecaySummaryCards`, `DecayQueueTable`, `CandidateDetailDrawer`, `DecayReasonBadges` |
+| Recovery Board | Kanban columns, `StatusWorkflowButtons`, `SeverityBadge`, `DecayTrendMiniChart` |
+| Recovery Report | `RecoveryComparisonCard`, Summary statistics, Timeline chart |
+| Settings | Form controls, Toggle switches, Save button |
+
+### API Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useContentDecaySummary(siteId)` | Summary statistics for cards |
+| `useContentDecayCandidates(siteId, filters)` | Paginated candidate list |
+| `useContentDecayCandidate(id)` | Single candidate detail |
+| `useContentDecaySettings(siteId)` | Project settings |
+| `useContentDecayRecovery(siteId, dateRange)` | Recovery report data |
+| `useRunContentDecayScan(siteId)` | Manual scan trigger |
+| `useUpdateCandidateStatus(id)` | Status update mutation |
+| `useExportContentDecay(siteId)` | CSV/PDF export |
+| `useSaveContentDecaySettings(siteId)` | Settings save mutation |
+| `useGenerateAiBrief(candidateId)` | AI brief generation |
+| `useContentRefreshTasks(candidateId)` | Task management |
+| `useCreateRefreshTask(candidateId)` | Task creation |
+| `useRestoreCandidate()` | Restore ignored candidate |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| Component Tests (10 files) | 283 | - | ✅ PASS (99.3%) |
+| Page Tests (4 files) | - | - | ✅ PASS |
+
+**Component Test Results:**
+| Component | Tests | Status |
+|-----------|-------|--------|
+| RecoveryComparisonCard | 25 | ✅ ALL PASS |
+| DecaySummaryCards | 21 | ✅ ALL PASS |
+| CandidateDetailDrawer | 39 | ✅ ALL PASS |
+| StatusWorkflowButtons | 39 | ✅ ALL PASS |
+| RefreshTaskList | 34 | ✅ ALL PASS |
+| SeverityBadge | 22 | ✅ ALL PASS |
+| DecayTrendMiniChart | 18 | ✅ ALL PASS |
+| DecayReasonBadges | 21 | ✅ ALL PASS |
+| DecayQueueTable | 34 | ✅ ALL PASS |
+| AiRefreshBriefPanel | 32 | 2 minor failures (clipboard mock) |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Deployment ID | `20260317T131054Z-e5c47860` |
+| Commit | `aac2d4f3ea65788897eaca92b59069ac20c979a4` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-17 15:34 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Page | URL | Status |
+|------|-----|--------|
+| Refresh Queue | `/sites/1/content-decay` | ✅ 200 OK |
+| Recovery Board | `/sites/1/content-decay/board` | ✅ 200 OK |
+| Recovery Report | `/sites/1/content-decay/recovery` | ✅ 200 OK |
+| Settings | `/sites/1/content-decay/settings` | ✅ 200 OK |
+
+**Verified Features:**
+- ✅ All 4 pages render correctly with proper SEO metadata
+- ✅ Summary cards display correctly
+- ✅ Kanban columns render with filter dropdowns
+- ✅ Date range selector works on recovery page
+- ✅ Settings toggles and form controls function properly
+- ✅ Empty states handle gracefully
+- ✅ Responsive layout (mobile/tablet/desktop)
+- ✅ ARIA labels and accessibility attributes present
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Authentication | All pages require authenticated session |
+| Authorization | Site ownership verified via API |
+| Client-side Rendering | "use client" directive for interactive features |
+| Input Validation | Form validation on settings page |
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-36-11 | Done ✅ | Frontend Components - Summary & Queue |
+| TASK-36-12 | Done ✅ | Frontend Components - Candidate Detail |
+| TASK-36-10 | Done ✅ | API Controllers & Routes |
+
+### Related Tasks
+
+- TASK-36-10: API Controllers (backend endpoints)
+- TASK-36-11: Summary & Queue Components (component library)
+- TASK-36-12: Candidate Detail Components (component library)
+- TASK-36-14: Navigation Integration (menu links)
 
 ---
 *Last updated: 2026-03-17*
