@@ -822,7 +822,7 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-132: Returns array */
     public function test_get_trend_returns_array(): void
     {
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertIsArray($result);
     }
@@ -830,7 +830,7 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-133: Returns direction key */
     public function test_get_trend_returns_direction(): void
     {
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertArrayHasKey('direction', $result);
     }
@@ -838,7 +838,7 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-134: Returns change_percent key */
     public function test_get_trend_returns_change_percent(): void
     {
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertArrayHasKey('change_percent', $result);
     }
@@ -846,15 +846,15 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-135: Direction: up */
     public function test_get_trend_direction_up(): void
     {
-        // Previous period: 30 mentions
+        // Earlier period (days 80-90): 30 mentions
         AIQueryResult::factory()->count(30)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
             'brand_mentioned' => true,
-            'queried_at' => now()->subDays(14),
+            'queried_at' => now()->subDays(85),
         ]);
         
-        // Current period: 40 mentions (+33%)
+        // Recent period (days 1-7): 40 mentions (+33%)
         AIQueryResult::factory()->count(40)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
@@ -862,7 +862,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now()->subDays(3),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('up', $result['direction']);
         $this->assertGreaterThan(0, $result['change_percent']);
@@ -871,15 +871,15 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-136: Direction: down */
     public function test_get_trend_direction_down(): void
     {
-        // Previous period: 50 mentions
+        // Earlier period (days 80-90): 50 mentions
         AIQueryResult::factory()->count(50)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
             'brand_mentioned' => true,
-            'queried_at' => now()->subDays(14),
+            'queried_at' => now()->subDays(85),
         ]);
         
-        // Current period: 30 mentions (-40%)
+        // Recent period (days 1-7): 30 mentions (-40%)
         AIQueryResult::factory()->count(30)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
@@ -887,7 +887,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now()->subDays(3),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('down', $result['direction']);
         $this->assertLessThan(0, $result['change_percent']);
@@ -896,15 +896,15 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-137: Direction: stable */
     public function test_get_trend_direction_stable(): void
     {
-        // Previous period: 50 mentions
+        // Earlier period (days 80-90): 50 mentions
         AIQueryResult::factory()->count(50)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
             'brand_mentioned' => true,
-            'queried_at' => now()->subDays(14),
+            'queried_at' => now()->subDays(85),
         ]);
         
-        // Current period: 52 mentions (+4%)
+        // Recent period (days 1-7): 52 mentions (+4%)
         AIQueryResult::factory()->count(52)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
@@ -912,7 +912,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now()->subDays(3),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('stable', $result['direction']);
     }
@@ -920,12 +920,12 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-139: Stable threshold: < 5% */
     public function test_get_trend_stable_threshold(): void
     {
-        // Previous: 100, Current: 104 (+4%)
+        // Earlier: 100, Recent: 104 (+4%)
         AIQueryResult::factory()->count(100)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
             'brand_mentioned' => true,
-            'queried_at' => now()->subDays(14),
+            'queried_at' => now()->subDays(85),
         ]);
         
         AIQueryResult::factory()->count(104)->create([
@@ -935,7 +935,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now()->subDays(3),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('stable', $result['direction']);
     }
@@ -943,12 +943,12 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-141: Up threshold: >= 5% */
     public function test_get_trend_up_threshold(): void
     {
-        // Previous: 100, Current: 105 (+5%)
+        // Earlier: 100, Recent: 105 (+5%)
         AIQueryResult::factory()->count(100)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
             'brand_mentioned' => true,
-            'queried_at' => now()->subDays(14),
+            'queried_at' => now()->subDays(85),
         ]);
         
         AIQueryResult::factory()->count(105)->create([
@@ -958,7 +958,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now()->subDays(3),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('up', $result['direction']);
     }
@@ -966,7 +966,7 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-147: Returns 0% for no previous data */
     public function test_get_trend_no_previous_data(): void
     {
-        // Only current period data
+        // Only recent data
         AIQueryResult::factory()->count(50)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
@@ -974,7 +974,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now(),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'week');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('stable', $result['direction']);
         $this->assertEquals(0.00, $result['change_percent']);
@@ -985,15 +985,16 @@ class AnalyticsAggregatorTest extends TestCase
     {
         $this->expectException(ModelNotFoundException::class);
         
-        $this->service->getTrend(99999, 'week');
+        $this->service->getTrend(99999, 90);
     }
 
-    /** @test AA-154: Validates period value */
-    public function test_get_trend_validates_period(): void
+    /** @test AA-154: Accepts days parameter */
+    public function test_get_trend_accepts_days(): void
     {
-        $this->expectException(ValidationException::class);
+        $result = $this->service->getTrend($this->project->id, 30);
         
-        $this->service->getTrend($this->project->id, 'invalid');
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('direction', $result);
     }
 
     // ============================================================
@@ -1507,7 +1508,7 @@ class AnalyticsAggregatorTest extends TestCase
         ]);
         
         $start = microtime(true);
-        $this->service->getTrend($this->project->id, 'week');
+        $this->service->getTrend($this->project->id, 90);
         $elapsed = (microtime(true) - $start) * 1000;
         
         $this->assertLessThan(100, $elapsed, 'getTrend() should complete in < 100ms');
@@ -1801,15 +1802,15 @@ class AnalyticsAggregatorTest extends TestCase
     /** @test AA-380: Cross-period trend */
     public function test_cross_period_trend(): void
     {
-        // Previous month
+        // Earlier period (days 60-90)
         AIQueryResult::factory()->count(20)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
             'brand_mentioned' => true,
-            'queried_at' => now()->subDays(45),
+            'queried_at' => now()->subDays(75),
         ]);
         
-        // Current month
+        // Recent period (days 1-7)
         AIQueryResult::factory()->count(30)->create([
             'project_id' => $this->project->id,
             'platform' => 'chatgpt',
@@ -1817,7 +1818,7 @@ class AnalyticsAggregatorTest extends TestCase
             'queried_at' => now()->subDays(5),
         ]);
         
-        $result = $this->service->getTrend($this->project->id, 'month');
+        $result = $this->service->getTrend($this->project->id, 90);
         
         $this->assertEquals('up', $result['direction']);
     }

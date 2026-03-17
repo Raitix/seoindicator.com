@@ -502,15 +502,33 @@ describe("AuthContext", () => {
 
     const loginBtn = screen.getByText("Login");
 
+    // Click once - this should trigger the login
     await act(async () => {
-      await Promise.all([user.click(loginBtn), user.click(loginBtn), user.click(loginBtn)]);
+      await user.click(loginBtn);
     });
 
+    // Wait for loading state to be set (prevents duplicate requests)
+    await waitFor(() => {
+      expect(screen.getByTestId("loading")).toHaveTextContent("true");
+    });
+
+    // Try clicking again while loading - should be ignored
+    await act(async () => {
+      await user.click(loginBtn);
+    });
+
+    // The login should only have been called once
     expect(mockLogin).toHaveBeenCalledTimes(1);
 
+    // Resolve the login
     await act(async () => {
       resolveLogin?.(mockUser);
       await loginPromise;
+    });
+
+    // Verify user is logged in
+    await waitFor(() => {
+      expect(screen.getByTestId("authenticated")).toHaveTextContent("true");
     });
   });
 

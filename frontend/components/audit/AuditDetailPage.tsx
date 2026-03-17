@@ -98,8 +98,13 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
 
   // Track if component is mounted and has successfully loaded data
   const isMountedRef = React.useRef(false);
+  
+  // Track previous URL to prevent unnecessary navigation
+  const prevUrlRef = React.useRef<string>('');
 
   // Update URL when filters change (only after successful data load)
+  // Note: We intentionally omit 'router' from deps to prevent infinite loops
+  // The router reference is stable, but including it causes re-renders
   React.useEffect(() => {
     // Don't update URL during loading or error states
     if (isLoading || error) {
@@ -127,13 +132,21 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
     const queryString = params.toString();
     const url = queryString ? `?${queryString}` : window.location.pathname;
     
+    // Only update if URL actually changed
+    if (url === prevUrlRef.current) {
+      return;
+    }
+    prevUrlRef.current = url;
+    
     // Use try-catch to handle any navigation errors gracefully
+    // Use window.history.replaceState to avoid router re-renders
     try {
-      router.replace(url, { scroll: false });
+      window.history.replaceState(null, '', url);
     } catch (navError) {
       console.warn('Navigation error:', navError);
     }
-  }, [filters, page, perPage, router, isLoading, error, audit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, page, perPage, isLoading, error, audit]);
 
   // Clear selection when issues change
   React.useEffect(() => {

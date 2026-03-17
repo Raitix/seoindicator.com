@@ -56,14 +56,26 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         return this.props.fallback;
       }
 
+      // Get error details for debugging
+      const errorMessage = this.state.error?.message || 'Unknown error';
+      const errorStack = this.state.error?.stack || '';
+
       return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
           <div className="text-center max-w-md">
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" aria-hidden="true" />
             <h1 className="text-xl font-semibold text-white mb-2">Something went wrong</h1>
-            <p className="text-slate-400 mb-4">
+            <p className="text-slate-400 mb-2">
               An unexpected error occurred. Please try refreshing the page.
             </p>
+            {/* Show error details in development */}
+            <details className="text-left text-xs text-slate-500 mb-4 bg-slate-900 p-2 rounded">
+              <summary className="cursor-pointer text-slate-400">Error Details</summary>
+              <pre className="mt-2 whitespace-pre-wrap break-all">{errorMessage}</pre>
+              {errorStack && (
+                <pre className="mt-2 whitespace-pre-wrap break-all text-slate-600">{errorStack}</pre>
+              )}
+            </details>
             <div className="flex gap-3 justify-center">
               <Button onClick={() => window.location.reload()}>
                 <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
