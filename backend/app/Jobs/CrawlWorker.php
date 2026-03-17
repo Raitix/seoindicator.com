@@ -7,6 +7,7 @@ use App\Services\Crawler\CrawlerService;
 use App\Services\Crawler\TimeoutHandlerService;
 use App\Services\Crawler\CancellationService;
 use App\Services\Crawler\PartialResultsService;
+use App\Services\Crawler\CrawlFailureAlertService;
 use App\Services\PlaywrightRendererService;
 use App\Services\UrlValidatorService;
 use App\Exceptions\SSRFException;
@@ -51,19 +52,19 @@ class CrawlWorker implements ShouldQueue
     public int $timeout = 300;
 
     /**
-     * Number of retry attempts.
+     * Number of retry attempts (configured in crawler.queue.retry_attempts).
      */
-    public int $tries = 1;
+    public int $tries;
 
     /**
      * Maximum exceptions before failing.
      */
-    public int $maxExceptions = 1;
+    public int $maxExceptions;
 
     /**
-     * Seconds to wait between retries.
+     * Seconds to wait between retries (calculated dynamically).
      */
-    public array $backoff = [60];
+    public array $backoff;
 
     /**
      * Memory limit in MB.
@@ -104,7 +105,32 @@ class CrawlWorker implements ShouldQueue
     {
         $this->jobId = $jobId;
         $this->timeout = config('crawler.timeouts.job', 300);
+        
+        // Configurable retry mechanism (TASK-22-16)
+        $this->tries = config('crawler.queue.retry_attempts', 2);
+        $this->maxExceptions = $this->tries;
+        
+        // Exponential backoff: 60s, 120s, 240s...
+        $this->backoff = $this->calculateBackoff();
+        
         $this->onQueue('crawler');
+    }
+
+    /**
+     * Calculate exponential backoff intervals.
+     *
+     * @return array
+     */
+    protected function calculateBackoff(): array
+    {
+        $backoff = [];
+        $baseDelay = config('crawler.queue.retry_delay', 60);
+        
+        for ($i = 0; $i < $this->tries - 1; $i++) {
+            $backoff[] = $baseDelay * pow(2, $i);
+        }
+        
+        return $backoff ?: [60];
     }
 
     /**
@@ -203,6 +229,17 @@ class CrawlWorker implements ShouldQueue
             $duration = round(microtime(true) - $this->startTime);
 
             $crawler->updateStatus($this->jobId, CrawlJob::STATUS_COMPLETED);
+
+            // Reset failure count on successful completion (TASK-22-16)
+            try {
+                $alertService = app(CrawlFailureAlertService::class);
+                $alertService->resetFailureCount();
+            } catch (\Exception $e) {
+                Log::warning('CrawlWorker: Failed to reset failure count', [
+                    'jobId' => $this->jobId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             Log::info('CrawlWorker: Crawl job completed', [
                 'jobId' => $this->jobId,
@@ -557,6 +594,17 @@ class CrawlWorker implements ShouldQueue
                 'error' => substr($exception->getMessage(), 0, 65535),
                 'completed_at' => now(),
             ]);
+
+            // Record failure and send alert if threshold exceeded (TASK-22-16)
+            try {
+                $alertService = app(CrawlFailureAlertService::class);
+                $alertService->recordFailure($job, $exception);
+            } catch (\Exception $e) {
+                Log::error('CrawlWorker: Failed to record failure alert', [
+                    'jobId' => $this->jobId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
