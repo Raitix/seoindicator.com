@@ -35,6 +35,10 @@ class RetryMechanism
     protected int $attempt = 0;
     protected bool $isRetrying = false;
     protected ?ToolError $lastError = null;
+    protected ?int $lastDelay = null;
+    protected mixed $lastResult = null;
+    protected array $context = [];
+    protected bool $cancelled = false;
 
     /**
      * Configuration.
@@ -45,6 +49,8 @@ class RetryMechanism
     protected ?Closure $onRetry = null;
     protected ?Closure $onSuccess = null;
     protected ?Closure $onFailure = null;
+    protected ?Closure $onCancelCallback = null;
+    protected ?Closure $onBeforeRetryCallback = null;
 
     public function __construct(array $config = [])
     {
@@ -65,6 +71,8 @@ class RetryMechanism
                 $result = $operation($this->attempt);
 
                 // Success - call callback and return
+                $this->lastResult = $result;
+                $this->isRetrying = false; // Reset retrying flag on success
                 if ($this->onSuccess) {
                     ($this->onSuccess)($result, $this->attempt);
                 }
@@ -84,6 +92,11 @@ class RetryMechanism
                 break;
             }
 
+            // Check if cancelled
+            if ($this->cancelled) {
+                break;
+            }
+
             $this->attempt++;
             $this->isRetrying = true;
 
@@ -92,9 +105,14 @@ class RetryMechanism
                 ($this->onRetry)($this->lastError, $this->attempt);
             }
 
+            // Call before retry callback
+            if ($this->onBeforeRetryCallback) {
+                ($this->onBeforeRetryCallback)($this->attempt);
+            }
+
             // Wait before next attempt
-            $delay = $this->getDelay();
-            usleep($delay * 1000);
+            $this->lastDelay = $this->getDelay();
+            usleep($this->lastDelay * 1000);
         }
 
         // All retries failed
@@ -102,7 +120,15 @@ class RetryMechanism
             ($this->onFailure)($this->lastError, $this->attempt);
         }
 
-        throw $this->lastError ?? new \RuntimeException('Retry mechanism failed');
+        // Convert ToolError to a throwable exception
+        if ($this->lastError instanceof ToolError) {
+            throw new \RuntimeException(
+                $this->lastError->message . ' (Code: ' . $this->lastError->code . ')',
+                $this->lastError->httpStatus
+            );
+        }
+
+        throw new \RuntimeException('Retry mechanism failed');
     }
 
     /**
@@ -203,6 +229,9 @@ class RetryMechanism
         $this->attempt = 0;
         $this->isRetrying = false;
         $this->lastError = null;
+        $this->lastDelay = null;
+        $this->lastResult = null;
+        $this->cancelled = false;
     }
 
     /**
@@ -223,5 +252,131 @@ class RetryMechanism
             'base_delay' => $retryAfter * 1000,
             'jitter' => false,
         ]);
+    }
+
+    /**
+     * Get the last delay used.
+     * 
+     * @return int Delay in milliseconds
+     */
+    public function getLastDelay(): int
+    {
+        return $this->lastDelay ?? 0;
+    }
+
+    /**
+     * Calculate delay for a specific attempt.
+     * 
+     * @param int $attempt Attempt number
+     * @return int Delay in milliseconds
+     */
+    public function calculateDelay(int $attempt): int
+    {
+        $delay = $this->baseDelay * pow(2, $attempt - 1);
+
+        if ($this->enableJitter) {
+            $delay += rand(0, self::MAX_JITTER);
+        }
+
+        return (int) $delay;
+    }
+
+    /**
+     * Set execution context.
+     * 
+     * @param array $context Context data
+     * @return self
+     */
+    public function setContext(array $context): self
+    {
+        $this->context = $context;
+        return $this;
+    }
+
+    /**
+     * Get execution context.
+     * 
+     * @return array
+     */
+    public function getContext(): array
+    {
+        return $this->context ?? [];
+    }
+
+    /**
+     * Set cancellation callback.
+     * 
+     * @param Closure $callback
+     * @return self
+     */
+    public function onCancel(Closure $callback): self
+    {
+        $this->onCancelCallback = $callback;
+        return $this;
+    }
+
+    /**
+     * Cancel the retry operation.
+     */
+    public function cancel(): void
+    {
+        $this->cancelled = true;
+        if ($this->onCancelCallback) {
+            ($this->onCancelCallback)();
+        }
+    }
+
+    /**
+     * Get delay for a specific error and attempt.
+     * 
+     * @param ToolError $error
+     * @param int $attempt
+     * @return int Delay in milliseconds
+     */
+    public function getDelayForError(ToolError $error, int $attempt): int
+    {
+        // For rate-limited errors, use retry-after header
+        if ($error->code === ToolError::RATE_LIMITED && isset($error->context['retry_after'])) {
+            return $error->context['retry_after'] * 1000;
+        }
+
+        return $this->calculateDelay($attempt);
+    }
+
+    /**
+     * Get current retry state.
+     * 
+     * @return array
+     */
+    public function getState(): array
+    {
+        return [
+            'totalAttempts' => $this->attempt,
+            'isRetrying' => $this->isRetrying,
+            'result' => $this->lastResult ?? null,
+            'lastError' => $this->lastError?->toArray(),
+        ];
+    }
+
+    /**
+     * Get current attempt number.
+     * 
+     * @return int
+     */
+    public function getCurrentAttempt(): int
+    {
+        return $this->attempt;
+    }
+
+    /**
+     * Set callback for before retry.
+     * 
+     * @param Closure $callback
+     * @return self
+     */
+    public function onBeforeRetry(Closure $callback): self
+    {
+        $this->onBeforeRetryCallback = $callback;
+        return $this;
     }
 }

@@ -366,4 +366,55 @@ class ToolErrorHandler
     {
         return array_map(fn(ToolError $error) => $error->toArray(), $errors);
     }
+
+    /**
+     * Create an error from error code.
+     * 
+     * @param string $code Error code (INVALID_URL, FETCH_FAILED, etc.)
+     * @param array $context Additional context
+     * @return ToolError
+     */
+    public function createError(string $code, array $context = []): ToolError
+    {
+        $customMessage = $context['message'] ?? null;
+        unset($context['message']);
+        
+        return ToolError::fromCode($code, $context, $customMessage);
+    }
+
+    /**
+     * Create error from exception.
+     * 
+     * @param Throwable $e The exception
+     * @param array $context Additional context
+     * @return ToolError
+     */
+    public function createFromException(Throwable $e, array $context = []): ToolError
+    {
+        return $this->handleException($e, $context);
+    }
+
+    /**
+     * Convert error to response array.
+     * 
+     * @param ToolError $error
+     * @return array
+     */
+    public function toResponse(ToolError $error): array
+    {
+        return $error->toResponse();
+    }
+
+    /**
+     * Create multiple errors from array of error definitions.
+     * 
+     * @param array $errors Array of ['code' => string, 'context' => array]
+     * @return array<ToolError>
+     */
+    public function createErrors(array $errors): array
+    {
+        return array_map(function ($errorDef) {
+            return $this->createError($errorDef['code'], $errorDef['context'] ?? []);
+        }, $errors);
+    }
 }

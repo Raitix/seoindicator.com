@@ -2,7 +2,7 @@
 
 namespace App\Exceptions;
 
-use App\Services\ToolError;
+use App\Services\Tools\ToolError;
 use Exception;
 
 /**

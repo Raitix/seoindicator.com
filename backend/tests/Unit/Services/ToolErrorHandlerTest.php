@@ -3,8 +3,8 @@
 namespace Tests\Unit\Services;
 
 use Tests\TestCase;
-use App\Services\ToolErrorHandler;
-use App\Services\ToolError;
+use App\Services\Tools\ToolErrorHandler;
+use App\Services\Tools\ToolError;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -79,7 +79,7 @@ class ToolErrorHandlerTest extends TestCase
 
         $this->assertEquals('TIMEOUT', $error->code);
         $this->assertEquals(504, $error->httpStatus);
-        $this->assertStringContainsString('timed out', $error->message);
+        $this->assertStringContainsString('timed out', strtolower($error->message));
     }
 
     /**
@@ -88,7 +88,7 @@ class ToolErrorHandlerTest extends TestCase
     public function test_create_error_with_rate_limited_code(): void
     {
         $error = $this->handler->createError('RATE_LIMITED', [
-            'retryAfter' => 60
+            'retry_after' => 60
         ]);
 
         $this->assertEquals('RATE_LIMITED', $error->code);
@@ -154,7 +154,7 @@ class ToolErrorHandlerTest extends TestCase
     }
 
     /**
-     * EH-010: Error logging with context
+     * EH-010: Error logging with context via logError method
      */
     public function test_error_logging_with_context(): void
     {
@@ -162,13 +162,15 @@ class ToolErrorHandlerTest extends TestCase
             ->once()
             ->withArgs(function ($message, $context) {
                 return str_contains($message, 'Tool error') &&
-                    isset($context['code']) &&
-                    $context['code'] === 'FETCH_FAILED';
+                    isset($context['error_code']) &&
+                    $context['error_code'] === 'FETCH_FAILED';
             });
 
-        $this->handler->createError('FETCH_FAILED', [
+        $error = $this->handler->createError('FETCH_FAILED', [
             'url' => 'https://example.com'
         ]);
+        
+        $this->handler->logError($error);
     }
 
     /**
@@ -338,17 +340,19 @@ class ToolErrorHandlerTest extends TestCase
         Log::shouldReceive('error')
             ->once()
             ->withArgs(function ($message, $context) {
-                // URL with sensitive query params should be redacted
-                if (isset($context['url'])) {
-                    return !str_contains($context['url'], 'api_key') &&
-                           !str_contains($context['url'], 'password');
+                // Check that sensitive data is redacted in the logged context
+                if (isset($context['error_context']['url'])) {
+                    return !str_contains($context['error_context']['url'], 'api_key=secret') &&
+                           !str_contains($context['error_context']['url'], 'password=secret123');
                 }
                 return true;
             });
 
-        $this->handler->createError('FETCH_FAILED', [
+        $error = $this->handler->createError('FETCH_FAILED', [
             'url' => 'https://example.com?api_key=secret&password=secret123'
         ]);
+        
+        $this->handler->logError($error);
     }
 
     /**

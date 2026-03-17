@@ -1,4 +1,133 @@
 ﻿---
+## Dashboard API Endpoint (TASK-1-6)
+
+### Feature Description
+Dashboard summary API endpoint that provides an overview of ranking changes and key metrics for the Core Rank Tracking feature (FEAT-001). Delivers aggregated data for the main dashboard view including keyword counts, average position, position changes, top keywords, and alerts for significant ranking movements.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/DashboardController.php`
+- **Route:** `backend/routes/api.php` (v1 routes)
+- **Tests:** `backend/tests/Feature/Controllers/Api/V1/DashboardControllerTest.php`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sites/{siteId}/dashboard` | Get dashboard summary for a site |
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `totalKeywords` | integer | Total number of tracked keywords |
+| `activeKeywords` | integer | Number of actively tracked keywords |
+| `rankedKeywords` | integer | Keywords with a current ranking |
+| `notRankedKeywords` | integer | Keywords without a current ranking |
+| `averagePosition` | float/null | Average position across all ranked keywords |
+| `positionChanges` | object | Position change counts: improved, declined, unchanged, new |
+| `topKeywords` | array | Top 5 keywords by position (best rankings) |
+| `alerts` | array | Significant drops and new rankings alerts |
+
+### Response Example
+
+```json
+{
+  "totalKeywords": 150,
+  "activeKeywords": 145,
+  "rankedKeywords": 120,
+  "notRankedKeywords": 30,
+  "averagePosition": 15.7,
+  "positionChanges": {
+    "improved": 12,
+    "declined": 8,
+    "unchanged": 95,
+    "new": 5
+  },
+  "topKeywords": [
+    { "keyword": "seo tools", "position": 3, "url": "https://example.com/seo-tools" },
+    { "keyword": "keyword tracker", "position": 5, "url": "https://example.com/tracker" }
+  ],
+  "alerts": [
+    { "type": "drop", "keyword": "rank checker", "oldPosition": 5, "newPosition": 15 },
+    { "type": "new", "keyword": "seo analyzer", "position": 8 }
+  ]
+}
+```
+
+### Caching Strategy
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Cache TTL | 5 minutes | Dashboard data doesn't change frequently |
+| Cache Key | `dashboard:{siteId}` | Site-specific cache key |
+| Invalidation | On new ranking check | Cache cleared when new rankings are fetched |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum token authentication |
+| Authorization | Site ownership check (user must own site) |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| XSS Prevention | JSON response encoding |
+| Rate Limiting | Standard API rate limits apply |
+
+### Error Responses
+
+| Code | Condition |
+|------|-----------|
+| 401 | Unauthenticated (no valid bearer token) |
+| 403 | Unauthorized (user does not own site) |
+| 404 | Site not found |
+| 405 | Method not allowed (non-GET requests) |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| DashboardControllerTest | 11 | 45 | ✅ PASS |
+
+**Test Cases:**
+| Test | Description |
+|------|-------------|
+| get dashboard summary | Returns all required fields |
+| dashboard invalid site | Returns 404 for non-existent site |
+| dashboard no keywords | Handles empty keyword data gracefully |
+| dashboard metrics | Validates keyword counts |
+| dashboard ranked keywords | Validates ranked keyword logic |
+| dashboard average position | Validates average calculation |
+| dashboard position changes | Validates change categorization |
+| dashboard top keywords | Validates top 5 selection |
+| dashboard alerts | Validates drop/new ranking detection |
+| dashboard caching | Validates cache hit/miss behavior |
+| dashboard cache invalidation | Validates cache clearing on ranking update |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-27 |
+| Commit | `431e317` |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK |
+| Tests | 11/11 passing (45 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-1-2 | Done ✅ | Keyword repository |
+| TASK-1-3 | Done ✅ | Ranking repository |
+
+### Technical Notes
+
+- Uses aggregation queries for efficiency
+- "Significant drop" threshold: 5+ positions
+- Cache invalidation triggered on new ranking check
+- Handles null values gracefully for empty data sets
+
+---
 ## Google Search Console Integration (FEAT-012)
 
 ### Feature Description
