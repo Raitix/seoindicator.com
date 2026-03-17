@@ -23,8 +23,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $negative_mentions
  * @property int $mixed_mentions
  * @property float $average_sentiment
+ * @property float $avg_sentiment_score Alias for average_sentiment
  * @property array $competitor_mentions
  * @property array $competitor_stats
+ * @property float $share_of_voice
+ * @property array|null $top_query_categories
+ * @property string|null $mention_trend
  * @property \Illuminate\Support\Carbon $period_start
  * @property \Illuminate\Support\Carbon $period_end
  * @property \Illuminate\Support\Carbon|null $aggregated_at
@@ -44,6 +48,22 @@ class AIMentionAnalytics extends Model
     protected $table = 'ai_mention_analytics';
 
     /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'total_queries' => 0,
+        'brand_mentions' => 0,
+        'mention_rate' => 0.00,
+        'share_of_voice' => 0.00,
+        'average_sentiment' => 0.00,
+        'positive_mentions' => 0,
+        'neutral_mentions' => 0,
+        'negative_mentions' => 0,
+        'mixed_mentions' => 0,
+        'mention_trend' => 'stable',
+    ];
+
+    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
@@ -58,8 +78,12 @@ class AIMentionAnalytics extends Model
         'negative_mentions',
         'mixed_mentions',
         'average_sentiment',
+        'avg_sentiment_score', // Alias accessor
         'competitor_mentions',
         'competitor_stats',
+        'share_of_voice',
+        'top_query_categories',
+        'mention_trend',
         'period_start',
         'period_end',
         'aggregated_at',
@@ -73,13 +97,35 @@ class AIMentionAnalytics extends Model
         return [
             'mention_rate' => 'decimal:2',
             'average_sentiment' => 'decimal:2',
+            'share_of_voice' => 'decimal:2',
             'competitor_mentions' => 'array',
             'competitor_stats' => 'array',
+            'top_query_categories' => 'array',
             'period_start' => 'datetime',
             'period_end' => 'datetime',
             'aggregated_at' => 'datetime',
         ];
     }
+
+    // ==================== ALIAS ACCESSORS/MUTATORS ====================
+
+    /**
+     * Get the average sentiment score (alias for average_sentiment).
+     */
+    public function getAvgSentimentScoreAttribute(): float
+    {
+        return $this->average_sentiment ?? 0.00;
+    }
+
+    /**
+     * Set the average sentiment score (alias for average_sentiment).
+     */
+    public function setAvgSentimentScoreAttribute(float $value): void
+    {
+        $this->attributes['average_sentiment'] = $value;
+    }
+
+    // ==================== RELATIONSHIPS ====================
 
     /**
      * Get the project that owns this analytics.
@@ -89,6 +135,8 @@ class AIMentionAnalytics extends Model
         return $this->belongsTo(AIVisibilityProject::class, 'project_id');
     }
 
+    // ==================== SCOPES ====================
+
     /**
      * Scope to filter by platform.
      */
@@ -96,6 +144,8 @@ class AIMentionAnalytics extends Model
     {
         return $query->where('platform', $platform);
     }
+
+    // ==================== HELPER METHODS ====================
 
     /**
      * Get the sentiment breakdown as an array.

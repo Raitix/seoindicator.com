@@ -322,12 +322,14 @@ class AIVisibilityProjectTest extends TestCase
         ]);
 
         // Create query results (using DB directly since model may not exist yet)
+        // Note: Using actual migration column name 'model_used' (alias is 'model' via accessor)
         DB::table('ai_query_results')->insert([
             'project_id' => $project->id,
             'platform' => 'chatgpt',
-            'model' => 'gpt-4',
+            'model_used' => 'gpt-4',
             'query_text' => 'Test query',
             'response_text' => 'Test response',
+            'queried_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -383,6 +385,7 @@ class AIVisibilityProjectTest extends TestCase
             'competitors' => [],
         ]);
 
+        // Note: triggered_at is required in migration (NOT NULL)
         DB::table('ai_visibility_alerts')->insert([
             'project_id' => $project->id,
             'alert_type' => 'mention_spike',
@@ -390,6 +393,7 @@ class AIVisibilityProjectTest extends TestCase
             'previous_value' => 30.00,
             'current_value' => 60.00,
             'change_percent' => 100.00,
+            'triggered_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -634,9 +638,10 @@ class AIVisibilityProjectTest extends TestCase
         DB::table('ai_query_results')->insert([
             'project_id' => $project->id,
             'platform' => 'chatgpt',
-            'model' => 'gpt-4',
+            'model_used' => 'gpt-4',
             'query_text' => 'Test',
             'response_text' => 'Response',
+            'queried_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -705,6 +710,7 @@ class AIVisibilityProjectTest extends TestCase
             'previous_value' => 30.00,
             'current_value' => 50.00,
             'change_percent' => 66.67,
+            'triggered_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -948,13 +954,15 @@ class AIVisibilityProjectTest extends TestCase
         ]);
 
         // Insert 3 query results
+        // Note: Using actual migration column name 'model_used' (alias is 'model' via accessor)
         for ($i = 0; $i < 3; $i++) {
             DB::table('ai_query_results')->insert([
                 'project_id' => $project->id,
                 'platform' => 'chatgpt',
-                'model' => 'gpt-4',
+                'model_used' => 'gpt-4',
                 'query_text' => "Query {$i}",
                 'response_text' => "Response {$i}",
+                'queried_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
