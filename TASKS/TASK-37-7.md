@@ -1,7 +1,7 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Develop`
+`To Test Locally`
 
 ### DevOps (2026-03-17 13:52 GMT+2)
 **Cannot Deploy - Fix Incomplete**
