@@ -3,6 +3,11 @@
 // Force dynamic rendering for static export compatibility
 export const dynamic = 'force-dynamic';
 
+// Required for static export with dynamic routes - returns empty array for client-side rendering
+export function generateStaticParams() {
+  return [];
+}
+
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
