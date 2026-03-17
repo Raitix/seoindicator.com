@@ -1,7 +1,7 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Test Prod`
+`To Deploy`
 
 ## PRIORITY
 `High`
@@ -62,6 +62,47 @@ Convert button to a Link component that navigates to `/dashboard/` or `/indicato
 - TASK-37-2 (Header Navigation - combined task)
 
 ## Comments
+
+### ProdTester (2026-03-17 11:32 GMT+2)
+**PRODUCTION TEST FAILED - Fix Not Deployed**
+
+**Root Cause:**
+The deployment ran BEFORE the fix was committed to the repository.
+
+| Event | Time (UTC) | Details |
+|-------|------------|---------|
+| Deployment started | 09:06:06 | Fetched commit `071c7830` |
+| Fix committed | 09:12:21 | Commit `675d6719` |
+| Prod test | 11:29 | Fix not in production |
+
+**Production Verification Results:**
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Element type | `<a>` (Link) | `<button>` | ❌ FAIL |
+| Has href | Yes (`/dashboard`) | No | ❌ FAIL |
+| Has cursor-pointer | Yes | No | ❌ FAIL |
+| Has onclick handler | No | No | ❌ FAIL (button is non-functional) |
+
+**Evidence from Browser Inspection:**
+```javascript
+{
+  tagName: "BUTTON",        // Should be "A"
+  hasHref: false,           // Should be true with href="/dashboard"
+  onclick: "no onclick",    // Button has no action
+  cursorClass: false        // No cursor-pointer class
+}
+```
+
+**Timeline Analysis:**
+1. Deployment `20260317T090606Z-9d7de28b` ran at 09:06 UTC
+2. Fix commit `675d6719` was created at 09:12 UTC (6 minutes AFTER deployment)
+3. Fix commit is on `origin/main` but deployment used older commit `071c7830`
+4. Production still has the broken `<button>` element
+
+**Action Required:**
+A new deployment is needed to push the fix to production. The fix is already committed to `origin/main` as commit `675d6719`.
+
+**Status Change:** `To Test Prod` → `To Deploy`
 
 ### DevOps (2026-03-17 11:14 GMT+2)
 **Deployment Complete - Already in Production**
