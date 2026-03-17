@@ -3268,6 +3268,247 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 - TASK-26-18: Model Pricing API
 
 ---
+## Job Timeout and Cancellation Handling (TASK-22-17)
+
+### Feature Description
+Robust timeout and cancellation handling for the Headless Crawler Service that prevents runaway processes and resource exhaustion. Implements configurable timeouts at multiple levels (job, page, browser, connection), user-initiated job cancellation via API, graceful shutdown flows, and partial results storage for interrupted jobs.
+
+### Component Locations
+- **Timeout Handler Service:** `backend/app/Services/Crawler/TimeoutHandlerService.php`
+- **Cancellation Service:** `backend/app/Services/Crawler/CancellationService.php`
+- **Partial Results Service:** `backend/app/Services/Crawler/PartialResultsService.php`
+- **CrawlWorker Job:** `backend/app/Jobs/CrawlWorker.php`
+- **API Controller:** `backend/app/Http/Controllers/Api/V1/CrawlController.php` - `destroy()` method
+- **Configuration:** `backend/config/crawler.php` - `timeouts` array
+- **Tests:**
+  - `backend/tests/Unit/Config/TimeoutConfigTest.php`
+  - `backend/tests/Unit/Services/Crawler/TimeoutHandlerServiceTest.php`
+  - `backend/tests/Unit/Services/Crawler/CancellationServiceTest.php`
+  - `backend/tests/Unit/Services/Crawler/PartialResultsServiceTest.php`
+  - `backend/tests/Feature/Api/V1/CrawlCancellationTest.php`
+  - `backend/tests/Unit/Jobs/CrawlWorkerTimeoutTest.php`
+- **Test Documentation:** `TESTS/TASK-22-17.md`
+
+### API Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| DELETE | `/api/v1/crawler/jobs/{jobId}` | Cancel a running or queued crawl job |
+
+**Success Response (202 Accepted):**
+```json
+{
+  "jobId": "crawl-abc123",
+  "status": "cancelled",
+  "pagesCrawled": 3,
+  "totalSize": 600000,
+  "cancelledAt": "2026-03-01T10:00:30Z",
+  "reason": "User requested cancellation",
+  "partialContentUrl": "/api/v1/crawler/jobs/crawl-abc123/content"
+}
+```
+
+### Timeout Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `job` | 300 seconds (5 min) | Maximum job duration |
+| `page` | 30 seconds | Maximum page load time |
+| `browser` | 60 seconds | Browser instance timeout |
+| `connection` | 10 seconds | Connection establishment timeout |
+| `grace_period` | 30 seconds | Grace time before hard kill |
+
+**Configuration (config/crawler.php):**
+```php
+'timeouts' => [
+    'job' => 300,        // 5 minutes
+    'page' => 30,        // 30 seconds
+    'browser' => 60,     // 60 seconds
+    'connection' => 10,  // 10 seconds
+    'grace_period' => 30, // Grace time before hard kill
+]
+```
+
+### TimeoutHandlerService
+
+| Method | Description |
+|--------|-------------|
+| `startTracking(string $jobId, int $timeoutSeconds)` | Begin tracking job timing |
+| `stopTracking(string $jobId)` | Stop tracking and clear state |
+| `getElapsedSeconds(string $jobId): int` | Get elapsed time since start |
+| `getRemainingSeconds(string $jobId): int` | Get remaining time before timeout |
+| `isApproachingTimeout(string $jobId): bool` | Check if within grace period |
+| `shouldStartGracefulShutdown(string $jobId): bool` | Determine if graceful shutdown needed |
+| `canContinueCrawling(string $jobId): bool` | Check if job has time remaining |
+| `hasTimeForNextPage(string $jobId): bool` | Check if enough time for another page |
+| `isPageTimeout(Carbon $startTime, int $pageTimeout): bool` | Check page-level timeout |
+
+### CancellationService
+
+| Method | Description |
+|--------|-------------|
+| `requestCancellation(string $jobId, string $reason): bool` | Set cancellation flag in cache |
+| `isCancellationRequested(string $jobId): bool` | Check if cancellation was requested |
+| `shouldCancel(string $jobId): bool` | Alias for isCancellationRequested |
+| `canCancel(string $status): bool` | Check if job status allows cancellation |
+| `clearCancellationFlag(string $jobId): void` | Remove cancellation flag |
+| `clearAllCancellationData(string $jobId): void` | Clear all cancellation-related cache |
+
+**Cache Strategy:**
+- Cancellation flags stored in Laravel cache
+- TTL matches job timeout duration
+- Atomic cache operations for race condition prevention
+
+### PartialResultsService
+
+| Method | Description |
+|--------|-------------|
+| `storePartialResults(CrawlJob $job, string $reason): void` | Store partial results with reason |
+| `formatPartialResults(CrawlJob $job): array` | Format partial results for API response |
+
+**Partial Results Structure:**
+```json
+{
+  "pages": [...],
+  "reason": "Job completed with partial results (timeout reached)",
+  "storedAt": "2026-03-01T10:05:00Z",
+  "totalPages": 8
+}
+```
+
+### Job Status Response (Cancelled)
+
+```json
+{
+  "jobId": "crawl-abc123",
+  "status": "cancelled",
+  "pagesCrawled": 3,
+  "totalSize": 600000,
+  "cancelledAt": "2026-03-01T10:00:30Z",
+  "reason": "User requested cancellation",
+  "partialContentUrl": "/api/v1/crawler/jobs/crawl-abc123/content"
+}
+```
+
+### Job Status Response (Timeout)
+
+```json
+{
+  "jobId": "crawl-abc123",
+  "status": "completed",
+  "pagesCrawled": 8,
+  "totalSize": 1500000,
+  "completedAt": "2026-03-01T10:05:00Z",
+  "reason": "Job completed with partial results (timeout reached)",
+  "partialContentUrl": "/api/v1/crawler/jobs/crawl-abc123/content"
+}
+```
+
+### Timeout Handling Flow
+
+```
+Job starts → Record start time
+    │
+    ↓
+Before each page → Check elapsed time
+    │
+    ├─► Elapsed > timeout - grace_period → Start graceful shutdown
+    │
+    ├─► Elapsed > timeout → Force termination
+    │
+    └─► Store partial results → Update job status
+```
+
+### Cancellation Flow
+
+```
+User requests cancellation (DELETE /api/v1/crawler/jobs/{id})
+    │
+    ↓
+Set cancellation flag in cache
+    │
+    ↓
+Worker checks flag before each page
+    │
+    ├─► Flag set → Stop gracefully
+    │
+    └─► Close browser → Store partial results → Set status 'cancelled'
+```
+
+### Resource Cleanup on Timeout/Cancel
+
+| Resource | Cleanup Action |
+|----------|---------------|
+| Browser instance | Closed in finally block |
+| Queue slot | Released automatically |
+| Rate limit tokens | Cleared via RateLimitService |
+| Temporary files | Removed on completion |
+| URL locks | Unlocked via LockService |
+
+### Worker Process Monitoring
+
+| Monitoring | Implementation |
+|------------|----------------|
+| Zombie detection | Process supervisors (supervisor/systemd) |
+| Browser cleanup | Kill browser processes if worker dies |
+| Process logging | Log process start/stop events |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum token authentication |
+| Authorization | Job ownership check via policy |
+| Rate Limiting | Cancellation endpoint rate limited |
+| Input Validation | Job ID validated, status checked |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| TimeoutConfigTest | 24 | 24 | ✅ PASS |
+| TimeoutHandlerServiceTest | 25 | 47 | ✅ PASS |
+| CancellationServiceTest | 25 | 51 | ✅ PASS |
+| PartialResultsServiceTest | 25 | 55 | ✅ PASS |
+| CrawlCancellationTest | 20 | 41 | ✅ PASS |
+| CrawlWorkerTimeoutTest | 25 | 29 | ✅ PASS |
+| **Total** | **143** | **247** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-14 |
+| Deployment ID | `20260313T212025Z-a95b4e0a` |
+| Commit | `f64a60811c06f034b433b3b92df54a8ef1b1090d` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-13 23:42 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Local tests | 143 pass | 143 pass (247 assertions) | ✅ |
+| Production smoke | 200 OK | Homepage + login loaded | ✅ |
+| API auth (DELETE /jobs/{id}) | 401 | 401 Unauthenticated | ✅ |
+| XSS protection | 404 | 404 Not Found | ✅ |
+| SQL injection | 401 | 401 Unauthenticated | ✅ |
+| Path traversal | 404 | 404 Not Found | ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-22-15 | Done ✅ | CrawlWorker - worker integration |
+| TASK-22-16 | In Progress | Queue Integration |
+
+### Related Tasks
+
+- TASK-22-15: CrawlWorker (uses timeout/cancellation services)
+- TASK-22-16: Queue Integration (queue timeout configuration)
+
+---
 ## Current Deployment Baseline (2026-03-10)
 
 ### Active deployment model
@@ -4984,6 +5225,190 @@ Socialite::shouldReceive('driver->stateless->user')
 - TASK-25-2: Email Verification
 - TASK-25-3: Login/Logout
 - TASK-25-4: Password Reset Flow
+
+---
+## API Keys Database Schema (TASK-6-1)
+
+### Task Description
+Foundation database schema for API key management as part of the API Access feature (FEAT-006). Creates the `api_keys` table for storing API key credentials with secure hashing, permission scoping, and rate limiting support.
+
+### Component Locations
+- **Migration:** `backend/database/migrations/2026_02_27_142500_create_api_keys_table.php`
+- **Model:** `backend/app/Models/ApiKey.php`
+- **Factory:** `backend/database/factories/ApiKeyFactory.php`
+- **Tests:** `backend/tests/Feature/Database/CreateApiKeysTableTest.php`, `backend/tests/Unit/Models/ApiKeyModelTest.php`
+
+### Database Schema
+
+#### Table: `api_keys`
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | INTEGER | No | AUTO_INCREMENT | Primary key |
+| `user_id` | INTEGER | No | - | Foreign key to users table |
+| `name` | TEXT | No | - | User-friendly key name |
+| `key_hash` | TEXT | No | - | SHA-256 hash of the API key |
+| `key_prefix` | TEXT | No | - | First 8 chars for identification |
+| `permissions` | TEXT | Yes | NULL | JSON array of permission strings |
+| `rate_limit` | INTEGER | No | 60 | Requests per minute |
+| `last_used_at` | DATETIME | Yes | NULL | Last usage timestamp |
+| `expires_at` | DATETIME | Yes | NULL | Optional expiration date |
+| `created_at` | DATETIME | No | CURRENT_TIMESTAMP | Record creation time |
+| `revoked_at` | DATETIME | Yes | NULL | Revocation timestamp (soft-delete) |
+
+#### Indexes
+
+| Index Name | Column(s) | Type | Description |
+|------------|-----------|------|-------------|
+| PRIMARY | `id` | PRIMARY | Primary key |
+| `idx_api_keys_user` | `user_id` | INDEX | Fast user lookup |
+| `idx_api_keys_prefix` | `key_prefix` | INDEX | Key identification |
+| `idx_api_keys_revoked` | `revoked_at` | INDEX | Active key filtering |
+
+#### Foreign Key Constraints
+
+| Constraint | Column | References | On Delete |
+|------------|--------|------------|-----------|
+| `fk_api_keys_user` | `user_id` | `users(id)` | CASCADE |
+
+### Model Properties
+
+#### Fillable Attributes
+```php
+protected $fillable = [
+    'user_id',
+    'name',
+    'key_hash',
+    'key_prefix',
+    'permissions',
+    'rate_limit',
+    'last_used_at',
+    'expires_at',
+    'revoked_at',
+];
+```
+
+#### Attribute Casting
+```php
+protected $casts = [
+    'permissions' => 'array',
+    'rate_limit' => 'integer',
+    'last_used_at' => 'datetime',
+    'expires_at' => 'datetime',
+    'created_at' => 'datetime',
+    'revoked_at' => 'datetime',
+];
+```
+
+#### Hidden Attributes
+```php
+protected $hidden = [
+    'key_hash',  // Never expose key hash in JSON
+];
+```
+
+### Model Relationships
+
+| Relationship | Type | Related Model | Description |
+|--------------|------|---------------|-------------|
+| `user()` | BelongsTo | User | Owner of the API key |
+
+### Model Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `active()` | Keys where `revoked_at` is NULL and `expires_at` is NULL or future |
+| `revoked()` | Keys where `revoked_at` is NOT NULL |
+| `expired()` | Keys where `expires_at` is in the past |
+| `byStatus($status)` | Filter by status: 'active', 'revoked', 'expired' |
+
+### Model Helper Methods
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `isRevoked()` | bool | Check if key is revoked |
+| `isExpired()` | bool | Check if key is expired |
+| `isActive()` | bool | Check if key is active (not revoked, not expired) |
+| `markAsUsed()` | void | Update `last_used_at` to now |
+| `revoke()` | void | Set `revoked_at` to now |
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `active` | Active API key (default) |
+| `revoked` | Revoked key (`revoked_at` set) |
+| `expired` | Expired key (`expires_at` in past) |
+| `withPermissions(array)` | Key with custom permissions |
+| `withRateLimit(int)` | Key with custom rate limit |
+| `forUser(User)` | Key for specific user |
+| `recentlyUsed()` | Key with `last_used_at` set |
+
+### Permissions Format
+
+```json
+["keywords:read", "keywords:write", "rankings:read", "webhooks:manage"]
+```
+
+### Security Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Key Storage | Only SHA-256 hash stored, never plaintext |
+| Key Identification | First 8 characters stored for UX (key_prefix) |
+| User Isolation | CASCADE DELETE ensures keys removed when user deleted |
+| Soft Deletion | `revoked_at` allows key revocation without data loss |
+| Permission Scoping | JSON array for fine-grained access control |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| CreateApiKeysTableTest | 23 | 52 | ✅ PASS |
+| ApiKeyModelTest | 41 | 72 | ✅ PASS |
+| **Total** | **64** | **124** | **✅ ALL PASS** |
+
+#### Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Table Structure | 8 | Columns, types, defaults |
+| Foreign Keys | 4 | User relationship, CASCADE DELETE |
+| Indexes | 3 | User, prefix, revoked indexes |
+| Constraints | 3 | Unique key_hash, nullable fields |
+| Model Creation | 6 | Mass assignment, casting |
+| Relationships | 3 | User relationship |
+| Scopes | 8 | Active, revoked, expired, byStatus |
+| Helper Methods | 6 | Status checks, markAsUsed, revoke |
+| Factory States | 8 | All factory states tested |
+| Security | 5 | Key hash hidden, SQL injection, XSS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Commit | `a8277fc6672c` |
+| Deployment ID | `20260317T115038Z-0a40ead0` |
+| Migration | Executed |
+| Tests | 64/64 passing (124 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-2 | To Document | API Key Generation Service |
+| Users table | Existing | Required for foreign key |
+
+### Technical Notes
+
+- Key hash uses SHA-256 for secure storage
+- `key_prefix` (first 8 chars) allows UI display without exposing full key
+- `rate_limit` default of 60 req/min matches standard API tier
+- Permissions stored as JSON for flexibility
+- `revoked_at` enables soft-deletion pattern for audit trail
+- Foreign key CASCADE ensures cleanup when user is deleted
 
 ---
 ## API Integration Tests (TASK-6-20)
