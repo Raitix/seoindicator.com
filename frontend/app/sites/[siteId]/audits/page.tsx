@@ -11,14 +11,11 @@ import * as React from 'react';
 import { AuditList } from '@/components/audit/AuditList';
 
 // ============================================================
-// Static Params for Dynamic Routes (required for output: export)
+// Route Configuration
 // ============================================================
 
-export function generateStaticParams() {
-  // Return empty array - pages are client-side rendered
-  // This allows the dev server to handle dynamic routes
-  return [];
-}
+// Force dynamic rendering to ensure the route works in dev mode and E2E tests
+export const dynamic = 'force-dynamic';
 
 // ============================================================
 // Page Component
