@@ -7,12 +7,14 @@
 
 import type { ReactNode } from 'react';
 
-export const dynamicParams = false;
+// Enable dynamic params for dev mode and E2E testing
+// This allows any audit ID to be accessed without pre-generation
+export const dynamicParams = true;
 
 export function generateStaticParams(): Array<{ siteId: string; auditId: string }> {
-  // Return placeholder params for static export
-  // Actual audit pages will be dynamically rendered
-  return [{ siteId: '1', auditId: '1' }];
+  // Return empty array for dynamic rendering
+  // Actual audit pages will be client-side rendered
+  return [];
 }
 
 export default function AuditLayout({ children }: { children: ReactNode }) {
