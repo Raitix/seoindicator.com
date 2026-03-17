@@ -1,7 +1,7 @@
 # TASK-8-5: Implement Global Project Scope
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
@@ -153,3 +153,10 @@ Duration: 15.09s
 **Decision: PASS** - Ready for deployment to production.
 
 **Status changed:** `To Test Locally` → `To Deploy`
+
+### [2026-03-17 15:40 GMT+2] Agent: DevOps
+**Starting Deployment**
+
+- All 18 tests passing, local testing complete
+- Proceeding with production deployment via `scripts/deploy-prod.ps1`
+- Branch is ahead by 3 commits - will push to origin/main during deployment

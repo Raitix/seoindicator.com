@@ -30,6 +30,10 @@ const SITE_ID = '1';
 const AUDIT_ID = '123';
 const SITE_URL = 'https://example.com';
 
+// Note: Next.js config has trailingSlash: true, so all URLs need trailing slashes
+const AUDITS_LIST_URL = `/sites/${SITE_ID}/audits/`;
+const AUDIT_DETAIL_URL = `/sites/${SITE_ID}/audits/${AUDIT_ID}/`;
+
 // Test user for authentication mocking
 const TEST_USER = {
   id: 1,
@@ -54,27 +58,42 @@ async function mockAuthentication(page: Page) {
     localStorage.setItem('seoindicator_token', 'test-auth-token-12345');
   }, TEST_USER);
 
-  // Mock auth API calls
+  // Mock auth API calls - must match actual endpoints used by auth.ts
+  // fetchUser() calls buildApiUrl("/auth/user") which is /api/v1/auth/user
+  await page.route('**/api/v1/auth/user', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          user: TEST_USER,
+        },
+      }),
+    });
+  });
+
+  // Also mock the /user endpoint for any legacy calls
   await page.route('**/api/v1/user', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         success: true,
-        data: TEST_USER,
+        data: {
+          user: TEST_USER,
+        },
       }),
     });
   });
 
-  // Mock auth check endpoints
-  await page.route('**/api/v1/auth/me', async (route) => {
+  // Mock CSRF token endpoint for Sanctum
+  await page.route('**/sanctum/csrf-cookie', async (route) => {
     await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: TEST_USER,
-      }),
+      status: 204,
+      headers: {
+        'Set-Cookie': 'XSRF-TOKEN=test-csrf-token; path=/',
+      },
     });
   });
 }
@@ -351,7 +370,7 @@ test.describe('Audit List Page', () => {
   test('E2E-AUD-001: Audit list page loads with audits', async ({ page }) => {
     
     // Navigate to audits page
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     
     // Wait for page to load
     await waitForAuditList(page);
@@ -381,7 +400,7 @@ test.describe('Audit List Page', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     
     // Verify empty state
     await expect(page.locator('text=No audits yet')).toBeVisible();
@@ -390,7 +409,7 @@ test.describe('Audit List Page', () => {
 
   test('E2E-AUD-003: Filter audits by status', async ({ page }) => {
     // Auth and list mocks already set up in beforeEach
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Open status filter - try multiple selector patterns
@@ -407,7 +426,7 @@ test.describe('Audit List Page', () => {
   test('E2E-AUD-004: Start audit modal opens and closes', async ({ page }) => {
     await setupAuditListMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Click start audit button
@@ -452,7 +471,7 @@ test.describe('Audit List Page', () => {
       }
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Open modal
@@ -481,7 +500,7 @@ test.describe('Audit List Page', () => {
   test('E2E-AUD-006: Start audit validation errors', async ({ page }) => {
     await setupAuditListMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Open modal
@@ -511,7 +530,7 @@ test.describe('Audit List Page', () => {
     await setupAuditListMocks(page);
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Click on a completed audit
@@ -531,7 +550,7 @@ test.describe('Audit List Page', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     
     // Should show error state
     await expect(page.locator('text=Failed to load audits')).toBeVisible();
@@ -549,7 +568,7 @@ test.describe('Audit List Page', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     
     // Should show loading skeletons
     await expect(page.locator('.animate-pulse').first()).toBeVisible();
@@ -572,7 +591,7 @@ test.describe('Audit Detail Page', () => {
   test('E2E-AUD-010: Audit detail page loads with summary', async ({ page }) => {
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Verify summary section
@@ -586,7 +605,7 @@ test.describe('Audit Detail Page', () => {
   test('E2E-AUD-011: Issues list displays correctly', async ({ page }) => {
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Verify issues section
@@ -601,7 +620,7 @@ test.describe('Audit Detail Page', () => {
   test('E2E-AUD-012: Filter issues by severity', async ({ page }) => {
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Click on critical severity card
@@ -614,7 +633,7 @@ test.describe('Audit Detail Page', () => {
   test('E2E-AUD-013: Search issues by text', async ({ page }) => {
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Find search input
@@ -648,7 +667,7 @@ test.describe('Audit Detail Page', () => {
       }
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Find issue and change status
@@ -668,7 +687,7 @@ test.describe('Audit Detail Page', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Select issues using checkboxes
@@ -716,7 +735,7 @@ test.describe('Audit Detail Page', () => {
       }
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Click next page if available
@@ -739,7 +758,7 @@ test.describe('Audit Detail Page', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     
     // Should show error state
     await expect(page.locator('text=Error Loading Audit')).toBeVisible();
@@ -756,7 +775,7 @@ test.describe('Audit Detail Page', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits/999`);
+    await page.goto(`/sites/${SITE_ID}/audits/999/`);
     
     // Should show not found state
     await expect(page.locator('text=Audit Not Found')).toBeVisible();
@@ -777,7 +796,7 @@ test.describe('Audit Flow Accessibility', () => {
   test('E2E-AUD-019: Audit list page has proper headings', async ({ page }) => {
     await setupAuditListMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Check heading hierarchy
@@ -789,7 +808,7 @@ test.describe('Audit Flow Accessibility', () => {
   test('E2E-AUD-020: Audit detail page has ARIA landmarks', async ({ page }) => {
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Check for main landmark
@@ -803,7 +822,7 @@ test.describe('Audit Flow Accessibility', () => {
   test('E2E-AUD-021: Modal has proper accessibility', async ({ page }) => {
     await setupAuditListMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Open modal
@@ -827,7 +846,7 @@ test.describe('Audit Flow Accessibility', () => {
   test('E2E-AUD-022: Form inputs have labels', async ({ page }) => {
     await setupAuditListMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
     // Open modal
@@ -893,7 +912,7 @@ test.describe('Audit Flow Security', () => {
     
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Script should not execute (should be escaped)
@@ -910,7 +929,7 @@ test.describe('Audit Flow Security', () => {
   test('E2E-AUD-024: SQL injection prevention in search', async ({ page }) => {
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Try SQL injection in search
@@ -934,7 +953,7 @@ test.describe('Audit Flow Security', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits`);
+    await page.goto(AUDITS_LIST_URL);
     
     // Should show unauthorized state
     await expect(page.locator('text=Unauthorized')).toBeVisible();
@@ -979,7 +998,7 @@ test.describe('Audit Flow Edge Cases', () => {
     
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Page should render without layout issues
@@ -1012,7 +1031,7 @@ test.describe('Audit Flow Edge Cases', () => {
     
     await setupAuditDetailMocks(page);
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Unicode should render correctly
@@ -1053,7 +1072,7 @@ test.describe('Audit Flow Edge Cases', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits/${AUDIT_ID}`);
+    await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
     // Should show clean state
@@ -1071,7 +1090,7 @@ test.describe('Audit Flow Edge Cases', () => {
       });
     });
     
-    await page.goto(`/sites/${SITE_ID}/audits`, { timeout: 60000 });
+    await page.goto(AUDITS_LIST_URL, { timeout: 60000 });
     
     // Should eventually show loading or error state
     const loadingVisible = await page.locator('.animate-pulse').first().isVisible().catch(() => false);
@@ -1101,9 +1120,9 @@ test.describe('Audit Flow Edge Cases', () => {
     });
     
     // Navigate rapidly
-    await page.goto(`/sites/${SITE_ID}/audits/123`);
-    await page.goto(`/sites/${SITE_ID}/audits/124`);
-    await page.goto(`/sites/${SITE_ID}/audits/123`);
+    await page.goto(AUDIT_DETAIL_URL);
+    await page.goto(`/sites/${SITE_ID}/audits/124/`);
+    await page.goto(AUDIT_DETAIL_URL);
     
     // Page should handle rapid navigation gracefully
     await waitForAuditDetailPage(page);
