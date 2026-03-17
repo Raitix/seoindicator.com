@@ -5411,6 +5411,146 @@ protected $hidden = [
 - Foreign key CASCADE ensures cleanup when user is deleted
 
 ---
+## API Key Model and Repository (TASK-6-2)
+
+### Task Description
+TypeScript-style Eloquent model and repository layer for API key management as part of the API Access feature (FEAT-006). Provides type-safe database operations for API key CRUD with secure hashing, permission scoping, and user isolation.
+
+### Component Locations
+- **Model:** `backend/app/Models/ApiKey.php`
+- **Repository:** `backend/app/Repositories/ApiKeyRepository.php`
+- **Factory:** `backend/database/factories/ApiKeyFactory.php`
+- **Tests:** `backend/tests/Unit/Models/ApiKeyModelTest.php`, `backend/tests/Unit/Repositories/ApiKeyRepositoryTest.php`
+- **Test Documentation:** `TESTS/TEST-6-2.md`
+
+### ApiKey Model
+
+| Area | Implementation |
+|------|----------------|
+| Table | `api_keys` |
+| Fillable | `user_id`, `name`, `key_hash`, `key_prefix`, `permissions`, `rate_limit`, `last_used_at`, `expires_at`, `revoked_at` |
+| Casts | `permissions` → `array`; `rate_limit` → `integer`; `last_used_at`, `expires_at`, `revoked_at` → `datetime` |
+| Hidden | `key_hash` (never exposed in JSON/array output) |
+
+**Relationships:**
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `user()` | `belongsTo` | `User` |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `active()` | Keys without `revoked_at` and not expired |
+| `revoked()` | Keys with `revoked_at` set |
+| `expired()` | Keys with `expires_at` in the past |
+| `byStatus($status)` | Filter by status string |
+
+**Helper Methods:**
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `isRevoked()` | `bool` | Check if key is revoked |
+| `isExpired()` | `bool` | Check if key has expired |
+| `isActive()` | `bool` | Check if key is active (not revoked, not expired) |
+| `markAsUsed()` | `void` | Set `last_used_at` to now |
+| `revoke()` | `void` | Set `revoked_at` to now |
+
+**Factory States:**
+| State | Description |
+|-------|-------------|
+| `active` | Default state, active key |
+| `revoked` | Key with `revoked_at` set |
+| `expired` | Key with past `expires_at` |
+| `withPermissions` | Key with specific permissions |
+| `withRateLimit` | Key with custom rate limit |
+| `forUser` | Key for specific user |
+| `recentlyUsed` | Key with `last_used_at` set |
+
+### ApiKeyRepository
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `create()` | `CreateApiKeyData` | `ApiKey` | Create new API key with secure hash |
+| `findById()` | `int $id` | `?ApiKey` | Find key by ID |
+| `findByHash()` | `string $keyHash` | `?ApiKey` | Find key by SHA-256 hash |
+| `findByPrefix()` | `string $prefix` | `Collection` | Find keys by prefix (first 8 chars) |
+| `findByUserId()` | `int $userId` | `Collection` | Find all keys for a user |
+| `update()` | `int $id, array $data` | `ApiKey` | Update key properties |
+| `revoke()` | `int $id` | `void` | Revoke key (set `revoked_at`) |
+| `delete()` | `int $id` | `void` | Permanently delete key |
+| `getForUser()` | `int $userId, array $filters` | `LengthAwarePaginator` | Paginated list with filters |
+| `countForUser()` | `int $userId` | `int` | Count keys for user |
+| `isValidForUse()` | `int $id` | `bool` | Check if key is valid for API use |
+| `markAsUsed()` | `int $id` | `void` | Update `last_used_at` timestamp |
+
+### Valid Permissions
+
+| Permission | Description |
+|------------|-------------|
+| `keywords:read` | Read keyword data |
+| `keywords:write` | Create/update keywords |
+| `rankings:read` | Read ranking data |
+| `reports:read` | Read report data |
+| `reports:write` | Create/update reports |
+| `webhooks:read` | Read webhook configurations |
+| `webhooks:write` | Create/update webhooks |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Key Hashing | SHA-256 hash stored, never exposed |
+| User Isolation | Repository methods filter by `user_id` |
+| Soft Deletion | `revoked_at` timestamp preserves audit trail |
+| Key Prefix | First 8 chars visible for UI identification |
+| Permission Scoping | JSON array enables granular access control |
+| Rate Limiting | Per-key rate limit stored in `rate_limit` column |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| ApiKeyModelTest | 41 | 72 | ✅ PASS |
+| ApiKeyRepositoryTest | 56 | 101 | ✅ PASS |
+| **Total** | **97** | **173** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Model Creation | 8 | Mass assignment, attribute casting |
+| Relationships | 3 | User relationship |
+| Scopes | 8 | Active, revoked, expired, byStatus |
+| Helper Methods | 6 | Status checks, markAsUsed, revoke |
+| Factory States | 8 | All factory states tested |
+| Security | 5 | Key hash hidden, SQL injection, XSS |
+| Repository CRUD | 20 | Create, find, update, delete operations |
+| Pagination | 5 | getForUser with filters |
+| Validation | 8 | isValidForUse checks |
+| Edge Cases | 12 | Empty permissions, null values, boundaries |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Commit | `ee32e20e` |
+| Deployment ID | `20260317T115038Z-0a40ead0` |
+| Tests | 97/97 passing (173 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-6-1 | Done ✅ | Database Schema - API Keys Table |
+| Users table | Existing | Required for foreign key relationship |
+
+### Related Tasks
+
+- TASK-6-3: API Key Generation Service (uses repository for storage)
+- TASK-6-4: API Key Management Endpoints (uses model and repository)
+- TASK-6-19: Unit Tests (comprehensive test coverage)
+
+---
 ## API Integration Tests (TASK-6-20)
 
 ### Test Description
@@ -36044,6 +36184,148 @@ CREATE TABLE projects (
 - TASK-8-8: Frontend project components
 - TASK-8-9: Unit tests
 - TASK-8-10: Integration tests
+
+---
+## Modify Existing Tables for Multi-Site Support (TASK-8-2)
+
+### Task Description
+Database migration that adds `project_id` column to existing tables (`keywords`, `competitors`, `reports`, `alert_settings`) to enable multi-site project data organization. Establishes foreign key relationships with cascade delete behavior and creates indexes for efficient project-scoped queries.
+
+### Migration File
+`backend/database/migrations/2026_02_28_170000_add_project_id_to_tables.php`
+
+### Schema Changes
+
+**Tables Modified:**
+| Table | Column Added | Type | Nullable | Foreign Key |
+|-------|--------------|------|----------|-------------|
+| `keywords` | `project_id` | BIGINT UNSIGNED | NULL → NOT NULL | projects.id CASCADE |
+| `competitors` | `project_id` | BIGINT UNSIGNED | NULL → NOT NULL | projects.id CASCADE |
+| `reports` | `project_id` | BIGINT UNSIGNED | NULL → NOT NULL | projects.id CASCADE |
+| `alert_settings` | `project_id` | BIGINT UNSIGNED | NULL | projects.id CASCADE |
+
+**SQL Statements:**
+```sql
+-- Add project_id to keywords
+ALTER TABLE keywords
+    ADD COLUMN project_id BIGINT UNSIGNED NULL AFTER user_id,
+    ADD INDEX idx_keywords_project_id (project_id),
+    ADD CONSTRAINT fk_keywords_project
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+
+-- Add project_id to competitors
+ALTER TABLE competitors
+    ADD COLUMN project_id BIGINT UNSIGNED NULL AFTER user_id,
+    ADD INDEX idx_competitors_project_id (project_id),
+    ADD CONSTRAINT fk_competitors_project
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+
+-- Add project_id to reports
+ALTER TABLE reports
+    ADD COLUMN project_id BIGINT UNSIGNED NULL AFTER user_id,
+    ADD INDEX idx_reports_project_id (project_id),
+    ADD CONSTRAINT fk_reports_project
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+
+-- Add project_id to alert_settings
+ALTER TABLE alert_settings
+    ADD COLUMN project_id BIGINT UNSIGNED NULL AFTER user_id,
+    ADD INDEX idx_alert_settings_project_id (project_id),
+    ADD CONSTRAINT fk_alert_settings_project
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+```
+
+### Foreign Key Constraints
+
+| Constraint | Table | Reference | On Delete |
+|------------|-------|-----------|-----------|
+| `fk_keywords_project` | keywords | projects.id | CASCADE |
+| `fk_competitors_project` | competitors | projects.id | CASCADE |
+| `fk_reports_project` | reports | projects.id | CASCADE |
+| `fk_alert_settings_project` | alert_settings | projects.id | CASCADE |
+
+### Indexes Created
+
+| Index | Table | Column | Purpose |
+|-------|-------|--------|---------|
+| `idx_keywords_project_id` | keywords | project_id | Project-scoped keyword queries |
+| `idx_competitors_project_id` | competitors | project_id | Project-scoped competitor queries |
+| `idx_reports_project_id` | reports | project_id | Project-scoped report queries |
+| `idx_alert_settings_project_id` | alert_settings | project_id | Project-scoped alert queries |
+
+### Migration Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Nullable initially | Safe migration pattern - allows gradual data migration |
+| AFTER user_id | Logical column positioning for schema readability |
+| CASCADE delete | Deleting a project removes all associated data |
+| Indexes on project_id | Performance optimization for project-scoped queries |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `AddProjectIdToTablesTest.php` | 18 passed, 1 skipped | 32 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Column existence | 4 | Verifies project_id exists on all 4 tables |
+| Foreign key constraints | 4 | Verifies FKs properly defined |
+| Index creation | 4 | Verifies indexes created for optimization |
+| Cascade delete | 1 | Verifies deleting project cascades to related records |
+| NULL value support | 1 | Verifies project_id accepts NULL |
+| Update capability | 1 | Verifies project_id can be updated |
+| Rollback | 1 | Verifies migration rollback removes columns |
+| Rerun after rollback | 1 | Verifies migration can be re-run |
+| Data isolation | 1 | Verifies records isolated by project_id |
+| Column position | 1 (skipped) | SQLite limitation (AFTER clause MySQL-only) |
+
+**Skipped Test Explanation:**
+- `test_project_id_column_position` skipped for SQLite (doesn't support AFTER clause)
+- Column positioning works correctly in MySQL/MariaDB production environment
+
+### Acceptance Criteria Verification
+
+| Criterion | Status | Notes |
+|-----------|--------|-------|
+| Migration files implement schema modifications | ✅ | All 4 tables modified |
+| New project_id column linked to projects table | ✅ | FK constraints verified |
+| Foreign key constraints ensure cascade delete | ✅ | CASCADE on delete verified |
+| Indexes on project_id for efficient queries | ✅ | All 4 indexes created |
+| Tests validate correct behavior | ✅ | 18 tests passing |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-02-28 |
+| Commit | `90456c25` |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK |
+| Tests | 18/19 passing (1 skipped - SQLite limitation) |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Status | Description |
+|------------|--------|-------------|
+| TASK-8-1 | Done ✅ | Projects table must exist |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-8-1 | Projects Table schema |
+| TASK-8-3 | Data migration for existing records |
+| TASK-8-4 | SetProjectContext middleware |
+| TASK-8-5 | ProjectScope global scope |
+| TASK-8-6 | ProjectPolicy authorization |
+| TASK-8-7 | Project CRUD endpoints |
+| TASK-8-8 | Frontend project components |
+| TASK-8-9 | Unit tests |
+| TASK-8-10 | Integration tests |
 
 ---
 ## Data Migration for Default Projects (TASK-8-3)
