@@ -1,7 +1,7 @@
 # TASK-6-1: Database Schema - API Keys Table
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## Priority
 `High`
@@ -124,6 +124,10 @@ Small (1-2 hours)
 - **Total**: 64 tests, 124 assertions - ALL PASSING
 - All acceptance criteria verified
 - Approved for deployment
+
+### [2026-03-17 12:15] DevOps: Starting Deployment
+- Status changed to In Deployment
+- Running deploy-prod.ps1 to deploy to production
 
 ### [2026-03-17 11:45] LocalTester: Local Testing Complete ✓
 - **CreateApiKeysTableTest**: 23 tests, 52 assertions - ALL PASS (17.51s)
