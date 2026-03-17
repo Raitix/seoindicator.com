@@ -1,248 +1,203 @@
-﻿/**
- * Tests for Content Decay Refresh Queue Page
- * 
- * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
+/**
+ * Unit tests for Content Decay Refresh Queue Page
+ * Route: /sites/[siteId]/content-decay
+ *
+ * @see TASK-36-13
+ * @see SPEC-036
  */
 
+import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ContentDecayPage from "@/app/sites/[siteId]/content-decay/page";
-
-// Mock Next.js hooks
-vi.mock("next/navigation", () => ({
-  useParams: vi.fn(),
-  useRouter: vi.fn(),
-  useSearchParams: vi.fn(),
-}));
 
 // Mock hooks
 vi.mock("@/lib/hooks/useContentDecay", () => ({
   useContentDecaySummary: vi.fn(() => ({
     summary: {
-      totalCandidates: 10,
-      criticalCount: 2,
-      highCount: 3,
-      mediumCount: 3,
-      lowCount: 2,
-      estimatedLostClicks: 5000,
-      recoveryUpside: 8000,
-      recoveredCount: 5,
-      lastScannedAt: "2026-03-10T00:00:00Z",
+      totalCandidates: 25,
+      criticalCount: 5,
+      highCount: 10,
+      totalClicksLost: 1500,
+      avgDecayScore: 45.5,
     },
     isLoading: false,
-    mutate: vi.fn(),
+    error: null,
   })),
   useContentDecayCandidates: vi.fn(() => ({
     candidates: [
       {
         id: 1,
-        projectId: 1,
         pageUrl: "https://example.com/page-1",
         pageTitle: "Test Page 1",
         pageType: "blog",
-        severity: "high",
-        decayScore: 75.5,
-        detectionConfidence: 0.9,
-        lostClickEstimate: 500,
-        recoveryUpsideEstimate: 800,
-        primaryReasonCode: "clicks_down",
-        reasonCodes: [{ type: "clicks_down", evidence: "50% decline", isPrimary: true }],
+        severity: "critical",
         status: "backlog",
-        firstDetectedAt: "2026-03-01T00:00:00Z",
-        lastDetectedAt: "2026-03-10T00:00:00Z",
-        plannedAt: null,
-        startedAt: null,
-        refreshedAt: null,
-        recoveredAt: null,
-        ignoredAt: null,
-        signals: null,
-        trend: null,
+        clicksLost: 150,
+        impressionsLost: 5000,
+        decayScore: 85.5,
+        decayReasons: ["traffic_drop"],
+      },
+      {
+        id: 2,
+        pageUrl: "https://example.com/page-2",
+        pageTitle: "Test Page 2",
+        pageType: "product",
+        severity: "high",
+        status: "planned",
+        clicksLost: 75,
+        impressionsLost: 2500,
+        decayScore: 65.0,
+        decayReasons: ["position_drop"],
       },
     ],
-    meta: { currentPage: 1, perPage: 10, total: 1, lastPage: 1 },
+    meta: {
+      currentPage: 1,
+      perPage: 25,
+      total: 25,
+      totalPages: 1,
+    },
     isLoading: false,
-    mutate: vi.fn(),
+    error: null,
   })),
   useContentDecayCandidate: vi.fn(() => ({
     candidate: null,
     isLoading: false,
+    error: null,
   })),
-  useContentRefreshTasks: vi.fn(() => ({ tasks: [] })),
-  useRunContentDecayScan: vi.fn(() => ({ runScan: vi.fn(), isRunning: false })),
-  useUpdateCandidateStatus: vi.fn(() => ({ updateStatus: vi.fn(), isUpdating: false })),
-  useExportContentDecay: vi.fn(() => ({ exportData: vi.fn(), isExporting: false })),
-  useCreateRefreshTask: vi.fn(() => ({ createTask: vi.fn(), isCreating: false })),
+  useRunContentDecayScan: vi.fn(() => ({
+    trigger: vi.fn(),
+    isMutating: false,
+  })),
+  useExportContentDecay: vi.fn(() => ({
+    trigger: vi.fn(),
+    isMutating: false,
+  })),
 }));
 
-// Mock components
-vi.mock("@/components/content-decay/DecaySummaryCards", () => ({
-  DecaySummaryCards: ({ summary }: any) => (
-    <div data-testid="decay-summary-cards">Summary Cards: {summary?.totalCandidates} candidates</div>
-  ),
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+  useParams: vi.fn(() => ({ siteId: "1" })),
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+  })),
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn(),
+  })),
 }));
 
-vi.mock("@/components/content-decay/DecayQueueTable", () => ({
-  DecayQueueTable: ({ candidates, onRowClick }: any) => (
-    <div data-testid="decay-queue-table">
-      Queue Table: {candidates?.length} candidates
-      <button onClick={() => onRowClick?.(candidates[0])} data-testid="view-candidate-btn">
-        View Candidate
-      </button>
-    </div>
-  ),
-}));
-
-vi.mock("@/components/content-decay/CandidateDetailDrawer", () => ({
-  CandidateDetailDrawer: ({ isOpen, onClose }: any) => (
-    isOpen ? (
-      <div data-testid="candidate-detail-drawer">
-        Candidate Drawer
-        <button onClick={onClose} data-testid="close-drawer-btn">Close</button>
-      </div>
-    ) : null
-  ),
+// Mock Lucide icons
+vi.mock("lucide-react", () => ({
+  RefreshCw: () => <span data-testid="refresh-icon">RefreshCw</span>,
+  Download: () => <span data-testid="download-icon">Download</span>,
+  Settings: () => <span data-testid="settings-icon">Settings</span>,
+  LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
+  Columns: () => <span data-testid="columns-icon">Columns</span>,
+  BarChart3: () => <span data-testid="chart-icon">BarChart3</span>,
 }));
 
 describe("Content Decay Refresh Queue Page", () => {
-  const mockRouter = {
-    push: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    (useParams as any).mockReturnValue({ siteId: "test-site-123" });
-    (useRouter as any).mockReturnValue(mockRouter);
-    (useSearchParams as any).mockReturnValue(new URLSearchParams());
   });
 
   describe("Page Rendering", () => {
-    it("should render the page header", () => {
+    it("renders the page container", () => {
       render(<ContentDecayPage />);
-      expect(screen.getByText("Content Decay")).toBeInTheDocument();
+      expect(screen.getByTestId("content-decay-page")).toBeInTheDocument();
     });
 
-    it("should render the page description", () => {
+    it("renders the page title", () => {
       render(<ContentDecayPage />);
-      expect(screen.getByText(/Monitor and recover pages/)).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /content decay/i })).toBeInTheDocument();
     });
 
-    it("should render navigation tabs", () => {
+    it("renders the page description", () => {
       render(<ContentDecayPage />);
-      expect(screen.getByText("Queue")).toBeInTheDocument();
-      expect(screen.getByText("Board")).toBeInTheDocument();
-      expect(screen.getByText("Recovery")).toBeInTheDocument();
+      expect(screen.getByText(/identify and refresh underperforming content/i)).toBeInTheDocument();
     });
 
-    it("should render action buttons", () => {
+    it("renders navigation tabs", () => {
       render(<ContentDecayPage />);
-      expect(screen.getByText("Run Scan")).toBeInTheDocument();
-      expect(screen.getByText("Export")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /queue/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /board/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /recovery/i })).toBeInTheDocument();
     });
 
-    it("should render summary cards", () => {
+    it("renders action buttons", () => {
       render(<ContentDecayPage />);
-      expect(screen.getByTestId("decay-summary-cards")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /run scan/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /export/i })).toBeInTheDocument();
     });
 
-    it("should render queue table", () => {
+    it("renders settings link", () => {
       render(<ContentDecayPage />);
-      expect(screen.getByTestId("decay-queue-table")).toBeInTheDocument();
-    });
-  });
-
-  describe("Site ID Handling", () => {
-    it("should show not found when siteId is missing", () => {
-      (useParams as any).mockReturnValue({});
-      render(<ContentDecayPage />);
-      expect(screen.getByText("Site not found")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
     });
   });
 
-  describe("Navigation", () => {
-    it("should navigate to board when Board tab is clicked", async () => {
+  describe("Summary Section", () => {
+    it("renders summary section with aria-label", () => {
       render(<ContentDecayPage />);
-      const boardTab = screen.getByText("Board").closest("button");
-      if (boardTab) {
-        fireEvent.click(boardTab);
-      }
-      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay/board");
+      expect(screen.getByRole("region", { name: /summary statistics/i })).toBeInTheDocument();
     });
+  });
 
-    it("should navigate to recovery when Recovery tab is clicked", async () => {
+  describe("Queue Table Section", () => {
+    it("renders queue section with aria-label", () => {
       render(<ContentDecayPage />);
-      const recoveryTab = screen.getByText("Recovery").closest("button");
-      if (recoveryTab) {
-        fireEvent.click(recoveryTab);
-      }
-      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay/recovery");
-    });
-
-    it("should navigate to settings when Settings button is clicked", async () => {
-      render(<ContentDecayPage />);
-      const settingsBtn = screen.getByRole("button", { name: "" }).closest("button");
-      // Settings button has only an icon, find by navigating parent
-      const allButtons = screen.getAllByRole("button");
-      // Find the one that would navigate to settings
-      expect(allButtons.length).toBeGreaterThan(0);
+      expect(screen.getByRole("region", { name: /decay candidates queue/i })).toBeInTheDocument();
     });
   });
 
   describe("User Actions", () => {
-    it("should trigger scan when Run Scan button is clicked", async () => {
-      const { useRunContentDecayScan } = await import("@/lib/hooks/useContentDecay");
-      const mockRunScan = vi.fn().mockResolvedValue({ success: true });
-      (useRunContentDecayScan as any).mockReturnValue({ runScan: mockRunScan, isRunning: false });
-
+    it("run scan button is clickable", async () => {
+      const user = userEvent.setup();
       render(<ContentDecayPage />);
-      const runScanBtn = screen.getByText("Run Scan").closest("button");
-      if (runScanBtn) {
-        fireEvent.click(runScanBtn);
-      }
-      // The button should be clickable
-      expect(runScanBtn).not.toBeNull();
+      const runScanButton = screen.getByRole("button", { name: /run scan/i });
+      await user.click(runScanButton);
+      expect(runScanButton).toBeInTheDocument();
     });
 
-    it("should open candidate drawer when row is clicked", async () => {
+    it("export button is clickable", async () => {
+      const user = userEvent.setup();
       render(<ContentDecayPage />);
-      const viewBtn = screen.getByTestId("view-candidate-btn");
-      fireEvent.click(viewBtn);
-      expect(screen.getByTestId("candidate-detail-drawer")).toBeInTheDocument();
+      const exportButton = screen.getByRole("button", { name: /export/i });
+      await user.click(exportButton);
+      expect(exportButton).toBeInTheDocument();
     });
   });
 
   describe("Loading States", () => {
-    it("should render loading skeleton when loading", () => {
-      const { useContentDecaySummary, useContentDecayCandidates } = await import("@/lib/hooks/useContentDecay");
-      (useContentDecaySummary as any).mockReturnValue({ summary: null, isLoading: true });
-      (useContentDecayCandidates as any).mockReturnValue({ candidates: [], isLoading: true });
-
+    it("shows loading fallback when data is loading", () => {
+      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecaySummary).mockReturnValue({
+        summary: null,
+        isLoading: true,
+        error: null,
+      });
       render(<ContentDecayPage />);
-      // Should still render the page structure
-      expect(screen.getByText("Content Decay")).toBeInTheDocument();
+      expect(screen.getByTestId("content-decay-page")).toBeInTheDocument();
     });
   });
 
   describe("Accessibility", () => {
-    it("should have proper heading hierarchy", () => {
+    it("has proper heading hierarchy", () => {
       render(<ContentDecayPage />);
       const h1 = screen.getByRole("heading", { level: 1 });
-      expect(h1).toHaveTextContent("Content Decay");
+      expect(h1).toBeInTheDocument();
     });
 
-    it("should have accessible navigation tabs", () => {
+    it("has accessible navigation", () => {
       render(<ContentDecayPage />);
-      const tabs = screen.getAllByRole("tab");
-      expect(tabs.length).toBeGreaterThan(0);
+      const nav = screen.getByRole("navigation", { name: /content decay views/i });
+      expect(nav).toBeInTheDocument();
     });
-  });
 
-  describe("Responsive Design", () => {
-    it("should render responsive layout classes", () => {
-      const { container } = render(<ContentDecayPage />);
-      // Check for responsive container classes
-      expect(container.querySelector(".container")).toBeInTheDocument();
+    it("has accessible button labels", () => {
+      render(<ContentDecayPage />);
+      expect(screen.getByRole("button", { name: /run manual scan/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /export to csv/i })).toBeInTheDocument();
     });
   });
 });

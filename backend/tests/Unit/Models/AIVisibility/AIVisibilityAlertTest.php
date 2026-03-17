@@ -887,7 +887,8 @@ class AIVisibilityAlertTest extends TestCase
         if (method_exists($alert, 'getSummaryAttribute')) {
             $summary = $alert->summary;
             $this->assertIsString($summary);
-            $this->assertStringContainsString('mention_spike', $summary);
+            // Summary uses human-readable format: "Mention spike" not "mention_spike"
+            $this->assertStringContainsString('Mention spike', $summary);
         } else {
             $this->markTestSkipped('getSummaryAttribute accessor not yet implemented');
         }

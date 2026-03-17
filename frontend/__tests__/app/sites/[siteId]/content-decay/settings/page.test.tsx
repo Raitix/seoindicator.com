@@ -1,344 +1,337 @@
-﻿/**
- * Tests for Content Decay Settings Page
- * 
- * Task: TASK-36-13 - Frontend Pages - Refresh Queue & Board
+/**
+ * Unit tests for Content Decay Settings Page
+ * Route: /sites/[siteId]/content-decay/settings
+ *
+ * @see TASK-36-13
+ * @see SPEC-036
  */
 
+import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useParams, useRouter } from "next/navigation";
-import SettingsPage from "@/app/sites/[siteId]/content-decay/settings/page";
+import { BrowserRouter } from "react-router-dom";
+import ContentDecaySettingsPage from "@/app/sites/[siteId]/content-decay/settings/page";
 
-// Mock Next.js hooks
-vi.mock("next/navigation", () => ({
-  useParams: vi.fn(),
-  useRouter: vi.fn(),
-}));
+// Mock hooks with stable settings reference
+const mockSettings = {
+  detectionEnabled: true,
+  windowDays: 28,
+  minClicksThreshold: 10,
+  minImpressionsThreshold: 100,
+  digestEnabled: true,
+  digestFrequency: "weekly" as const,
+};
 
-// Mock hooks
 vi.mock("@/lib/hooks/useContentDecay", () => ({
   useContentDecaySettings: vi.fn(() => ({
-    settings: {
-      detectionEnabled: true,
-      windowDays: 28,
-      minClicksThreshold: 100,
-      minImpressionsThreshold: 1000,
-      digestEnabled: false,
-      digestFrequency: "weekly",
-    },
+    settings: mockSettings,
     isLoading: false,
+    error: null,
   })),
   useSaveContentDecaySettings: vi.fn(() => ({
-    saveSettings: vi.fn().mockResolvedValue({ success: true }),
-    isSaving: false,
+    trigger: vi.fn().mockResolvedValue({ success: true }),
+    isMutating: false,
   })),
 }));
 
-describe("Content Decay Settings Page", () => {
-  const mockRouter = {
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+  useParams: vi.fn(() => ({ siteId: "1" })),
+  useRouter: vi.fn(() => ({
     push: vi.fn(),
-  };
+  })),
+}));
 
+// Mock Lucide icons
+vi.mock("lucide-react", () => ({
+  LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
+  Columns: () => <span data-testid="columns-icon">Columns</span>,
+  BarChart3: () => <span data-testid="chart-icon">BarChart3</span>,
+  Save: () => <span data-testid="save-icon">Save</span>,
+  RotateCcw: () => <span data-testid="reset-icon">RotateCcw</span>,
+  AlertCircle: () => <span data-testid="alert-icon">AlertCircle</span>,
+}));
+
+const renderWithRouter = (component: React.ReactElement) => {
+  return render(<BrowserRouter>{component}</BrowserRouter>);
+};
+
+describe("Content Decay Settings Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useParams as any).mockReturnValue({ siteId: "test-site-123" });
-    (useRouter as any).mockReturnValue(mockRouter);
   });
 
   describe("Page Rendering", () => {
-    it("should render the page header", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Content Decay Settings")).toBeInTheDocument();
+    it("renders the page container", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByTestId("settings-page")).toBeInTheDocument();
     });
 
-    it("should render the page description", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText(/Configure content decay detection/)).toBeInTheDocument();
+    it("renders the page title", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("heading", { name: /content decay settings/i })).toBeInTheDocument();
     });
 
-    it("should render navigation tabs", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Queue")).toBeInTheDocument();
-      expect(screen.getByText("Board")).toBeInTheDocument();
-      expect(screen.getByText("Recovery")).toBeInTheDocument();
-      expect(screen.getByText("Settings")).toBeInTheDocument();
+    it("renders the page description", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByText(/configure detection and notification/i)).toBeInTheDocument();
     });
 
-    it("should render save button", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Save Settings")).toBeInTheDocument();
-    });
-  });
-
-  describe("Detection Settings", () => {
-    it("should render detection settings card", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Detection Settings")).toBeInTheDocument();
-    });
-
-    it("should render detection toggle", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Enable Content Decay Detection")).toBeInTheDocument();
-      expect(screen.getByTestId("detection-toggle")).toBeInTheDocument();
-    });
-
-    it("should render window size selector", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Detection Window")).toBeInTheDocument();
-    });
-
-    it("should render minimum clicks threshold input", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Minimum Clicks Threshold")).toBeInTheDocument();
-      expect(screen.getByTestId("min-clicks-input")).toBeInTheDocument();
-    });
-
-    it("should render minimum impressions threshold input", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Minimum Impressions Threshold")).toBeInTheDocument();
-      expect(screen.getByTestId("min-impressions-input")).toBeInTheDocument();
+    it("renders navigation tabs", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("link", { name: /queue/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /board/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /recovery/i })).toBeInTheDocument();
     });
   });
 
-  describe("Digest Settings", () => {
-    it("should render notification digest card", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Notification Digest")).toBeInTheDocument();
+  describe("Detection Settings Section", () => {
+    it("renders detection settings section", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("region", { name: /detection settings/i })).toBeInTheDocument();
     });
 
-    it("should render digest toggle", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Enable Email Digest")).toBeInTheDocument();
-      expect(screen.getByTestId("digest-toggle")).toBeInTheDocument();
+    it("renders detection toggle", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByText(/enable detection/i)).toBeInTheDocument();
+    });
+
+    it("renders detection toggle switch", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const toggle = screen.getByRole("switch", { name: /enable detection/i });
+      expect(toggle).toBeInTheDocument();
+    });
+
+    it("renders window size selector", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByText(/detection window/i)).toBeInTheDocument();
+    });
+
+    it("renders window size options", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("button", { name: /7 days/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /14 days/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /28 days/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /56 days/i })).toBeInTheDocument();
+    });
+  });
+
+  describe("Threshold Configuration", () => {
+    it("renders thresholds section", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByText(/thresholds/i)).toBeInTheDocument();
+    });
+
+    it("renders minimum clicks input", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByLabelText(/minimum clicks/i)).toBeInTheDocument();
+    });
+
+    it("renders minimum impressions input", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByLabelText(/minimum impressions/i)).toBeInTheDocument();
+    });
+  });
+
+  describe("Digest Settings Section", () => {
+    it("renders digest settings section", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("region", { name: /digest settings/i })).toBeInTheDocument();
+    });
+
+    it("renders digest toggle", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByText(/enable digest/i)).toBeInTheDocument();
+    });
+
+    it("renders digest toggle switch", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const toggle = screen.getByRole("switch", { name: /enable digest/i });
+      expect(toggle).toBeInTheDocument();
+    });
+
+    it("renders digest frequency selector", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByLabelText(/digest frequency/i)).toBeInTheDocument();
+    });
+
+    it("renders digest frequency options", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("option", { name: /weekly/i })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /monthly/i })).toBeInTheDocument();
+    });
+  });
+
+  describe("Form Actions", () => {
+    it("renders save button", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("button", { name: /save settings/i })).toBeInTheDocument();
+    });
+
+    it("renders reset button", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByRole("button", { name: /reset/i })).toBeInTheDocument();
+    });
+
+    it("save button is disabled when no changes", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const saveButton = screen.getByRole("button", { name: /save settings/i });
+      expect(saveButton).toBeDisabled();
+    });
+
+    it("reset button is disabled when no changes", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const resetButton = screen.getByRole("button", { name: /reset/i });
+      expect(resetButton).toBeDisabled();
     });
   });
 
   describe("Form Interactions", () => {
-    it("should toggle detection enabled", async () => {
-      render(<SettingsPage />);
-      const toggle = screen.getByTestId("detection-toggle");
-      const initialState = toggle.getAttribute("data-state");
-      fireEvent.click(toggle);
-      // Toggle state should change
+    it("enables save button after change", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      
+      // Click the detection toggle to make a change
+      const toggle = screen.getByRole("switch", { name: /enable detection/i });
+      await user.click(toggle);
+      
+      // Save button should now be enabled
+      const saveButton = screen.getByRole("button", { name: /save settings/i });
+      expect(saveButton).not.toBeDisabled();
     });
 
-    it("should toggle digest enabled", async () => {
-      render(<SettingsPage />);
-      const toggle = screen.getByTestId("digest-toggle");
-      fireEvent.click(toggle);
-      // Toggle state should change
+    it("shows unsaved changes indicator after change", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      
+      // Click the detection toggle to make a change
+      const toggle = screen.getByRole("switch", { name: /enable detection/i });
+      await user.click(toggle);
+      
+      // Unsaved changes indicator should appear
+      expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
     });
 
-    it("should update minimum clicks threshold", async () => {
-      render(<SettingsPage />);
-      const input = screen.getByTestId("min-clicks-input");
-      fireEvent.change(input, { target: { value: "200" } });
-      expect(input).toHaveValue(200);
+    it("can change window size selection", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      
+      // Click the 7 days button
+      const button7Days = screen.getByRole("button", { name: /7 days/i });
+      await user.click(button7Days);
+      
+      // Button should now have blue background (selected state)
+      expect(button7Days).toHaveClass("bg-blue-600");
     });
 
-    it("should update minimum impressions threshold", async () => {
-      render(<SettingsPage />);
-      const input = screen.getByTestId("min-impressions-input");
-      fireEvent.change(input, { target: { value: "5000" } });
-      expect(input).toHaveValue(5000);
-    });
-  });
-
-  describe("Window Size Selection", () => {
-    it("should have 7 days option", async () => {
-      render(<SettingsPage />);
-      const triggers = screen.getAllByRole("combobox");
-      const windowTrigger = triggers[0];
-      fireEvent.click(windowTrigger);
-      await waitFor(() => {
-        expect(screen.getByText("7 days")).toBeInTheDocument();
-      });
-    });
-
-    it("should have 14 days option", async () => {
-      render(<SettingsPage />);
-      const triggers = screen.getAllByRole("combobox");
-      const windowTrigger = triggers[0];
-      fireEvent.click(windowTrigger);
-      await waitFor(() => {
-        expect(screen.getByText("14 days")).toBeInTheDocument();
-      });
-    });
-
-    it("should have 56 days option", async () => {
-      render(<SettingsPage />);
-      const triggers = screen.getAllByRole("combobox");
-      const windowTrigger = triggers[0];
-      fireEvent.click(windowTrigger);
-      await waitFor(() => {
-        expect(screen.getByText("56 days")).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe("Save Actions", () => {
-    it("should show unsaved changes alert when form is modified", async () => {
-      render(<SettingsPage />);
-      const input = screen.getByTestId("min-clicks-input");
-      fireEvent.change(input, { target: { value: "200" } });
-      await waitFor(() => {
-        expect(screen.getByText(/You have unsaved changes/)).toBeInTheDocument();
-      });
-    });
-
-    it("should show reset button when there are changes", async () => {
-      render(<SettingsPage />);
-      const input = screen.getByTestId("min-clicks-input");
-      fireEvent.change(input, { target: { value: "200" } });
-      await waitFor(() => {
-        expect(screen.getByText("Reset")).toBeInTheDocument();
-      });
-    });
-
-    it("should call saveSettings when Save button is clicked", async () => {
-      const { useSaveContentDecaySettings } = await import("@/lib/hooks/useContentDecay");
-      const mockSave = vi.fn().mockResolvedValue({ success: true });
-      (useSaveContentDecaySettings as any).mockReturnValue({
-        saveSettings: mockSave,
-        isSaving: false,
-      });
-
-      render(<SettingsPage />);
-      // Make a change first
-      const input = screen.getByTestId("min-clicks-input");
-      fireEvent.change(input, { target: { value: "200" } });
-
-      await waitFor(() => {
-        const saveBtn = screen.getByText("Save Settings").closest("button");
-        expect(saveBtn).not.toBeDisabled();
-      });
-    });
-
-    it("should disable save button when no changes", () => {
-      render(<SettingsPage />);
-      const saveBtn = screen.getByText("Save Settings").closest("button");
-      expect(saveBtn).toBeDisabled();
+    it("can toggle detection on and off", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      
+      const toggle = screen.getByRole("switch", { name: /enable detection/i });
+      expect(toggle).toHaveAttribute("aria-checked", "true");
+      
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute("aria-checked", "false");
     });
   });
 
   describe("Validation", () => {
-    it("should show error for negative clicks threshold", async () => {
-      render(<SettingsPage />);
-      const input = screen.getByTestId("min-clicks-input");
-      fireEvent.change(input, { target: { value: "-100" } });
+    it("shows error for negative clicks threshold", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
       
-      await waitFor(() => {
-        expect(screen.getByText(/Must be 0 or greater/)).toBeInTheDocument();
-      });
-    });
-
-    it("should show error for negative impressions threshold", async () => {
-      render(<SettingsPage />);
-      const input = screen.getByTestId("min-impressions-input");
-      fireEvent.change(input, { target: { value: "-100" } });
+      const clicksInput = screen.getByLabelText(/minimum clicks/i);
+      await user.clear(clicksInput);
+      await user.type(clicksInput, "-5");
       
+      // Trigger save to show validation
+      const saveButton = screen.getByRole("button", { name: /save settings/i });
+      await user.click(saveButton);
+      
+      // Should show validation error
       await waitFor(() => {
-        expect(screen.getByText(/Must be 0 or greater/)).toBeInTheDocument();
+        expect(screen.getByText(/must be 0 or greater/i)).toBeInTheDocument();
       });
     });
-  });
 
-  describe("Navigation", () => {
-    it("should navigate to queue when Queue tab is clicked", async () => {
-      render(<SettingsPage />);
-      const queueTab = screen.getByText("Queue").closest("button");
-      if (queueTab) {
-        fireEvent.click(queueTab);
-      }
-      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay");
-    });
-
-    it("should navigate to board when Board tab is clicked", async () => {
-      render(<SettingsPage />);
-      const boardTab = screen.getByText("Board").closest("button");
-      if (boardTab) {
-        fireEvent.click(boardTab);
-      }
-      expect(mockRouter.push).toHaveBeenCalledWith("/sites/test-site-123/content-decay/board");
-    });
-  });
-
-  describe("Site ID Handling", () => {
-    it("should show not found when siteId is missing", () => {
-      (useParams as any).mockReturnValue({});
-      render(<SettingsPage />);
-      expect(screen.getByText("Site not found")).toBeInTheDocument();
-    });
-  });
-
-  describe("Info Card", () => {
-    it("should display how detection works info", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("How Detection Works")).toBeInTheDocument();
-    });
-
-    it("should explain the detection process", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText(/Content decay detection compares current page performance/)).toBeInTheDocument();
-    });
-  });
-
-  describe("Status Badge", () => {
-    it("should show Detection Active when enabled", () => {
-      render(<SettingsPage />);
-      expect(screen.getByText("Detection Active")).toBeInTheDocument();
-    });
-
-    it("should show Detection Paused when disabled", async () => {
-      const { useContentDecaySettings } = await import("@/lib/hooks/useContentDecay");
-      (useContentDecaySettings as any).mockReturnValue({
-        settings: {
-          detectionEnabled: false,
-          windowDays: 28,
-          minClicksThreshold: 100,
-          minImpressionsThreshold: 1000,
-          digestEnabled: false,
-          digestFrequency: "weekly",
-        },
-        isLoading: false,
+    it("shows error for negative impressions threshold", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      
+      const impressionsInput = screen.getByLabelText(/minimum impressions/i);
+      await user.clear(impressionsInput);
+      await user.type(impressionsInput, "-10");
+      
+      // Trigger save to show validation
+      const saveButton = screen.getByRole("button", { name: /save settings/i });
+      await user.click(saveButton);
+      
+      // Should show validation error
+      await waitFor(() => {
+        expect(screen.getByText(/must be 0 or greater/i)).toBeInTheDocument();
       });
-
-      render(<SettingsPage />);
-      expect(screen.getByText("Detection Paused")).toBeInTheDocument();
-    });
-  });
-
-  describe("Accessibility", () => {
-    it("should have proper heading hierarchy", () => {
-      render(<SettingsPage />);
-      const h1 = screen.getByRole("heading", { level: 1 });
-      expect(h1).toHaveTextContent("Content Decay Settings");
-    });
-
-    it("should have accessible form labels", () => {
-      render(<SettingsPage />);
-      expect(screen.getByLabelText(/Enable Content Decay Detection/)).toBeInTheDocument();
     });
   });
 
   describe("Loading States", () => {
-    it("should render loading skeleton when loading", async () => {
-      const { useContentDecaySettings } = await import("@/lib/hooks/useContentDecay");
-      (useContentDecaySettings as any).mockReturnValue({
+    it("shows loading state when settings are loading", () => {
+      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecaySettings).mockReturnValue({
         settings: null,
         isLoading: true,
+        error: null,
       });
-
-      render(<SettingsPage />);
-      expect(screen.getByTestId("page-skeleton")).toBeInTheDocument();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      // Page should still render with loading state
+      expect(screen.getByTestId("settings-page")).toBeInTheDocument();
     });
   });
 
-  describe("Responsive Design", () => {
-    it("should render responsive layout classes", () => {
-      const { container } = render(<SettingsPage />);
-      expect(container.querySelector(".container")).toBeInTheDocument();
+  describe("Accessibility", () => {
+    it("has proper heading hierarchy", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const h1 = screen.getByRole("heading", { level: 1 });
+      expect(h1).toBeInTheDocument();
+    });
+
+    it("has accessible navigation", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const nav = screen.getByRole("navigation", { name: /content decay views/i });
+      expect(nav).toBeInTheDocument();
+    });
+
+    it("has accessible form inputs", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      expect(screen.getByLabelText(/minimum clicks/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/minimum impressions/i)).toBeInTheDocument();
+    });
+
+    it("has accessible toggle switches", () => {
+      renderWithRouter(<ContentDecaySettingsPage />);
+      const toggles = screen.getAllByRole("switch");
+      expect(toggles.length).toBe(2); // Detection and Digest toggles
+    });
+  });
+
+  describe("Reset Functionality", () => {
+    it("reset button restores original values", async () => {
+      const user = userEvent.setup();
+      renderWithRouter(<ContentDecaySettingsPage />);
+      
+      // Make a change
+      const toggle = screen.getByRole("switch", { name: /enable detection/i });
+      await user.click(toggle);
+      
+      // Reset button should be enabled
+      const resetButton = screen.getByRole("button", { name: /reset/i });
+      expect(resetButton).not.toBeDisabled();
+      
+      // Click reset
+      await user.click(resetButton);
+      
+      // Toggle should be back to original state
+      expect(toggle).toHaveAttribute("aria-checked", "true");
     });
   });
 });

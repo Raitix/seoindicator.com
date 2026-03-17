@@ -101,8 +101,8 @@ class AIMentionAnalytics extends Model
             'competitor_mentions' => 'array',
             'competitor_stats' => 'array',
             'top_query_categories' => 'array',
-            'period_start' => 'datetime',
-            'period_end' => 'datetime',
+            'period_start' => 'date',
+            'period_end' => 'date',
             'aggregated_at' => 'datetime',
         ];
     }
