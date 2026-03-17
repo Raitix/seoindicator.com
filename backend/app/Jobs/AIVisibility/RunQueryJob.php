@@ -79,9 +79,33 @@ class RunQueryJob implements ShouldQueue
 
         try {
             // Call OpenRouter API (or mock in tests)
-            $response = $this->callAI($engine);
+            $result = $this->callAI($engine);
+            $response = $result['response'];
+            $error = $result['error'];
 
             $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            // If there was an API error, store failed result
+            if ($error !== null) {
+                AIQueryResult::create([
+                    'project_id' => $this->projectId,
+                    'platform' => $this->platform,
+                    'query_text' => $this->queryText,
+                    'response_text' => null,
+                    'success' => false,
+                    'error_message' => $error,
+                    'latency_ms' => $latencyMs,
+                    'queried_at' => now(),
+                ]);
+
+                Log::warning('RunQueryJob: API error recorded', [
+                    'project_id' => $this->projectId,
+                    'platform' => $this->platform,
+                    'error' => $error,
+                ]);
+
+                return;
+            }
 
             // Parse mentions from response
             $mentions = [];
@@ -103,14 +127,14 @@ class RunQueryJob implements ShouldQueue
             }
 
             // Detect mention type
-            $mentionType = $this->detectMentionType($response, $project->brand_name);
+            $mentionType = $this->detectMentionType($response ?? '', $project->brand_name);
 
             // Analyze sentiment
-            $sentiment = $this->analyzeSentiment($response, $project->brand_name);
-            $sentimentScore = $this->calculateSentimentScore($response, $project->brand_name);
+            $sentiment = $this->analyzeSentiment($response ?? '', $project->brand_name);
+            $sentimentScore = $this->calculateSentimentScore($response ?? '', $project->brand_name);
 
             // Extract context
-            $context = $this->extractContext($response, $project->brand_name);
+            $context = $this->extractContext($response ?? '', $project->brand_name);
 
             // Store the result
             $queryResult = AIQueryResult::create([
@@ -197,10 +221,18 @@ class RunQueryJob implements ShouldQueue
     }
 
     /**
-     * Call the AI API.
+     * Result from AI call - stores both response and error info.
      */
-    protected function callAI(AIQueryEngine $engine): string
+    protected ?string $lastError = null;
+
+    /**
+     * Call the AI API.
+     * Returns an array with 'response' and 'error' keys.
+     */
+    protected function callAI(AIQueryEngine $engine): array
     {
+        $this->lastError = null;
+
         try {
             // Try using the engine first
             $result = $engine->query($this->platform, $this->queryText);
@@ -208,23 +240,24 @@ class RunQueryJob implements ShouldQueue
             // Check if the result was successful
             if ($result && is_object($result) && isset($result->success) && !$result->success) {
                 $errorMessage = $result->errorMessage ?? 'Unknown error';
-                throw new \RuntimeException("AI query failed: {$errorMessage}");
+                $this->lastError = "AI query failed: {$errorMessage}";
+                return ['response' => null, 'error' => $this->lastError];
             }
 
             if ($result && is_object($result) && method_exists($result, 'getResponseText')) {
-                return $result->getResponseText();
+                return ['response' => $result->getResponseText(), 'error' => null];
             }
 
             if ($result && is_object($result) && isset($result->responseText)) {
-                return $result->responseText;
+                return ['response' => $result->responseText, 'error' => null];
             }
 
             if ($result && is_array($result) && isset($result['response'])) {
-                return $result['response'];
+                return ['response' => $result['response'], 'error' => null];
             }
 
             if ($result && is_array($result) && isset($result['responseText'])) {
-                return $result['responseText'];
+                return ['response' => $result['responseText'], 'error' => null];
             }
 
             // Fallback to direct HTTP call
@@ -240,8 +273,9 @@ class RunQueryJob implements ShouldQueue
 
     /**
      * Call OpenRouter API directly.
+     * Returns an array with 'response' and 'error' keys.
      */
-    protected function callOpenRouterDirectly(): string
+    protected function callOpenRouterDirectly(): array
     {
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . config('services.openrouter.api_key'),
@@ -255,14 +289,21 @@ class RunQueryJob implements ShouldQueue
 
         if ($response->successful()) {
             $data = $response->json();
-            return $data['choices'][0]['message']['content'] ?? '';
+            return ['response' => $data['choices'][0]['message']['content'] ?? '', 'error' => null];
         }
 
-        // Throw exception for error responses
+        // Return error for non-successful responses
         $statusCode = $response->status();
         $errorData = $response->json();
         $errorMessage = $errorData['error'] ?? "HTTP error {$statusCode}";
-        throw new \RuntimeException("OpenRouter API error ({$statusCode}): {$errorMessage}");
+        $this->lastError = "OpenRouter API error ({$statusCode}): {$errorMessage}";
+        
+        Log::warning('RunQueryJob OpenRouter API error', [
+            'status' => $statusCode,
+            'error' => $errorMessage,
+        ]);
+        
+        return ['response' => null, 'error' => $this->lastError];
     }
 
     /**
