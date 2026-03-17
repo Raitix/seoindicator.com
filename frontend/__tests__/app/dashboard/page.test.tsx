@@ -107,45 +107,42 @@ const mockAuthContext = {
   isAuthenticated: true,
   isLoading: false,
   error: null,
-  login: jest.fn(),
-  loginWithGoogle: jest.fn(),
-  logout: jest.fn(),
-  register: jest.fn(),
-  resetPassword: jest.fn(),
-  resendVerification: jest.fn(),
-  clearError: jest.fn(),
-  refreshUser: jest.fn(),
+  login: vi.fn(),
+  loginWithGoogle: vi.fn(),
+  logout: vi.fn(),
+  register: vi.fn(),
+  resetPassword: vi.fn(),
+  resendVerification: vi.fn(),
+  clearError: vi.fn(),
+  refreshUser: vi.fn(),
 };
 
 // Helper to setup SWR mock
-const mockUseSWR = (data: any, isLoading = false, error: any = null, mutate = jest.fn()) => {
-  (useSWR as jest.Mock).mockReturnValue({
+const mockUseSWR = (data: any, isLoading = false, error: any = null, mutate = vi.fn()) => {
+  vi.mocked(useSWR).mockReturnValue({
     data,
     isLoading,
     error,
     mutate,
-  });
+  } as any);
 };
 
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
-  (useRouter as jest.Mock).mockReturnValue({
-    push: mockPush,
-  });
-  (useAuth as jest.Mock).mockReturnValue(mockAuthContext);
+  vi.clearAllMocks();
+  vi.mocked(useAuth).mockReturnValue(mockAuthContext as any);
 });
 
 // ==================== DP-001: Authentication & Authorization ====================
 
 describe("Authentication & Authorization", () => {
   it("redirects to login when user is not authenticated (DP-001)", async () => {
-    (useAuth as jest.Mock).mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: null,
       isAuthenticated: false,
-    });
+    } as any);
     mockUseSWR(null, false);
 
     render(<DashboardPage />);
@@ -156,12 +153,12 @@ describe("Authentication & Authorization", () => {
   });
 
   it("shows loading state while checking authentication (DP-002)", () => {
-    (useAuth as jest.Mock).mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: null,
       isAuthenticated: false,
       isLoading: true,
-    });
+    } as any);
     mockUseSWR(null, true);
 
     render(<DashboardPage />);

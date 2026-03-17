@@ -64,9 +64,9 @@ export default function RootLayout({
         <Providers>
           <ConsentProvider>
             <div className="flex flex-col min-h-screen">
-              <main className="flex-1">
+              <div className="flex-1">
                 <SkipToMain>{children}</SkipToMain>
-              </main>
+              </div>
               <Footer />
             </div>
             <CookieConsent showCustomize />
