@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`Blocked`
+`To Prioritize`
 
 ## PRIORITY
 `High`
