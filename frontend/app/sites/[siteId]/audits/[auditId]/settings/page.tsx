@@ -11,6 +11,9 @@
 
 "use client";
 
+// Force dynamic rendering for static export compatibility
+export const dynamic = 'force-dynamic';
+
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, AlertCircle, Settings } from 'lucide-react';
