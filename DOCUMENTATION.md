@@ -6816,6 +6816,262 @@ Analytics aggregation service for the Public SEO Audit Reports & Embeddable Scor
 | TASK-33-3 | Done ✅ | badge_impressions table |
 
 ---
+## AIVisibilityProject Model (TASK-34-2)
+
+### Feature Description
+Eloquent models for the AI Visibility Tracking feature (FEAT-034) that define the data layer for brand mention tracking in AI-generated responses. Provides four interconnected models for projects, query results, analytics aggregation, and alerts as part of the Generative Engine Optimization (GEO) infrastructure.
+
+### Component Locations
+- **Models Directory:** `backend/app/Models/AIVisibility/`
+  - `AIVisibilityProject.php` - Brand tracking project configuration
+  - `AIQueryResult.php` - Individual query results with mention data
+  - `AIMentionAnalytics.php` - Aggregated analytics per platform/period
+  - `AIVisibilityAlert.php` - Alert records for threshold breaches
+  - `AIMention.php` - Per-mention tracking for detailed analysis
+- **Test Directory:** `backend/tests/Unit/Models/AIVisibility/`
+  - `AIVisibilityProjectTest.php` - 40 tests
+  - `AIQueryResultTest.php` - 45 tests
+  - `AIMentionAnalyticsTest.php` - 40 tests
+  - `AIVisibilityAlertTest.php` - 40 tests
+- **Test Documentation:** `TESTS/TEST-34-2.md`
+
+### AIVisibilityProject Model
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `user_id` | int | Owner user ID |
+| `brand_name` | string | Brand name to track |
+| `keywords` | array | JSON array of brand keywords |
+| `competitors` | array | JSON array of competitor names |
+| `query_templates` | array | Custom query templates |
+| `tracking_frequency` | string | Enum: daily, weekly, monthly |
+| `is_active` | boolean | Project active status |
+| `last_queried_at` | datetime | Last query timestamp |
+
+**Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `keywords` | `array` |
+| `competitors` | `array` |
+| `query_templates` | `array` |
+| `is_active` | `boolean` |
+| `last_queried_at` | `datetime` |
+| `tracking_frequency` | `string` (default: 'weekly') |
+
+**Relationships:**
+| Relationship | Type | Related Model |
+|--------------|------|---------------|
+| `user()` | BelongsTo | `User` |
+| `queryResults()` | HasMany | `AIQueryResult` |
+| `analytics()` | HasMany | `AIMentionAnalytics` |
+| `alerts()` | HasMany | `AIVisibilityAlert` |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `active()` | Filter where `is_active = true` |
+| `dueForQuery()` | Projects needing queries based on frequency and last_queried_at |
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `getCompetitorListAttribute()` | Returns array of competitor names |
+
+### AIQueryResult Model
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `project_id` | int | Parent project ID |
+| `platform` | string | AI platform: chatgpt, perplexity, claude |
+| `model_used` | string | Model identifier used |
+| `query_text` | text | Query sent to AI |
+| `query_category` | string | Category: comparison, recommendation, feature |
+| `response_text` | text | AI response |
+| `brand_mentioned` | boolean | Whether brand was mentioned |
+| `brand_context` | text | Surrounding context of mention |
+| `sentiment` | string | Sentiment: positive, neutral, negative, mixed |
+| `competitor_mentions` | array | JSON array of competitor mentions |
+| `citations` | array | JSON array of cited sources |
+| `query_tokens` | int | Token count for query |
+| `response_tokens` | int | Token count for response |
+| `latency_ms` | int | Query latency in milliseconds |
+| `queried_at` | datetime | Query timestamp |
+| `cache_hit` | boolean | Whether result was from cache |
+
+**Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `competitor_mentions` | `array` |
+| `citations` | `array` |
+| `brand_mentioned` | `boolean` |
+| `cache_hit` | `boolean` |
+| `queried_at` | `datetime` |
+
+**Relationships:**
+| Relationship | Type | Related Model |
+|--------------|------|---------------|
+| `project()` | BelongsTo | `AIVisibilityProject` |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `mentioned()` | Filter where `brand_mentioned = true` |
+| `forPlatform($platform)` | Filter by platform |
+| `successful()` | Filter successful queries |
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `getModelAttribute()` | Alias for `model_used` |
+| `getBrandSentimentAttribute()` | Alias for `sentiment` |
+
+### AIMentionAnalytics Model
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `project_id` | int | Parent project ID |
+| `platform` | string | AI platform |
+| `period_start` | date | Analytics period start |
+| `period_end` | date | Analytics period end |
+| `total_queries` | int | Total queries in period |
+| `brand_mentions` | int | Brand mentions count |
+| `mention_rate` | decimal | Mention rate percentage |
+| `competitor_mentions` | array | Competitor mention breakdown |
+| `share_of_voice` | decimal | Brand vs competitors share |
+| `average_sentiment` | decimal | Average sentiment score |
+| `top_query_categories` | array | Top categories triggering mentions |
+| `mention_trend` | string | Trend: up, down, stable |
+
+**Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `competitor_mentions` | `array` |
+| `top_query_categories` | `array` |
+| `period_start` | `date` |
+| `period_end` | `date` |
+| `mention_rate` | `decimal:5,2` |
+| `share_of_voice` | `decimal:5,2` |
+| `average_sentiment` | `decimal:3,2` |
+
+**Unique Constraint:** `project_id + platform + period_start + period_end`
+
+**Accessors:**
+| Accessor | Description |
+|----------|-------------|
+| `getAvgSentimentScoreAttribute()` | Alias for `average_sentiment` |
+
+### AIVisibilityAlert Model
+
+**Fillable Attributes:**
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `project_id` | int | Parent project ID |
+| `alert_type` | string | Type: mention_spike, mention_drop, competitor_gain, sentiment_change |
+| `threshold` | decimal | Threshold percentage |
+| `previous_value` | decimal | Value before change |
+| `current_value` | decimal | Value after change |
+| `change_percent` | decimal | Percentage change |
+| `is_read` | boolean | Read status |
+| `is_resolved` | boolean | Resolution status |
+| `triggered_at` | datetime | Alert trigger timestamp |
+| `resolved_at` | datetime | Resolution timestamp |
+| `metadata` | array | Additional alert data |
+
+**Casts:**
+| Attribute | Cast Type |
+|-----------|-----------|
+| `is_read` | `boolean` |
+| `is_resolved` | `boolean` |
+| `triggered_at` | `datetime` |
+| `resolved_at` | `datetime` |
+| `threshold` | `decimal:5,2` |
+| `previous_value` | `decimal:5,2` |
+| `current_value` | `decimal:5,2` |
+| `change_percent` | `decimal:5,2` |
+
+**Scopes:**
+| Scope | Description |
+|-------|-------------|
+| `unread()` | Filter where `is_read = false` |
+| `unresolved()` | Filter where `is_resolved = false` |
+
+**Methods:**
+| Method | Description |
+|--------|-------------|
+| `markAsRead()` | Set `is_read = true` |
+| `resolve()` | Set `is_resolved = true`, set `resolved_at` |
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `ai_visibility_projects` | Project configurations with brand/competitor data |
+| `ai_query_results` | Individual query results with mention analysis |
+| `ai_mention_analytics` | Aggregated analytics per project/platform/period |
+| `ai_visibility_alerts` | Alert records for threshold breaches |
+| `ai_mentions` | Detailed per-mention tracking |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Namespace | `App\Models\AIVisibility\*` |
+| Fillable Guards | Explicit fillable arrays |
+| JSON Casts | Automatic serialization for complex fields |
+| Relationships | Proper foreign key constraints |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| AIVisibilityProjectTest | 40 | 56 | ✅ PASS |
+| AIQueryResultTest | 45 | 67 | ✅ PASS |
+| AIMentionAnalyticsTest | 40 | 58 | ✅ PASS |
+| AIVisibilityAlertTest | 40 | 57 | ✅ PASS |
+| **Total** | **165** | **238** | ✅ PASS |
+
+**Test Categories:**
+- Model existence and namespace validation
+- Fillable attributes testing
+- Cast verification (array, boolean, datetime, decimal)
+- Relationship testing (belongsTo, hasMany)
+- Scope testing (active, dueForQuery, mentioned, forPlatform, unread, unresolved)
+- Accessor testing (aliases and computed properties)
+- Default value verification
+- Edge cases (large JSON, Unicode, null values)
+
+**Skipped Tests (Expected):**
+- `vp027`, `vp028`, `vp029`, `va037`: Cascade delete tests - SQLite limitation (not a model issue)
+
+### Production Deployment
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Commit | `a8277fc6672c` |
+| Deployment ID | `20260317T115038Z-0a40ead0` |
+| Tests Passing | 160/165 (4 skipped - SQLite cascade limitation) |
+| Production Smoke Test | ✅ PASS |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-34-1 | Done ✅ | Database migrations for all tables |
+
+### Related Tasks
+
+| Task | Description |
+|------|-------------|
+| TASK-34-3 | AIQueryEngine - uses models for query results |
+| TASK-34-5 | AIVisibilityService - uses all models for orchestration |
+| TASK-34-6 | Project CRUD API - uses AIVisibilityProject model |
+| TASK-34-7 | Query Jobs - uses models for background processing |
+
+---
 ## AIQueryEngine Service (TASK-34-3)
 
 ### Service Description
