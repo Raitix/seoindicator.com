@@ -221,30 +221,35 @@ class CrawlWorkerTest extends TestCase
     }
 
     /**
-     * WC-02: Tries is 1 (no auto-retry)
+     * WC-02: Tries is configurable from config
      */
-    public function test_tries_is_1(): void
+    public function test_tries_is_configurable(): void
     {
         $job = new CrawlWorker('crawl-test-123');
-        $this->assertEquals(1, $job->tries);
+        // Default from config is 2 (crawler.queue.retry_attempts)
+        $this->assertEquals(config('crawler.queue.retry_attempts', 2), $job->tries);
     }
 
     /**
-     * WC-03: Max exceptions is 1
+     * WC-03: Max exceptions matches tries
      */
-    public function test_max_exceptions_is_1(): void
+    public function test_max_exceptions_matches_tries(): void
     {
         $job = new CrawlWorker('crawl-test-123');
-        $this->assertEquals(1, $job->maxExceptions);
+        $this->assertEquals($job->tries, $job->maxExceptions);
     }
 
     /**
-     * WC-04: Backoff is [60]
+     * WC-04: Backoff is calculated from config
      */
-    public function test_backoff_is_60(): void
+    public function test_backoff_is_calculated(): void
     {
         $job = new CrawlWorker('crawl-test-123');
-        $this->assertEquals([60], $job->backoff);
+        // Backoff should be an array with exponential delays
+        $this->assertIsArray($job->backoff);
+        $this->assertNotEmpty($job->backoff);
+        // First backoff should be the base delay (60s default)
+        $this->assertEquals(config('crawler.queue.retry_delay', 60), $job->backoff[0]);
     }
 
     /**

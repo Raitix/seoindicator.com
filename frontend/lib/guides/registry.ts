@@ -4346,6 +4346,10 @@ The sitemap directive is simple: just provide the full URL to your XML sitemap f
 
 **Syntax:** \`Sitemap: [full-url]\`
 
+**Example:** \`Sitemap: https://example.com/sitemap.xml\`
+
+For the most accurate and up-to-date robots.txt syntax, refer to [Google's official robots.txt specifications](https://developers.google.com/search/docs/crawling-indexing/robots/intro) at developers.google.com.
+
 ### Benefits of Declaring Your Sitemap
 
 1. **Discovery** — Search engines automatically find your sitemap without manual submission

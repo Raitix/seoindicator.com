@@ -317,11 +317,47 @@ return [
         // Maximum retry attempts for failed items (default: 2)
         'retry_attempts' => env('CRAWLER_QUEUE_RETRY_ATTEMPTS', 2),
 
+        // Base delay in seconds between retries (default: 60)
+        // Uses exponential backoff: 60s, 120s, 240s...
+        'retry_delay' => env('CRAWLER_QUEUE_RETRY_DELAY', 60),
+
         // Lock timeout in seconds for concurrent processing (default: 5 minutes)
         'lock_timeout' => env('CRAWLER_QUEUE_LOCK_TIMEOUT', 300),
 
         // Deduplication method: 'set' or 'bloom' (default: 'set')
         'dedup_method' => env('CRAWLER_DEDUP_METHOD', 'set'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Failure Alert Configuration (TASK-22-16)
+    |--------------------------------------------------------------------------
+    |
+    | Settings for alerting on consecutive crawl job failures.
+    | Used by CrawlFailureAlertService to notify administrators.
+    |
+    | @see \App\Services\Crawler\CrawlFailureAlertService
+    |
+    */
+
+    'failure_alerts' => [
+        // Enable/disable failure alerts (default: true)
+        'enabled' => env('CRAWLER_FAILURE_ALERTS_ENABLED', true),
+
+        // Number of consecutive failures before alerting (default: 5)
+        'consecutive_threshold' => env('CRAWLER_FAILURE_ALERT_THRESHOLD', 5),
+
+        // Time window in minutes for counting consecutive failures (default: 60)
+        'window_minutes' => env('CRAWLER_FAILURE_ALERT_WINDOW', 60),
+
+        // Email addresses to notify (comma-separated)
+        'notification_emails' => env('CRAWLER_FAILURE_ALERT_EMAILS', ''),
+
+        // Slack webhook URL for notifications (optional)
+        'slack_webhook' => env('CRAWLER_FAILURE_ALERT_SLACK_WEBHOOK', ''),
+
+        // Minimum time in minutes between duplicate alerts (default: 30)
+        'alert_cooldown' => env('CRAWLER_FAILURE_ALERT_COOLDOWN', 30),
     ],
 
 ];

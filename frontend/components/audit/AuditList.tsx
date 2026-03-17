@@ -136,7 +136,7 @@ export function AuditList({
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-40" data-testid="status-filter">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>

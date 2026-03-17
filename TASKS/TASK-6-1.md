@@ -1,7 +1,7 @@
 # TASK-6-1: Database Schema - API Keys Table
 
 ## STATUS
-`To Document`
+`Done`
 
 ### [2026-03-17 14:55 GMT+2] ProdTester: Production Testing Complete ✓
 - **Backend Tests:** 64 tests, 124 assertions - ALL PASS (15.26s)
@@ -166,3 +166,18 @@ Small (1-2 hours)
 - **Total**: 23 tests, 52 assertions - ALL PASSING
 - All acceptance criteria verified
 - Approved for deployment
+
+### [2026-03-17 14:55 GMT+2] DocSystemAnalyst: Documentation Complete ✓
+- Added comprehensive documentation to DOCUMENTATION.md
+- Documented table schema with all columns, types, and defaults
+- Documented indexes and foreign key constraints
+- Documented model properties: fillable, casts, hidden, relationships
+- Documented all 4 scopes: active, revoked, expired, byStatus
+- Documented all 6 helper methods: isRevoked, isExpired, isActive, markAsUsed, revoke
+- Documented all 7 factory states
+- Documented security features: key hashing, user isolation, soft deletion
+- Test coverage: 64 tests, 124 assertions - ALL PASSING
+- Production deployed: 2026-03-17 (commit a8277fc6672c)
+- Status: Done ✅
+- Parent SPEC-6: Not complete (TASK-6-2 still "To Document")
+- Parent FEAT-6: Empty placeholder
