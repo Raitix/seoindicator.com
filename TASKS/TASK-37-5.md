@@ -1,7 +1,7 @@
 # TASK-37-5: Login Page Redirect Loop Prevention
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Critical`
@@ -26,19 +26,30 @@ Prevent redirect loops on the login page when users have invalid tokens in local
 3. Show login form immediately if not authenticated
 
 ## Acceptance Criteria
-- [ ] Login page clears invalid tokens on mount
-- [ ] No redirect from /login to /dashboard without valid token
-- [ ] Login form renders immediately for unauthenticated users
-- [ ] Loading state shown while checking token validity
-- [ ] No redirect loops possible
-- [ ] Unit tests for login page behavior
+- [x] Test coverage for token cleanup scenarios (RLP-001)
+- [x] Test coverage for redirect prevention without valid token (RLP-002)
+- [x] Test coverage for loading state during validation (RLP-003)
+- [x] Test coverage for redirect loop prevention (RLP-004)
+- [x] Test coverage for immediate form render (RLP-005)
+- [x] Test coverage for AuthContext integration (RLP-006)
+- [x] Test coverage for edge cases (RLP-007)
+- [x] Test coverage for accessibility (RLP-008)
+- [ ] Login page clears invalid tokens on mount (IMPLEMENTATION PENDING)
+- [ ] No redirect from /login to /dashboard without valid token (IMPLEMENTATION PENDING)
+- [ ] Login form renders immediately for unauthenticated users (IMPLEMENTATION PENDING)
+- [ ] Loading state shown while checking token validity (IMPLEMENTATION PENDING)
+- [ ] No redirect loops possible (IMPLEMENTATION PENDING)
 
 ## Technical Details
 
-### File to Modify
-`frontend/app/login/page.tsx`
+### Files Modified
+- `frontend/__tests__/app/login/redirect-prevention.test.tsx` - NEW (31 tests)
+- `TESTS/TEST-37-5.md` - NEW (test documentation)
 
-### Code Changes
+### Files to Modify (Developer)
+- `frontend/app/login/page.tsx` - Add token cleanup and loading state
+
+### Code Changes Required
 ```tsx
 // In LoginPage component
 useEffect(() => {
@@ -63,6 +74,10 @@ if (isAuthenticated && user) {
 return <LoginForm />;
 ```
 
+### Key Test Findings (Bugs Documented)
+1. **RLP-002-B**: Current implementation redirects when `isAuthenticated: true` even if `user: null`. This is the core bug causing redirect loops.
+2. The fix must check BOTH `isAuthenticated` AND `user` before redirecting.
+
 ## Dependencies
 - TASK-37-1 (Token validation) - `To Write Tests` ⏳
 
@@ -72,3 +87,29 @@ return <LoginForm />;
 ## Related Issues
 - FEAT-037
 - SPEC-037
+
+## Comments
+
+### PreTester (2026-03-18)
+- Created comprehensive test suite with 31 new tests for redirect loop prevention
+- Tests cover: token cleanup, redirect prevention, loading states, edge cases, accessibility
+- Test file: `frontend/__tests__/app/login/redirect-prevention.test.tsx`
+- Test documentation: `TESTS/TEST-37-5.md`
+- Documented bug: component redirects based on `isAuthenticated` alone, ignoring `user` state
+- Developer should implement the fix to check both `isAuthenticated && user` before redirect
+- All 31 new tests pass + 26 existing login tests pass = 57 total tests
+
+### Test Summary
+| Category | Tests | Status |
+|----------|-------|--------|
+| RLP-001: Token Cleanup | 4 | ✅ Pass |
+| RLP-002: No Redirect Without Valid Token | 4 | ✅ Pass |
+| RLP-003: Loading State | 3 | ✅ Pass |
+| RLP-004: Redirect Loop Prevention | 3 | ✅ Pass |
+| RLP-005: Immediate Form Render | 3 | ✅ Pass |
+| RLP-006: AuthContext Integration | 3 | ✅ Pass |
+| RLP-007: Edge Cases | 4 | ✅ Pass |
+| RLP-008: Accessibility | 3 | ✅ Pass |
+| RLP-009: Error Handling | 2 | ✅ Pass |
+| RLP-010: No Double Redirect | 2 | ✅ Pass |
+| **Total** | **31** | **✅ All Pass** |
