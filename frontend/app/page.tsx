@@ -120,8 +120,8 @@ export default function Home() {
             <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
               <Link href="/dashboard">Dashboard</Link>
             </Button>
-            <Button variant="ghost" className="text-slate-300 hover:text-white">
-              Indicators
+            <Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
+              <Link href="/dashboard">Indicators</Link>
             </Button>
             <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
               <Link href="/competitors">Competitors</Link>
