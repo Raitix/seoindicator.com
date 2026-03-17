@@ -96,28 +96,23 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
   const isLoading = isAuditLoading || isIssuesLoading;
   const error = auditError || issuesError;
 
-  // Track if component is mounted and has successfully loaded data
-  const isMountedRef = React.useRef(false);
-  
-  // Track previous URL to prevent unnecessary navigation
-  const prevUrlRef = React.useRef<string>('');
+  // Track previous filter key to detect actual changes (prevents infinite loops)
+  const prevFilterKeyRef = React.useRef<string>('');
+  // Track if we've completed initial mount (prevents URL update on first render)
+  const hasMountedRef = React.useRef(false);
 
-  // Update URL when filters change (only after successful data load)
-  // Note: We intentionally omit 'router' from deps to prevent infinite loops
-  // The router reference is stable, but including it causes re-renders
+  // Update URL when filters change - only for actual filter changes, not data changes
+  // This effect should ONLY run when filters/page/perPage change, not when data loads
   React.useEffect(() => {
-    // Don't update URL during loading or error states
-    if (isLoading || error) {
+    // Skip on initial mount - don't update URL on first render
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      // Build initial filter key for comparison
+      prevFilterKeyRef.current = JSON.stringify({ filters, page, perPage });
       return;
     }
 
-    // Don't update URL on first render until we have data
-    if (!audit && !isMountedRef.current) {
-      return;
-    }
-
-    isMountedRef.current = true;
-
+    // Build URL from current filter state
     const params = new URLSearchParams();
 
     if (filters.type) params.set('type', filters.type);
@@ -132,21 +127,35 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
     const queryString = params.toString();
     const url = queryString ? `?${queryString}` : window.location.pathname;
     
-    // Only update if URL actually changed
-    if (url === prevUrlRef.current) {
+    // Create a key from filter state to detect actual changes
+    const filterKey = JSON.stringify({ filters, page, perPage });
+    
+    // Only update if filter state actually changed (not just data updates)
+    if (filterKey === prevFilterKeyRef.current) {
       return;
     }
-    prevUrlRef.current = url;
+    prevFilterKeyRef.current = filterKey;
     
-    // Use try-catch to handle any navigation errors gracefully
-    // Use window.history.replaceState to avoid router re-renders
+    // Only update if URL is different from current
+    const currentUrl = window.location.pathname + window.location.search;
+    if (url === currentUrl) {
+      return;
+    }
+    
+    // Use window.history.replaceState to avoid triggering re-renders
+    // This is safe because we're only updating the URL, not navigating
     try {
       window.history.replaceState(null, '', url);
-    } catch (navError) {
-      console.warn('Navigation error:', navError);
+    } catch {
+      // Ignore navigation errors - they don't affect functionality
     }
+    // NOTE: Dependencies are intentionally only filters, page, perPage
+    // We do NOT include isLoading or error because:
+    // 1. URL updates should only happen on filter changes
+    // 2. Including isLoading/error causes re-renders during data fetch
+    // 3. The hasMountedRef prevents initial URL update
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, page, perPage, isLoading, error, audit]);
+  }, [filters, page, perPage]);
 
   // Clear selection when issues change
   React.useEffect(() => {
@@ -268,7 +277,7 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
 
   return (
     <div className={cn('min-h-screen bg-slate-950', className)}>
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Summary Section */}
         <section aria-label="Audit summary" className="mb-6" data-testid="audit-summary">
           <AuditSummary
@@ -321,7 +330,7 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
             />
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
