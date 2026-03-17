@@ -248,3 +248,22 @@ if (error) {
 **Effort:** Small (1-2 hours) - straightforward error handling logic
 
 **Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
+
+### ProjectManager Status Correction (2026-03-17 10:14 GMT+2)
+**Status Changed:** `To Prioritize` → `Blocked` (status field corrected)
+**Priority:** HIGH (confirmed) - Authentication UX is critical for user experience
+**Risk:** MEDIUM (confirmed) - Frontend-only changes, standard error handling patterns
+
+**Dependency Status:**
+- TASK-37-1: `To Write Tests` - PreTester designing tests, NOT IMPLEMENTED ❌
+
+**Blocker Analysis:**
+- TASK-37-1 must reach `To Test Locally` or later before this task can proceed
+- Logical dependency: Token validation (37-1) must work before dashboard error handling (37-3) makes sense
+- Files are different (AuthContext.tsx vs dashboard/page.tsx), allowing parallel development once 37-1 is ready
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Effort:** Small (1-2 hours)
+
+**Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
