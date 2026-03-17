@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering for static export compatibility
+export const dynamic = 'force-dynamic';
+
 import * as React from "react";
 import { Suspense } from "react";
 import Link from "next/link";
