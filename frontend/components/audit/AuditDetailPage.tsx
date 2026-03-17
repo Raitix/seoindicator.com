@@ -270,7 +270,7 @@ export function AuditDetailPage({ siteId: siteIdProp, auditId: auditIdProp, clas
     <div className={cn('min-h-screen bg-slate-950', className)}>
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Summary Section */}
-        <section aria-label="Audit summary" className="mb-6">
+        <section aria-label="Audit summary" className="mb-6" data-testid="audit-summary">
           <AuditSummary
             audit={audit}
             severityCounts={severityCounts}

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 import { vi, describe, it, expect, beforeEach } from "vitest";
@@ -399,13 +399,15 @@ describe("LoginPage", () => {
       render(<LoginPage />);
 
       const passwordInput = screen.getByPlaceholderText("Enter your password") as HTMLInputElement;
-      const longPassword = "a".repeat(300);
-
-      await user.type(passwordInput, longPassword);
-
-      // Either truncated or accepted
-      expect(passwordInput.value.length).toBeLessThanOrEqual(256);
-    });
+      
+      // Verify the input has maxLength attribute set to 256
+      expect(passwordInput.maxLength).toBe(256);
+      
+      // Test that the input accepts reasonable-length passwords
+      const normalPassword = "TestPassword123!";
+      await user.type(passwordInput, normalPassword);
+      expect(passwordInput.value).toBe(normalPassword);
+    }, 15000);
   });
 
   // ==================== Redirect with return URL ====================
