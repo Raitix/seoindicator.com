@@ -704,3 +704,21 @@ if (error) {
 **Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
 
 **Completion marker written:** Status field corrected ✅
+
+### ProjectManager Status Enforcement (2026-03-17 17:20 GMT+2)
+**Status Field Corrected:** `To Prioritize` → `Blocked` (39th assessment)
+
+**Dependency Check:**
+- TASK-37-1: `To Write Tests` - PreTester phase, NOT IMPLEMENTED ❌
+- Blocker is valid: `BLOCKED_BY: TASK-37-1` in task file
+
+**Analysis:**
+- Token validation (TASK-37-1) must be implemented before dashboard error handling (this task) makes sense
+- Files are different (AuthContext.tsx vs dashboard/page.tsx), allowing parallel development once TASK-37-1 is ready
+- Task cannot proceed to `To Write Tests` until dependency is satisfied
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Effort:** Small (1-2 hours)
+
+**Next Agent:** PreTester (after TASK-37-1 completes Developer phase)

@@ -2,109 +2,113 @@
 
 namespace App\Services;
 
-use App\Exceptions\DomainValidationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
- * Domain Validation Service for SPEC-003-3
+ * Domain Validation Service
  * 
- * Validates competitor domains before adding them to the system.
- * Provides SSRF protection by blocking internal IPs and sensitive patterns.
+ * Task: SPEC-003-3 - Domain Validation Service
+ * 
+ * Validates competitor domains before adding them.
+ * Includes SSRF protection to prevent access to internal resources.
  */
 class DomainValidator
 {
     /**
-     * Rate limit: max requests per minute per user
+     * Maximum requests per minute per user
      */
     protected int $rateLimit = 10;
 
     /**
-     * HTTP timeout in seconds for accessibility check
+     * Rate limit window in seconds
      */
-    protected int $timeout = 10;
+    protected int $rateLimitWindow = 60;
+
+    /**
+     * HTTP timeout for accessibility check
+     */
+    protected int $httpTimeout = 5;
 
     /**
      * Maximum redirects to follow
      */
-    protected int $maxRedirects = 5;
+    protected int $maxRedirects = 3;
 
     /**
-     * Blocked internal domain patterns
+     * Blocked internal domain keywords
      */
-    protected array $blockedPatterns = [
+    protected array $blockedKeywords = [
         'localhost',
         'local',
         'internal',
         'intranet',
+        'test',
     ];
 
     /**
-     * Blocked TLD patterns (ends with)
-     */
-    protected array $blockedTlds = [
-        '.local',
-        '.internal',
-        '.localhost',
-    ];
-
-    /**
-     * Main validation method
-     * Performs full validation: format, SSRF, DNS, and accessibility.
+     * Validate a domain completely
+     *
+     * @param string $domain Domain to validate
+     * @return array{valid: bool, domain: string, ip?: string, message?: string, code?: string}
      */
     public function validate(string $domain): array
     {
-        // Step 1: Format validation (includes SSRF keyword checks)
+        // Step 1: Validate format
         $formatResult = $this->validateFormat($domain);
         if (!$formatResult['valid']) {
-            return $formatResult;
-        }
-
-        $normalizedDomain = $formatResult['domain'];
-
-        // Step 2: Resolve domain to IP
-        $ip = $this->resolveDomain($normalizedDomain);
-        if ($ip === null) {
             return [
                 'valid' => false,
-                'domain' => $normalizedDomain,
-                'ip' => null,
+                'domain' => $domain,
+                'message' => $formatResult['message'],
+                'code' => $formatResult['code'],
+            ];
+        }
+
+        // Clean domain
+        $domain = $formatResult['domain'] ?? $domain;
+
+        // Step 2: Resolve domain to IP
+        $ip = $this->resolveDomain($domain);
+        if (!$ip) {
+            return [
+                'valid' => false,
+                'domain' => $domain,
                 'message' => 'Could not resolve domain to IP address',
                 'code' => 'DNS_NOT_FOUND',
             ];
         }
 
-        // Step 3: SSRF protection - validate the resolved IP
+        // Step 3: Check SSRF protection
         $ipResult = $this->validateIp($ip);
         if (!$ipResult['valid']) {
             return [
                 'valid' => false,
-                'domain' => $normalizedDomain,
+                'domain' => $domain,
                 'ip' => $ip,
                 'message' => $ipResult['message'],
                 'code' => $ipResult['code'],
             ];
         }
 
-        // Step 4: DNS record check
-        $dnsResult = $this->validateDns($normalizedDomain);
-        if (!$dnsResult['valid']) {
+        // Step 4: Check DNS record exists
+        if (!$this->checkDnsRecord($domain)) {
             return [
                 'valid' => false,
-                'domain' => $normalizedDomain,
+                'domain' => $domain,
                 'ip' => $ip,
-                'message' => $dnsResult['message'],
-                'code' => $dnsResult['code'],
+                'message' => 'No DNS record found for domain',
+                'code' => 'DNS_NOT_FOUND',
             ];
         }
 
-        // Step 5: Accessibility check
-        $accessResult = $this->checkAccessibility($normalizedDomain);
+        // Step 5: Check accessibility
+        $accessResult = $this->checkAccessibility($domain);
         if (!$accessResult['valid']) {
             return [
                 'valid' => false,
-                'domain' => $normalizedDomain,
+                'domain' => $domain,
                 'ip' => $ip,
                 'message' => $accessResult['message'],
                 'code' => $accessResult['code'],
@@ -113,408 +117,386 @@ class DomainValidator
 
         return [
             'valid' => true,
-            'domain' => $normalizedDomain,
+            'domain' => $domain,
             'ip' => $ip,
-            'message' => null,
-            'code' => null,
         ];
     }
 
     /**
      * Validate domain format
-     * Also checks for SSRF via internal keywords and patterns.
+     *
+     * @param string|null $domain
+     * @return array{valid: bool, domain?: string, message?: string, code?: string}
      */
     public function validateFormat(?string $domain): array
     {
-        // Handle null or empty
-        if ($domain === null || trim($domain) === '') {
+        // Check for null or empty
+        if (empty($domain) || trim($domain) === '') {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'Domain cannot be empty',
+                'message' => 'Domain is required',
                 'code' => 'INVALID_FORMAT',
             ];
         }
 
-        $domain = trim($domain);
-
-        // URL decode first to catch encoded attacks
-        $decodedDomain = urldecode($domain);
+        $domain = strtolower(trim($domain));
 
         // Check for protocol prefix
-        if (preg_match('/^(https?|ftp):\/\//i', $domain) || Str::startsWith($domain, '//')) {
+        if (preg_match('/^(https?|ftp):\/\//i', $domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
                 'message' => 'Domain should not include protocol prefix',
                 'code' => 'INVALID_FORMAT',
             ];
         }
 
-        // Check for path or query string
-        if (str_contains($domain, '/') || str_contains($domain, '?') || str_contains($domain, '#')) {
+        // Check for path/query
+        if (preg_match('/[\/?#]/', $domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'Domain should not include path or query string',
+                'message' => 'Domain should not include path or query parameters',
                 'code' => 'INVALID_FORMAT',
             ];
         }
 
-        // Check for port number
-        if (preg_match('/:\d+$/', $domain)) {
+        // Check for blocked keywords (SSRF protection)
+        $domainParts = explode('.', $domain);
+        foreach ($domainParts as $part) {
+            if (in_array($part, $this->blockedKeywords)) {
+                return [
+                    'valid' => false,
+                    'message' => 'Internal domains are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+        }
+
+        // Check for decimal IP encoding (SSRF bypass)
+        if (preg_match('/^\d+$/', $domain) && $this->isDecimalIp($domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'Domain should not include port number',
-                'code' => 'INVALID_FORMAT',
-            ];
-        }
-
-        // Check for SSRF via blocked keywords (case insensitive)
-        $lowerDomain = strtolower($domain);
-        $lowerDecoded = strtolower($decodedDomain);
-        
-        foreach ($this->blockedPatterns as $pattern) {
-            if ($lowerDomain === $pattern || $lowerDecoded === $pattern) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => 'SSRF attempt detected: internal domain keyword',
-                    'code' => 'SSRF_BLOCKED',
-                ];
-            }
-        }
-
-        // Check for blocked TLDs
-        foreach ($this->blockedTlds as $tld) {
-            if (Str::endsWith($lowerDomain, $tld) || Str::endsWith($lowerDecoded, $tld)) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => 'SSRF attempt detected: internal TLD pattern',
-                    'code' => 'SSRF_BLOCKED',
-                ];
-            }
-        }
-
-        // Check for internal domain patterns anywhere in the domain (e.g., *.internal.example.com)
-        foreach ($this->blockedPatterns as $pattern) {
-            if (str_contains($lowerDomain, '.' . $pattern . '.') || 
-                str_contains($lowerDecoded, '.' . $pattern . '.')) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => 'SSRF attempt detected: internal domain pattern',
-                    'code' => 'SSRF_BLOCKED',
-                ];
-            }
-        }
-
-        // Check if input looks like an IP address (potential SSRF)
-        if ($this->looksLikeIpAddress($decodedDomain)) {
-            // Validate the IP directly
-            $ipResult = $this->validateIp($decodedDomain);
-            if (!$ipResult['valid']) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => $ipResult['message'],
-                    'code' => $ipResult['code'],
-                ];
-            }
-            // If it's a valid public IP, allow it
-            return [
-                'valid' => true,
-                'domain' => $decodedDomain,
-                'message' => null,
-                'code' => null,
-            ];
-        }
-
-        // Check for decimal-encoded IP (e.g., 2130706433 = 127.0.0.1)
-        if (preg_match('/^\d+$/', $decodedDomain)) {
-            $ip = $this->decimalToIp($decodedDomain);
-            if ($ip !== null) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => 'SSRF attempt detected: decimal-encoded IP',
-                    'code' => 'SSRF_BLOCKED',
-                ];
-            }
-        }
-
-        // Check for hex-encoded IP (e.g., 0x7f000001 = 127.0.0.1)
-        if (preg_match('/^0x[0-9a-f]+$/i', $decodedDomain)) {
-            return [
-                'valid' => false,
-                'domain' => $domain,
-                'message' => 'SSRF attempt detected: hex-encoded IP',
+                'message' => 'Decimal encoded IP addresses are not allowed',
                 'code' => 'SSRF_BLOCKED',
             ];
         }
 
-        // Check for octal IP encoding (e.g., 0177.0.0.1 = 127.0.0.1)
-        if (preg_match('/^0\d*\.\d+\.\d+\.\d+/', $decodedDomain)) {
+        // Check for hex IP encoding (SSRF bypass)
+        if (preg_match('/^0x[0-9a-f]+$/i', $domain) || preg_match('/^0x[0-9a-f]+\./i', $domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'SSRF attempt detected: octal-encoded IP',
+                'message' => 'Hex encoded IP addresses are not allowed',
                 'code' => 'SSRF_BLOCKED',
             ];
         }
 
-        // Check for mixed hex notation (e.g., 0x7f.0x00.0x00.0x01)
-        if (preg_match('/0x[0-9a-f]+\./i', $decodedDomain)) {
+        // Check for octal IP encoding (SSRF bypass)
+        if (preg_match('/^0[0-7]+\./', $domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'SSRF attempt detected: hex-encoded IP',
+                'message' => 'Octal encoded IP addresses are not allowed',
                 'code' => 'SSRF_BLOCKED',
             ];
         }
 
-        // Normalize to lowercase
-        $normalizedDomain = strtolower($domain);
-
-        // Remove trailing dot if present
-        $normalizedDomain = rtrim($normalizedDomain, '.');
-
-        // Validate domain format using regex
-        // Based on RFC 1034/1035 and RFC 1123
-        // - Total length: max 253 characters (without trailing dot)
-        // - Each label: max 63 characters
-        // - Labels can contain: a-z, 0-9, hyphen (not at start or end)
-        // - TLD must not start with a number
-        
-        if (strlen($normalizedDomain) > 253) {
+        // Check for URL encoded IP
+        if (preg_match('/%[0-9a-f]{2}/i', $domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'Domain exceeds maximum length of 253 characters',
-                'code' => 'INVALID_FORMAT',
+                'message' => 'URL encoded addresses are not allowed',
+                'code' => 'SSRF_BLOCKED',
             ];
         }
 
-        // Domain regex pattern
-        $domainPattern = '/^(?!(?:https?:\/\/|ftp:\/\/))[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/';
-
-        // Allow punycode domains (xn--)
-        $punycodePattern = '/^xn--[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/i';
-
-        // Allow unicode domains - convert to punycode for validation
-        $hasUnicode = preg_match('/[^\x00-\x7F]/', $normalizedDomain);
-        if ($hasUnicode) {
-            // Convert to IDN/punycode
-            $punycode = $this->convertToPunycode($normalizedDomain);
-            if ($punycode === null) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => 'Invalid internationalized domain name',
-                    'code' => 'INVALID_FORMAT',
-                ];
-            }
-            $normalizedDomain = $punycode;
-        }
-
-        // Check each label length
-        $labels = explode('.', $normalizedDomain);
-        foreach ($labels as $label) {
-            if (strlen($label) > 63) {
-                return [
-                    'valid' => false,
-                    'domain' => $domain,
-                    'message' => 'Domain label exceeds maximum length of 63 characters',
-                    'code' => 'INVALID_FORMAT',
-                ];
-            }
-        }
-
-        // Final format check
-        if (!preg_match($domainPattern, $normalizedDomain) && !preg_match($punycodePattern, $normalizedDomain)) {
+        // Validate domain format with regex
+        $domainRegex = '/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i';
+        if (!preg_match($domainRegex, $domain)) {
             return [
                 'valid' => false,
-                'domain' => $domain,
                 'message' => 'Invalid domain format',
+                'code' => 'INVALID_FORMAT',
+            ];
+        }
+
+        // Validate TLD length
+        $tld = end($domainParts);
+        if (strlen($tld) < 2 || strlen($tld) > 63) {
+            return [
+                'valid' => false,
+                'message' => 'Invalid TLD length',
+                'code' => 'INVALID_FORMAT',
+            ];
+        }
+
+        // Validate total domain length
+        if (strlen($domain) > 253) {
+            return [
+                'valid' => false,
+                'message' => 'Domain is too long (max 253 characters)',
                 'code' => 'INVALID_FORMAT',
             ];
         }
 
         return [
             'valid' => true,
-            'domain' => $normalizedDomain,
-            'message' => null,
-            'code' => null,
+            'domain' => $domain,
         ];
     }
 
     /**
-     * Validate DNS record exists
+     * Check DNS record exists
+     *
+     * @param string $domain
+     * @return array{valid: bool, message?: string, code?: string}
      */
     public function validateDns(string $domain): array
     {
         if ($this->checkDnsRecord($domain)) {
             return [
                 'valid' => true,
-                'domain' => $domain,
-                'message' => null,
-                'code' => null,
             ];
         }
 
         return [
             'valid' => false,
-            'domain' => $domain,
             'message' => 'No DNS record found for domain',
             'code' => 'DNS_NOT_FOUND',
         ];
     }
 
     /**
+     * Check DNS record exists (protected for mocking)
+     *
+     * @param string $domain
+     * @return bool
+     */
+    protected function checkDnsRecord(string $domain): bool
+    {
+        // Check for A or CNAME record
+        return checkdnsrr($domain, 'A') || checkdnsrr($domain, 'CNAME');
+    }
+
+    /**
      * Validate IP address for SSRF protection
+     *
+     * @param string $ip
+     * @return array{valid: bool, message?: string, code?: string}
      */
     public function validateIp(string $ip): array
     {
-        // Normalize IPv6 addresses
-        $normalizedIp = $this->normalizeIp($ip);
-
-        // Check if it's a valid IP
-        if (!filter_var($normalizedIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+        // Validate it's a valid IP
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
             return [
                 'valid' => false,
-                'ip' => $ip,
-                'message' => 'Invalid IP address format',
+                'message' => 'Invalid IP address',
                 'code' => 'INVALID_FORMAT',
             ];
         }
 
-        // Check for IPv6 mapped IPv4 addresses (::ffff:127.0.0.1)
-        $mappedIpv4 = $this->extractMappedIpv4($normalizedIp);
-        if ($mappedIpv4 !== null) {
-            return $this->validateIp($mappedIpv4);
+        // Check for IPv6 loopback
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            // ::1 is IPv6 loopback
+            if ($ip === '::1' || $ip === '0:0:0:0:0:0:0:1' || $ip === '::') {
+                return [
+                    'valid' => false,
+                    'message' => 'IPv6 loopback addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // IPv6 link-local (fe80::/10)
+            if (Str::startsWith(strtolower($ip), 'fe80')) {
+                return [
+                    'valid' => false,
+                    'message' => 'IPv6 link-local addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // IPv6 unique local (fc00::/7)
+            if (Str::startsWith(strtolower($ip), 'fc') || Str::startsWith(strtolower($ip), 'fd')) {
+                return [
+                    'valid' => false,
+                    'message' => 'IPv6 unique local addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // IPv6 mapped IPv4 addresses (::ffff:x.x.x.x)
+            if (Str::startsWith(strtolower($ip), '::ffff:')) {
+                // Extract the IPv4 part
+                $ipv4Part = substr($ip, 7);
+                return $this->validateIp($ipv4Part);
+            }
         }
 
-        // IPv4 SSRF checks
-        if (filter_var($normalizedIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            return $this->validateIpv4($normalizedIp);
+        // Check for IPv4 private ranges
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            // Loopback (127.0.0.0/8)
+            if (Str::startsWith($ip, '127.')) {
+                return [
+                    'valid' => false,
+                    'message' => 'Loopback addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // Private 10.0.0.0/8
+            if (Str::startsWith($ip, '10.')) {
+                return [
+                    'valid' => false,
+                    'message' => 'Private IP addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // Private 172.16.0.0/12
+            if (preg_match('/^172\.(1[6-9]|2[0-9]|3[0-1])\./', $ip)) {
+                return [
+                    'valid' => false,
+                    'message' => 'Private IP addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // Private 192.168.0.0/16
+            if (Str::startsWith($ip, '192.168.')) {
+                return [
+                    'valid' => false,
+                    'message' => 'Private IP addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
+
+            // Link-local 169.254.0.0/16
+            if (Str::startsWith($ip, '169.254.')) {
+                return [
+                    'valid' => false,
+                    'message' => 'Link-local addresses are not allowed',
+                    'code' => 'SSRF_BLOCKED',
+                ];
+            }
         }
 
-        // IPv6 SSRF checks
-        return $this->validateIpv6($normalizedIp);
+        return [
+            'valid' => true,
+        ];
     }
 
     /**
      * Check domain accessibility via HTTP
+     *
+     * @param string $domain
+     * @return array{valid: bool, message?: string, code?: string}
      */
     public function checkAccessibility(string $domain): array
     {
         try {
-            $response = Http::timeout($this->timeout)
+            $response = Http::timeout($this->httpTimeout)
                 ->maxRedirects($this->maxRedirects)
-                ->get("https://{$domain}");
+                ->head("https://{$domain}");
+
+            // 2xx responses are valid
+            if ($response->successful()) {
+                return [
+                    'valid' => true,
+                ];
+            }
+
+            // Try HTTP if HTTPS failed
+            $response = Http::timeout($this->httpTimeout)
+                ->maxRedirects($this->maxRedirects)
+                ->head("http://{$domain}");
 
             if ($response->successful()) {
                 return [
                     'valid' => true,
-                    'domain' => $domain,
-                    'message' => null,
-                    'code' => null,
                 ];
             }
 
-            // Try HTTP if HTTPS fails
-            if ($response->status() >= 400 && $response->status() < 500) {
-                $httpResponse = Http::timeout($this->timeout)
-                    ->maxRedirects($this->maxRedirects)
-                    ->get("http://{$domain}");
-
-                if ($httpResponse->successful()) {
-                    return [
-                        'valid' => true,
-                        'domain' => $domain,
-                        'message' => null,
-                        'code' => null,
-                    ];
-                }
+            // 3xx redirects should be followed by the client
+            if ($response->redirect()) {
+                return [
+                    'valid' => true,
+                ];
             }
 
+            // 4xx/5xx errors
             return [
                 'valid' => false,
-                'domain' => $domain,
                 'message' => "Domain returned HTTP {$response->status()}",
-                'code' => 'CONNECTION_ERROR',
+                'code' => 'CONNECTION_FAILED',
             ];
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'Connection timed out',
+                'message' => 'Connection timed out or failed',
                 'code' => 'CONNECTION_TIMEOUT',
             ];
         } catch (\Exception $e) {
             return [
                 'valid' => false,
-                'domain' => $domain,
-                'message' => 'Failed to connect to domain',
-                'code' => 'CONNECTION_ERROR',
+                'message' => 'Failed to connect to domain: ' . $e->getMessage(),
+                'code' => 'CONNECTION_FAILED',
             ];
         }
     }
 
     /**
      * Validate with rate limiting
+     *
+     * @param string $domain
+     * @param string $userId
+     * @return array{valid: bool, domain?: string, ip?: string, message?: string, code?: string}
      */
     public function validateWithRateLimit(string $domain, string $userId): array
     {
         $cacheKey = "rate_limit:{$userId}";
+
+        // Get current count
         $count = Cache::get($cacheKey, 0);
 
+        // Check if rate limited
         if ($count >= $this->rateLimit) {
             return [
                 'valid' => false,
                 'domain' => $domain,
-                'ip' => null,
-                'message' => 'Rate limit exceeded. Please try again later.',
+                'message' => 'Rate limit exceeded. Please wait before trying again.',
                 'code' => 'RATE_LIMITED',
             ];
         }
 
-        // Increment counter
-        Cache::put($cacheKey, $count + 1, 60); // 60 seconds = 1 minute window
+        // Increment count
+        Cache::put($cacheKey, $count + 1, $this->rateLimitWindow);
 
+        // Perform validation
         return $this->validate($domain);
     }
 
     /**
-     * Check DNS record exists (A or CNAME)
-     */
-    protected function checkDnsRecord(string $domain): bool
-    {
-        return checkdnsrr($domain, 'A') || checkdnsrr($domain, 'CNAME') || checkdnsrr($domain, 'AAAA');
-    }
-
-    /**
-     * Resolve domain to IP address
+     * Resolve domain to IP address (protected for mocking)
+     *
+     * @param string $domain
+     * @return string|null
      */
     protected function resolveDomain(string $domain): ?string
     {
-        // Check if domain is already an IP
-        if (filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
-            return $domain;
+        $records = dns_get_record($domain, DNS_A | DNS_CNAME);
+
+        if (empty($records)) {
+            return null;
         }
 
-        $records = dns_get_record($domain, DNS_A | DNS_AAAA);
-        
-        if (!empty($records)) {
-            foreach ($records as $record) {
-                if (isset($record['ip'])) {
-                    return $record['ip'];
-                }
-                if (isset($record['ipv6'])) {
-                    return $record['ipv6'];
-                }
+        // Look for A record first
+        foreach ($records as $record) {
+            if ($record['type'] === 'A') {
+                return $record['ip'];
+            }
+        }
+
+        // Follow CNAME if present
+        foreach ($records as $record) {
+            if ($record['type'] === 'CNAME') {
+                return $this->resolveDomain($record['target']);
             }
         }
 
@@ -522,246 +504,22 @@ class DomainValidator
     }
 
     /**
-     * Validate IPv4 address for SSRF
+     * Check if a numeric string is a decimal encoded IP
+     *
+     * @param string $input
+     * @return bool
      */
-    protected function validateIpv4(string $ip): array
+    protected function isDecimalIp(string $input): bool
     {
-        $longIp = ip2long($ip);
+        $decimal = (int) $input;
+        $ip = long2ip($decimal);
 
-        if ($longIp === false) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'Invalid IPv4 address',
-                'code' => 'INVALID_FORMAT',
-            ];
+        if ($ip === false) {
+            return false;
         }
 
-        // Block loopback: 127.0.0.0/8
-        if (($longIp & 0xFF000000) === 0x7F000000) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: loopback IP address',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block private: 10.0.0.0/8
-        if (($longIp & 0xFF000000) === 0x0A000000) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: private IP address (10.x.x.x)',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block private: 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
-        if (($longIp & 0xFFF00000) === 0xAC100000) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: private IP address (172.16-31.x.x)',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block private: 192.168.0.0/16
-        if (($longIp & 0xFFFF0000) === 0xC0A80000) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: private IP address (192.168.x.x)',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block link-local: 169.254.0.0/16
-        if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: link-local IP address',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        return [
-            'valid' => true,
-            'ip' => $ip,
-            'message' => null,
-            'code' => null,
-        ];
-    }
-
-    /**
-     * Validate IPv6 address for SSRF
-     */
-    protected function validateIpv6(string $ip): array
-    {
-        // Normalize the IPv6 address
-        $packed = inet_pton($ip);
-        if ($packed === false) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'Invalid IPv6 address',
-                'code' => 'INVALID_FORMAT',
-            ];
-        }
-
-        $unpacked = unpack('H*', $packed);
-        $hex = $unpacked[1];
-
-        // Block loopback: ::1
-        if ($ip === '::1' || $hex === '00000000000000000000000000000001') {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: IPv6 loopback address',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block unspecified: ::
-        if ($ip === '::' || $hex === '00000000000000000000000000000000') {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: unspecified IPv6 address',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block link-local: fe80::/10
-        if (Str::startsWith($hex, 'fe8') || Str::startsWith($hex, 'fe9') || 
-            Str::startsWith($hex, 'fea') || Str::startsWith($hex, 'feb')) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: IPv6 link-local address',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Block unique local: fc00::/7 (fc00::/8 and fd00::/8)
-        if (Str::startsWith($hex, 'fc') || Str::startsWith($hex, 'fd')) {
-            return [
-                'valid' => false,
-                'ip' => $ip,
-                'message' => 'SSRF attempt detected: IPv6 unique local address',
-                'code' => 'SSRF_BLOCKED',
-            ];
-        }
-
-        // Check for IPv6 mapped IPv4 (::ffff:x.x.x.x)
-        $mappedIpv4 = $this->extractMappedIpv4($ip);
-        if ($mappedIpv4 !== null) {
-            return $this->validateIpv4($mappedIpv4);
-        }
-
-        return [
-            'valid' => true,
-            'ip' => $ip,
-            'message' => null,
-            'code' => null,
-        ];
-    }
-
-    /**
-     * Normalize IP address (handle short-hand IPv6)
-     */
-    protected function normalizeIp(string $ip): string
-    {
-        // Handle IPv6 addresses
-        if (str_contains($ip, ':')) {
-            $packed = @inet_pton($ip);
-            if ($packed !== false) {
-                return inet_ntop($packed);
-            }
-        }
-        return $ip;
-    }
-
-    /**
-     * Extract IPv4 from IPv6 mapped address (::ffff:x.x.x.x)
-     */
-    protected function extractMappedIpv4(string $ip): ?string
-    {
-        if (!str_contains($ip, ':')) {
-            return null;
-        }
-
-        // Check for ::ffff:x.x.x.x format
-        if (preg_match('/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i', $ip, $matches)) {
-            return $matches[1];
-        }
-
-        // Also check for full IPv6 mapped format
-        $packed = @inet_pton($ip);
-        if ($packed !== false && strlen($packed) === 16) {
-            // Check if first 10 bytes are 0 and next 2 are 0xFFFF
-            if (substr($packed, 0, 10) === "\0\0\0\0\0\0\0\0\0\0" && 
-                substr($packed, 10, 2) === "\xff\xff") {
-                return inet_ntop(substr($packed, 12, 4));
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Convert decimal IP to dotted decimal
-     */
-    protected function decimalToIp(string $decimal): ?string
-    {
-        if (!is_numeric($decimal)) {
-            return null;
-        }
-
-        $long = (int)$decimal;
-        if ($long < 0 || $long > 4294967295) {
-            return null;
-        }
-
-        return long2ip($long);
-    }
-
-    /**
-     * Convert unicode domain to punycode
-     */
-    protected function convertToPunycode(string $domain): ?string
-    {
-        if (function_exists('idn_to_ascii')) {
-            $result = @idn_to_ascii($domain, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
-            return $result !== false ? $result : null;
-        }
-
-        // Fallback: just return null if idn functions not available
-        return null;
-    }
-
-    /**
-     * Check if input looks like an IP address (IPv4 or IPv6)
-     */
-    protected function looksLikeIpAddress(string $input): bool
-    {
-        // IPv4 pattern
-        if (preg_match('/^(\d{1,3}\.){3}\d{1,3}$/', $input)) {
-            return true;
-        }
-
-        // IPv6 patterns
-        if (str_contains($input, ':')) {
-            return true;
-        }
-
-        // IPv6 with brackets
-        if (preg_match('/^\[.+\]$/', $input)) {
-            return true;
-        }
-
-        return false;
+        // Check if the resulting IP is a private/internal IP
+        $result = $this->validateIp($ip);
+        return !$result['valid'];
     }
 }

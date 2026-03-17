@@ -10,37 +10,39 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRouter } from "next/navigation";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import DashboardPage from "@/app/dashboard/page";
 
 // Mock next/navigation
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
-  useSearchParams: jest.fn(() => ({
-    get: jest.fn(() => null),
+const mockPush = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({
+    push: mockPush,
+  })),
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn(() => null),
   })),
 }));
 
 // Mock AuthContext
-const mockPush = jest.fn();
-
-jest.mock("@/lib/contexts/AuthContext", () => ({
-  useAuth: jest.fn(),
+vi.mock("@/lib/contexts/AuthContext", () => ({
+  useAuth: vi.fn(),
 }));
 
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 // Mock SWR
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
 import useSWR from "swr";
 
 // Mock API helper
-jest.mock("@/lib/api/dashboard", () => ({
-  fetchDashboard: jest.fn(),
+vi.mock("@/lib/api/dashboard", () => ({
+  fetchDashboard: vi.fn(),
 }));
 
 import { fetchDashboard } from "@/lib/api/dashboard";

@@ -5,69 +5,68 @@ namespace App\Exceptions;
 use Exception;
 
 /**
- * Exception for domain validation failures
+ * Exception thrown when domain validation fails
+ * 
+ * Task: SPEC-003-3 - Domain Validation Service
  */
 class DomainValidationException extends Exception
 {
-    protected string $code;
-
-    protected ?string $domain;
-
-    protected ?string $ip;
+    /**
+     * Validation error code
+     */
+    protected string $errorCode;
 
     /**
-     * @param string $message Error message
-     * @param string $code Error code (INVALID_FORMAT, SSRF_BLOCKED, DNS_NOT_FOUND, etc.)
-     * @param string|null $domain The domain that failed validation
-     * @param string|null $ip The resolved IP (if any)
+     * The domain that failed validation
      */
-    public function __construct(
-        string $message,
-        string $code,
-        ?string $domain = null,
-        ?string $ip = null
-    ) {
+    protected string $domain;
+
+    /**
+     * Create a new domain validation exception
+     *
+     * @param string $message Error message
+     * @param string $errorCode Error code (INVALID_FORMAT, SSRF_BLOCKED, DNS_NOT_FOUND, etc.)
+     * @param string $domain The domain that failed validation
+     */
+    public function __construct(string $message, string $errorCode, string $domain = '')
+    {
         parent::__construct($message);
-        $this->code = $code;
+        $this->errorCode = $errorCode;
         $this->domain = $domain;
-        $this->ip = $ip;
     }
 
     /**
      * Get the error code
+     *
+     * @return string
      */
     public function getErrorCode(): string
     {
-        return $this->code;
+        return $this->errorCode;
     }
 
     /**
      * Get the domain that failed validation
+     *
+     * @return string
      */
-    public function getDomain(): ?string
+    public function getDomain(): string
     {
         return $this->domain;
     }
 
     /**
-     * Get the resolved IP
-     */
-    public function getIp(): ?string
-    {
-        return $this->ip;
-    }
-
-    /**
      * Convert to array for API responses
+     *
+     * @return array{valid: bool, message: string, code: string, domain: string}
      */
     public function toArray(): array
     {
         return [
             'valid' => false,
-            'domain' => $this->domain,
-            'ip' => $this->ip,
             'message' => $this->getMessage(),
-            'code' => $this->code,
+            'code' => $this->errorCode,
+            'domain' => $this->domain,
         ];
     }
 }
