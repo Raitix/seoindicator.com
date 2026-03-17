@@ -1,7 +1,7 @@
 # SPEC-003-3: Backend - Domain Validation Service
 
 ## STATUS
-`In Development`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -36,8 +36,53 @@ Create a service to validate competitor domains before adding them. Ensures doma
 
 ---
 
-## Comments
-_Agent communication log_
+### [2026-03-17 18:30] Agent: LocalTester
+**Local Testing Complete - 4 BUGS FOUND**
+
+**Test Results:**
+- Unit tests: 31 passed, 3 failed (167 assertions)
+- Integration tests: 19 passed, 1 failed (49 assertions)
+
+**BUG 1: SSRF Internal Domain Patterns Not Blocked**
+- Test: `test_ssrf_internal_domain_patterns`
+- Domains like `service.internal.example.com`, `test.internal`, `app.local`, `api.localhost` are NOT being blocked
+- Expected: These should return `valid: false` with code `SSRF_BLOCKED`
+- Actual: They pass validation as valid domains
+- Root Cause: The blocked keywords check in `validateFormat()` is not catching keywords when they appear as subdomain parts
+- File: `app/Services/DomainValidator.php` - `validateFormat()` method
+
+**BUG 2: IPv6 Unique Local Addresses Not Blocked**
+- Test: `test_ssrf_ipv6_local`
+- IPs: `fc00::1`, `fd00::1`, `fc00:1234:5678::1` are NOT being blocked
+- Expected: These should return `valid: false` with code `SSRF_BLOCKED`
+- Actual: They pass validation
+- Root Cause: The `Str::startsWith(strtolower($ip), 'fc')` check may have case-sensitivity or string comparison issue
+- File: `app/Services/DomainValidator.php` - `validateIp()` method, IPv6 unique local section
+
+**BUG 3: Hex-Encoded IP Not Blocked**
+- Test: `test_ssrf_hex_octal_encoding`
+- Input: `0x7f.0x00.0x00.0x01` (hex-encoded 127.0.0.1) is NOT being blocked
+- Expected: Should return `valid: false` with code `SSRF_BLOCKED`
+- Actual: Passes validation
+- Root Cause: The regex `/^0x[0-9a-f]+\./i` should match this pattern but isn't working correctly
+- File: `app/Services/DomainValidator.php` - `validateFormat()` method, hex encoding check
+
+**BUG 4: validateFormat() Missing 'domain' Key in Success Result**
+- Test: `test_domain_normalization` (integration)
+- Issue: `$result['domain']` key is undefined after successful `validateFormat()` call
+- Expected: Success result should include normalized domain
+- Actual: `Undefined array key "domain"` error
+- Root Cause: The success return in `validateFormat()` doesn't include the `domain` key
+- File: `app/Services/DomainValidator.php` - `validateFormat()` return statement
+
+**Action Required:**
+Fix all 4 bugs in `app/Services/DomainValidator.php`. Then re-run tests:
+```bash
+php artisan test tests/Unit/Services/DomainValidatorTest.php
+php artisan test tests/Feature/Services/DomainValidatorIntegrationTest.php
+```
+
+**Handoff:** → Developer for bug fixes
 
 ### [2026-02-20 00:48] Agent: PreTester
 **Test Design Complete**
