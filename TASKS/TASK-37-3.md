@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`To Prioritize`
+`Blocked`
 
 ## PRIORITY
 `High`
@@ -406,3 +406,39 @@ if (error) {
 **Effort:** Small (1-2 hours)
 
 **Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
+
+### ProjectManager Status Correction (2026-03-17 13:45 GMT+2)
+**Status:** `Blocked` (23rd assessment, status field corrected)
+**Priority:** HIGH - Authentication UX is critical for user experience
+**Risk:** MEDIUM - Frontend-only changes, standard error handling patterns
+
+**Dependency Status:**
+- TASK-37-1: `To Write Tests` - PreTester phase, NOT IMPLEMENTED ❌
+
+**Blocker Analysis:**
+- TASK-37-1 must reach `To Test Locally` or later before this task can proceed
+- The BLOCKED_BY field correctly identifies this dependency
+- Status field corrected to `Blocked` to prevent infinite orchestrator loops
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**Effort:** Small (1-2 hours)
+
+**Next Agent:** PreTester (after TASK-37-1 completes Developer phase)
+
+### ProjectManager Assessment (2026-03-17 13:45 GMT+2)
+**Status:** `Blocked` (confirmed - 24th assessment)
+**Priority:** HIGH - Authentication UX is critical
+**Risk:** MEDIUM - Frontend-only changes
+
+**Dependency Status:**
+- TASK-37-1: `To Write Tests` - PreTester designing tests, NOT IMPLEMENTED ❌
+
+**Blocker Analysis:**
+- TASK-37-1 must reach `To Test Locally` or later before this task can proceed
+- This task cannot proceed until token validation (TASK-37-1) is implemented
+- Files are different (AuthContext.tsx vs dashboard/page.tsx), allowing parallel development once 37-1 is ready
+
+**Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
+
+**No Completion Marker:** Task is blocked - no status change from blocked state
