@@ -1,7 +1,7 @@
 # TASK-28-6: IndicatorGrid Responsive Layout
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `High`
