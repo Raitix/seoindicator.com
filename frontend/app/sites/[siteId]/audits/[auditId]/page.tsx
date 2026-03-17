@@ -16,8 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Route Configuration
 // ============================================================
 
-// Allow dynamic params for client-side routing with static export
-export const dynamicParams = true;
+// Disable dynamic params for static export compatibility
+export const dynamicParams = false;
 
 // Required for static export with dynamic routes
 export function generateStaticParams() {
