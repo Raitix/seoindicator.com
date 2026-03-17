@@ -177,6 +177,7 @@ Convert button to a Link component that navigates to `/dashboard/` or `/indicato
 - [x] Button shows pointer cursor
 - [x] Accessible via keyboard navigation
 - [x] Unit tests for button behavior
+- [x] Homepage inline header fixed (same as Header.tsx)
 
 ## Technical Details
 
@@ -363,6 +364,13 @@ This task was implemented as part of TASK-37-2 (Header Navigation Fix). The chan
 **Next Step:** Developer to implement changes to pass tests
 
 ### ProjectManager Assessment (2026-03-16 15:11 GMT+2)
+- **Priority:** HIGH (confirmed) — User-facing navigation issue affecting core UX. Users cannot access indicators dashboard.
+- **Risk:** LOW (confirmed) — Simple frontend-only fix. Single file modification, no backend changes, no external APIs.
+- **Dependencies:** None — Independent task, can proceed immediately.
+- **Effort:** XSmall (0.5h) — Straightforward conversion from button to Next.js Link component.
+- **Status Changed:** `To Prioritize` → `To Write Tests`
+- **Ready for:** PreTester (test design with mocked Link component behavior)
+(2026-03-16 15:11 GMT+2)
 - **Priority:** HIGH (confirmed) — User-facing navigation issue affecting core UX. Users cannot access indicators dashboard.
 - **Risk:** LOW (confirmed) — Simple frontend-only fix. Single file modification, no backend changes, no external APIs.
 - **Dependencies:** None — Independent task, can proceed immediately.
