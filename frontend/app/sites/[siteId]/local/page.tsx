@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
-// Allow dynamic params for client-side routing with static export
-export const dynamicParams = true;
+// Disable dynamic params for static export compatibility
+export const dynamicParams = false;
 
 // Required for static export with dynamic routes
 export function generateStaticParams() {
