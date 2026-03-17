@@ -56,6 +56,14 @@ async function mockAuthentication(page: Page) {
     // Set localStorage items that AuthContext checks
     localStorage.setItem('seoindicator_user', JSON.stringify(user));
     localStorage.setItem('seoindicator_token', 'test-auth-token-12345');
+    // Dismiss cookie consent by setting the consent flag
+    // Use the correct key and structure expected by cookieConsent.ts
+    localStorage.setItem('seoindicator_cookie_consent', JSON.stringify({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      timestamp: Date.now()
+    }));
   }, TEST_USER);
 
   // Mock auth API calls - must match actual endpoints used by auth.ts
