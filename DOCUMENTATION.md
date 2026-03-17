@@ -1,4 +1,298 @@
 ﻿---
+## Google Search Console Integration (FEAT-012)
+
+### Feature Description
+Complete Google Search Console (GSC) integration that imports click, impression, CTR, and average position data. Enables users to correlate ranking positions with real traffic metrics and identify high-impression/low-CTR keywords as optimization opportunities.
+
+### Component Locations
+- **OAuth Service:** `backend/app/Services/GSC/OAuthService.php`
+- **Data Sync Service:** `backend/app/Services/GSC/GSCDataSync.php`
+- **Query Matcher:** `backend/app/Services/GSC/QueryMatcher.php`
+- **Connection Controller:** `backend/app/Http/Controllers/Api/V1/GSCConnectionController.php`
+- **Data Controller:** `backend/app/Http/Controllers/Api/V1/GSCDataController.php`
+- **Frontend Components:** `frontend/components/gsc/`
+- **Tests:** `backend/tests/Unit/Services/GSC/`, `backend/tests/Feature/Controllers/Api/V1/`
+
+### Core Functionalities
+
+| Component | Description |
+|-----------|-------------|
+| OAuth Integration | Connect/disconnect GSC properties via Google OAuth 2.0 |
+| Data Sync | Daily import of clicks, impressions, CTR, position |
+| Fuzzy Matching | Associate GSC queries with tracked keywords |
+| Opportunity Detection | Identify high-impression/low-CTR keywords |
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/gsc/connect` | Initiate OAuth flow |
+| DELETE | `/api/v1/gsc/disconnect/{propertyId}` | Remove GSC connection |
+| GET | `/api/v1/gsc/properties` | List connected properties |
+| GET | `/api/v1/projects/{projectId}/gsc` | Get GSC data with date range |
+| GET | `/api/v1/projects/{projectId}/gsc/opportunities` | Get opportunity keywords |
+
+### Database Schema
+
+**gsc_connections:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT | Primary key |
+| `user_id` | BIGINT | Foreign key to users |
+| `site_url` | VARCHAR(500) | Site URL |
+| `property_url` | VARCHAR(500) | GSC property URL |
+| `access_token` | VARCHAR(2000) | OAuth access token |
+| `refresh_token` | VARCHAR(2000) | OAuth refresh token |
+| `token_expires_at` | TIMESTAMP | Token expiration |
+
+**gsc_data:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT | Primary key |
+| `project_id` | BIGINT | Foreign key to projects |
+| `query` | VARCHAR(255) | Search query |
+| `clicks` | INT | Click count |
+| `impressions` | INT | Impression count |
+| `ctr` | FLOAT | Click-through rate |
+| `avg_position` | FLOAT | Average position |
+| `data_date` | DATE | Data date |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| OAuth Token Encryption | Tokens encrypted at rest |
+| Token Refresh | Automatic refresh before expiration |
+| Rate Limiting | Respects GSC API quotas |
+| User Privacy | Per-property authorization |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Feature | FEAT-012: Google Search Console Integration |
+| Status | Complete |
+| Tasks Done | 12/12 (100%) |
+| Deploy Date | 2026-03-17 |
+
+### Dependencies
+- Google OAuth 2.0 credentials
+- GSC API access
+- Laravel Sanctum for authentication
+
+---
+## UnifiedPromptService for Prompt Building (TASK-31-4)
+
+### Feature Description
+Foundation service for the Unified AI Prompt + Context Management feature (FEAT-031) that builds consolidated prompts containing all 17 SEO indicators for a single AI request. The `UnifiedPromptService` generates structured prompts with analysis requirements, JSON schema specification, and HTML content for the unified AI analysis pipeline.
+
+### Component Locations
+- **Service:** `backend/app/Services/AI/UnifiedPromptService.php`
+- **Config:** `backend/config/ai-prompts.php`
+- **Tests:** `backend/tests/Unit/Services/AI/UnifiedPromptServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-31-4.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `buildPrompt(string $url, string $html, array $options): string` | Build complete unified prompt |
+| `getPromptTemplate(): string` | Return the prompt template from config |
+| `getIndicatorDefinitions(): array` | Return all 17 indicator definitions |
+| `getJsonSchema(): array` | Return the expected response schema |
+| `extractPageInfo(string $html): array` | Extract title and meta description from HTML |
+
+### Prompt Structure
+
+```markdown
+# SEO Analysis Request
+
+Analyze the following webpage for SEO quality. Return a JSON response with ALL indicator scores and an overall summary.
+
+## Page Information
+- URL: {url}
+- Title: {title}
+- Meta Description: {meta_description}
+
+## HTML Content
+```html
+{truncated_html}
+```
+
+## Analysis Requirements
+
+Score each indicator from 1-3 stars and provide specific suggestions:
+
+### Indicators to Analyze:
+1. **URL Structure** (weight: 0.08)
+   - Check: HTTPS, length, keywords, readability
+   
+2. **Title Tag** (weight: 0.10)
+   - Check: Presence, length (50-60 chars), keywords
+
+[... all 17 indicators listed with criteria ...]
+
+### Response Format (STRICT JSON)
+
+```json
+{
+  "overall_score": 0-100,
+  "overall_summary": "2-3 sentence executive summary",
+  "category_scores": { "content": 0-100, "technical": 0-100, ... },
+  "indicators": [{ "id": "...", "score": 1-3, "passed": bool, ... }],
+  "top_priorities": [{ "indicator": "...", "message": "..." }]
+}
+```
+```
+
+### Indicator Definitions (17 Total)
+
+| ID | Name | Weight | Category |
+|----|------|--------|----------|
+| `url` | URL Structure | 0.08 | Technical |
+| `title_tag` | Title Tag | 0.10 | Content |
+| `meta_description` | Meta Description | 0.08 | Content |
+| `robots_txt` | Robots.txt | 0.05 | Technical |
+| `sitemap_xml` | XML Sitemap | 0.05 | Technical |
+| `h1_headings` | H1 Headings | 0.10 | Content |
+| `filenames` | SEO Filenames | 0.04 | Content |
+| `image_alt` | Image Alt Text | 0.08 | Accessibility |
+| `links` | Internal/External Links | 0.08 | Content |
+| `404_page` | 404 Page | 0.04 | Technical |
+| `mobile_friendly` | Mobile-Friendliness | 0.08 | Technical |
+| `language` | Language Declaration | 0.03 | Technical |
+| `favicon` | Favicon | 0.02 | Technical |
+| `canonical` | Canonical URL | 0.05 | Technical |
+| `social_meta` | Social Meta Tags | 0.05 | Content |
+| `aria` | ARIA Labels | 0.05 | Accessibility |
+| `page_speed` | Page Speed | 0.02 | Performance |
+
+**Total Weight:** 1.00
+
+### Config Structure
+
+**config/ai-prompts.php:**
+```php
+return [
+    'indicators' => [
+        [
+            'id' => 'url',
+            'name' => 'URL Structure',
+            'weight' => 0.08,
+            'category' => 'Technical',
+            'checks' => 'HTTPS, length, keywords, readability',
+        ],
+        // ... all 17 indicators
+    ],
+    'prompt_template' => '...template with placeholders...',
+];
+```
+
+### Prompt Placeholders
+
+| Placeholder | Description | Source |
+|-------------|-------------|--------|
+| `{url}` | Page URL | Request parameter |
+| `{title}` | Page title | DOM extraction |
+| `{meta_description}` | Meta description | DOM extraction |
+| `{indicators}` | Indicator list | Config formatted |
+| `{html_content}` | HTML content | Request parameter |
+
+### JSON Schema
+
+```php
+[
+    'overall_score' => 'integer (0-100)',
+    'overall_summary' => 'string (50-500 chars)',
+    'category_scores' => [
+        'content' => 'integer (0-100)',
+        'technical' => 'integer (0-100)',
+        'accessibility' => 'integer (0-100)',
+        'performance' => 'integer (0-100)',
+    ],
+    'indicators' => 'array (17 items) with id, name, score, passed, details, suggestions',
+    'top_priorities' => 'array (max 5) with indicator, message',
+]
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| UnifiedPromptServiceTest | 101 | 299 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service instantiation | 5 | Method existence, config loading |
+| buildPrompt() method | 10 | URL, title, meta, HTML handling |
+| Indicator definitions | 18 | All 17 indicators present + structure |
+| Indicator structure | 5 | id, name, weight, category, checks fields |
+| Indicator weights | 11 | Weights sum to 1.00, individual weights |
+| Indicator categories | 5 | Content, Technical, Accessibility, Performance |
+| JSON schema | 8 | All required schema keys |
+| Prompt template | 10 | Placeholders, SEO/JSON instructions |
+| Page info extraction | 8 | Title and meta extraction, edge cases |
+| Edge cases | 10 | Empty HTML, malformed HTML, long inputs |
+| Security | 4 | XSS handling, no dangerous functions |
+| Integration | 2 | Full workflow, AI-consumable output |
+| Performance | 2 | Sub-500ms execution |
+| Acceptance criteria | 6 | All ACs verified |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| No eval/exec calls | Pure string manipulation |
+| XSS handling | HTML escaped in markdown code blocks |
+| Input validation | Malformed HTML handled gracefully |
+| No sensitive data | No credentials in prompts |
+
+### Performance Characteristics
+
+| Operation | Performance |
+|-----------|-------------|
+| buildPrompt() | < 500ms average |
+| extractPageInfo() | < 50ms with DomCrawler |
+| 1000 calls | < 500ms total |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T210109Z-c8ad179c` |
+| Commit | `8f97ead4` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-17 09:58 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Unit tests | 101 pass | 101 pass (299 assertions) | ✅ |
+| Service file exists | Yes | `UnifiedPromptService.php` | ✅ |
+| Config file exists | Yes | `ai-prompts.php` | ✅ |
+| All 17 indicators | Yes | 17 indicators with weights | ✅ |
+| Indicator weights sum | 1.00 | 1.00 | ✅ |
+| Homepage smoke | 200 OK | 200 OK | ✅ |
+| Login page smoke | 200 OK | 200 OK | ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-31-2 | Done ✅ | ContextWindowManager |
+| TASK-31-3 | Done ✅ | TruncationService |
+
+### Related Tasks
+
+- TASK-31-5: OpenRouterClient (uses UnifiedPromptService output)
+- TASK-31-6: AIAnalysisService (consumes prompt)
+- TASK-31-7: ModelSelectionService (model choice based on prompt size)
+
+---
 ## Billing, Credits & Model Selection System (FEAT-026)
 
 ### Feature Overview
@@ -1341,6 +1635,182 @@ interface CompetitorData {
 - TASK-32-3: Comparison Page Route (uses registry)
 - TASK-32-10: ComparisonSchema Component (uses comparison data)
 - TASK-32-11 to TASK-32-14: Competitor Data Files (extend registry)
+
+---
+## Comparison Page Route with Static Generation (TASK-32-3)
+
+### Feature Description
+Dynamic route page for the Competitor Comparison Landing Pages feature (FEAT-032) using Next.js 16 App Router with static site generation via `generateStaticParams()`. Renders comparison content between SEO tools with full SEO optimization, structured data, and accessibility support.
+
+### Component Locations
+- **Page Component:** `frontend/app/compare/[slug]/page.tsx`
+- **Not Found Page:** `frontend/app/compare/[slug]/not-found.tsx`
+- **Loading State:** `frontend/app/compare/[slug]/loading.tsx`
+- **Types:** `frontend/lib/compare/types.ts` (TASK-32-1)
+- **Registry:** `frontend/lib/compare/registry.ts` (TASK-32-2)
+- **Tests:** `frontend/__tests__/app/compare/[slug]/page.test.tsx`, `metadata.test.ts`, `not-found.test.tsx`, `performance.test.tsx`
+- **Test Documentation:** `TESTS/TEST-32-3.md`
+
+### Static Generation Configuration
+
+| Export | Value | Purpose |
+|--------|-------|---------|
+| `dynamic` | `'force-static'` | Forces static rendering at build time |
+| `generateStaticParams()` | Returns slug array | Pre-generates all comparison pages |
+
+### Core Functions
+
+| Function | Description |
+|----------|-------------|
+| `generateStaticParams()` | Returns array of all valid comparison slugs for static page generation |
+| `generateMetadata()` | Generates SEO metadata (title, description, OG image, canonical URL) |
+| `ComparisonPage()` | Main page component rendering comparison content |
+| `CompareNotFound()` | 404 page for invalid comparison slugs |
+| `CompareLoading()` | Loading skeleton for suspense fallback |
+
+### Page Sections
+
+| Section | Component | Description |
+|---------|-----------|-------------|
+| Breadcrumb | Built-in | Navigation: Home > Compare > [Comparison Title] |
+| Hero | Built-in | Title and summary text |
+| Feature Comparison | `ComparisonTable` | Feature-by-feature comparison table |
+| Pricing Comparison | `PricingComparison` | Side-by-side pricing tiers |
+| Pros & Cons | `ProsConsCard` | Pros/cons cards for both tools |
+| Use Cases | `UseCaseSection` | Target audience recommendations |
+| Verdict | Built-in | Final recommendation text |
+| FAQ | `FAQSection` | Frequently asked questions accordion |
+| CTA | `ComparisonCTA` | Call-to-action buttons |
+| Related | `RelatedComparisons` | Links to related comparison pages |
+| Schema | `ComparisonSchema` | JSON-LD structured data |
+
+### SEO Metadata Generated
+
+| Metadata | Source | Example |
+|----------|--------|---------|
+| Title | `comparison.title` | "SEOIndicator vs Ahrefs: Which SEO Tool Is Better?" |
+| Description | `comparison.metaDescription` | "Compare SEOIndicator vs Ahrefs..." |
+| Canonical URL | Built from slug | `https://seoindicator.com/compare/seoindicator-vs-ahrefs/` |
+| Robots | Fixed | `index, follow` |
+| OG Image | Pre-generated | `/og/compare/seoindicator-vs-ahrefs.png` |
+| Twitter Card | Derived | `summary_large_image` |
+
+### Static Pages Generated (13)
+
+| Slug | Comparison |
+|------|------------|
+| `seoindicator-vs-ahrefs` | SEOIndicator vs Ahrefs |
+| `seoindicator-vs-moz` | SEOIndicator vs Moz |
+| `seoindicator-vs-semrush` | SEOIndicator vs SEMrush |
+| `seoindicator-vs-ubersuggest` | SEOIndicator vs Ubersuggest |
+| `seoindicator-vs-gsc` | SEOIndicator vs Google Search Console |
+| `seoindicator-vs-ga` | SEOIndicator vs Google Analytics |
+| `seoindicator-vs-answerthepublic` | SEOIndicator vs AnswerThePublic |
+| `ahrefs-vs-moz` | Ahrefs vs Moz |
+| `ahrefs-vs-semrush` | Ahrefs vs SEMrush |
+| `ahrefs-vs-ubersuggest` | Ahrefs vs Ubersuggest |
+| `moz-vs-semrush` | Moz vs SEMrush |
+| `moz-vs-ubersuggest` | Moz vs Ubersuggest |
+| `semrush-vs-ubersuggest` | SEMrush vs Ubersuggest |
+
+### Next.js 16 Compatibility
+
+**Critical:** In Next.js 16, route params are Promises that must be awaited:
+
+```typescript
+// Correct (Next.js 16)
+export default async function ComparisonPage({ params }: ComparisonPageProps) {
+  const { slug } = await params;  // Await the promise
+  const comparison = getComparisonBySlug(slug);
+  // ...
+}
+
+// Props interface
+export interface ComparisonPageProps {
+  params: Promise<{ slug: string }>;  // Promise, not direct object
+}
+```
+
+### Code Splitting (Performance)
+
+Heavy components are dynamically imported with loading skeletons:
+
+| Component | Loading Strategy |
+|-----------|-----------------|
+| `ComparisonTable` | Dynamic import with skeleton |
+| `PricingComparison` | Dynamic import with skeleton |
+| `FAQSection` | Dynamic import with skeleton |
+| `RelatedComparisons` | Dynamic import with skeleton |
+| `ProsConsCard` | Static import |
+| `UseCaseSection` | Static import |
+| `ComparisonCTA` | Static import |
+| `ComparisonSchema` | Static import |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `page.test.tsx` | 55+ | ✅ PASS |
+| `metadata.test.ts` | 25+ | ✅ PASS |
+| `not-found.test.tsx` | 15+ | ✅ PASS |
+| `performance.test.tsx` | 12+ | ✅ PASS |
+
+**Test Categories:**
+| Category | Description |
+|----------|-------------|
+| Static Params Structure | `generateStaticParams()` returns all valid slugs |
+| 404 Handling | Invalid slugs trigger `notFound()` |
+| Page Rendering | Content renders for valid slugs |
+| Accessibility | ARIA labels, semantic HTML |
+| Integration | Registry integration, component rendering |
+| Edge Cases | Empty data, null handling |
+| Acceptance Criteria | All ACs verified |
+| Metadata Generation | Title, description, OG image generation |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-16 |
+| Deployment ID | `20260316T212723Z-67bc2d56` |
+| Commit | `8f97ead4` |
+| Production URL | https://seoindicator.com/compare/[slug]/ |
+| Pages Generated | 13 static comparison pages |
+| OG Images | Generated for all 13 comparisons |
+| Health Check | ✅ All pages return HTTP 200 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Comparison pages (13) | HTTP 200 | HTTP 200 | ✅ |
+| SEO metadata | Correct title/description | Correct | ✅ |
+| Robots meta | `index, follow` | `index, follow` | ✅ |
+| JSON-LD schema | Present | Present | ✅ |
+| 404 handling | HTTP 404 for invalid slug | HTTP 404 | ✅ |
+| Homepage smoke | HTTP 200 | HTTP 200 | ✅ |
+
+### Bug Fix History
+
+**Critical Bug (2026-03-05):** All comparison pages returned HTTP 200 but rendered "Comparison Not Found" error.
+
+**Root Cause:** `ComparisonPageProps` interface was incorrectly typed for Next.js 16. The `params` property must be `Promise<{ slug: string }>` not `{ slug: string }`.
+
+**Fix:** Updated types.ts to correctly type params as Promise, matching Next.js 16 requirements.
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-32-1 | Done ✅ | Types and Interfaces |
+| TASK-32-2 | Done ✅ | Comparison Registry |
+
+### Related Tasks
+
+- TASK-32-5 to TASK-32-10: Comparison components used in page
+- TASK-32-17: OG image generation for comparison pages
+- TASK-32-22: Performance optimization and launch
 
 ---
 ## Reports CRUD API (TASK-4-7)
@@ -64841,5 +65311,152 @@ class AnalysisRunnerService
 - TASK-31-15 to TASK-31-17: Testing and benchmarking
 
 ---
-*Last updated: 2026-03-16*
+## BadgeService (TASK-33-6)
+
+### Service Description
+Core badge generation service for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that creates SVG badges with score visualization, color coding, and branding. Generates badges in three sizes with light/dark theme support for embedding on third-party websites.
+
+### Component Location
+- **Service:** `backend/app/Services/BadgeService.php`
+- **Tests:** `backend/tests/Unit/Services/BadgeServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-33-6.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generate(int $score, string $size, ?string $theme = null)` | Generate SVG badge with score visualization |
+| `getScoreColor(int $score)` | Get color hex code for score range |
+| `getThemeColors(string $theme)` | Get theme color palette (background, text) |
+
+### Badge Sizes
+
+| Size | Dimensions | Use Case |
+|------|------------|----------|
+| `small` | 120x40px | Inline in blog posts, footer links |
+| `medium` | 150x100px | Sidebar widgets, about pages |
+| `large` | 300x150px | Footer widgets, partner pages |
+
+### Theme Options
+
+| Theme | Background | Text Color | Use Case |
+|-------|------------|------------|----------|
+| `light` | #ffffff | #000000 | Light-themed websites |
+| `dark` | #1a1a1a | #ffffff | Dark-themed websites |
+
+### Score Color Mapping
+
+| Score Range | Color | Hex Code | Status |
+|-------------|-------|----------|--------|
+| 90-100 | Green | #22c55e | Excellent |
+| 70-89 | Blue | #3b82f6 | Good |
+| 50-69 | Yellow | #eab308 | Needs Work |
+| 30-49 | Orange | #f97316 | Poor |
+| 0-29 | Red | #ef4444 | Critical Issues |
+
+### Badge Features
+
+| Feature | Small | Medium | Large |
+|---------|-------|--------|-------|
+| Score display | ✅ | ✅ | ✅ |
+| Score label | ✅ | ✅ | ✅ |
+| "SEOIndicator" branding | ✅ | ✅ | ✅ |
+| Category breakdown | ❌ | ❌ | ✅ |
+
+### Category Breakdown (Large Badge Only)
+
+| Category | Description |
+|----------|-------------|
+| Technical | Technical SEO score |
+| On-Page | On-page SEO score |
+| Content | Content quality score |
+| Mobile | Mobile & performance score |
+
+### Cache Strategy
+
+| Parameter | Value |
+|-----------|-------|
+| TTL | 1 hour (3600 seconds) |
+| Cache Key | `badge:{hash}:{size}:{theme}` |
+| Driver | Redis |
+| Purpose | Reduce SVG generation overhead |
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Role Attribute | `role="img"` |
+| ARIA Label | `aria-label="SEO Score: {score}/100"` |
+| Text Contrast | WCAG AA compliant |
+| Screen Reader | Score announced via aria-label |
+
+### Security Implementation
+
+| Measure | Implementation |
+|---------|----------------|
+| Type Validation | Score must be integer 0-100 |
+| Size Validation | Throws `InvalidArgumentException` for invalid sizes |
+| Theme Fallback | Invalid themes default to 'light' |
+| No External Resources | SVG contains no external URLs |
+| No Scripts | No `<script>` or event handlers |
+| XSS Prevention | No user input directly rendered |
+
+### Error Handling
+
+| Error | Response |
+|-------|----------|
+| Invalid size | `InvalidArgumentException` |
+| Score < 0 | Clamped to 0 |
+| Score > 100 | Clamped to 100 |
+| Invalid theme | Defaults to 'light' |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `BadgeServiceTest.php` | 72 | 130 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 3 | Container binding, method existence |
+| SVG Generation | 6 | Basic SVG structure, valid XML |
+| Size Variants | 9 | Small/medium/large dimensions |
+| Theme Variants | 7 | Light/dark color schemes |
+| Score Colors | 15 | All 5 color ranges tested |
+| Score Display | 5 | Rounding, boundaries, clamping |
+| Branding | 3 | "SEOIndicator" text present |
+| Category Breakdown | 4 | Large badge category scores |
+| Accessibility | 6 | role, aria-label attributes |
+| Caching | 5 | Cache hit/miss, TTL |
+| Validation | 5 | Invalid inputs, exceptions |
+| Security | 3 | No scripts, no external resources |
+| Edge Cases | 10 | Boundary conditions |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `63053ca8` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 72/72 passing (130 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-1 | Done ✅ | Visibility columns for audit data |
+
+### Related Tasks
+
+- TASK-33-13: BadgePreview Component (frontend preview)
+- TASK-33-15: SVG Badge Route Handler (public endpoint)
+- TASK-33-16: badge.js Embed Script (JS embed method)
+- TASK-33-21: EmbedCodeGenerator Component (embed code UI)
+
+---
+*Last updated: 2026-03-17*
 
