@@ -34360,6 +34360,199 @@ try {
 - TASK-22-17: Job timeout and cancellation
 
 ---
+## Queue Integration with JobQueue (TASK-22-16)
+
+### Feature Description
+Queue integration for the Headless Crawler Service (FEAT-022) that connects the CrawlWorker with the existing JobQueue system for unified job management, monitoring, and production deployment. Implements configurable retry logic, failure alerting, and queue management commands.
+
+### Component Locations
+- **Queue Configuration:** `config/queue.php` (crawler, crawler-high, crawler-low connections)
+- **Crawler Configuration:** `config/crawler.php` (retry settings)
+- **Alert Service:** `backend/app/Services/Crawler/CrawlFailureAlertService.php`
+- **Console Commands:**
+  - `backend/app/Console/Commands/CrawlerRestart.php`
+  - `backend/app/Console/Commands/CrawlerStatus.php`
+  - `backend/app/Console/Commands/CrawlerClear.php`
+- **Tests:**
+  - `backend/tests/Unit/Jobs/CrawlWorkerTest.php`
+  - `backend/tests/Unit/Jobs/CrawlWorkerDispatchTest.php`
+  - `backend/tests/Unit/Config/CrawlerQueueConfigTest.php`
+  - `backend/tests/Integration/Jobs/CrawlWorkerQueueIntegrationTest.php`
+  - `backend/tests/Feature/Console/CrawlerQueueCommandsTest.php`
+
+### Queue Configuration
+
+| Connection | Queue Name | Purpose |
+|------------|------------|---------|
+| `crawler` | crawler | Default queue for standard crawl jobs |
+| `crawler-high` | crawler-high | High-priority queue for manual/user-initiated crawls |
+| `crawler-low` | crawler-low | Low-priority queue for background re-crawls |
+
+**config/queue.php:**
+```php
+'connections' => [
+    'crawler' => [
+        'driver' => 'database',
+        'table' => 'jobs',
+        'queue' => 'crawler',
+        'retry_after' => 300,
+        'after_commit' => true,
+    ],
+    'crawler-high' => [
+        'driver' => 'database',
+        'table' => 'jobs',
+        'queue' => 'crawler-high',
+        'retry_after' => 300,
+        'after_commit' => true,
+    ],
+    'crawler-low' => [
+        'driver' => 'database',
+        'table' => 'jobs',
+        'queue' => 'crawler-low',
+        'retry_after' => 300,
+        'after_commit' => true,
+    ],
+],
+```
+
+### Retry Configuration
+
+**config/crawler.php:**
+```php
+'queue' => [
+    'retry_attempts' => env('CRAWLER_RETRY_ATTEMPTS', 2),
+    'retry_delay' => env('CRAWLER_RETRY_DELAY', 60),
+    'timeout' => env('CRAWLER_QUEUE_TIMEOUT', 300),
+],
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `retry_attempts` | 2 | Number of retry attempts for failed jobs |
+| `retry_delay` | 60 | Seconds to wait before retry |
+| `timeout` | 300 | Maximum job execution time (5 minutes) |
+
+### Queue Priority System
+
+| Priority | Queue | Use Case |
+|----------|-------|----------|
+| `high` | crawler-high | Manual user-initiated crawls |
+| `default` | crawler | Scheduled/system crawls |
+| `low` | crawler-low | Background re-crawls |
+
+### Console Commands
+
+| Command | Description |
+|---------|-------------|
+| `php artisan crawler:status` | Show queue statistics (pending, failed jobs per queue) |
+| `php artisan crawler:restart` | Restart all crawler workers |
+| `php artisan crawler:clear` | Clear all jobs from crawler queues |
+
+**crawler:status output:**
+```
++--------------+---------+--------+
+| Queue        | Pending | Failed |
++--------------+---------+--------+
+| crawler-high | 0       | 0      |
+| crawler      | 0       | 0      |
+| crawler-low  | 0       | 0      |
++--------------+---------+--------+
+```
+
+### CrawlFailureAlertService
+
+Service for threshold-based failure alerting when consecutive crawl jobs fail.
+
+**Configuration:**
+```php
+'alerts' => [
+    'enabled' => env('CRAWLER_ALERTS_ENABLED', true),
+    'consecutive_threshold' => env('CRAWLER_ALERT_THRESHOLD', 5),
+    'channels' => ['mail', 'slack'],
+],
+```
+
+| Method | Description |
+|--------|-------------|
+| `checkAndAlert(int $failureCount): void` | Check failure threshold and send alerts |
+| `sendAlert(int $failureCount): void` | Send alert via configured channels |
+| `resetCounter(): void` | Reset consecutive failure counter |
+
+### Supervisor Configuration (Production)
+
+For production deployment, Supervisor configuration is required for crawler workers:
+
+```ini
+[program:crawler-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/artisan queue:work --queue=crawler --sleep=3 --tries=2
+autostart=true
+autorestart=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/log/crawler-worker.log
+```
+
+### Acceptance Criteria Status
+
+| Criteria | Status | Notes |
+|----------|--------|-------|
+| Queue Configuration | ✅ Complete | `crawler`, `crawler-high`, `crawler-low` queues |
+| Job Dispatching | ✅ Complete | CrawlWorker dispatches to 'crawler' queue by default |
+| Job Status Integration | ✅ Complete | CrawlJob status tracked throughout lifecycle |
+| Queue Commands | ✅ Complete | `crawler:restart`, `crawler:status`, `crawler:clear` |
+| Failed Job Handling | ✅ Complete | `failed_jobs` table with configurable retry |
+| Retry Mechanism | ✅ Complete | Configurable via `crawler.queue.retry_attempts` |
+| Failure Alerts | ✅ Complete | `CrawlFailureAlertService` with threshold-based alerting |
+| Job Priority System | ✅ Complete | high/default/low queues |
+| Supervisor Configuration | ⚠️ Documentation | Requires DevOps to apply on production server |
+| Laravel Horizon | ⚠️ Optional | Not implemented |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `CrawlWorkerTest.php` | 30 | 33 | ✅ PASS |
+| `CrawlWorkerDispatchTest.php` | 17 | 26 | ✅ PASS |
+| `CrawlerQueueConfigTest.php` | 14 | 20 | ✅ PASS |
+| `CrawlWorkerQueueIntegrationTest.php` | 20 | 23 | ✅ PASS |
+| `CrawlerQueueCommandsTest.php` | 20 | 21 | ✅ PASS |
+| **Total** | **101** | **123** | **✅ ALL PASS** |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Deployment ID | `20260317T143555Z-625f66a1` |
+| Commit | `6c6256053243d7eed8bf116c92124fcbb7255dfb` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-17 17:15 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Homepage | 200 OK | 200 OK | ✅ |
+| Login page | 200 OK | 200 OK | ✅ |
+| API auth required | 401 | 401 | ✅ |
+| Queue status command | Valid output | Valid | ✅ |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-22-15 | Done ✅ | CrawlWorker implementation |
+| TASK-1-10 | Done ✅ | Existing JobQueue infrastructure |
+
+### Related Tasks
+
+- TASK-22-15: CrawlWorker (uses queue dispatch)
+- TASK-22-17: Job timeout and cancellation (uses queue retry config)
+
+---
 ## CrawlQueueService and LinkExtractorService (TASK-22-10)
 
 ### Service Description
