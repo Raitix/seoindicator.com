@@ -69126,5 +69126,357 @@ Frontend pages for the Content Decay Detection & Refresh Planner feature (FEAT-0
 - TASK-36-14: Navigation Integration (menu links)
 
 ---
+## DomainValidator Service (TASK-3-3)
+
+### Service Description
+Security-focused domain validation service for the Competitor Management feature (FEAT-003). Provides comprehensive domain validation with SSRF (Server-Side Request Forgery) protection, DNS verification, and accessibility checks. Used by CompetitorController to validate competitor domains before adding them to the system.
+
+### Component Locations
+- **Service:** `backend/app/Services/DomainValidator.php`
+- **Tests:** `backend/tests/Unit/Services/DomainValidatorTest.php`, `backend/tests/Feature/Services/DomainValidatorIntegrationTest.php`
+- **Test Documentation:** `TESTS/SPEC-003-3.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `validate(string $domain)` | Full validation pipeline: format, DNS, accessibility, SSRF check |
+| `validateFormat(?string $domain)` | Validates domain format with regex and SSRF hostname blocking |
+| `validateDns(string $domain)` | Checks DNS A/CNAME record exists |
+| `validateIp(string $ip)` | SSRF protection: blocks private/internal IP ranges |
+| `checkAccessibility(string $domain)` | HTTP/HTTPS request with timeout to verify domain is accessible |
+| `validateWithRateLimit(string $domain, string $userId)` | Rate-limited validation (max 10/min per user) |
+
+### Validation Pipeline
+
+```
+1. Format Validation
+   ├── Regex validation for valid domain format
+   ├── SSRF hostname blocking (localhost, local, internal)
+   └── Encoding bypass detection (hex, decimal, octal)
+
+2. DNS Resolution
+   ├── checkdnsrr() for A/CNAME records
+   └── Returns error if no DNS record exists
+
+3. IP Validation (SSRF Protection)
+   ├── Resolves domain to IP addresses
+   ├── Blocks IPv4 private ranges:
+   │   - 127.0.0.0/8 (loopback)
+   │   - 10.0.0.0/8 (Class A private)
+   │   - 172.16.0.0/12 (Class B private)
+   │   - 192.168.0.0/16 (Class C private)
+   │   - 169.254.0.0/16 (link-local)
+   ├── Blocks IPv6 addresses:
+   │   - ::1 (loopback)
+   │   - fc00::/7 (unique local)
+   │   - fe80::/10 (link-local)
+   └── Returns error if IP is internal/private
+
+4. Accessibility Check
+   ├── HTTP/HTTPS request with 5-second timeout
+   ├── Follows redirects (max 5)
+   └── Validates redirect targets for SSRF
+
+5. Rate Limiting
+   └── Max 10 validations per minute per user
+```
+
+### SSRF Protection Coverage
+
+| Attack Vector | Protection |
+|---------------|------------|
+| IPv4 loopback | 127.0.0.0/8 blocked |
+| IPv4 Class A private | 10.0.0.0/8 blocked |
+| IPv4 Class B private | 172.16.0.0/12 blocked |
+| IPv4 Class C private | 192.168.0.0/16 blocked |
+| IPv4 link-local | 169.254.0.0/16 blocked |
+| IPv6 loopback | ::1 blocked |
+| IPv6 unique local | fc00::/7 blocked |
+| IPv6 link-local | fe80::/10 blocked |
+| IPv6 mapped IPv4 | ::ffff: prefix blocked |
+| Localhost keyword | "localhost" in domain blocked |
+| Internal domain | ".local", ".internal" blocked |
+| Decimal IP encoding | "2130706433" (127.0.0.1) blocked |
+| Hex IP encoding | "0x7f.0x00.0x00.0x01" blocked |
+| Octal IP encoding | "0177.0.0.01" blocked |
+| URL encoding bypass | % encoded IPs decoded and checked |
+| DNS rebinding | IP checked after resolution |
+| Redirect to internal | Redirect targets validated |
+
+### Return Structure
+
+**Success Response:**
+```php
+[
+    'valid' => true,
+    'domain' => 'example.com',
+    'ip' => '93.184.216.34',
+    'accessible' => true,
+    'http_status' => 200,
+]
+```
+
+**Error Response:**
+```php
+[
+    'valid' => false,
+    'error' => 'Domain resolves to private IP address',
+    'code' => 'SSRF_BLOCKED',
+]
+```
+
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| `INVALID_FORMAT` | Domain format is invalid |
+| `SSRF_BLOCKED` | Domain/IP blocked for SSRF protection |
+| `DNS_LOOKUP_FAILED` | No DNS record found |
+| `ACCESSIBILITY_CHECK_FAILED` | Domain not accessible |
+| `RATE_LIMIT_EXCEEDED` | Too many validation requests |
+
+### Rate Limiting
+
+| Parameter | Value |
+|-----------|-------|
+| Max requests | 10 per minute |
+| Scope | Per user ID |
+| Implementation | In-memory rate limiter |
+| Reset | 60-second window |
+
+### Performance Characteristics
+
+| Operation | Timeout |
+|-----------|---------|
+| DNS lookup | Default system timeout |
+| HTTP accessibility | 5 seconds |
+| Redirect limit | 5 redirects max |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| DomainValidatorTest | 34 | 173 | ✅ PASS |
+| DomainValidatorIntegrationTest | 20 | 50 | ✅ PASS |
+| **Total** | **54** | **223** | **✅ ALL PASS** |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Domain Format | 8 | Valid/invalid domain patterns |
+| DNS Validation | 6 | DNS record existence checks |
+| SSRF IPv4 | 12 | Private range blocking |
+| SSRF IPv6 | 6 | IPv6 loopback and local blocking |
+| SSRF Encoding | 5 | Hex/decimal/octal bypass prevention |
+| SSRF Hostnames | 4 | Localhost/internal domain blocking |
+| Accessibility | 5 | HTTP/HTTPS checks |
+| Rate Limiting | 6 | Per-user limits and reset |
+| Integration | 20 | Full validation flows |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-17 |
+| Commit | `573cc314` |
+| Deployment ID | `20260317T205457Z-58557291` |
+| Tests | 54/54 passing (223 assertions) |
+| Status | Complete |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SSRF Prevention | Multi-layer IP/hostname blocking |
+| Input Sanitization | Domain normalized before processing |
+| Rate Limiting | Prevents abuse of validation endpoint |
+| Timeout Protection | Prevents hanging on slow responses |
+| Redirect Validation | All redirect targets checked for SSRF |
+
+### Dependencies
+- None (standalone service)
+
+### Integration Points
+- **CompetitorController**: Validates domains before adding competitors
+- **Admin Controllers**: Domain validation for admin operations
+
+### Related Tasks
+- TASK-3-1: Competitor Database Schema
+- TASK-3-2: Competitor Model
+- TASK-3-4: Competitor CRUD Operations
+
+---
+## OpenRouter Client Service (TASK-31-6)
+
+### Feature Description
+OpenRouter API client service for the Unified AI Prompt + Context Management feature (FEAT-031) that handles unified AI requests with proper authentication, error handling, timeouts, and response parsing. Extends the existing OpenRouter provider from TASK-21-2 to provide a dedicated client for the unified AI analysis pipeline.
+
+### Component Locations
+- **Service:** `backend/app/Services/AI/OpenRouterClient.php`
+- **Config:** `backend/config/openrouter.php`
+- **Tests:** `backend/tests/Unit/Services/AI/OpenRouterClientTest.php`
+- **Test Documentation:** `TESTS/TEST-31-6.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `generate(string $prompt, array $options = []): AIResponse` | Send unified prompt to OpenRouter |
+| `stream(string $prompt, callable $onChunk): void` | Stream response chunks (MVP: fallback to non-streaming) |
+| `getAvailableModels(): array` | Return list of available free-tier models |
+| `getModelInfo(string $modelId): ?array` | Get model metadata by ID |
+
+### Request Configuration
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Base URL | `https://openrouter.ai/api/v1` | OpenRouter API endpoint |
+| Default Timeout | 120 seconds | 2 minutes for large responses |
+| Default Model | `google/gemini-2.0-flash-exp:free` | Free-tier default |
+| Default Max Tokens | 4000 | Response token limit |
+| Default Temperature | 0.3 | Deterministic responses |
+
+### Request Headers
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `Authorization` | `Bearer {api_key}` | API authentication |
+| `HTTP-Referer` | `{app.url}` | Request attribution |
+| `X-Title` | `SEOIndicator` | Application identification |
+| `Content-Type` | `application/json` | Request body format |
+
+### AIResponse DTO
+
+```php
+class AIResponse
+{
+    public readonly bool $success;
+    public readonly ?string $content;
+    public readonly int $tokensUsed;
+    public readonly int $latencyMs;
+    public readonly ?string $errorMessage;
+    public readonly ?string $model;
+    public readonly int $promptTokens;
+    public readonly int $responseTokens;
+    
+    public static function success(
+        string $content,
+        int $tokensUsed,
+        int $latencyMs,
+        string $model = null,
+        int $promptTokens = 0,
+        int $responseTokens = 0,
+    ): self;
+    
+    public static function error(string $message, int $latencyMs): self;
+}
+```
+
+### Error Handling
+
+| HTTP Code | Error Type | Recovery |
+|-----------|------------|----------|
+| 400 | Bad Request | Log and throw `InvalidRequestException` |
+| 401 | Unauthorized | Check API key configuration |
+| 403 | Forbidden | Log and throw `AccessDeniedException` |
+| 429 | Rate Limited | Return with retry-after header |
+| 500-503 | Server Error | Retry with exponential backoff |
+| Timeout | Timeout | Retry with smaller content |
+
+### Free Models Configuration
+
+| Model ID | Display Name | Context Window |
+|----------|--------------|----------------|
+| `google/gemini-2.0-flash-exp:free` | Gemini 2.0 Flash | 1,000,000 tokens |
+| `qwen/qwen-2-7b-instruct:free` | Qwen 2 7B | 32,768 tokens |
+| `mistralai/mistral-7b-instruct:free` | Mistral 7B | 32,768 tokens |
+| `meta-llama/llama-3-8b-instruct:free` | Llama 3 8B | 8,192 tokens |
+
+### Configuration File
+
+```php
+// config/openrouter.php
+return [
+    'api_key' => env('OPENROUTER_API_KEY'),
+    'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+    'default_model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-exp:free'),
+    'timeout' => env('OPENROUTER_TIMEOUT', 120),
+    'max_tokens' => env('OPENROUTER_MAX_TOKENS', 4000),
+    
+    'free_models' => [
+        'google/gemini-2.0-flash-exp:free' => [
+            'name' => 'Gemini 2.0 Flash',
+            'context_window' => 1000000,
+        ],
+        'qwen/qwen-2-7b-instruct:free' => [
+            'name' => 'Qwen 2 7B',
+            'context_window' => 32768,
+        ],
+        'mistralai/mistral-7b-instruct:free' => [
+            'name' => 'Mistral 7B',
+            'context_window' => 32768,
+        ],
+        'meta-llama/llama-3-8b-instruct:free' => [
+            'name' => 'Llama 3 8B',
+            'context_window' => 8192,
+        ],
+    ],
+];
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| OpenRouterClientTest | 77 | 102 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Class Structure | 9 | Constructor, config, DI support |
+| API Integration | 14 | HTTP requests, headers, body format |
+| Response Handling | 12 | Content, tokens, latency, model |
+| Error Handling | 14 | All HTTP codes, timeout, malformed |
+| Timeout Config | 5 | Default/custom, validation |
+| Free Models | 10 | getAvailableModels, getModelInfo |
+| Stream Method | 3 | Callable, callback invocation |
+| Security | 5 | API key protection, XSS, injection |
+| Configuration | 5 | Config values, base URL |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-05 |
+| Deployment ID | 22718898509 |
+| Commit | `87cfd2e` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-05 13:12 GMT+2 |
+| Status | Complete |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| API Key Protection | Not exposed in error messages |
+| XSS Prevention | Response content sanitized |
+| Input Validation | Base URL format validation |
+| Timeout Protection | Configurable timeout prevents hanging |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-21-2 | Done ✅ | Existing OpenRouter provider (extend/reuse patterns) |
+
+### Related Tasks
+
+- TASK-31-5: ResponseParser (uses OpenRouterClient output)
+- TASK-31-7: AIAnalysisService (consumes OpenRouterClient)
+- TASK-31-8: ModelSelectionService (model choice based on prompt size)
+
+---
 *Last updated: 2026-03-17*
 

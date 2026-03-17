@@ -108,20 +108,30 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($projectId, $platform, $period) {
             [$periodStart, $periodEnd] = $this->getPeriodDates($period);
 
-            $totalQueries = AIQueryResult::where('project_id', $projectId)
-                ->where('platform', $platform)
-                ->whereBetween('queried_at', [$periodStart, $periodEnd])
-                ->count();
+            $query = AIQueryResult::where('project_id', $projectId)
+                ->whereBetween('queried_at', [$periodStart, $periodEnd]);
+
+            // If platform is 'all', don't filter by platform
+            if ($platform !== 'all') {
+                $query->where('platform', $platform);
+            }
+
+            $totalQueries = $query->count();
 
             if ($totalQueries === 0) {
                 return 0.00;
             }
 
-            $brandMentions = AIQueryResult::where('project_id', $projectId)
-                ->where('platform', $platform)
+            $brandMentionsQuery = AIQueryResult::where('project_id', $projectId)
                 ->where('brand_mentioned', true)
-                ->whereBetween('queried_at', [$periodStart, $periodEnd])
-                ->count();
+                ->whereBetween('queried_at', [$periodStart, $periodEnd]);
+
+            // If platform is 'all', don't filter by platform
+            if ($platform !== 'all') {
+                $brandMentionsQuery->where('platform', $platform);
+            }
+
+            $brandMentions = $brandMentionsQuery->count();
 
             $rate = ($brandMentions / $totalQueries) * 100;
 
@@ -149,32 +159,57 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($projectId, $project, $period) {
             [$periodStart, $periodEnd] = $this->getPeriodDates($period);
 
-            // Get brand mentions
-            $brandMentions = AIQueryResult::where('project_id', $projectId)
-                ->where('brand_mentioned', true)
-                ->whereBetween('queried_at', [$periodStart, $periodEnd])
+            // Try to get brand mentions from AIMention table first (per-mention tracking)
+            $brandMentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                ->where('entity_type', 'brand')
+                ->whereBetween('mentioned_at', [$periodStart, $periodEnd])
                 ->count();
 
-            // Get competitor mentions
+            // Fallback to AIQueryResult for backward compatibility
+            if ($brandMentions === 0) {
+                $brandMentions = AIQueryResult::where('project_id', $projectId)
+                    ->where('brand_mentioned', true)
+                    ->whereBetween('queried_at', [$periodStart, $periodEnd])
+                    ->count();
+            }
+
+            // Get competitor mentions from AIMention table first
             $competitorBreakdown = [];
             $totalCompetitorMentions = 0;
 
-            $competitorNames = $project->getCompetitorNames();
-            
-            if (!empty($competitorNames)) {
-                $results = AIQueryResult::where('project_id', $projectId)
-                    ->whereBetween('queried_at', [$periodStart, $periodEnd])
-                    ->get();
+            $competitorMentionsData = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                ->where('entity_type', 'competitor')
+                ->whereBetween('mentioned_at', [$periodStart, $periodEnd])
+                ->select('entity_name', DB::raw('COUNT(*) as count'))
+                ->groupBy('entity_name')
+                ->get();
 
-                foreach ($competitorNames as $name) {
-                    $count = 0;
-                    foreach ($results as $result) {
-                        if (in_array($name, $result->competitor_mentions ?? [])) {
-                            $count++;
+            foreach ($competitorMentionsData as $mention) {
+                $competitorBreakdown[$mention->entity_name] = $mention->count;
+                $totalCompetitorMentions += $mention->count;
+            }
+
+            // Fallback to AIQueryResult for backward compatibility
+            if ($totalCompetitorMentions === 0) {
+                $competitorNames = $project->getCompetitorNames();
+                
+                if (!empty($competitorNames)) {
+                    $results = AIQueryResult::where('project_id', $projectId)
+                        ->whereBetween('queried_at', [$periodStart, $periodEnd])
+                        ->get();
+
+                    foreach ($competitorNames as $name) {
+                        $count = 0;
+                        foreach ($results as $result) {
+                            if (in_array($name, $result->competitor_mentions ?? [])) {
+                                $count++;
+                            }
+                        }
+                        if ($count > 0) {
+                            $competitorBreakdown[$name] = $count;
+                            $totalCompetitorMentions += $count;
                         }
                     }
-                    $competitorBreakdown[$name] = $count;
-                    $totalCompetitorMentions += $count;
                 }
             }
 
@@ -222,10 +257,20 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
             $data = [];
             for ($i = $days; $i >= 0; $i--) {
                 $date = now()->subDays($i)->toDateString();
+                
+                // Check AIQueryResult first
                 $mentions = AIQueryResult::where('project_id', $projectId)
                     ->where('brand_mentioned', true)
                     ->whereDate('queried_at', $date)
                     ->count();
+                
+                // Fallback to AIMention table (per-mention tracking)
+                if ($mentions === 0) {
+                    $mentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                        ->where('entity_type', 'brand')
+                        ->whereDate('mentioned_at', $date)
+                        ->count();
+                }
 
                 $data[] = [
                     'date' => $date,
@@ -278,17 +323,33 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
             [$currentStart, $currentEnd] = $this->getPeriodDates($period);
             [$previousStart, $previousEnd] = $this->getPreviousPeriodDates($period);
 
-            // Get current period mentions
+            // Get current period mentions from AIQueryResult first
             $currentMentions = AIQueryResult::where('project_id', $projectId)
                 ->where('brand_mentioned', true)
                 ->whereBetween('queried_at', [$currentStart, $currentEnd])
                 ->count();
+            
+            // Fallback to AIMention table
+            if ($currentMentions === 0) {
+                $currentMentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                    ->where('entity_type', 'brand')
+                    ->whereBetween('mentioned_at', [$currentStart, $currentEnd])
+                    ->count();
+            }
 
-            // Get previous period mentions
+            // Get previous period mentions from AIQueryResult first
             $previousMentions = AIQueryResult::where('project_id', $projectId)
                 ->where('brand_mentioned', true)
                 ->whereBetween('queried_at', [$previousStart, $previousEnd])
                 ->count();
+            
+            // Fallback to AIMention table
+            if ($previousMentions === 0) {
+                $previousMentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                    ->where('entity_type', 'brand')
+                    ->whereBetween('mentioned_at', [$previousStart, $previousEnd])
+                    ->count();
+            }
 
             // Calculate change
             $changePercent = 0.00;
@@ -405,9 +466,10 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($projectId, $period) {
             [$periodStart, $periodEnd] = $this->getPeriodDates($period);
 
-            // Use database aggregation
-            $sentiments = AIQueryResult::where('project_id', $projectId)
-                ->whereBetween('queried_at', [$periodStart, $periodEnd])
+            // Try AIMention table first (per-mention tracking)
+            $aimentionSentiments = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                ->where('entity_type', 'brand')
+                ->whereBetween('mentioned_at', [$periodStart, $periodEnd])
                 ->select('sentiment', DB::raw('COUNT(*) as count'), DB::raw('AVG(sentiment_score) as avg_score'))
                 ->groupBy('sentiment')
                 ->get();
@@ -427,18 +489,43 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
             $totalSentimentScore = 0;
             $totalWithScore = 0;
 
-            foreach ($sentiments as $sentiment) {
-                $type = strtolower($sentiment->sentiment ?? 'neutral');
-                
-                if (isset($result[$type])) {
-                    $result[$type] = $sentiment->count;
+            // If we have AIMention data, use it
+            if ($aimentionSentiments->isNotEmpty()) {
+                foreach ($aimentionSentiments as $sentiment) {
+                    $type = strtolower($sentiment->sentiment ?? 'neutral');
+                    
+                    if (isset($result[$type])) {
+                        $result[$type] = $sentiment->count;
+                    }
+
+                    $result['total'] += $sentiment->count;
+
+                    if ($sentiment->avg_score !== null) {
+                        $totalSentimentScore += $sentiment->avg_score * $sentiment->count;
+                        $totalWithScore += $sentiment->count;
+                    }
                 }
+            } else {
+                // Fallback to AIQueryResult for backward compatibility
+                $sentiments = AIQueryResult::where('project_id', $projectId)
+                    ->whereBetween('queried_at', [$periodStart, $periodEnd])
+                    ->select('sentiment', DB::raw('COUNT(*) as count'), DB::raw('AVG(sentiment_score) as avg_score'))
+                    ->groupBy('sentiment')
+                    ->get();
 
-                $result['total'] += $sentiment->count;
+                foreach ($sentiments as $sentiment) {
+                    $type = strtolower($sentiment->sentiment ?? 'neutral');
+                    
+                    if (isset($result[$type])) {
+                        $result[$type] = $sentiment->count;
+                    }
 
-                if ($sentiment->avg_score !== null) {
-                    $totalSentimentScore += $sentiment->avg_score * $sentiment->count;
-                    $totalWithScore += $sentiment->count;
+                    $result['total'] += $sentiment->count;
+
+                    if ($sentiment->avg_score !== null) {
+                        $totalSentimentScore += $sentiment->avg_score * $sentiment->count;
+                        $totalWithScore += $sentiment->count;
+                    }
                 }
             }
 
@@ -486,15 +573,40 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
 
         // Get total queries count
         [$periodStart, $periodEnd] = $this->getPeriodDates($period);
-        $totalQueries = AIQueryResult::where('project_id', $projectId)
-            ->whereBetween('queried_at', [$periodStart, $periodEnd])
-            ->count();
+        
+        $query = AIQueryResult::where('project_id', $projectId)
+            ->whereBetween('queried_at', [$periodStart, $periodEnd]);
+        
+        // If platform is specified and not 'all', filter by platform
+        if ($platform !== null && $platform !== 'all') {
+            $query->where('platform', $platform);
+        }
+        
+        $totalQueries = $query->count();
 
-        // Get total mentions count
-        $mentionCount = AIQueryResult::where('project_id', $projectId)
+        // Get total mentions count from AIQueryResult
+        $mentionQuery = AIQueryResult::where('project_id', $projectId)
             ->where('brand_mentioned', true)
-            ->whereBetween('queried_at', [$periodStart, $periodEnd])
-            ->count();
+            ->whereBetween('queried_at', [$periodStart, $periodEnd]);
+        
+        if ($platform !== null && $platform !== 'all') {
+            $mentionQuery->where('platform', $platform);
+        }
+        
+        $mentionCount = $mentionQuery->count();
+        
+        // Fallback to AIMention table if no mentions from AIQueryResult
+        if ($mentionCount === 0) {
+            $aimentionQuery = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                ->where('entity_type', 'brand')
+                ->whereBetween('mentioned_at', [$periodStart, $periodEnd]);
+            
+            if ($platform !== null && $platform !== 'all') {
+                $aimentionQuery->where('platform', $platform);
+            }
+            
+            $mentionCount = $aimentionQuery->count();
+        }
 
         // Get by_platform breakdown
         $platforms = ['chatgpt', 'perplexity'];
@@ -538,22 +650,67 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
     public function getComparison(int $projectId): array
     {
         $project = $this->getProjectOrFail($projectId);
-        $sov = $this->calculateShareOfVoice($projectId, 'month');
+
+        // Count brand mentions from AIMention table (per-mention tracking)
+        $brandMentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+            ->where('entity_type', 'brand')
+            ->where('mentioned_at', '>=', now()->subMonth())
+            ->count();
+
+        // Also check AIQueryResult for backward compatibility
+        $brandMentionsFromQuery = AIQueryResult::where('project_id', $projectId)
+            ->where('brand_mentioned', true)
+            ->where('queried_at', '>=', now()->subMonth())
+            ->count();
+
+        // Use the higher count (either from AIMention or AIQueryResult)
+        $brandMentions = max($brandMentions, $brandMentionsFromQuery);
 
         $brandData = [
             'name' => $project->brand_name,
-            'mentions' => AIQueryResult::where('project_id', $projectId)
-                ->where('brand_mentioned', true)
-                ->where('queried_at', '>=', now()->subMonth())
-                ->count(),
+            'mentions' => $brandMentions,
         ];
 
+        // Get competitor mentions from AIMention table
+        $competitorMentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+            ->where('entity_type', 'competitor')
+            ->where('mentioned_at', '>=', now()->subMonth())
+            ->select('entity_name', DB::raw('COUNT(*) as count'))
+            ->groupBy('entity_name')
+            ->get();
+
         $competitors = [];
-        foreach ($sov['competitor_breakdown'] as $name => $mentions) {
+        foreach ($competitorMentions as $mention) {
             $competitors[] = [
-                'name' => $name,
-                'mentions' => $mentions,
+                'name' => $mention->entity_name,
+                'mentions' => $mention->count,
             ];
+        }
+
+        // Also check AIQueryResult.competitor_mentions for backward compatibility
+        $queryResults = AIQueryResult::where('project_id', $projectId)
+            ->where('queried_at', '>=', now()->subMonth())
+            ->whereNotNull('competitor_mentions')
+            ->get();
+
+        $competitorMentionsFromArray = [];
+        foreach ($queryResults as $result) {
+            foreach ($result->competitor_mentions ?? [] as $competitor) {
+                $competitorMentionsFromArray[$competitor] = ($competitorMentionsFromArray[$competitor] ?? 0) + 1;
+            }
+        }
+
+        // Merge counts, taking the higher value
+        foreach ($competitorMentionsFromArray as $name => $count) {
+            $existingIndex = array_search($name, array_column($competitors, 'name'));
+            if ($existingIndex !== false) {
+                $competitors[$existingIndex]['mentions'] = max($competitors[$existingIndex]['mentions'], $count);
+            } else {
+                $competitors[] = [
+                    'name' => $name,
+                    'mentions' => $count,
+                ];
+            }
         }
 
         return [
@@ -576,10 +733,20 @@ class AnalyticsAggregator implements AnalyticsAggregatorInterface
         $data = [];
         for ($i = $days; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
+            
+            // Check AIQueryResult first
             $mentions = AIQueryResult::where('project_id', $projectId)
                 ->where('brand_mentioned', true)
                 ->whereDate('queried_at', $date)
                 ->count();
+            
+            // Fallback to AIMention table (per-mention tracking)
+            if ($mentions === 0) {
+                $mentions = \App\Models\AIVisibility\AIMention::where('project_id', $projectId)
+                    ->where('entity_type', 'brand')
+                    ->whereDate('mentioned_at', $date)
+                    ->count();
+            }
 
             $data[] = [
                 'date' => $date,

@@ -245,7 +245,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
     /** @test FLOW-008: Query flow records timestamp correctly */
     public function test_query_flow_records_timestamp_correctly(): void
     {
-        $before = now();
+        $before = now()->subSecond(); // Add a second buffer
 
         $job = new RunQueryJob($this->project->id, 'chatgpt', 'Test query');
         $job->handle(
@@ -253,7 +253,7 @@ class AnalyticsFlowIntegrationTest extends TestCase
             app(MentionParser::class)
         );
 
-        $after = now();
+        $after = now()->addSecond(); // Add a second buffer
 
         $queryResult = AIQueryResult::where('project_id', $this->project->id)->first();
         $this->assertNotNull($queryResult);
