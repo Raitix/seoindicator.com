@@ -90,10 +90,17 @@ vi.mock("next/navigation", () => ({
 // Mock Lucide icons
 vi.mock("lucide-react", () => ({
   LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
-  Columns: () => <span data-testid="columns-icon">Columns</span>,
-  BarChart3: () => <span data-testid="chart-icon">BarChart3</span>,
+  Kanban: () => <span data-testid="kanban-icon">Kanban</span>,
+  TrendingUp: () => <span data-testid="trending-up-icon">TrendingUp</span>,
+  AlertTriangle: () => <span data-testid="alert-triangle-icon">AlertTriangle</span>,
+  FileText: () => <span data-testid="file-text-icon">FileText</span>,
+  Globe: () => <span data-testid="globe-icon">Globe</span>,
+  ChevronRight: () => <span data-testid="chevron-right-icon">ChevronRight</span>,
+  AlertCircle: () => <span data-testid="alert-circle-icon">AlertCircle</span>,
+  Info: () => <span data-testid="info-icon">Info</span>,
+  Minus: () => <span data-testid="minus-icon">Minus</span>,
   X: () => <span data-testid="x-icon">X</span>,
-  ChevronRight: () => <span data-testid="chevron-icon">ChevronRight</span>,
+  Filter: () => <span data-testid="filter-icon">Filter</span>,
 }));
 
 const renderWithRouter = (component: React.ReactElement) => {

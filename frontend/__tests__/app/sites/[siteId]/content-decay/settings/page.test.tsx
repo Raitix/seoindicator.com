@@ -46,11 +46,13 @@ vi.mock("next/navigation", () => ({
 // Mock Lucide icons
 vi.mock("lucide-react", () => ({
   LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
-  Columns: () => <span data-testid="columns-icon">Columns</span>,
-  BarChart3: () => <span data-testid="chart-icon">BarChart3</span>,
+  Kanban: () => <span data-testid="kanban-icon">Kanban</span>,
+  TrendingUp: () => <span data-testid="trending-up-icon">TrendingUp</span>,
   Save: () => <span data-testid="save-icon">Save</span>,
   RotateCcw: () => <span data-testid="reset-icon">RotateCcw</span>,
   AlertCircle: () => <span data-testid="alert-icon">AlertCircle</span>,
+  AlertTriangle: () => <span data-testid="alert-triangle-icon">AlertTriangle</span>,
+  Info: () => <span data-testid="info-icon">Info</span>,
 }));
 
 const renderWithRouter = (component: React.ReactElement) => {
