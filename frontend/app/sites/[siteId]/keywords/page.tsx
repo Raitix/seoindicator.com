@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering for static export compatibility
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from "react";
 import { useParams } from "next/navigation";
 import KeywordList from "@/components/keywords/KeywordList";

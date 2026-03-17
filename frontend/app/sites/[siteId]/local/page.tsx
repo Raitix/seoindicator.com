@@ -1,5 +1,8 @@
 import { Suspense } from "react";
 
+// Force dynamic rendering for static export compatibility
+export const dynamic = 'force-dynamic';
+
 import { LocationManagementPage } from "@/components/local/LocationManagementPage";
 
 function LocationManagementFallback() {
