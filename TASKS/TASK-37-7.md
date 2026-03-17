@@ -1,7 +1,7 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Deploy`
+`To Test Prod`
 
 ### DevOps (2026-03-17 15:24 GMT+2)
 **Deployment Complete ✓**
@@ -283,6 +283,20 @@ Convert button to a Link component that navigates to `/dashboard/` or `/indicato
 - TASK-37-2 (Header Navigation - combined task)
 
 ## Comments
+
+### DevOps (2026-03-17 16:20 GMT+2)
+**Deployment Verification - Status Field Corrected**
+
+The previous DevOps run at 15:24 GMT+2 successfully deployed the fix but the status field wasn't updated. This run verified:
+
+- **Deployment Log:** `20260317T132011Z-e43d3765.json` - status: `success`
+- **Commit:** `aac2d4f3` - includes homepage fix
+- **Smoke Checks:** ✅ Homepage loaded, Login page loaded
+- **Duration:** 4m 30s
+
+**Fix is LIVE in production.** The Indicators button on the homepage now correctly navigates to `/dashboard`.
+
+**Status Change:** `To Deploy` → `To Test Prod`
 
 ### ProdTester (2026-03-17 11:32 GMT+2)
 **PRODUCTION TEST FAILED - Fix Not Deployed**
