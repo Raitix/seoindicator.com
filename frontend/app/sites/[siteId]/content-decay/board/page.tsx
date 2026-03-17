@@ -145,7 +145,7 @@ export default function ContentDecayBoardPage() {
           <span>clicks</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-red-400">-{candidate impressionsLost}</span>
+          <span className="text-red-400">-{candidate.impressionsLost}</span>
           <span>impr.</span>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function ContentDecayBoardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6" data-testid="content-decay-board-page">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -250,7 +250,7 @@ export default function ContentDecayBoardPage() {
             aria-label="Filter by page type"
           >
             {pageTypes.map((type) => (
-              <option key={type} value={type}>
+              <option key={type as string} value={type as string}>
                 {type === "all" ? "All Types" : type}
               </option>
             ))}

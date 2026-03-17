@@ -1,4 +1,1087 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`IndicatorGrid > Snapshots > SN-001: Default grid snapshot 1`] = `
+<div
+  aria-busy="false"
+  aria-label="SEO Indicators"
+  aria-rowcount="2"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+  data-indicator-count="8"
+  data-loading="false"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-keyword-rankings"
+      data-title="Keyword Rankings"
+      data-value="142"
+      href="/dashboard"
+    >
+      Keyword Rankings
+      : 
+      142
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-visibility-score"
+      data-title="Visibility Score"
+      data-value="78%"
+      href="/dashboard"
+    >
+      Visibility Score
+      : 
+      78%
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="neutral"
+      data-testid="indicator-card-competitor-analysis"
+      data-title="Competitor Analysis"
+      data-value="5"
+      href="/comparison"
+    >
+      Competitor Analysis
+      : 
+      5
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-technical-health"
+      data-title="Technical Health"
+      data-value="85/100"
+      href="/tools"
+    >
+      Technical Health
+      : 
+      85/100
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-backlink-profile"
+      data-title="Backlink Profile"
+      data-value="1,234"
+      href="/dashboard"
+    >
+      Backlink Profile
+      : 
+      1,234
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-content-opportunities"
+      data-title="Content Opportunities"
+      data-value="23"
+      href="/dashboard"
+    >
+      Content Opportunities
+      : 
+      23
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-serp-features"
+      data-title="SERP Features"
+      data-value="8"
+      href="/dashboard"
+    >
+      SERP Features
+      : 
+      8
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-page-speed"
+      data-title="Page Speed"
+      data-value="92/100"
+      href="/tools"
+    >
+      Page Speed
+      : 
+      92/100
+    </a>
+  </div>
+</div>
+`;
+
+exports[`IndicatorGrid > Snapshots > SN-002: Custom columns snapshot 1`] = `
+<div
+  aria-busy="false"
+  aria-label="SEO Indicators"
+  aria-rowcount="2"
+  class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 transition-all duration-200 ease-out"
+  data-indicator-count="8"
+  data-loading="false"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-keyword-rankings"
+      data-title="Keyword Rankings"
+      data-value="142"
+      href="/dashboard"
+    >
+      Keyword Rankings
+      : 
+      142
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-visibility-score"
+      data-title="Visibility Score"
+      data-value="78%"
+      href="/dashboard"
+    >
+      Visibility Score
+      : 
+      78%
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="neutral"
+      data-testid="indicator-card-competitor-analysis"
+      data-title="Competitor Analysis"
+      data-value="5"
+      href="/comparison"
+    >
+      Competitor Analysis
+      : 
+      5
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-technical-health"
+      data-title="Technical Health"
+      data-value="85/100"
+      href="/tools"
+    >
+      Technical Health
+      : 
+      85/100
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-backlink-profile"
+      data-title="Backlink Profile"
+      data-value="1,234"
+      href="/dashboard"
+    >
+      Backlink Profile
+      : 
+      1,234
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-content-opportunities"
+      data-title="Content Opportunities"
+      data-value="23"
+      href="/dashboard"
+    >
+      Content Opportunities
+      : 
+      23
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-serp-features"
+      data-title="SERP Features"
+      data-value="8"
+      href="/dashboard"
+    >
+      SERP Features
+      : 
+      8
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-page-speed"
+      data-title="Page Speed"
+      data-value="92/100"
+      href="/tools"
+    >
+      Page Speed
+      : 
+      92/100
+    </a>
+  </div>
+</div>
+`;
+
+exports[`IndicatorGrid > Snapshots > SN-003: sm gap snapshot 1`] = `
+<div
+  aria-busy="false"
+  aria-label="SEO Indicators"
+  aria-rowcount="2"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 transition-all duration-200 ease-out"
+  data-indicator-count="8"
+  data-loading="false"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-keyword-rankings"
+      data-title="Keyword Rankings"
+      data-value="142"
+      href="/dashboard"
+    >
+      Keyword Rankings
+      : 
+      142
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-visibility-score"
+      data-title="Visibility Score"
+      data-value="78%"
+      href="/dashboard"
+    >
+      Visibility Score
+      : 
+      78%
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="neutral"
+      data-testid="indicator-card-competitor-analysis"
+      data-title="Competitor Analysis"
+      data-value="5"
+      href="/comparison"
+    >
+      Competitor Analysis
+      : 
+      5
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-technical-health"
+      data-title="Technical Health"
+      data-value="85/100"
+      href="/tools"
+    >
+      Technical Health
+      : 
+      85/100
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-backlink-profile"
+      data-title="Backlink Profile"
+      data-value="1,234"
+      href="/dashboard"
+    >
+      Backlink Profile
+      : 
+      1,234
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-content-opportunities"
+      data-title="Content Opportunities"
+      data-value="23"
+      href="/dashboard"
+    >
+      Content Opportunities
+      : 
+      23
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-serp-features"
+      data-title="SERP Features"
+      data-value="8"
+      href="/dashboard"
+    >
+      SERP Features
+      : 
+      8
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-page-speed"
+      data-title="Page Speed"
+      data-value="92/100"
+      href="/tools"
+    >
+      Page Speed
+      : 
+      92/100
+    </a>
+  </div>
+</div>
+`;
+
+exports[`IndicatorGrid > Snapshots > SN-004: lg gap snapshot 1`] = `
+<div
+  aria-busy="false"
+  aria-label="SEO Indicators"
+  aria-rowcount="2"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 transition-all duration-200 ease-out"
+  data-indicator-count="8"
+  data-loading="false"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-keyword-rankings"
+      data-title="Keyword Rankings"
+      data-value="142"
+      href="/dashboard"
+    >
+      Keyword Rankings
+      : 
+      142
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-visibility-score"
+      data-title="Visibility Score"
+      data-value="78%"
+      href="/dashboard"
+    >
+      Visibility Score
+      : 
+      78%
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="neutral"
+      data-testid="indicator-card-competitor-analysis"
+      data-title="Competitor Analysis"
+      data-value="5"
+      href="/comparison"
+    >
+      Competitor Analysis
+      : 
+      5
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-technical-health"
+      data-title="Technical Health"
+      data-value="85/100"
+      href="/tools"
+    >
+      Technical Health
+      : 
+      85/100
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-backlink-profile"
+      data-title="Backlink Profile"
+      data-value="1,234"
+      href="/dashboard"
+    >
+      Backlink Profile
+      : 
+      1,234
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-content-opportunities"
+      data-title="Content Opportunities"
+      data-value="23"
+      href="/dashboard"
+    >
+      Content Opportunities
+      : 
+      23
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-serp-features"
+      data-title="SERP Features"
+      data-value="8"
+      href="/dashboard"
+    >
+      SERP Features
+      : 
+      8
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-page-speed"
+      data-title="Page Speed"
+      data-value="92/100"
+      href="/tools"
+    >
+      Page Speed
+      : 
+      92/100
+    </a>
+  </div>
+</div>
+`;
+
+exports[`IndicatorGrid > Snapshots > SN-005: Loading state snapshot 1`] = `
+<div
+  aria-busy="true"
+  aria-label="SEO Indicators"
+  aria-rowcount="0"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+  data-indicator-count="0"
+  data-loading="true"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+  <div
+    class="flex flex-col gap-3 rounded-xl border bg-card p-4"
+    role="presentation"
+  >
+    <div
+      class="flex items-start justify-between gap-2"
+    >
+      <div
+        class="animate-pulse bg-accent size-10 rounded-lg"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse bg-accent h-5 w-16 rounded-full"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="flex flex-col gap-1.5"
+    >
+      <div
+        class="animate-pulse rounded-md bg-accent h-4 w-24"
+        data-slot="skeleton"
+      />
+      <div
+        class="animate-pulse rounded-md bg-accent h-8 w-16"
+        data-slot="skeleton"
+      />
+    </div>
+    <div
+      class="animate-pulse rounded-md bg-accent h-4 w-full"
+      data-slot="skeleton"
+    />
+  </div>
+</div>
+`;
+
+exports[`IndicatorGrid > Snapshots > SN-006: Mobile layout snapshot 1`] = `
+<div
+  aria-busy="false"
+  aria-label="SEO Indicators"
+  aria-rowcount="1"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+  data-indicator-count="2"
+  data-loading="false"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-keyword-rankings"
+      data-title="Keyword Rankings"
+      data-value="142"
+      href="/dashboard"
+    >
+      Keyword Rankings
+      : 
+      142
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-visibility-score"
+      data-title="Visibility Score"
+      data-value="78%"
+      href="/dashboard"
+    >
+      Visibility Score
+      : 
+      78%
+    </a>
+  </div>
+</div>
+`;
+
+exports[`IndicatorGrid > Snapshots > SN-007: Desktop layout snapshot 1`] = `
+<div
+  aria-busy="false"
+  aria-label="SEO Indicators"
+  aria-rowcount="2"
+  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-200 ease-out"
+  data-indicator-count="8"
+  data-loading="false"
+  data-slot="indicator-grid"
+  data-testid="indicator-grid"
+  role="grid"
+>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-keyword-rankings"
+      data-title="Keyword Rankings"
+      data-value="142"
+      href="/dashboard"
+    >
+      Keyword Rankings
+      : 
+      142
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-visibility-score"
+      data-title="Visibility Score"
+      data-value="78%"
+      href="/dashboard"
+    >
+      Visibility Score
+      : 
+      78%
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="neutral"
+      data-testid="indicator-card-competitor-analysis"
+      data-title="Competitor Analysis"
+      data-value="5"
+      href="/comparison"
+    >
+      Competitor Analysis
+      : 
+      5
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-technical-health"
+      data-title="Technical Health"
+      data-value="85/100"
+      href="/tools"
+    >
+      Technical Health
+      : 
+      85/100
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-backlink-profile"
+      data-title="Backlink Profile"
+      data-value="1,234"
+      href="/dashboard"
+    >
+      Backlink Profile
+      : 
+      1,234
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="warning"
+      data-testid="indicator-card-content-opportunities"
+      data-title="Content Opportunities"
+      data-value="23"
+      href="/dashboard"
+    >
+      Content Opportunities
+      : 
+      23
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-serp-features"
+      data-title="SERP Features"
+      data-value="8"
+      href="/dashboard"
+    >
+      SERP Features
+      : 
+      8
+    </a>
+  </div>
+  <div
+    class="contents"
+    role="gridcell"
+  >
+    <a
+      data-loading="false"
+      data-status="good"
+      data-testid="indicator-card-page-speed"
+      data-title="Page Speed"
+      data-value="92/100"
+      href="/tools"
+    >
+      Page Speed
+      : 
+      92/100
+    </a>
+  </div>
+</div>
+`;
 
 exports[`IndicatorGrid Snapshots SN-001: Default grid snapshot 1`] = `
 <div

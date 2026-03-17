@@ -1,7 +1,7 @@
 # TASK-8-2: Modify Existing Tables for Multi-Site Support
 
 ## STATUS
-`Testing Locally`
+`To Deploy`
 
 ## PRIORITY
 `High`
