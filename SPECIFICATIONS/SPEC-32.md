@@ -1,7 +1,7 @@
 # SPEC-32: Competitor Comparison Landing Pages (Programmatic SEO)
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`
