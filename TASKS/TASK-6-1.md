@@ -1,7 +1,14 @@
 # TASK-6-1: Database Schema - API Keys Table
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
+
+### [2026-03-17 14:55 GMT+2] DevOps: Deployment Complete ✓
+- **Deployment ID:** 20260317T115038Z-0a40ead0
+- **Commit:** ab24c302
+- **Status:** success
+- **Deployed at:** 2026-03-17T11:54:44 UTC
+- API Keys schema and model deployed to production
 
 ## Priority
 `High`
