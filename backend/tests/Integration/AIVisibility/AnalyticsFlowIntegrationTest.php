@@ -190,26 +190,35 @@ class AnalyticsFlowIntegrationTest extends TestCase
     /** @test FLOW-006: Query flow handles API errors gracefully */
     public function test_query_flow_handles_api_errors(): void
     {
-        // Mock API error
-        Http::fake([
-            'openrouter.ai/*' => Http::response(['error' => 'Rate limited'], 429),
-        ]);
+        // Clear cache to ensure fresh API call
+        Cache::flush();
+        
+        // Mock the OpenRouterClient to return an error
+        $mockClient = $this->mock(\App\Services\AI\Contracts\OpenRouterClientInterface::class);
+        $mockClient->shouldReceive('generate')
+            ->once()
+            ->andReturn(\App\Services\AI\DTOs\AIResponse::error('Rate limit exceeded', 100));
+
+        // Bind the mock to the container
+        app()->instance(\App\Services\AI\Contracts\OpenRouterClientInterface::class, $mockClient);
+
+        // Create a new AIQueryEngine with the mocked client
+        $engine = new \App\Services\AIVisibility\AIQueryEngine($mockClient);
 
         // Execute query job - should not throw
-        $job = new RunQueryJob($this->project->id, 'chatgpt', 'Test query');
+        $job = new RunQueryJob($this->project->id, 'chatgpt', 'Error test query for flow006');
         
         // Should not throw exception
         $job->handle(
-            app(AIQueryEngine::class),
+            $engine,
             app(MentionParser::class)
         );
 
         // Query result should record error
         $queryResult = AIQueryResult::where('project_id', $this->project->id)->first();
-        if ($queryResult) {
-            $this->assertFalse($queryResult->success);
-            $this->assertNotNull($queryResult->error_message);
-        }
+        $this->assertNotNull($queryResult, 'Query result should be created');
+        $this->assertFalse($queryResult->success, 'Query result success should be false for API error');
+        $this->assertNotNull($queryResult->error_message);
     }
 
     /** @test FLOW-007: Query flow records correct platform */

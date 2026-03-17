@@ -283,24 +283,34 @@ class AggregationJobIntegrationTest extends TestCase
     public function test_query_job_handles_api_errors(): void
     {
         Queue::fake();
+        
+        // Clear cache to ensure fresh API call
+        Cache::flush();
+        
+        // Mock the OpenRouterClient to return an error
+        $mockClient = $this->mock(\App\Services\AI\Contracts\OpenRouterClientInterface::class);
+        $mockClient->shouldReceive('generate')
+            ->once()
+            ->andReturn(\App\Services\AI\DTOs\AIResponse::error('Rate limit exceeded', 100));
 
-        Http::fake([
-            'openrouter.ai/*' => Http::response(['error' => 'Rate limited'], 429),
-        ]);
+        // Bind the mock to the container
+        app()->instance(\App\Services\AI\Contracts\OpenRouterClientInterface::class, $mockClient);
 
-        $job = new RunQueryJob($this->project->id, 'chatgpt', 'Test query');
+        // Create a new AIQueryEngine with the mocked client
+        $engine = new \App\Services\AIVisibility\AIQueryEngine($mockClient);
+
+        $job = new RunQueryJob($this->project->id, 'chatgpt', 'Error test query for exec003');
         
         // Should not throw
         $job->handle(
-            app(AIQueryEngine::class),
+            $engine,
             app(MentionParser::class)
         );
 
         // Query result should record error
         $queryResult = AIQueryResult::where('project_id', $this->project->id)->first();
-        if ($queryResult) {
-            $this->assertFalse($queryResult->success);
-        }
+        $this->assertNotNull($queryResult, 'Query result should be created');
+        $this->assertFalse($queryResult->success, 'Query result success should be false for API error');
     }
 
     /** @test EXEC-004: Query job handles timeout */

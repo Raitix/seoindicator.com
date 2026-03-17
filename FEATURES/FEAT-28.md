@@ -1,7 +1,7 @@
 # FEAT-028: Modern UI/UX + Indicator Catalog
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`

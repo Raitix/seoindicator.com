@@ -1,7 +1,59 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Test Prod`
+`To Document`
+
+### ProdTester (2026-03-17 16:50 GMT+2)
+**Production Test PASSED ✓**
+
+**Fix Verification:**
+The Indicators button on the homepage is now a functional link:
+
+```javascript
+// Browser inspection result
+{
+  tagName: "A",           // ✅ Was BUTTON, now anchor
+  href: "/dashboard/",    // ✅ Correct href
+  hasHref: true,          // ✅ Has href attribute
+  isLink: true,           // ✅ Is a link element
+  isButton: false,        // ✅ Not a button anymore
+  cursorClass: true       // ✅ Has cursor-pointer
+}
+```
+
+**Test Results:**
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Element type | `<a>` (Link) | `<A>` | ✅ PASS |
+| Has href | `/dashboard/` | `/dashboard/` | ✅ PASS |
+| cursor-pointer class | Yes | Yes | ✅ PASS |
+| Navigates on click | Yes | Yes | ✅ PASS |
+
+**Smoke Tests:**
+- ✅ Homepage loaded
+- ✅ Login page loaded
+
+**Security Tests:**
+- ✅ XSS: Script tags in query params not executed
+- ✅ Path traversal: Returns 404 (no sensitive files exposed)
+
+**Acceptance Criteria Verification:**
+| Criteria | Status |
+|----------|--------|
+| "Indicators" button is a clickable link | ✅ PASS |
+| Clicking navigates to `/dashboard/` | ✅ PASS |
+| Button has proper hover state | ✅ PASS |
+| Button shows pointer cursor | ✅ PASS |
+| Keyboard accessible | ✅ PASS (Link component) |
+
+**Deployment Details:**
+- **Deployment ID:** 20260317T132011Z-e43d3765
+- **Commit:** aac2d4f3
+- **Deployed at:** 2026-03-17T13:24:41 UTC
+
+**Decision:** APPROVED FOR DOCUMENTATION
+
+**Status Change:** `Testing Prod` → `To Document`
 
 ### DevOps (2026-03-17 15:24 GMT+2)
 **Deployment Complete ✓**

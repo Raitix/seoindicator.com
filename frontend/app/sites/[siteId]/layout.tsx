@@ -4,10 +4,8 @@ import type { ReactNode } from "react";
 // In production with static export, generateStaticParams controls which pages are pre-built
 export const dynamicParams = true;
 
-export function generateStaticParams(): Array<{ siteId: string }> {
-  // Return siteId "1" for static export, but allow other IDs in dev mode
-  return [{ siteId: "1" }];
-}
+// Force dynamic rendering to ensure the route works in dev mode and E2E tests
+export const dynamic = 'force-dynamic';
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return children;
