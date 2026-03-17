@@ -17,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip if table already exists (idempotent migration)
+        if (Schema::hasTable('gsc_data')) {
+            return;
+        }
+
         Schema::create('gsc_data', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->nullable()->constrained()->nullOnDelete();
