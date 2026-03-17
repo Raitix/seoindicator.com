@@ -46,15 +46,24 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('ai_visibility_projects')->cascadeOnDelete();
             $table->string('platform', 50);
+            $table->string('query_category', 100)->nullable();
             $table->text('query_text');
             $table->text('response_text')->nullable();
             $table->string('model_used', 100)->nullable();
             $table->unsignedInteger('tokens_used')->nullable();
+            $table->unsignedInteger('query_tokens')->nullable();
+            $table->unsignedInteger('response_tokens')->nullable();
             $table->unsignedInteger('latency_ms')->nullable();
             $table->boolean('success')->default(false);
             $table->text('error_message')->nullable();
             $table->json('mentions')->nullable();
+            $table->boolean('brand_mentioned')->default(false);
+            $table->text('brand_context')->nullable();
             $table->string('sentiment', 20)->nullable();
+            $table->decimal('sentiment_score', 5, 2)->nullable();
+            $table->json('competitor_mentions')->nullable();
+            $table->json('citations')->nullable();
+            $table->boolean('cache_hit')->default(false);
             $table->timestamp('queried_at');
             $table->timestamps();
 
@@ -68,25 +77,27 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('ai_visibility_projects')->cascadeOnDelete();
             $table->string('platform', 50);
-            $table->date('date')->nullable();
+            $table->string('period', 20)->nullable();
+            $table->date('period_start')->nullable();
+            $table->date('period_end')->nullable();
             $table->unsignedInteger('total_queries')->default(0);
             $table->unsignedInteger('brand_mentions')->default(0);
-            $table->unsignedInteger('total_mentions')->default(0);
             $table->decimal('mention_rate', 5, 2)->default(0);
-            $table->decimal('share_of_voice', 5, 2)->default(0);
-            $table->decimal('sentiment_score', 5, 2)->default(0);
             $table->unsignedInteger('positive_mentions')->default(0);
             $table->unsignedInteger('neutral_mentions')->default(0);
             $table->unsignedInteger('negative_mentions')->default(0);
+            $table->unsignedInteger('mixed_mentions')->default(0);
+            $table->decimal('average_sentiment', 5, 2)->default(0);
+            $table->json('competitor_mentions')->nullable();
             $table->json('competitor_stats')->nullable();
-            $table->timestamp('period_start')->nullable();
-            $table->timestamp('period_end')->nullable();
+            $table->decimal('share_of_voice', 5, 2)->default(0);
+            $table->json('top_query_categories')->nullable();
+            $table->string('mention_trend', 20)->default('stable');
+            $table->timestamp('aggregated_at')->nullable();
             $table->timestamps();
 
             $table->index(['project_id', 'platform']);
-            $table->index(['project_id', 'date']);
             $table->index(['project_id', 'period_start', 'period_end']);
-            $table->unique(['project_id', 'platform', 'date']);
         });
 
         // AI Visibility Alerts table

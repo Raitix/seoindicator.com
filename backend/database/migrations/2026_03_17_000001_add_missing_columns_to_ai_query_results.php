@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Schema;
  * 
  * @see TASK-34-2
  * @see SPEC-034
+ * 
+ * Note: Most columns are now included in the original migration.
+ * This migration remains for backward compatibility.
  */
 return new class extends Migration
 {
@@ -19,20 +22,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('ai_query_results', function (Blueprint $table) {
-            // Brand tracking fields
-            $table->boolean('brand_mentioned')->default(false)->after('mentions');
-            $table->text('brand_context')->nullable()->after('brand_mentioned');
-            $table->json('competitor_mentions')->nullable()->after('brand_context');
-            
-            // Response metadata
-            $table->json('citations')->nullable()->after('competitor_mentions');
-            $table->unsignedInteger('query_tokens')->nullable()->after('tokens_used');
-            $table->unsignedInteger('response_tokens')->nullable()->after('query_tokens');
-            
-            // Performance tracking
-            $table->boolean('cache_hit')->default(false)->after('queried_at');
-        });
+        // Columns are now in the original migration (2026_03_07_200000_create_ai_visibility_tables.php)
+        // This migration is kept for backward compatibility but does nothing
     }
 
     /**
@@ -40,16 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('ai_query_results', function (Blueprint $table) {
-            $table->dropColumn([
-                'brand_mentioned',
-                'brand_context',
-                'competitor_mentions',
-                'citations',
-                'query_tokens',
-                'response_tokens',
-                'cache_hit',
-            ]);
-        });
+        // Nothing to drop as columns are in the original migration
     }
 };

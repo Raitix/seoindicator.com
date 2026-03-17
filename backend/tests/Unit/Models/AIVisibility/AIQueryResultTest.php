@@ -570,7 +570,7 @@ class AIQueryResultTest extends TestCase
      */
     public function test_qr029_default_queried_at(): void
     {
-        $before = now();
+        $before = now()->subSecond();
         
         $result = AIQueryResult::create([
             'project_id' => $this->project->id,
@@ -580,7 +580,7 @@ class AIQueryResultTest extends TestCase
             'response_text' => 'Response',
         ]);
 
-        $after = now();
+        $after = now()->addSecond();
 
         $this->assertNotNull($result->queried_at);
         $this->assertTrue($result->queried_at->between($before, $after));

@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Schema;
  *
  * @see TASK-34-13
  * @see SPEC-034
+ * 
+ * Note: These columns are now included in the original migration (2026_03_07_200000_create_ai_visibility_tables.php).
+ * This migration remains for backward compatibility but does nothing.
  */
 return new class extends Migration
 {
@@ -17,28 +20,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add columns to ai_query_results
-        Schema::table('ai_query_results', function (Blueprint $table) {
-            $table->boolean('brand_mentioned')->default(false)->after('mentions');
-            $table->json('competitor_mentions')->nullable()->after('brand_mentioned');
-            $table->string('query_category', 100)->nullable()->after('competitor_mentions');
-            $table->decimal('sentiment_score', 5, 2)->nullable()->after('sentiment');
-
-            $table->index('brand_mentioned');
-            $table->index('query_category');
-        });
-
-        // Add columns to ai_mention_analytics
-        Schema::table('ai_mention_analytics', function (Blueprint $table) {
-            $table->string('period', 20)->nullable()->after('platform');
-            $table->unsignedInteger('mixed_mentions')->default(0)->after('negative_mentions');
-            $table->decimal('average_sentiment', 5, 2)->default(0)->after('mixed_mentions');
-            $table->json('competitor_mentions')->nullable()->after('average_sentiment');
-            $table->timestamp('aggregated_at')->nullable()->after('period_end');
-
-            $table->index(['project_id', 'period']);
-            $table->unique(['project_id', 'platform', 'period']);
-        });
+        // Columns are now in the original migration (2026_03_07_200000_create_ai_visibility_tables.php)
+        // This migration is kept for backward compatibility but does nothing
     }
 
     /**
@@ -46,27 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('ai_query_results', function (Blueprint $table) {
-            $table->dropIndex(['brand_mentioned']);
-            $table->dropIndex(['query_category']);
-            $table->dropColumn([
-                'brand_mentioned',
-                'competitor_mentions',
-                'query_category',
-                'sentiment_score',
-            ]);
-        });
-
-        Schema::table('ai_mention_analytics', function (Blueprint $table) {
-            $table->dropUnique(['project_id', 'platform', 'period']);
-            $table->dropIndex(['project_id', 'period']);
-            $table->dropColumn([
-                'period',
-                'mixed_mentions',
-                'average_sentiment',
-                'competitor_mentions',
-                'aggregated_at',
-            ]);
-        });
+        // Nothing to drop as columns are in the original migration
     }
 };

@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Schema;
  * 
  * @see TASK-34-2
  * @see SPEC-034
+ * 
+ * Note: Most columns are now included in the original migration.
+ * This migration remains for backward compatibility.
  */
 return new class extends Migration
 {
@@ -19,14 +22,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('ai_mention_analytics', function (Blueprint $table) {
-            // Share of voice tracking
-            $table->decimal('share_of_voice', 5, 2)->default(0.00)->after('competitor_stats');
-            
-            // Trend and category analysis
-            $table->json('top_query_categories')->nullable()->after('share_of_voice');
-            $table->string('mention_trend', 20)->default('stable')->after('top_query_categories');
-        });
+        // Columns are now in the original migration (2026_03_07_200000_create_ai_visibility_tables.php)
+        // This migration is kept for backward compatibility but does nothing
     }
 
     /**
@@ -34,12 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('ai_mention_analytics', function (Blueprint $table) {
-            $table->dropColumn([
-                'share_of_voice',
-                'top_query_categories',
-                'mention_trend',
-            ]);
-        });
+        // Nothing to drop as columns are in the original migration
     }
 };

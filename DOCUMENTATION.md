@@ -65458,5 +65458,402 @@ Core badge generation service for the Public SEO Audit Reports & Embeddable Scor
 - TASK-33-21: EmbedCodeGenerator Component (embed code UI)
 
 ---
+## Usage Aggregation Service (TASK-27-7)
+
+### Service Description
+Service for aggregating usage metrics as part of the Admin Dashboard feature (FEAT-027). Provides comprehensive usage statistics including request counts, token usage tracking, and analysis job counts with time-based filtering (today, this week, this month). Integrates with AdminStatsService for cached aggregation.
+
+### Component Locations
+- **Service:** `backend/app/Services/Admin/UsageAggregationService.php`
+- **Tests:** `backend/tests/Unit/Services/Admin/UsageAggregationServiceTest.php`
+- **Test Documentation:** `TESTS/TEST-27-7.md`
+
+### Core Functionalities
+
+| Method | Description |
+|--------|-------------|
+| `getStats()` | Get complete usage stats (requests, tokens, analyses) |
+| `getRequestStats()` | Aggregate request counts by time period |
+| `getTokenStats()` | Token usage with byModel breakdown (fallback to zeros if columns missing) |
+| `getAnalysisStats()` | Analysis job counts with byStatus/byType breakdown |
+| `getRequestsByEndpoint()` | Request counts grouped by AnalysisHistory.tool_name |
+| `getTokenTrends()` | Token usage trends over time |
+
+### Response Structure
+
+```json
+{
+  "requests": {
+    "total": 156789,
+    "today": 2340,
+    "thisWeek": 15680,
+    "thisMonth": 48920
+  },
+  "tokens": {
+    "total": 12500000,
+    "today": 156000,
+    "thisWeek": 890000,
+    "thisMonth": 3200000,
+    "byModel": {
+      "gpt-4": 5000000,
+      "gpt-3.5-turbo": 6000000,
+      "claude-3": 1500000
+    }
+  },
+  "analyses": {
+    "total": 12340,
+    "today": 156,
+    "thisWeek": 890,
+    "thisMonth": 3450
+  }
+}
+```
+
+### Data Sources
+
+| Data | Source | Notes |
+|------|--------|-------|
+| Request counts | `AnalysisJob` table | Uses status counts as proxy |
+| Endpoint breakdown | `AnalysisHistory.tool_name` | Grouped by tool name |
+| Token stats | Future migration needed | Gracefully returns zeros if columns missing |
+| Analysis counts | `AnalysisJob` table | With byStatus/byType breakdown |
+
+### Performance Optimizations
+
+| Optimization | Implementation |
+|--------------|----------------|
+| Efficient GROUP BY | Database-level aggregation |
+| Index usage | Queries use indexed columns |
+| Caching | Via AdminStatsService (5 min TTL) |
+| Graceful degradation | Returns zeros for missing token columns |
+
+### Test Coverage
+
+| Test File | Tests | Assertions | Status |
+|-----------|-------|------------|--------|
+| `UsageAggregationServiceTest.php` | 34 | 88 | ✅ PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Service Instantiation | 1 | Container binding, method existence |
+| getStats() Structure | 3 | Response structure validation |
+| Request Stats | 5 | Time-based request aggregation |
+| Token Stats (fallback) | 2 | Graceful degradation when columns missing |
+| Analysis Stats | 6 | byStatus/byType breakdown |
+| getRequestsByEndpoint() | 3 | Endpoint grouping via tool_name |
+| getTokenTrends() | 4 | Time-series token data |
+| Performance | 2 | All tests under 100ms |
+| Edge Cases | 5 | Empty DB, null values, boundaries |
+| Data Validation | 2 | Query parameterization |
+| Integration | 3 | AdminStatsService integration |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| SQL Injection | Parameterized queries via Eloquent |
+| No User Data Exposure | Aggregated results only |
+| No PII in Responses | Counts and sums only |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-04 |
+| Commit | `7ba754e` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 34/34 passing (88 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-27-3 | Done ✅ | AdminStatsService (injects this service) |
+| analysis_jobs table | ✅ EXISTS | Primary data source |
+
+### Related Tasks
+
+- TASK-27-3: AdminStatsService (consumer)
+- TASK-27-6: RequestTrackingMiddleware (data source)
+- TASK-27-8: UsageController (API endpoints)
+
+---
+## Admin Usage API Endpoints (TASK-27-8)
+
+### Feature Description
+REST API controller for admin usage metrics within the Admin Dashboard (FEAT-027). Provides four endpoints for aggregated usage statistics, request breakdowns by endpoint, token usage by model, and usage trends over time. All endpoints are protected by AdminAuthorizationMiddleware and rate-limited to 60 requests per minute.
+
+### Component Locations
+- **Controller:** `backend/app/Http/Controllers/Api/V1/Admin/UsageController.php`
+- **Service Dependency:** `backend/app/Services/Admin/UsageAggregationService.php` (TASK-27-7)
+- **Middleware:** `backend/app/Http/Middleware/AdminAuthorizationMiddleware.php` (TASK-27-2)
+- **Routes:** `backend/routes/api.php` (lines 258-263)
+- **Tests:** `backend/tests/Feature/Api/V1/Admin/UsageControllerTest.php`
+- **Test Documentation:** `TESTS/TEST-27-8.md`
+
+### API Endpoints
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/admin/usage/overview` | Aggregated usage statistics | 60/min |
+| GET | `/api/v1/admin/usage/requests` | Request counts by endpoint | 60/min |
+| GET | `/api/v1/admin/usage/tokens` | Token usage by model | 60/min |
+| GET | `/api/v1/admin/usage/trends` | Usage trends (time series) | 60/min |
+
+### GET /api/v1/admin/usage/overview
+
+Returns aggregated usage statistics including requests, tokens, and analyses.
+
+**Authorization:** Admin role required (AdminAuthorizationMiddleware)
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `start_date` | date | Filter from date (YYYY-MM-DD) |
+| `end_date` | date | Filter to date (YYYY-MM-DD) |
+| `granularity` | string | Time grouping: `day`, `week`, `month` |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "requests": {
+      "total": 156789,
+      "today": 2340,
+      "thisWeek": 15680,
+      "thisMonth": 48920
+    },
+    "tokens": {
+      "total": 12500000,
+      "today": 156000,
+      "thisWeek": 890000,
+      "thisMonth": 3200000,
+      "byModel": {
+        "gpt-4": 5000000,
+        "gpt-3.5-turbo": 6000000,
+        "claude-3": 1500000
+      }
+    },
+    "analyses": {
+      "total": 12340,
+      "today": 156,
+      "thisWeek": 890,
+      "thisMonth": 3450,
+      "byStatus": {
+        "completed": 11000,
+        "pending": 500,
+        "failed": 340
+      },
+      "byType": {
+        "full": 8000,
+        "quick": 4340
+      }
+    }
+  }
+}
+```
+
+### GET /api/v1/admin/usage/requests
+
+Returns request counts grouped by endpoint.
+
+**Authorization:** Admin role required
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `start_date` | date | Filter from date (YYYY-MM-DD) |
+| `end_date` | date | Filter to date (YYYY-MM-DD) |
+| `granularity` | string | Time grouping: `day`, `week`, `month` |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "byEndpoint": [
+      { "endpoint": "seo-analysis", "count": 45000 },
+      { "endpoint": "keyword-research", "count": 32000 },
+      { "endpoint": "backlink-check", "count": 28000 }
+    ],
+    "total": 156789,
+    "trends": {
+      "daily": [
+        { "date": "2026-03-01", "count": 1200 },
+        { "date": "2026-03-02", "count": 1350 }
+      ]
+    }
+  }
+}
+```
+
+### GET /api/v1/admin/usage/tokens
+
+Returns token usage statistics with breakdown by model.
+
+**Authorization:** Admin role required
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `start_date` | date | Filter from date (YYYY-MM-DD) |
+| `end_date` | date | Filter to date (YYYY-MM-DD) |
+| `granularity` | string | Time grouping: `day`, `week`, `month` |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 12500000,
+    "byModel": [
+      { "model": "gpt-3.5-turbo", "tokens": 6000000, "percentage": 48.0 },
+      { "model": "gpt-4", "tokens": 5000000, "percentage": 40.0 },
+      { "model": "claude-3", "tokens": 1500000, "percentage": 12.0 }
+    ],
+    "trends": {
+      "daily": [
+        { "date": "2026-03-01", "tokens": 120000 },
+        { "date": "2026-03-02", "tokens": 135000 }
+      ]
+    }
+  }
+}
+```
+
+### GET /api/v1/admin/usage/trends
+
+Returns usage trends as time series data.
+
+**Authorization:** Admin role required
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `days` | integer | 7 | Number of days to include (max 90, capped automatically) |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "daily": [
+      { "date": "2026-03-01", "requests": 1200, "tokens": 120000, "analyses": 45 },
+      { "date": "2026-03-02", "requests": 1350, "tokens": 135000, "analyses": 52 },
+      { "date": "2026-03-03", "requests": 1280, "tokens": 128000, "analyses": 48 }
+    ],
+    "weekly": [
+      { "week": "2026-W09", "requests": 8500, "tokens": 850000, "analyses": 320 }
+    ],
+    "monthly": [
+      { "month": "2026-02", "requests": 45000, "tokens": 4500000, "analyses": 1500 }
+    ]
+  }
+}
+```
+
+### Error Responses
+
+| Code | Condition | Response |
+|------|-----------|----------|
+| 401 | Unauthenticated | `{"success":false,"error":{"code":"UNAUTHENTICATED","message":"..."}}` |
+| 403 | Not admin | `{"success":false,"error":{"code":"FORBIDDEN","message":"..."}}` |
+| 422 | Validation error | `{"success":false,"error":{"code":"VALIDATION_ERROR","message":"..."}}` |
+| 500 | Server error | `{"success":false,"error":{"code":"SERVER_ERROR","message":"..."}}` |
+
+### Authorization & Security
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Laravel Sanctum (Bearer token) |
+| Authorization | AdminAuthorizationMiddleware checks `is_admin` flag |
+| Rate Limiting | 60 requests per minute via `throttle:60,1` middleware |
+| SQL Injection | Eloquent ORM with parameterized queries |
+| No PII Exposure | Aggregated statistics only |
+
+### Validation Rules
+
+| Parameter | Rules |
+|-----------|-------|
+| `start_date` | Optional, date format (Y-m-d), before or equal to end_date |
+| `end_date` | Optional, date format (Y-m-d), after or equal to start_date |
+| `granularity` | Optional, in: `day`, `week`, `month` |
+| `days` | Optional, integer, max 90 (capped automatically) |
+
+### Middleware Stack
+
+```php
+Route::middleware(['auth:sanctum', 'admin', 'throttle:60,1'])
+    ->prefix('api/v1/admin/usage')
+    ->group(function () {
+        Route::get('/overview', [UsageController::class, 'overview']);
+        Route::get('/requests', [UsageController::class, 'requests']);
+        Route::get('/tokens', [UsageController::class, 'tokens']);
+        Route::get('/trends', [UsageController::class, 'trends']);
+    });
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| UsageControllerTest | 71 | 186 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Overview Endpoint | 10 | Response structure, data validation |
+| Requests Endpoint | 7 | Endpoint grouping, filtering |
+| Tokens Endpoint | 6 | Model breakdown, trends |
+| Trends Endpoint | 10 | Time series, days parameter |
+| Query Parameters | 9 | Date range, granularity validation |
+| Rate Limiting | 1 | 60 req/min enforcement |
+| HTTP Methods | 6 | Only GET allowed |
+| Security | 4 | Authentication, admin-only access |
+| Error Handling | 3 | Validation errors, server errors |
+| Performance | 2 | Response time < 500ms |
+| Edge Cases | 6 | Empty data, invalid dates, large datasets |
+| Data Types | 5 | Integer/numeric validation |
+| Integration | 3 | Service integration, full workflow |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-04 |
+| Commit | Deployment verified |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Tests | 71/71 passing (186 assertions) |
+| Status | Complete |
+
+**Production Validation:**
+| Endpoint | Response | Status |
+|----------|----------|--------|
+| `/api/v1/admin/usage/overview` | 401 UNAUTHENTICATED | ✅ Protected |
+| `/api/v1/admin/usage/requests` | 401 UNAUTHENTICATED | ✅ Protected |
+| `/api/v1/admin/usage/tokens` | 401 UNAUTHENTICATED | ✅ Protected |
+| `/api/v1/admin/usage/trends` | 401 UNAUTHENTICATED | ✅ Protected |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-27-2 | Done ✅ | AdminAuthorizationMiddleware |
+| TASK-27-7 | Done ✅ | UsageAggregationService |
+
+### Related Tasks
+
+- TASK-27-2: AdminAuthorizationMiddleware (auth protection)
+- TASK-27-7: UsageAggregationService (data source)
+- TASK-27-15: Metric Cards and Overview Section (frontend consumer)
+- TASK-27-16: Usage Charts and Tables (frontend consumer)
+
+---
 *Last updated: 2026-03-17*
 

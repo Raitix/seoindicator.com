@@ -1,7 +1,19 @@
 # TASK-37-7: Indicators Button Fix
 
 ## STATUS
-`To Deploy`
+`In Deployment`
+
+### DevOps (2026-03-17 11:59 GMT+2)
+**Starting Deployment - Redeploying Fix**
+
+The fix commit `675d6719` is already on `origin/main`. Running a new deployment to push the fix to production.
+
+**Root Cause Analysis:**
+- Previous deployment ran at 09:06 UTC (commit `071c7830`)
+- Fix was committed at 09:12 UTC (commit `675d6719`) - 6 minutes AFTER deployment
+- Production still has the broken `<button>` element
+
+**Action:** Running `scripts/deploy-prod.ps1` to deploy the latest main branch.
 
 ## PRIORITY
 `High`
