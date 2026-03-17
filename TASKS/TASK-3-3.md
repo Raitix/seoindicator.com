@@ -1,7 +1,7 @@
 # SPEC-003-3: Backend - Domain Validation Service
 
 ## STATUS
-`In Deployment`
+`To Test Prod`
 
 ## PRIORITY
 `Medium`
@@ -33,6 +33,25 @@ Create a service to validate competitor domains before adding them. Ensures doma
 - Use checkdnsrr for DNS checks
 - Use cURL with timeout for accessibility check
 - Can be developed in parallel with SPEC-003-1
+
+---
+
+### [2026-03-17 23:58 GMT+2] Agent: DevOps
+**Deployment Complete - SUCCESS**
+
+- Commit: `573cc314` deployed to production
+- Deployment ID: `20260317T205457Z-58557291`
+- Duration: 197 seconds
+- All steps passed:
+  - Frontend build: ✓
+  - Backend deployment: ✓ (migrations, composer, cache)
+  - Production smoke tests: ✓ (homepage, login page)
+
+**Additional fixes deployed:**
+- Fixed Next.js static export compatibility for dynamic route pages
+- Made `gsc_data` migration idempotent (table already existed)
+
+**Status updated:** `To Test Prod` → Handoff to ProdTester
 
 ---
 
