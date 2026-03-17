@@ -412,12 +412,12 @@ test.describe('Audit List Page', () => {
     await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
-    // Open status filter - try multiple selector patterns
-    const statusFilterButton = page.locator('[data-testid="status-filter"] button, button:has-text("All Statuses"), [aria-label*="status"]').first();
+    // Open status filter
+    const statusFilterButton = page.locator('[data-testid="status-filter"] button').first();
     await statusFilterButton.click();
     
-    // Select "completed"
-    await page.click('[data-value="completed"], [role="option"]:has-text("Completed"), text=Completed');
+    // Select "Completed" option using role-based selector
+    await page.getByRole('option', { name: 'Completed' }).click();
     
     // Verify filter was applied (check URL or visible content)
     await page.waitForTimeout(500);
@@ -533,8 +533,8 @@ test.describe('Audit List Page', () => {
     await page.goto(AUDITS_LIST_URL);
     await waitForAuditList(page);
     
-    // Click on a completed audit
-    await page.click('text=123');
+    // Click "View Details" on a completed audit card
+    await page.click('button:has-text("View Details")');
     
     // Should navigate to detail page
     await expect(page).toHaveURL(/\/sites\/\d+\/audits\/\d+/);
@@ -603,8 +603,6 @@ test.describe('Audit Detail Page', () => {
   });
 
   test('E2E-AUD-011: Issues list displays correctly', async ({ page }) => {
-    await setupAuditDetailMocks(page);
-    
     await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     
@@ -618,8 +616,6 @@ test.describe('Audit Detail Page', () => {
   });
 
   test('E2E-AUD-012: Filter issues by severity', async ({ page }) => {
-    await setupAuditDetailMocks(page);
-    
     await page.goto(AUDIT_DETAIL_URL);
     await waitForAuditDetailPage(page);
     

@@ -1,7 +1,7 @@
 # FEAT-032: Competitor Comparison Landing Pages (Programmatic SEO)
 
 ## STATUS
-`To Prioritize`
+`Done`
 
 ## PRIORITY
 `High`
