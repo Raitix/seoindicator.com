@@ -1,7 +1,7 @@
 # SPEC-003-3: Backend - Domain Validation Service
 
 ## STATUS
-`To Deploy`
+`In Deployment`
 
 ## PRIORITY
 `Medium`
@@ -33,6 +33,19 @@ Create a service to validate competitor domains before adding them. Ensures doma
 - Use checkdnsrr for DNS checks
 - Use cURL with timeout for accessibility check
 - Can be developed in parallel with SPEC-003-1
+
+---
+
+### [2026-03-17 19:30 GMT+2] Agent: DevOps
+**Starting Deployment**
+
+- Lock file created: `TASKS/.locks/TASK-3-3.lock`
+- Status updated: `In Deployment`
+- Deployment method: Local/self-hosted deployment via `scripts/deploy-prod.ps1`
+
+**What will be deployed:**
+- `backend/app/Services/DomainValidator.php` - Domain validation service with SSRF protection
+- 54 tests (223 assertions) - ALL PASS
 
 ---
 
@@ -83,6 +96,19 @@ php artisan test tests/Feature/Services/DomainValidatorIntegrationTest.php
 ```
 
 **Handoff:** → Developer for bug fixes
+
+### [2026-03-17 19:30 GMT+2] Agent: DevOps
+**Starting Deployment**
+
+- Lock file created: `TASKS/.locks/TASK-3-3.lock`
+- Status updated: `In Deployment`
+- Deployment method: Local/self-hosted deployment via `scripts/deploy-prod.ps1`
+
+**What will be deployed:**
+- `backend/app/Services/DomainValidator.php` - Domain validation service with SSRF protection
+- 54 tests (223 assertions) - ALL PASS
+
+---
 
 ### [2026-03-17 19:28 GMT+2] Agent: LocalTester
 **Local Tests VERIFIED - ALL PASS**
