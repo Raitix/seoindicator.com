@@ -1,12 +1,7 @@
 "use client";
 
-// Force dynamic rendering for static export compatibility
-export const dynamic = 'force-dynamic';
-
-// Required for static export with dynamic routes - returns empty array for client-side rendering
-export function generateStaticParams() {
-  return [];
-}
+// Allow dynamic params for client-side routing with static export
+export const dynamicParams = true;
 
 import { Suspense } from "react";
 import { useParams } from "next/navigation";
