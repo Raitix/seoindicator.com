@@ -669,7 +669,10 @@ class AIMentionAnalyticsTest extends TestCase
             'period_end' => '2026-03-07',
         ]);
 
-        $this->assertEquals('Y-m-d', $analytics->period_start->getFormat());
+        // Date cast returns Carbon instance, verify it's a date-only format
+        $this->assertInstanceOf(Carbon::class, $analytics->period_start);
+        $this->assertTrue($analytics->period_start->isStartOfDay());
+        $this->assertEquals('2026-03-01', $analytics->period_start->format('Y-m-d'));
     }
 
     // ==================== MODEL CONFIGURATION TESTS ====================

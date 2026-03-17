@@ -1,220 +1,324 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import React, { useState, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useContentDecayCandidates, useContentDecayCandidate, useUpdateCandidateStatus } from "@/lib/hooks/useContentDecay";
-import type { DecayCandidate, ContentDecayCandidateStatus, ContentDecaySeverity } from "@/lib/types/content-decay";
-import { SeverityBadge } from "@/components/content-decay";
-import { LayoutDashboard, Columns, BarChart3, X, ChevronRight } from "lucide-react";
+import {
+  Kanban,
+  LayoutDashboard,
+  TrendingUp,
+  AlertTriangle,
+  FileText,
+  Globe,
+  ChevronRight,
+} from "lucide-react";
 
-const COLUMNS: Array<{ id: ContentDecayCandidateStatus; title: string; color: string }> = [
+import { SeverityBadge } from "@/components/content-decay/SeverityBadge";
+import { DecayReasonBadges } from "@/components/content-decay/DecayReasonBadges";
+import { CandidateDetailDrawer } from "@/components/content-decay/CandidateDetailDrawer";
+import {
+  useContentDecayCandidates,
+  useUpdateCandidateStatus,
+} from "@/lib/hooks/useContentDecay";
+import type { DecayCandidate, ContentDecayCandidateStatus } from "@/lib/types/content-decay";
+
+/**
+ * Content Decay Recovery Board Page
+ * 
+ * Kanban-style board for managing decay candidates through the recovery workflow.
+ * Columns: Backlog, Planned, In Progress, Refreshed, Recovered.
+ * 
+ * @see TASK-36-13
+ * @see SPEC-036
+ */
+
+// Kanban column configuration
+const COLUMNS: Array<{
+  id: ContentDecayCandidateStatus;
+  title: string;
+  color: string;
+}> = [
   { id: "backlog", title: "Backlog", color: "bg-slate-600" },
   { id: "planned", title: "Planned", color: "bg-blue-600" },
   { id: "in_progress", title: "In Progress", color: "bg-yellow-600" },
-  { id: "refreshed", title: "Refreshed", color: "bg-green-600" },
-  { id: "recovered", title: "Recovered", color: "bg-emerald-600" },
+  { id: "refreshed", title: "Refreshed", color: "bg-purple-600" },
+  { id: "recovered", title: "Recovered", color: "bg-green-600" },
 ];
 
-// Loading fallback for Suspense
-function BoardLoadingFallback() {
-  return (
-    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="recovery-board-page-loading">
-      <div className="animate-pulse">
-        <div className="h-8 w-48 bg-slate-700 rounded mb-2" />
-        <div className="h-4 w-64 bg-slate-700 rounded" />
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {COLUMNS.map((column) => (
-          <div key={column.id} className="flex-shrink-0 w-72 md:w-80">
-            <div className="animate-pulse space-y-3">
-              <div className="h-6 w-24 bg-slate-700 rounded" />
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-slate-700 rounded-lg" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+// Filter state type
+interface BoardFilters {
+  severity: string;
+  pageType: string;
 }
 
-function RecoveryBoardContent() {
+export default function ContentDecayBoardPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const siteId = params.siteId as string;
 
-  const severityFilter = searchParams.get("severity") as ContentDecaySeverity | null;
-  const pageTypeFilter = searchParams.get("pageType") as string | null;
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  const { candidates, isLoading } = useContentDecayCandidates(siteId, {
-    severity: severityFilter || "all",
-    pageType: pageTypeFilter || "all",
-    status: "all",
+  // State
+  const [selectedCandidate, setSelectedCandidate] = useState<DecayCandidate | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [filters, setFilters] = useState<BoardFilters>({
+    severity: "all",
+    pageType: "all",
   });
 
-  const { candidate: selectedCandidate } = useContentDecayCandidate(selectedCandidateId);
-  const { trigger: updateStatus } = useUpdateCandidateStatus(selectedCandidateId);
+  // Hooks - fetch all candidates without status filter
+  const { candidates, isLoading, mutate } = useContentDecayCandidates(siteId, {
+    severity: filters.severity !== "all" ? filters.severity : undefined,
+    pageType: filters.pageType !== "all" ? filters.pageType : undefined,
+  });
 
-  const columnsData = useMemo(() => {
-    const grouped: Record<string, DecayCandidate[]> = { backlog: [], planned: [], in_progress: [], refreshed: [], recovered: [] };
-    candidates?.forEach((candidate) => {
+  // Group candidates by status
+  const candidatesByColumn = useMemo(() => {
+    const grouped: Record<ContentDecayCandidateStatus, DecayCandidate[]> = {
+      backlog: [],
+      planned: [],
+      in_progress: [],
+      refreshed: [],
+      recovered: [],
+      ignored: [],
+    };
+
+    candidates.forEach((candidate) => {
       const status = candidate.status || "backlog";
-      if (grouped[status]) grouped[status].push(candidate);
+      if (grouped[status]) {
+        grouped[status].push(candidate);
+      }
     });
+
     return grouped;
   }, [candidates]);
 
-  const handleCardClick = (candidate: DecayCandidate) => {
-    setSelectedCandidateId(candidate.id);
-    setIsSheetOpen(true);
+  // Calculate totals
+  const totalCandidates = candidates.length;
+  const recoveredCount = candidatesByColumn.recovered.length;
+  const inProgressCount = candidatesByColumn.in_progress.length;
+
+  // Get unique page types from candidates
+  const pageTypes = useMemo(() => {
+    const types = new Set(candidates.map((c) => c.pageType).filter(Boolean));
+    return ["all", ...Array.from(types)];
+  }, [candidates]);
+
+  // Handlers
+  const handleCandidateClick = (candidate: DecayCandidate) => {
+    setSelectedCandidate(candidate);
+    setIsDrawerOpen(true);
   };
 
-  const handleStatusChange = async (candidateId: number, newStatus: ContentDecayCandidateStatus) => {
-    try { await updateStatus({ status: newStatus }); } catch (error) { console.error("Failed to update status:", error); }
+  const handleDrawerClose = () => {
+    setIsDrawerOpen(false);
+    setSelectedCandidate(null);
   };
 
-  const handleFilterChange = (key: string, value: string | null) => {
-    const newParams = new URLSearchParams(searchParams.toString());
-    if (value && value !== "all") newParams.set(key, value);
-    else newParams.delete(key);
-    router.push(`/sites/${siteId}/content-decay/board?${newParams.toString()}`);
+  const handleStatusChange = (candidateId: number, newStatus: ContentDecayCandidateStatus) => {
+    mutate();
   };
 
-  const handleCloseSheet = () => { setIsSheetOpen(false); setSelectedCandidateId(null); };
+  // Render card
+  const renderCard = (candidate: DecayCandidate) => (
+    <div
+      key={candidate.id}
+      onClick={() => handleCandidateClick(candidate)}
+      className="bg-slate-800 border border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-600 transition-colors"
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${candidate.pageTitle}`}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h4 className="text-sm font-medium text-slate-100 line-clamp-2 flex-1">
+          {candidate.pageTitle}
+        </h4>
+        <SeverityBadge severity={candidate.severity} />
+      </div>
 
-  const tabs = [
-    { id: "queue", label: "Queue", href: `/sites/${siteId}/content-decay`, icon: LayoutDashboard },
-    { id: "board", label: "Board", href: `/sites/${siteId}/content-decay/board`, icon: Columns, active: true },
-    { id: "recovery", label: "Recovery", href: `/sites/${siteId}/content-decay/recovery`, icon: BarChart3 },
-  ];
+      {/* URL */}
+      <p className="text-xs text-slate-500 truncate mb-3">{candidate.pageUrl}</p>
+
+      {/* Metrics */}
+      <div className="flex items-center gap-4 text-xs text-slate-400 mb-3">
+        <div className="flex items-center gap-1">
+          <span className="text-red-400">-{candidate.clicksLost}</span>
+          <span>clicks</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-red-400">-{candidate impressionsLost}</span>
+          <span>impr.</span>
+        </div>
+      </div>
+
+      {/* Decay Reasons */}
+      <DecayReasonBadges reasons={candidate.decayReasons} />
+
+      {/* Page Type */}
+      {candidate.pageType && (
+        <div className="mt-3 flex items-center gap-1 text-xs text-slate-500">
+          <Globe className="w-3 h-3" />
+          <span>{candidate.pageType}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6" data-testid="loading-skeleton">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 w-48 bg-slate-700 rounded" />
+          <div className="flex gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex-1 h-96 bg-slate-700 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6" data-testid="recovery-board-page">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="container mx-auto px-4 py-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Recovery Board</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage content refresh workflow</p>
+          <h1 className="text-2xl font-bold text-slate-100">Recovery Board</h1>
+          <p className="text-slate-400 mt-1">
+            Manage content recovery workflow
+          </p>
         </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <nav className="flex gap-1 mb-6 border-b border-slate-700" aria-label="Content decay navigation">
+        <Link
+          href={`/sites/${siteId}/content-decay`}
+          className="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-slate-200 border-b-2 border-transparent hover:border-slate-600 transition-colors"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          Queue
+        </Link>
+        <Link
+          href={`/sites/${siteId}/content-decay/board`}
+          className="flex items-center gap-2 px-4 py-3 text-blue-400 border-b-2 border-blue-400 font-medium"
+          aria-current="page"
+        >
+          <Kanban className="w-4 h-4" />
+          Board
+        </Link>
+        <Link
+          href={`/sites/${siteId}/content-decay/recovery`}
+          className="flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-slate-200 border-b-2 border-transparent hover:border-slate-600 transition-colors"
+        >
+          <TrendingUp className="w-4 h-4" />
+          Recovery
+        </Link>
+      </nav>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
-          <select value={severityFilter || "all"} onChange={(e) => handleFilterChange("severity", e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm" aria-label="Filter by severity">
-            <option value="all">All Severities</option>
+          <label htmlFor="severity-filter" className="text-sm text-slate-400">
+            Severity:
+          </label>
+          <select
+            id="severity-filter"
+            value={filters.severity}
+            onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
+            className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Filter by severity"
+          >
+            <option value="all">All</option>
             <option value="critical">Critical</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
-          <select value={pageTypeFilter || "all"} onChange={(e) => handleFilterChange("pageType", e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm" aria-label="Filter by page type">
-            <option value="all">All Page Types</option>
-            <option value="blog">Blog</option>
-            <option value="product">Product</option>
-            <option value="landing">Landing Page</option>
-            <option value="category">Category</option>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="page-type-filter" className="text-sm text-slate-400">
+            Page Type:
+          </label>
+          <select
+            id="page-type-filter"
+            value={filters.pageType}
+            onChange={(e) => setFilters({ ...filters, pageType: e.target.value })}
+            className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Filter by page type"
+          >
+            {pageTypes.map((type) => (
+              <option key={type} value={type}>
+                {type === "all" ? "All Types" : type}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      <nav className="flex gap-1 border-b border-slate-700 pb-2" aria-label="Content decay views">
-        {tabs.map((tab) => (
-          <Link key={tab.id} href={tab.href} className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab.active ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white hover:bg-slate-700"}`} aria-current={tab.active ? "page" : undefined}>
-            <tab.icon className="w-4 h-4" />{tab.label}
-          </Link>
-        ))}
-      </nav>
-
+      {/* Kanban Board */}
       <div className="flex gap-4 overflow-x-auto pb-4" role="region" aria-label="Kanban board">
-        {COLUMNS.map((column) => (
-          <div key={column.id} className="flex-shrink-0 w-72 md:w-80" data-testid={`column-${column.id}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${column.color}`} />
-                <h2 className="font-medium text-white">{column.title}</h2>
-              </div>
-              <span className="text-sm text-slate-400 bg-slate-800 px-2 py-0.5 rounded">{columnsData[column.id]?.length || 0}</span>
-            </div>
-            <div className="space-y-2 min-h-[200px] bg-slate-800/50 rounded-lg p-2">
-              {isLoading ? (
-                <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => (<div key={i} className="h-24 bg-slate-700 rounded-lg" />))}</div>
-              ) : columnsData[column.id]?.length === 0 ? (
-                <div className="text-center text-slate-500 text-sm py-8">No items</div>
-              ) : (
-                columnsData[column.id]?.map((candidate) => (
-                  <CandidateCard key={candidate.id} candidate={candidate} onClick={() => handleCardClick(candidate)} onStatusChange={(newStatus) => handleStatusChange(candidate.id, newStatus)} />
-                ))
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {isSheetOpen && selectedCandidate && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/50" onClick={handleCloseSheet} />
-          <div className="relative w-full max-w-md bg-slate-900 border-l border-slate-700 overflow-y-auto">
-            <div className="sticky top-0 flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900">
-              <h3 className="font-medium text-white">Candidate Details</h3>
-              <button onClick={handleCloseSheet} className="p-1 hover:bg-slate-800 rounded" aria-label="Close"><X className="w-5 h-5 text-slate-400" /></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div><p className="text-sm text-slate-400">Page URL</p><a href={selectedCandidate.pageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm break-all">{selectedCandidate.pageUrl}</a></div>
-              <div><p className="text-sm text-slate-400">Severity</p><SeverityBadge severity={selectedCandidate.severity} /></div>
-              <div><p className="text-sm text-slate-400">Clicks Lost</p><p className="text-white font-medium">{selectedCandidate.clicksLost}</p></div>
-              <div><p className="text-sm text-slate-400">Decay Score</p><p className="text-white font-medium">{selectedCandidate.decayScore}</p></div>
-              <div className="pt-4 border-t border-slate-700">
-                <p className="text-sm text-slate-400 mb-2">Change Status</p>
-                <div className="flex flex-wrap gap-2">
-                  {COLUMNS.filter((c) => c.id !== selectedCandidate.status).map((col) => (
-                    <button key={col.id} onClick={() => handleStatusChange(selectedCandidate.id, col.id)} className="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg">{col.title}</button>
-                  ))}
+        {COLUMNS.map((column) => {
+          const columnCandidates = candidatesByColumn[column.id] || [];
+          
+          return (
+            <div
+              key={column.id}
+              className="flex-shrink-0 w-72 bg-slate-900/50 rounded-lg"
+              role="list"
+              aria-label={`${column.title} column`}
+            >
+              {/* Column Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${column.color}`} />
+                  <h3 className="text-sm font-medium text-slate-200">{column.title}</h3>
                 </div>
+                <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">
+                  {columnCandidates.length}
+                </span>
+              </div>
+
+              {/* Cards */}
+              <div className="p-2 space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+                {columnCandidates.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    No candidates
+                  </div>
+                ) : (
+                  columnCandidates.map(renderCard)
+                )}
               </div>
             </div>
-          </div>
+          );
+        })}
+      </div>
+
+      {/* Quick Stats */}
+      <div className="mt-6 flex items-center gap-6 text-sm text-slate-400">
+        <div>
+          <span className="text-slate-500">Total:</span>{" "}
+          <span className="text-slate-200">{totalCandidates}</span>
         </div>
-      )}
-    </div>
-  );
-}
-
-function CandidateCard({ candidate, onClick, onStatusChange }: { candidate: DecayCandidate; onClick: () => void; onStatusChange: (status: ContentDecayCandidateStatus) => void }) {
-  return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 cursor-pointer hover:border-slate-500 transition-colors" onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick()}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <SeverityBadge severity={candidate.severity} />
-        <span className="text-xs text-slate-400">{candidate.pageType}</span>
+        <div>
+          <span className="text-slate-500">In Progress:</span>{" "}
+          <span className="text-yellow-400">{inProgressCount}</span>
+        </div>
+        <div>
+          <span className="text-slate-500">Recovered:</span>{" "}
+          <span className="text-green-400">{recoveredCount}</span>
+        </div>
       </div>
-      <p className="text-sm text-slate-200 line-clamp-2 mb-2">{candidate.pageTitle || candidate.pageUrl}</p>
-      <div className="flex items-center gap-3 text-xs text-slate-400">
-        <span>-{candidate.clicksLost} clicks</span>
-        <span>Score: {candidate.decayScore}</span>
-      </div>
-      <button onClick={(e) => { e.stopPropagation(); onStatusChange(getNextStatus(candidate.status)); }} className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300">
-        Next: {getNextStatusLabel(candidate.status)}<ChevronRight className="w-3 h-3" />
-      </button>
+
+      {/* Candidate Detail Drawer */}
+      <CandidateDetailDrawer
+        candidate={selectedCandidate}
+        isOpen={isDrawerOpen}
+        onClose={handleDrawerClose}
+        onStatusChange={handleStatusChange}
+      />
     </div>
-  );
-}
-
-function getNextStatus(current: ContentDecayCandidateStatus): ContentDecayCandidateStatus {
-  const order: ContentDecayCandidateStatus[] = ["backlog", "planned", "in_progress", "refreshed", "recovered"];
-  const idx = order.indexOf(current);
-  return idx < order.length - 1 ? order[idx + 1] : current;
-}
-
-function getNextStatusLabel(current: ContentDecayCandidateStatus): string {
-  const next = getNextStatus(current);
-  return COLUMNS.find((c) => c.id === next)?.title || next;
-}
-
-// Wrap with Suspense for static export compatibility with useSearchParams
-export default function RecoveryBoardPage() {
-  return (
-    <Suspense fallback={<BoardLoadingFallback />}>
-      <RecoveryBoardContent />
-    </Suspense>
   );
 }
