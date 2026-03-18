@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
 import { Loader2, FileQuestion, Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { generateJsonLdSchema } from '@/lib/audit/json-ld-schema';
 
 // ============================================================
 // Data Fetching Hook
@@ -81,6 +82,46 @@ function useAuditData(hash: string | null) {
   }, [hash]);
 
   return { data, loading, error };
+}
+
+// ============================================================
+// JSON-LD Structured Data Injection
+// ============================================================
+
+/**
+ * Inject JSON-LD structured data for SEO rich snippets
+ * Creates a script tag with application/ld+json type in document head
+ */
+function injectJsonLd(audit: PublicAuditData | null, hash: string | null) {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  // Remove any existing JSON-LD script tag
+  const existingScript = document.querySelector('script[type="application/ld+json"][data-json-ld="audit"]');
+  if (existingScript) {
+    existingScript.remove();
+  }
+
+  if (!audit || !hash) {
+    return;
+  }
+
+  // Build JSON-LD schema with the hash from URL params
+  const jsonLd = generateJsonLdSchema({
+    ...audit,
+    publicHash: audit.publicHash || hash,
+  });
+
+  if (!jsonLd) {
+    return;
+  }
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.setAttribute('data-json-ld', 'audit');
+  script.textContent = JSON.stringify(jsonLd);
+  document.head.appendChild(script);
 }
 
 // ============================================================
@@ -210,6 +251,21 @@ export default function AuditPageClient() {
   const searchParams = useSearchParams();
   const hash = searchParams.get('h');
   const { data, loading, error } = useAuditData(hash);
+
+  // Inject JSON-LD structured data when audit data is loaded
+  React.useEffect(() => {
+    injectJsonLd(data, hash);
+
+    // Cleanup: remove JSON-LD on unmount
+    return () => {
+      if (typeof document !== 'undefined') {
+        const existingScript = document.querySelector('script[type="application/ld+json"][data-json-ld="audit"]');
+        if (existingScript) {
+          existingScript.remove();
+        }
+      }
+    };
+  }, [data, hash]);
 
   // No hash provided
   if (!hash) {
