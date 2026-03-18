@@ -36,6 +36,50 @@ import {
   clearSessionExpiredMessage,
 } from "@/lib/api/token-expiry-handler";
 
+// ==================== Redirect Utilities ====================
+
+/**
+ * Validates a redirect path to prevent open redirect attacks.
+ * Only allows relative paths starting with "/".
+ * Rejects external URLs, javascript:, data:, and protocol-relative URLs.
+ */
+function isValidRedirect(redirect: string | null | undefined): boolean {
+  if (!redirect) return false;
+  if (typeof redirect !== "string") return false;
+
+  const trimmed = redirect.trim();
+  if (trimmed === "") return false;
+
+  // Must start with /
+  if (!trimmed.startsWith("/")) return false;
+
+  // Reject protocol-relative URLs (//evil.com)
+  if (trimmed.startsWith("//")) return false;
+
+  // Reject absolute URLs (https://, http://)
+  if (/^https?:\/\//i.test(trimmed)) return false;
+
+  // Reject javascript: URLs
+  if (/^javascript:/i.test(trimmed)) return false;
+
+  // Reject data: URLs
+  if (/^data:/i.test(trimmed)) return false;
+
+  // Reject path traversal attempts
+  if (trimmed.includes("../") || trimmed.includes("..\\")) return false;
+
+  return true;
+}
+
+/**
+ * Sanitizes a redirect path to prevent XSS attacks.
+ * Removes any HTML tags or script content.
+ */
+function sanitizeRedirect(redirect: string): string {
+  // Remove any HTML tags
+  return redirect.replace(/<[^>]*>/g, "");
+}
+
 // ==================== Context Creation ====================
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -157,11 +201,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (isAuthenticated) {
       if (pathname === "/login" || pathname === "/register") {
         // Check for stored redirect URL
-        const redirectUrl = getStoredRedirectUrl();
-        if (redirectUrl) {
+        const storedRedirectUrl = getStoredRedirectUrl();
+        
+        // Validate and sanitize the redirect URL
+        if (storedRedirectUrl && isValidRedirect(storedRedirectUrl)) {
           clearStoredRedirectUrl();
-          router.push(redirectUrl);
+          router.push(sanitizeRedirect(storedRedirectUrl));
         } else {
+          // Clear invalid redirect URL
+          if (storedRedirectUrl) {
+            clearStoredRedirectUrl();
+          }
           router.push("/dashboard");
         }
       }
