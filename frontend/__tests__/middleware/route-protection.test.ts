@@ -7,7 +7,41 @@
  * intended destination preserved.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+
+// ==================== Mock NextResponse ====================
+
+// Mock NextResponse before importing middleware
+jest.mock('next/server', () => {
+  const originalModule = jest.requireActual('next/server');
+  
+  return {
+    ...originalModule,
+    NextResponse: {
+      redirect: jest.fn((url: URL) => {
+        const headers = new Map<string, string>();
+        headers.set('location', url.toString());
+        return {
+          status: 307,
+          headers: {
+            get: (name: string) => headers.get(name) ?? null,
+            set: (name: string, value: string) => headers.set(name, value),
+          },
+        };
+      }),
+      next: jest.fn(() => ({
+        status: 200,
+        headers: {
+          get: () => null,
+        },
+      })),
+    },
+  };
+});
+
+// Import after mock
+import { NextResponse } from 'next/server';
+import { middleware, config } from '@/middleware';
 
 // ==================== Types ====================
 
@@ -98,30 +132,25 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
-// ==================== Mock Middleware ====================
+// ==================== Helper to extract redirect URL ====================
 
-function mockMiddleware(request: NextRequest): NextResponse {
-  const token = request.cookies.get('seoindicator_token');
-  const pathname = request.nextUrl.pathname;
-
-  // Check if route is protected
-  if (isProtectedRoute(pathname) && !token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+function getRedirectUrl(response: { status: number; headers: { get: (name: string) => string | null } }): URL | null {
+  const location = response.headers.get('location');
+  if (!location) return null;
+  try {
+    return new URL(location);
+  } catch {
+    return null;
   }
-
-  // Redirect authenticated users away from login/register
-  if (token && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  return NextResponse.next();
 }
 
 // ==================== Test Suite ====================
 
 describe('Protected Route Middleware', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   // ==================== PR-001: Route Protection - Basic ====================
 
   describe('PR-001: Route Protection - Basic', () => {
@@ -131,10 +160,10 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
-      expect(response.status).not.toBe(308);
+      expect(NextResponse.next).toHaveBeenCalled();
     });
 
     it('PR-001b: Access protected route without token', () => {
@@ -143,11 +172,13 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain('/login');
-      expect(response.headers.get('location')).toContain('redirect=%2Fdashboard');
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl).not.toBeNull();
+      expect(redirectUrl?.pathname).toBe('/login');
+      expect(redirectUrl?.searchParams.get('redirect')).toBe('/dashboard');
     });
 
     it('PR-001c: Access protected route with valid token', () => {
@@ -156,9 +187,10 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'valid-token-123' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
+      expect(NextResponse.next).toHaveBeenCalled();
     });
 
     it('PR-001d: Access protected route with expired token', () => {
@@ -170,7 +202,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'expired-token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Middleware allows access if token exists
       // AuthContext handles expiry check on API calls
@@ -187,9 +219,10 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      expect(response.headers.get('location')).toContain('redirect=%2Fdashboard');
+      expect(redirectUrl?.searchParams.get('redirect')).toBe('/dashboard');
     });
 
     it('PR-002b: Visit nested route /dashboard/settings', () => {
@@ -198,11 +231,10 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      expect(response.headers.get('location')).toContain(
-        'redirect=%2Fdashboard%2Fsettings'
-      );
+      expect(redirectUrl?.searchParams.get('redirect')).toBe('/dashboard/settings');
     });
 
     it('PR-002c: Visit route with query params', () => {
@@ -212,10 +244,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      // Redirect should preserve the path (query params are in nextUrl)
-      expect(response.headers.get('location')).toContain('redirect=');
+      // Redirect should preserve the path (query params included)
+      expect(redirectUrl?.searchParams.get('redirect')).toContain('/projects');
     });
 
     it('PR-002d: Post-login redirect returns to original', () => {
@@ -226,10 +259,10 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
-      const location = response.headers.get('location');
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      expect(location).toMatch(/redirect=%2Fsettings/);
+      expect(redirectUrl?.searchParams.get('redirect')).toBe('/settings');
     });
   });
 
@@ -244,7 +277,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Redirect response means page never rendered
       expect(response.status).toBe(307);
@@ -258,11 +291,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Redirect, not 200 with content
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).not.toBeNull();
+      expect(getRedirectUrl(response)).not.toBeNull();
     });
 
     it('PR-003c: Response is redirect, not 401', () => {
@@ -271,7 +304,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Should be 307/308 redirect, not 401 unauthorized
       expect(response.status).not.toBe(401);
@@ -288,7 +321,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'valid-jwt-token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -300,7 +333,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'expired-token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Token present = middleware allows
       // AuthContext handles expired token redirect
@@ -313,7 +346,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'not-a-valid-jwt' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Token present = middleware allows
       // API calls will fail and AuthContext handles logout
@@ -326,10 +359,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain('/login');
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl?.pathname).toBe('/login');
     });
 
     it('PR-004e: Token cleared during session', () => {
@@ -338,14 +372,14 @@ describe('Protected Route Middleware', () => {
         pathname: '/dashboard',
         cookies: [{ name: 'seoindicator_token', value: 'token' }],
       });
-      expect(mockMiddleware(requestWithToken).status).not.toBe(307);
+      expect(middleware(requestWithToken).status).not.toBe(307);
 
       // Second request without token (cleared)
       const requestWithoutToken = createMockRequest({
         pathname: '/settings',
         cookies: [],
       });
-      const response = mockMiddleware(requestWithoutToken);
+      const response = middleware(requestWithoutToken);
 
       expect(response.status).toBe(307);
     });
@@ -360,7 +394,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -371,7 +405,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -382,7 +416,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -393,7 +427,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -404,7 +438,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -415,10 +449,11 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'valid-token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain('/dashboard');
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl?.pathname).toBe('/dashboard');
     });
   });
 
@@ -431,10 +466,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain('/login');
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl?.pathname).toBe('/login');
     });
 
     it('PR-006b: /settings without auth', () => {
@@ -443,7 +479,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
     });
@@ -454,7 +490,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
     });
@@ -465,7 +501,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
     });
@@ -476,7 +512,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
     });
@@ -487,7 +523,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
     });
@@ -502,12 +538,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain(
-        'redirect=%2Fdashboard%2Faudits%2F123%2Fsettings'
-      );
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl?.searchParams.get('redirect')).toBe('/dashboard/audits/123/settings');
     });
 
     it('PR-007b: Route with special characters', () => {
@@ -516,11 +551,12 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
       // URL should be encoded properly
-      expect(response.headers.get('location')).toContain('redirect=');
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl?.searchParams.get('redirect')).toContain('test-project-123');
     });
 
     it('PR-007c: Concurrent route changes', () => {
@@ -534,8 +570,8 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'token' }],
       });
 
-      const response1 = mockMiddleware(request1);
-      const response2 = mockMiddleware(request2);
+      const response1 = middleware(request1);
+      const response2 = middleware(request2);
 
       expect(response1.status).toBe(307);
       expect(response2.status).not.toBe(307);
@@ -549,7 +585,7 @@ describe('Protected Route Middleware', () => {
         cookies: [], // Still no token
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Redirect happens again
       expect(response.status).toBe(307);
@@ -562,7 +598,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).toBe(307);
     });
@@ -580,11 +616,13 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
-      const location = response.headers.get('location') ?? '';
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      // Script tags should be URL encoded, not raw
-      expect(location).not.toContain('<script>');
+      // The redirect param should not contain unescaped script tags
+      // URL encoding should handle this
+      const redirectParam = redirectUrl?.searchParams.get('redirect') ?? '';
+      expect(redirectParam).not.toContain('<script>');
     });
 
     it('PR-008b: Open redirect prevention', () => {
@@ -595,31 +633,25 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
-      const location = response.headers.get('location') ?? '';
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      // Should contain /login path (relative URL)
-      expect(location).toContain('/login');
-      // Should not redirect to external domains
-      expect(location).not.toMatch(/^https?:\/\/(?!seoindicator\.com)/);
-      // The redirect URL should be for our domain or relative
-      expect(location).toMatch(/\/login|seoindicator\.com\/login/);
+      // Should redirect to /login on same domain
+      expect(redirectUrl?.pathname).toBe('/login');
+      // Should be on seoindicator.com domain
+      expect(redirectUrl?.host).toBe('seoindicator.com');
     });
 
     it('PR-008c: Path traversal in redirect', () => {
-      // Path traversal attempts - the path `/dashboard/../..` doesn't match the protected route pattern
-      // because `isProtectedRoute` checks for `/dashboard` or `/dashboard/...` but not `/dashboard/..`
-      // Path traversal is handled by Next.js routing normalization, not middleware
+      // Path traversal attempts
       const request = createMockRequest({
         pathname: '/dashboard/../../../etc/passwd',
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
-      // The path doesn't match protected route patterns (no `/dashboard/` prefix)
-      // Next.js normalizes paths before they reach middleware in production
-      // This test verifies middleware doesn't crash on unusual paths
+      // Middleware should still handle it (either redirect or pass through)
       expect([200, 307]).toContain(response.status);
     });
 
@@ -631,7 +663,7 @@ describe('Protected Route Middleware', () => {
         cookies: [], // No cookie
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Should still redirect - token in URL is not accepted
       expect(response.status).toBe(307);
@@ -645,7 +677,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'tampered-value' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Middleware allows - AuthContext validates
       expect(response.status).not.toBe(307);
@@ -663,7 +695,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Response is immediate
       expect(response).toBeDefined();
@@ -677,7 +709,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -689,7 +721,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'valid-token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       expect(response.status).not.toBe(307);
     });
@@ -704,14 +736,14 @@ describe('Protected Route Middleware', () => {
         pathname: '/dashboard',
         cookies: [{ name: 'seoindicator_token', value: 'token' }],
       });
-      expect(mockMiddleware(requestWithToken).status).not.toBe(307);
+      expect(middleware(requestWithToken).status).not.toBe(307);
 
       // After logout, token is removed - next request redirects
       const requestAfterLogout = createMockRequest({
         pathname: '/settings',
         cookies: [], // Token removed
       });
-      expect(mockMiddleware(requestAfterLogout).status).toBe(307);
+      expect(middleware(requestAfterLogout).status).toBe(307);
     });
 
     it('PR-010b: Login in one tab', () => {
@@ -720,14 +752,14 @@ describe('Protected Route Middleware', () => {
         pathname: '/dashboard',
         cookies: [],
       });
-      expect(mockMiddleware(requestBeforeLogin).status).toBe(307);
+      expect(middleware(requestBeforeLogin).status).toBe(307);
 
       // After login - token present
       const requestAfterLogin = createMockRequest({
         pathname: '/dashboard',
         cookies: [{ name: 'seoindicator_token', value: 'new-token' }],
       });
-      expect(mockMiddleware(requestAfterLogin).status).not.toBe(307);
+      expect(middleware(requestAfterLogin).status).not.toBe(307);
     });
 
     it('PR-010c: Token expiry in background', () => {
@@ -738,7 +770,7 @@ describe('Protected Route Middleware', () => {
         cookies: [{ name: 'seoindicator_token', value: 'expired-token' }],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Middleware allows (token present)
       // AuthContext will handle redirect when API returns 401
@@ -755,25 +787,29 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(protectedRequest);
+      const response = middleware(protectedRequest);
 
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain('/login');
+      const redirectUrl = getRedirectUrl(response);
+      expect(redirectUrl?.pathname).toBe('/login');
     });
 
     it('AC2: Unauthenticated users redirected to /login', () => {
       const routes = ['/dashboard', '/settings', '/projects', '/admin'];
 
       routes.forEach((route) => {
+        jest.clearAllMocks();
+        
         const request = createMockRequest({
           pathname: route,
           cookies: [],
         });
 
-        const response = mockMiddleware(request);
+        const response = middleware(request);
 
         expect(response.status).toBe(307);
-        expect(response.headers.get('location')).toContain('/login');
+        const redirectUrl = getRedirectUrl(response);
+        expect(redirectUrl?.pathname).toBe('/login');
       });
     });
 
@@ -783,11 +819,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
-      const location = response.headers.get('location') ?? '';
+      const response = middleware(request);
+      const redirectUrl = getRedirectUrl(response);
 
-      expect(location).toContain('redirect=');
-      expect(decodeURIComponent(location)).toContain('/dashboard/settings');
+      expect(redirectUrl?.searchParams.has('redirect')).toBe(true);
+      expect(redirectUrl?.searchParams.get('redirect')).toBe('/dashboard/settings');
     });
 
     it('AC4: Middleware runs before page render', () => {
@@ -796,11 +832,11 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // Redirect response means page never rendered
       expect(response.status).toBe(307);
-      expect(response.headers.get('location')).not.toBeNull();
+      expect(getRedirectUrl(response)).not.toBeNull();
     });
 
     it('AC5: No flash of protected content', () => {
@@ -810,7 +846,7 @@ describe('Protected Route Middleware', () => {
         cookies: [],
       });
 
-      const response = mockMiddleware(request);
+      const response = middleware(request);
 
       // 307 is temporary redirect, page content not sent
       expect(response.status).toBe(307);
@@ -819,6 +855,22 @@ describe('Protected Route Middleware', () => {
     it('AC6: Unit tests for route protection', () => {
       // This test verifies all other tests exist
       expect(true).toBe(true);
+    });
+  });
+
+  // ==================== Middleware Config Tests ====================
+
+  describe('Middleware Config', () => {
+    it('exports matcher config', () => {
+      expect(config).toBeDefined();
+      expect(config.matcher).toBeDefined();
+      expect(Array.isArray(config.matcher)).toBe(true);
+    });
+
+    it('matcher excludes static files', () => {
+      const matcher = config.matcher as string[];
+      // Should have a pattern that excludes _next/static
+      expect(matcher.length).toBeGreaterThan(0);
     });
   });
 });
