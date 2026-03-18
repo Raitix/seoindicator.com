@@ -1,7 +1,7 @@
 # TASK-37-4: Graceful Token Expiry Handling
 
 ## STATUS
-`To Test Prod`
+`Testing Prod`
 
 ## PRIORITY
 `Critical`

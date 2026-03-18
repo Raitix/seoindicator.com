@@ -12,8 +12,8 @@
 ## Specification
 SPEC-037
 
-## BLOCKED_BY
-TASK-37-1
+~~## BLOCKED_BY~~
+~~TASK-37-1~~ (Done - blocker resolved)
 
 ## Description
 Fix the dashboard page to handle authentication errors gracefully. Currently, when a user's session expires or token is invalid, the dashboard shows "Failed to load dashboard data" instead of redirecting to login.
