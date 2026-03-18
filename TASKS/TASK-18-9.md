@@ -1,6 +1,7 @@
 # TASK-18-9: URLChecker - URL Structure Indicator
 
-## STATUS`n`Tests Coverage In Progress`
+## STATUS
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `High`

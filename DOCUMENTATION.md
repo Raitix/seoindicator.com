@@ -554,6 +554,146 @@ export function shouldClearToken(error: unknown): boolean {
 - TASK-37-7: Indicators Button Fix (related to FEAT-037)
 
 ---
+## Post-Login Redirect Handling (TASK-37-11)
+
+### Feature Description
+Implementation of post-login redirect functionality for the Production Critical Fixes - Auth & Navigation feature (FEAT-037). Redirects users to their intended destination after successful authentication, supporting both URL parameter and localStorage-based redirect storage with security validation to prevent open redirect attacks.
+
+### Component Locations
+- **Login Page:** `frontend/app/login/page.tsx` - Redirect handling with URL param and localStorage support
+- **Auth Context:** `frontend/lib/contexts/AuthContext.tsx` - Redirect validation and sanitization utilities
+- **Tests:** `frontend/__tests__/app/login/redirect-handling.test.tsx`
+- **Test Documentation:** `TESTS/TEST-37-11.md`
+
+### Problem Solved
+
+| Issue | Before | After |
+|-------|--------|-------|
+| Redirect after login | Always went to /dashboard | Redirects to intended destination |
+| Protected route access | Users lost their place | Preserved destination via localStorage/URL param |
+| Security | No redirect validation | Validates against open redirect attacks |
+
+### Implementation Details
+
+**Redirect Priority:**
+1. URL parameter (`?redirect=/path`) - highest priority
+2. localStorage (`seoindicator_redirect`) - secondary
+3. Default fallback to `/dashboard`
+
+**Login Page Functions:**
+
+| Function | Purpose |
+|----------|---------|
+| `isValidRedirect(path)` | Validates redirect path security (must start with `/`, reject external URLs, dangerous protocols) |
+| `sanitizeRedirect(path)` | Strips HTML tags to prevent XSS |
+| `getRedirectDestination()` | Determines final redirect with priority logic |
+| `clearRedirectStorage()` | Clears localStorage after use |
+
+### Redirect Flow
+
+```
+User visits protected route (e.g., /settings)
+    │
+    ↓
+Middleware redirects to /login?redirect=/settings
+OR Application stores 'seoindicator_redirect' in localStorage
+    │
+    ↓
+User authenticates successfully
+    │
+    ↓
+Login page reads redirect destination:
+  - Priority 1: URL param (?redirect=/path)
+  - Priority 2: localStorage (seoindicator_redirect)
+  - Fallback: /dashboard
+    │
+    ↓
+Redirect to validated destination
+    │
+    ↓
+Clear seoindicator_redirect from localStorage
+```
+
+### Security Validation Rules
+
+**Valid Redirects:**
+| Path | Reason |
+|------|--------|
+| `/dashboard` | Internal path with leading slash |
+| `/settings` | Internal path |
+| `/projects/123` | Nested path |
+| `/dashboard/settings?tab=general` | Path with query params |
+
+**Invalid Redirects (blocked → fallback to /dashboard):**
+| Path | Reason |
+|------|--------|
+| `https://evil.com` | External URL |
+| `//evil.com` | Protocol-relative URL |
+| `javascript:alert('xss')` | JavaScript URL |
+| `data:text/html,...` | Data URL |
+| `dashboard` | Missing leading slash |
+| `/dashboard/../../../etc/passwd` | Path traversal attempt |
+
+### Acceptance Criteria Verification
+
+| AC | Description | Status |
+|----|-------------|--------|
+| AC1 | Redirect target stored before login redirect | ✅ Implemented (via TASK-37-10 middleware) |
+| AC2 | After login, redirect to stored destination | ✅ Implemented |
+| AC3 | Fall back to /dashboard if no destination | ✅ Implemented |
+| AC4 | Stored destination cleared after use | ✅ Implemented |
+| AC5 | Works with URL param storage | ✅ Implemented |
+| AC6 | Works with localStorage storage | ✅ Implemented |
+| AC7 | Unit tests for redirect handling | ✅ 52 tests passing |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| redirect-handling.test.tsx | 52 | ✅ ALL PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| RD-001 URL Parameter | 4 | URL param redirect handling |
+| RD-002 localStorage | 4 | localStorage-based redirect |
+| RD-003 Priority | 2 | URL param takes priority over localStorage |
+| RD-004 Fallback | 3 | Default to /dashboard when no redirect |
+| RD-005 Clear After Use | 3 | Storage cleanup after redirect |
+| RD-006 Security | 6 | Open redirect prevention |
+| RD-007 Edge Cases | 6 | Unicode, path traversal, null handling |
+| RD-008 Form Interaction | 3 | Login form with redirect |
+| RD-009 OAuth | 1 | OAuth redirect preservation |
+| RD-010 Acceptance Criteria | 7 | All ACs verified |
+| Utility Functions | 15 | Validation and sanitization functions |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-18 |
+| Commit | `81d9d6fb` |
+| Deployment Method | Vercel (auto-deploy on push to main) |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK |
+| Tests | 52/52 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-37-1 | Done ✅ | Token Validation in AuthContext |
+| TASK-37-10 | To Write Tests ✅ | Protected Route Middleware (stores redirect) |
+
+### Related Tasks
+
+- TASK-37-1: Token Validation in AuthContext
+- TASK-37-3: Dashboard Error Handling
+- TASK-37-7: Indicators Button Fix
+- TASK-37-10: Protected Route Middleware
+
+---
 ## Dashboard API Endpoint (TASK-1-6)
 
 ### Feature Description
@@ -63400,6 +63540,247 @@ This distinguishes enterprise tools from tools with published pricing.
 - TASK-32-12: Tier 2 Competitor Data (Mangools, Serpstat, SpyFu, SE Ranking)
 - TASK-32-14: Free Alternatives Data (GSC, GA, AnswerThePublic)
 - FEAT-032: Competitor Comparison Landing Pages
+
+---
+## Frontend Project List Page (TASK-34-8)
+
+### Feature Description
+Frontend page component for the AI Visibility Tracking feature (FEAT-034) that displays a list of all user's AI visibility tracking projects. Provides the main entry point for managing brand tracking projects with filtering, sorting, search, and project actions. Part of the Generative Engine Optimization (GEO) feature suite.
+
+### Component Locations
+- **Page Component:** `frontend/app/ai-visibility/page.tsx` - Server component with metadata
+- **Client Page:** `frontend/app/ai-visibility/page.client.tsx` - Client component with interactivity
+- **Components:**
+  - `frontend/components/ai-visibility/ProjectList.tsx` - Main list container with filtering/sorting
+  - `frontend/components/ai-visibility/ProjectCard.tsx` - Individual project card with actions
+  - `frontend/components/ai-visibility/EmptyProjectsState.tsx` - Empty state with CTA
+  - `frontend/components/ai-visibility/DeleteProjectModal.tsx` - Delete confirmation modal
+- **Hooks:** `frontend/lib/hooks/useAIVisibilityProjects.ts`
+- **Types:** `frontend/lib/types/ai-visibility-projects.ts`
+- **Tests:**
+  - `frontend/__tests__/app/ai-visibility/page.test.tsx` (35 tests)
+  - `frontend/__tests__/components/ai-visibility/ProjectList.test.tsx` (65 tests)
+  - `frontend/__tests__/components/ai-visibility/ProjectCard.test.tsx` (50 tests)
+  - `frontend/__tests__/components/ai-visibility/EmptyProjectsState.test.tsx` (25 tests)
+  - `frontend/__tests__/components/ai-visibility/DeleteProjectModal.test.tsx` (30 tests)
+  - `frontend/__tests__/lib/api/ai-visibility-projects.test.tsx` (45 tests)
+- **Test Documentation:** `TESTS/TASK-34-8.md`
+
+### Route
+- **URL:** `/ai-visibility`
+- **File:** `frontend/app/ai-visibility/page.tsx` (Next.js App Router)
+
+### Core Functionalities
+
+| Feature | Description |
+|---------|-------------|
+| Project List | Display all user's AI visibility projects |
+| Project Cards | Card for each project with brand_name, status, mention_rate |
+| Create Project | Prominent "Create Project" button |
+| View Dashboard | Link to project detail page |
+| Run Query Now | Trigger immediate query (respects rate limit) |
+| Settings | Link to edit project |
+| Delete | Delete with confirmation modal |
+| Filter by Status | Filter active/inactive projects |
+| Sort Options | Sort by created_at, last_queried_at, brand_name |
+| Search | Search by brand name |
+| Empty State | Call-to-action when no projects exist |
+| Loading States | Skeleton cards during data fetch |
+| Error Handling | Error message with retry button |
+
+### Component Props
+
+**ProjectList:**
+```typescript
+interface ProjectListProps {
+  className?: string;
+  onCreateProject?: () => void;
+  onViewDashboard?: (projectId: number) => void;
+  onEditProject?: (projectId: number) => void;
+}
+```
+
+**ProjectCard:**
+```typescript
+interface ProjectCardProps {
+  project: Project;
+  onViewDashboard?: () => void;
+  onRunQuery?: () => void;
+  onEditProject?: () => void;
+  onDelete?: () => void;
+  isLoading?: boolean;
+  className?: string;
+}
+```
+
+**EmptyProjectsState:**
+```typescript
+interface EmptyProjectsStateProps {
+  onCreateProject?: () => void;
+  className?: string;
+}
+```
+
+**DeleteProjectModal:**
+```typescript
+interface DeleteProjectModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  projectName: string;
+  isLoading?: boolean;
+}
+```
+
+### Project Card Display
+
+| Field | Type | Display |
+|-------|------|---------|
+| `brand_name` | string | Card title |
+| `is_active` | boolean | Status badge (green/gray) |
+| `last_queried_at` | timestamp | Relative time (e.g., "2 hours ago") |
+| `mention_rate` | number | Percentage (e.g., "45%") |
+
+### Filtering Options
+
+| Filter | Values | Description |
+|--------|--------|-------------|
+| Status | `all`, `active`, `inactive` | Filter by project status |
+
+### Sorting Options
+
+| Sort | Direction | Description |
+|------|-----------|-------------|
+| `created_at` | Descending | Newest first (default) |
+| `last_queried_at` | Descending | Most recently queried first |
+| `brand_name` | Ascending | Alphabetical A-Z |
+
+### Responsive Design
+
+| Breakpoint | Columns | Description |
+|------------|---------|-------------|
+| Mobile | 1 | Single column cards |
+| Tablet (md) | 2 | Two column grid |
+| Desktop (lg+) | 3 | Three column grid |
+
+### API Integration
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/ai-visibility/projects` | GET | Fetch paginated project list |
+| `/api/v1/ai-visibility/projects/{id}` | DELETE | Delete project |
+
+**API Response Shape:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "brand_name": "Acme Corp",
+      "is_active": true,
+      "last_queried_at": "2026-03-07T18:00:00Z",
+      "mention_rate": 0.45
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total": 5,
+    "per_page": 10
+  }
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| Page Tests | 35 | ✅ PASS |
+| ProjectList Tests | 65 | ✅ PASS |
+| ProjectCard Tests | 50 | ✅ PASS |
+| EmptyProjectsState Tests | 25 | ✅ PASS |
+| DeleteProjectModal Tests | 30 | ✅ PASS |
+| API Hooks Tests | 45 | ✅ PASS |
+| **Total** | **250** | **✅ ALL PASS** |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| PAGE-RENDER | 5 | Page mounts, renders header, container structure |
+| PAGE-LOADING | 4 | Loading skeleton during data fetch |
+| PAGE-ERROR | 5 | Error state with retry button |
+| PAGE-AUTH | 4 | Authentication requirement, redirect |
+| PAGE-SEO | 4 | Metadata, title, description |
+| PAGE-NAV | 3 | Create project button navigation |
+| PL-RENDER | 5 | Component mounts, renders projects |
+| PL-CARDS | 5 | Project cards displayed correctly |
+| PL-FILTER-STATUS | 8 | Filter by active/inactive status |
+| PL-FILTER-SEARCH | 8 | Search by brand name |
+| PL-SORT | 10 | Sort by created_at, last_queried_at, brand_name |
+| PL-PAGINATION | 10 | Pagination controls, 10 per page |
+| PL-LOADING | 5 | Skeleton cards during fetch |
+| PL-ERROR | 5 | Error message with retry |
+| PL-EMPTY | 4 | Empty state display |
+| PC-RENDER | 5 | Card mounts, displays brand_name, mention_rate |
+| PC-ACTIONS | 10 | View Dashboard, Run Query, Settings, Delete buttons |
+| PC-STATUS | 5 | Active/inactive status badge |
+| PC-TIME | 5 | last_queried_at display (relative time) |
+| PC-RATE | 5 | Mention rate display (percentage) |
+| PC-LOADING | 5 | Loading spinner on action buttons |
+| PC-CONFIRM | 5 | Delete triggers confirmation modal |
+| PC-A11Y | 5 | Accessibility attributes |
+| ES-RENDER | 5 | Component mounts, displays illustration |
+| ES-CTA | 5 | "Create Project" button prominent |
+| ES-TEXT | 5 | Helpful messaging |
+| DM-RENDER | 3 | Modal mounts when open |
+| DM-CONFIRM | 5 | Confirm button triggers delete |
+| DM-CANCEL | 5 | Cancel button closes modal |
+| DM-LOADING | 5 | Loading state during deletion |
+| DM-ERROR | 5 | Error handling with retry |
+| DM-A11Y | 5 | Accessibility (focus trap, aria) |
+| API-FETCH | 8 | useProjects hook data fetching |
+| API-PAGINATION | 5 | Pagination parameters |
+| API-FILTER | 5 | Filter parameters |
+| API-SORT | 5 | Sort parameters |
+| API-MUTATIONS | 10 | useDeleteProject, useRunQuery hooks |
+| API-ERROR | 5 | Error handling |
+| API-CACHE | 5 | Cache invalidation |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Authentication | Requires valid Sanctum token |
+| Authorization | User can only see their own projects |
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+| CSRF | API uses token-based auth (not cookies) |
+| Delete Confirmation | Modal prevents accidental deletion |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-07 |
+| Commit | `832706c6` |
+| Deployment Method | GitHub Actions auto-deploy |
+| Health Check | ✅ 200 OK |
+| Page URL | `/ai-visibility` |
+| Tests | 250/250 passing |
+| Status | Complete |
+
+### Dependencies
+
+| Dependency | Status | Purpose |
+|------------|--------|---------|
+| TASK-34-6 (API Endpoints) | Done ✅ | Project CRUD API |
+| TASK-34-9 (Create Form) | Done ✅ | Create project navigation |
+| TanStack Query | ✅ Installed | Data fetching and caching |
+| shadcn/ui | ✅ Installed | UI components (Card, Button, Modal) |
+
+### Related Tasks
+- TASK-34-6: Project CRUD API Endpoints (backend API)
+- TASK-34-9: Create Project Form (create new project)
+- TASK-34-10: Dashboard Page (project detail)
+- FEAT-034: AI Visibility Tracking (GEO)
 
 ---
 ## AI Visibility Create Project Form (TASK-34-9)
