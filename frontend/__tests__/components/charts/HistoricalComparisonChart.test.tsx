@@ -613,7 +613,7 @@ describe('HistoricalComparisonChart', () => {
 
       render(<HistoricalComparisonChart keywords={mockKeywords} competitors={mockCompetitors} />);
 
-      expect(screen.getByText(/loading/i) || document.querySelector('.animate-spin')).toBeTruthy();
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
     it('shows empty state when no historical data', () => {
@@ -846,6 +846,12 @@ describe('HistoricalComparisonChart', () => {
     });
 
     it('handles empty keywords array', () => {
+      mockUseComparisonHistory.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: null,
+      });
+
       render(<HistoricalComparisonChart keywords={[]} competitors={mockCompetitors} />);
 
       expect(screen.getByText(/Select a keyword/i)).toBeInTheDocument();

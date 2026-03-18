@@ -404,30 +404,28 @@ const HistoricalComparisonChart: React.FC<HistoricalComparisonChartProps> = ({
   // Get selected keyword name
   const selectedKeyword = keywords.find((k) => k.id === selectedKeywordId);
 
-  // Build line definitions for competitors
+  // Build line definitions for competitors (keep all in DOM, use hide prop for visibility)
   const competitorLines = useMemo(() => {
-    return competitors
-      .filter((c) => visibleCompetitors[c.id] !== false)
-      .map((competitor, index) => {
-        const dataKey = `competitor_${competitor.id}`;
-        const isVisible = visibleSeries[dataKey] !== false;
-        const color = COMPETITOR_COLORS[index % COMPETITOR_COLORS.length];
+    return competitors.map((competitor, index) => {
+      const dataKey = `competitor_${competitor.id}`;
+      const isVisible = visibleSeries[dataKey] !== false && visibleCompetitors[competitor.id] !== false;
+      const color = COMPETITOR_COLORS[index % COMPETITOR_COLORS.length];
 
-        return (
-          <Line
-            key={competitor.id}
-            type="monotone"
-            dataKey={dataKey}
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            connectNulls={false}
-            activeDot={{ r: 4 }}
-            hide={!isVisible}
-            name={competitor.displayName || competitor.domain}
-          />
-        );
-      });
+      return (
+        <Line
+          key={competitor.id}
+          type="monotone"
+          dataKey={dataKey}
+          stroke={color}
+          strokeWidth={2}
+          dot={false}
+          connectNulls={false}
+          activeDot={{ r: 4 }}
+          hide={!isVisible}
+          name={competitor.displayName || competitor.domain}
+        />
+      );
+    });
   }, [competitors, visibleCompetitors, visibleSeries]);
 
   return (
@@ -462,8 +460,9 @@ const HistoricalComparisonChart: React.FC<HistoricalComparisonChartProps> = ({
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-16" role="status" aria-label="Loading chart data">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <span className="sr-only">Loading...</span>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
