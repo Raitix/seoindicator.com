@@ -1,5 +1,8 @@
 # Prioritized Task Queue for SPEC-SEC-2026-02-21
 
+## STATUS
+`Done`
+
 ### Task 1: Deployment Endpoint Rate Limiting
 - **Task ID:** SPEC-SEC-2026-02-21-3
 - **Priority:** High

@@ -1,6 +1,7 @@
 # TASK-23-7: Domain Trust Scoring Service
 
-## STATUS`n`To Develop`
+## STATUS
+`To Develop`
 
 ## PRIORITY
 `High`

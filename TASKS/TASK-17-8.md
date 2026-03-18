@@ -1,6 +1,7 @@
 # TASK-17-8: Step 3 - Ranking Preview Component
 
-## STATUS`n`To Write Tests`
+## STATUS
+`To Write Tests`
 
 ## PRIORITY
 `Medium`

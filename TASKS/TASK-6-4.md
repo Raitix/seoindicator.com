@@ -1,6 +1,7 @@
 # TASK-6-4: API Key Management Endpoints
 
-## STATUS`n`To Develop`
+## STATUS
+`To Develop`
 
 ## Priority
 `High`
