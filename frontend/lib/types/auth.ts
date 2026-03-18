@@ -87,6 +87,7 @@ export enum AuthErrorCode {
   PASSWORD_MISMATCH = "PASSWORD_MISMATCH",
   WEAK_PASSWORD = "WEAK_PASSWORD",
   INVALID_EMAIL = "INVALID_EMAIL",
+  INVALID_TOKEN = "INVALID_TOKEN",
   NETWORK_ERROR = "NETWORK_ERROR",
   SERVER_ERROR = "SERVER_ERROR",
   UNAUTHORIZED = "UNAUTHORIZED",
@@ -131,6 +132,35 @@ export class AuthError extends Error {
 
     return new AuthError(message, code, undefined, response.errors);
   }
+}
+
+/**
+ * Check if an error is an authentication error that should clear stored credentials.
+ * These errors indicate the token is invalid/expired and should not be preserved.
+ */
+export function isAuthError(error: unknown): error is AuthError {
+  return error instanceof AuthError;
+}
+
+/**
+ * Check if an error indicates an invalid/expired token that should be cleared.
+ * Returns true for UNAUTHORIZED and TOKEN_EXPIRED errors.
+ * Returns false for network errors, server errors, and other non-auth errors.
+ */
+export function shouldClearToken(error: unknown): boolean {
+  if (!isAuthError(error)) {
+    // Non-AuthError errors (network errors, etc.) should NOT clear token
+    return false;
+  }
+
+  // Only clear token for these specific auth errors
+  const clearableCodes: AuthErrorCode[] = [
+    AuthErrorCode.UNAUTHORIZED,
+    AuthErrorCode.TOKEN_EXPIRED,
+    AuthErrorCode.INVALID_TOKEN,
+  ];
+
+  return clearableCodes.includes(error.code);
 }
 
 // ==================== Token Types ====================

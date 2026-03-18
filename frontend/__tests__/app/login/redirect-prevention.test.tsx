@@ -223,22 +223,16 @@ describe("Login Page - Redirect Loop Prevention", () => {
         createMockAuthContext({
           isAuthenticated: true,
           user: null,
+          isLoading: false,
         }) as any
       );
 
       render(<LoginPage />);
 
-      // EXPECTED BEHAVIOR (after fix):
-      // Should show login form, not redirect, because there's no valid user
-      // expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-      // expect(mockPush).not.toHaveBeenCalled();
-      
-      // CURRENT BEHAVIOR (bug - redirects without checking user):
-      // This documents the bug that needs to be fixed in TASK-37-5
-      // The component currently redirects if isAuthenticated is true, ignoring user
-      expect(mockPush).toHaveBeenCalledWith("/dashboard");
-      
-      // After fix, this test should be updated to check login form is shown
+      // FIXED BEHAVIOR: Should show login form, not redirect, because there's no valid user
+      // The fix now checks both isAuthenticated AND user before redirecting
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(mockPush).not.toHaveBeenCalled();
     });
 
     it("RLP-002-C: does not redirect when API returns 401 for stored token", () => {

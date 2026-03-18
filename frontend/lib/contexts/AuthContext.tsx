@@ -9,7 +9,7 @@ import type {
   RegisterData,
   AuthError as AuthErrorType,
 } from "@/lib/types/auth";
-import { AuthError, AuthErrorCode } from "@/lib/types/auth";
+import { AuthError, AuthErrorCode, shouldClearToken } from "@/lib/types/auth";
 import {
   fetchUser,
   login as apiLogin,
@@ -29,6 +29,12 @@ import {
   clearAuthStorage,
   broadcastAuthChange,
 } from "@/lib/api/auth";
+import {
+  setupUnauthorizedInterceptor,
+  handleApiError,
+  hasSessionExpiredMessage,
+  clearSessionExpiredMessage,
+} from "@/lib/api/token-expiry-handler";
 
 // ==================== Context Creation ====================
 
@@ -78,62 +84,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [publicRoutes]
   );
 
-  const getFallbackUser = React.useCallback((candidate: User | null = null) => {
-    const storedToken = getStoredAuthToken();
-    const storedUser = getStoredUserData();
-
-    if (!storedToken) {
-      return null;
-    }
-
-    return candidate ?? storedUser;
-  }, []);
-
-  const preserveFallbackAuth = React.useCallback(
-    (candidate: User | null = null) => {
-      const fallbackUser = getFallbackUser(candidate);
-
-      if (!fallbackUser) {
-        return false;
-      }
-
-      setUser(fallbackUser);
-      storeUserData(fallbackUser);
-      return true;
-    },
-    [getFallbackUser]
-  );
-
   // ==================== Initialize User on Mount ====================
 
   React.useEffect(() => {
     if (isInitialized) return;
 
+    // Set up 401 interceptor for automatic token expiry handling
+    setupUnauthorizedInterceptor();
+
     const initializeAuth = async () => {
       const storedUser = getStoredUserData();
+      const storedToken = getStoredAuthToken();
 
       try {
-        // Try to get stored user first for quick display
-        if (storedUser) {
-          setUser(storedUser);
+        // If there's no stored token, skip API call and set user to null
+        if (!storedToken) {
+          setUser(null);
+          clearAuthStorage();
+          return;
         }
 
-        // Fetch fresh user data from API
+        // Fetch fresh user data from API to verify token validity
+        // This is the key fix: we MUST verify token with API before setting user
         const freshUser = await fetchUser();
 
         if (freshUser) {
+          // API confirmed token is valid - set user and store data
           setUser(freshUser);
           storeUserData(freshUser);
-        } else if (!preserveFallbackAuth(storedUser)) {
+        } else {
+          // API returned null (no valid session) - clear storage
           setUser(null);
           clearAuthStorage();
         }
       } catch (err) {
         console.error("Auth initialization error:", err);
 
-        if (!preserveFallbackAuth(storedUser)) {
+        // Check if this is an auth error (invalid/expired token)
+        // that should clear stored credentials
+        if (shouldClearToken(err)) {
+          // Token is invalid/expired - clear everything and show login
           setUser(null);
           clearAuthStorage();
+        } else {
+          // Network error, server error, or other non-auth error
+          // Preserve the stored user for offline resilience
+          // but don't set isAuthenticated if we don't have a stored user
+          if (storedUser) {
+            setUser(storedUser);
+          } else {
+            setUser(null);
+            clearAuthStorage();
+          }
         }
       } finally {
         setIsLoading(false);
@@ -142,7 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     initializeAuth();
-  }, [isInitialized, preserveFallbackAuth]);
+  }, [isInitialized]);
 
   // ==================== Handle Redirects ====================
 
@@ -183,22 +185,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(null);
             clearAuthStorage();
           } else if (event.type === "login") {
-            preserveFallbackAuth();
-
-            // Refresh user data when available, but keep the persisted SPA fallback
-            // alive when auth/user cannot hydrate the browser session yet.
+            // Fetch user data from API to verify token
             fetchUser()
               .then((freshUser) => {
                 if (freshUser) {
                   setUser(freshUser);
                   storeUserData(freshUser);
                 } else {
-                  preserveFallbackAuth();
+                  // API returned null - clear storage
+                  setUser(null);
+                  clearAuthStorage();
                 }
               })
               .catch((err) => {
-                if (!preserveFallbackAuth()) {
-                  console.error(err);
+                // On auth error, clear storage; on network error, try fallback
+                if (shouldClearToken(err)) {
+                  setUser(null);
+                  clearAuthStorage();
+                } else {
+                  // Network error - try to use stored user as fallback
+                  const storedUser = getStoredUserData();
+                  if (storedUser) {
+                    setUser(storedUser);
+                  }
                 }
               });
           }
@@ -210,12 +219,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [preserveFallbackAuth]);
+  }, []);
 
   // ==================== Clear Error on Navigation ====================
 
   React.useEffect(() => {
     setError(null);
+  }, [pathname]);
+
+  // ==================== Handle Session Expired Message ====================
+
+  React.useEffect(() => {
+    // Show session expired message if present in URL
+    if (pathname === "/login" && hasSessionExpiredMessage()) {
+      setError({
+        message: "Your session has expired. Please log in again.",
+        code: "SESSION_EXPIRED" as any,
+      } as any);
+      // Clear the message from URL
+      clearSessionExpiredMessage();
+    }
   }, [pathname]);
 
   // ==================== Login ====================
@@ -409,16 +432,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (freshUser) {
         setUser(freshUser);
         storeUserData(freshUser);
-      } else if (!preserveFallbackAuth(user)) {
+      } else {
+        // API returned null - clear storage
         setUser(null);
         clearAuthStorage();
       }
     } catch (err) {
       console.error("Failed to refresh user:", err);
+      
+      // On auth error, clear storage; on network error, preserve user
+      if (shouldClearToken(err)) {
+        setUser(null);
+        clearAuthStorage();
+      }
+      // For network errors, keep the current user
     } finally {
       setIsLoading(false);
     }
-  }, [preserveFallbackAuth, user]);
+  }, []);
 
   // ==================== Context Value ====================
 

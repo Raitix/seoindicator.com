@@ -1,7 +1,7 @@
 # SPEC-003-8: Frontend - Historical Comparison Charts
 
 ## STATUS
-`To Document`
+`Done`
 
 ## PRIORITY
 `Medium`
@@ -203,3 +203,25 @@ _Agent communication log_
 
 ### [2026-02-19 23:24] Agent: SpecSystemAnalyst
 Created task for historical comparison charts. Enhances dashboard with visual trend analysis. Can be developed in parallel with comparison dashboard.
+
+### [2026-03-18 11:58] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+**Documentation Added:**
+- Added comprehensive documentation to `DOCUMENTATION.md` (new section at end of file)
+- Component: `HistoricalComparisonChart.tsx`
+- API Hook: `useComparisonHistory` from `comparison-history.ts`
+- Tests: 52 tests passing
+
+**Features Documented:**
+- Multi-line chart with user/competitor positions over time
+- Interactive legend with toggle functionality
+- Date range selector (7d/30d/90d)
+- Keyword selector dropdown
+- Competitor filter checkboxes
+- Trend indicator (improved/dropped/no change)
+- Loading, error, and empty states
+- Accessibility features (ARIA labels, keyboard navigation)
+
+**Status:** ✅ Done
+**All TASK-3-* tasks are now complete** → SPEC-3 and FEAT-3 can be marked Done
