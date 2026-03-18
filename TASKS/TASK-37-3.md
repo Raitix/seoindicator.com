@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`Blocked`
+`To Write Tests`
 
 ## PRIORITY
 `High`
@@ -743,3 +743,27 @@ if (error) {
 **Unblocks when:** TASK-37-1 reaches `To Test Locally` or later status
 
 **No Completion Marker:** Task is blocked - status corrected from incorrect display, no actual state change from blocked
+
+### ProjectManager Assessment (2026-03-18 13:13 GMT+2)
+**STATUS UNBLOCKED:** `To Prioritize` → `To Write Tests` ✅
+
+**Dependency Resolution:**
+- TASK-37-1: `Done` ✅ - Token validation fix is COMPLETE
+- Dependency satisfied - TASK-37-3 can now proceed!
+
+**Priority:** HIGH (confirmed) - Authentication UX is critical for user experience
+**Risk:** MEDIUM (confirmed) - Frontend-only changes, standard error handling patterns
+
+**Implementation Context:**
+- TASK-37-1 implemented token validation in AuthContext.tsx
+- This task adds 401 error handling in dashboard page
+- Files are different (AuthContext.tsx vs dashboard/page.tsx) - no merge conflicts
+- Token validation is now working - dashboard error handling complements it
+
+**Technical Files:**
+- `frontend/app/dashboard/page.tsx` - Add 401 detection and redirect to login
+- `frontend/lib/contexts/AuthContext.tsx` - Already fixed by TASK-37-1
+
+**Effort:** Small (1-2 hours) - straightforward error handling logic
+
+**Handoff:** PreTester - Design tests for dashboard error handling scenarios
