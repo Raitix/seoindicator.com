@@ -264,6 +264,155 @@ The homepage has its own inline header that also needed the fix:
 - TASK-37-6: Nav Hover States
 
 ---
+## Token Validation in AuthContext (TASK-37-1)
+
+### Feature Description
+Fix for AuthContext to validate tokens with the API before considering a user authenticated. Previously, the presence of any token in localStorage caused the app to treat the user as authenticated, leading to redirect loops and error pages. Part of the Production Critical Fixes - Auth & Navigation feature (FEAT-037).
+
+### Component Locations
+- **AuthContext:** `frontend/lib/contexts/AuthContext.tsx`
+- **Auth Types:** `frontend/lib/types/auth.ts`
+- **Tests:** `frontend/__tests__/lib/contexts/AuthContext.token-validation.test.tsx`
+
+### Problem Solved
+
+| Issue | Before | After |
+|-------|--------|-------|
+| Token validation | Token presence only | API verification required |
+| Expired token handling | Redirect to dashboard → error | Clear storage → show login |
+| Loading state | No verification loading | `isLoading` during API check |
+| `INVALID_TOKEN` error | Not recognized | Added to `shouldClearToken()` |
+
+### Implementation Details
+
+**AuthContext.tsx `initializeAuth` function:**
+```typescript
+const initializeAuth = async () => {
+  const storedToken = getStoredAuthToken();
+
+  if (!storedToken) {
+    setUser(null);
+    clearAuthStorage();
+    return;
+  }
+
+  // KEY FIX: Verify token with API before setting user
+  const freshUser = await fetchUser();
+
+  if (freshUser) {
+    setUser(freshUser);
+    storeUserData(freshUser);
+  } else {
+    setUser(null);
+    clearAuthStorage();
+  }
+};
+```
+
+**auth.ts `shouldClearToken` function:**
+```typescript
+export function shouldClearToken(error: unknown): boolean {
+  if (!isAuthError(error)) {
+    return false; // Network errors don't clear token
+  }
+
+  const clearableCodes: AuthErrorCode[] = [
+    AuthErrorCode.UNAUTHORIZED,
+    AuthErrorCode.TOKEN_EXPIRED,
+    AuthErrorCode.INVALID_TOKEN,  // Added in this fix
+  ];
+
+  return clearableCodes.includes(error.code);
+}
+```
+
+### Technical Changes
+
+| File | Change |
+|------|--------|
+| `frontend/lib/types/auth.ts` | Added `INVALID_TOKEN` to `AuthErrorCode` enum |
+| `frontend/lib/types/auth.ts` | Added `INVALID_TOKEN` to `shouldClearToken()` clearable codes |
+| `frontend/lib/contexts/AuthContext.tsx` | Token validation via API on initialization |
+
+### Error Code Handling
+
+| Error Code | Action | Reason |
+|------------|--------|--------|
+| `UNAUTHORIZED` | Clear storage | Token invalid/expired |
+| `TOKEN_EXPIRED` | Clear storage | Token expired |
+| `INVALID_TOKEN` | Clear storage | Token format invalid |
+| `NETWORK_ERROR` | Preserve storage | Temporary connectivity issue |
+| `SERVER_ERROR` | Preserve storage | Server-side issue |
+
+### Acceptance Criteria Verification
+
+| Criteria | Status |
+|----------|--------|
+| Token validity verified with API before setting authenticated state | ✅ PASS |
+| Expired tokens are cleared from localStorage | ✅ PASS |
+| Users with expired tokens see login page, not dashboard error | ✅ PASS |
+| Loading state shown while verifying token | ✅ PASS |
+| No redirect to dashboard for invalid tokens | ✅ PASS |
+| Unit tests for token validation scenarios | ✅ PASS (42 tests) |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| AuthContext.token-validation.test.tsx | 42 | ✅ ALL PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| TV-001 | 4 | Token Validation on Initialization |
+| TV-002 | 4 | Expired Token Handling |
+| TV-003 | 4 | Loading State During Verification |
+| TV-004 | 4 | Redirect Prevention for Invalid Tokens |
+| TV-005 | 3 | Network Error Handling |
+| TV-006 | 5 | Storage Clearing Behavior |
+| TV-007 | 5 | Edge Cases |
+| TV-008 | 3 | Successful Authentication Flow |
+| TV-009 | 6 | Acceptance Criteria Verification |
+| TV-010 | 4 | Integration Scenarios |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-18 |
+| Deployment ID | `20260318T083445Z-f232b46f` |
+| Commit | `438e15fef298a2cd1d73271fea3d1bc7f6218b4a` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-18 12:10 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Homepage smoke | 200 OK | 200 OK | ✅ PASS |
+| Login page smoke | 200 OK | 200 OK | ✅ PASS |
+| Dashboard route | 200 OK (client auth) | 200 OK | ✅ PASS |
+| Auth API (unauthenticated) | 401 | 401 | ✅ PASS |
+| Invalid token handling | 401 | 401 | ✅ PASS |
+| XSS protection | Blocked | Blocked | ✅ PASS |
+| Path traversal protection | Blocked | Blocked | ✅ PASS |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Token Validation | API call to `/api/v1/auth/user` before trusting stored token |
+| Error Classification | `shouldClearToken()` distinguishes auth errors from network errors |
+| Offline Resilience | Network errors preserve stored user for reconnection |
+| XSS Prevention | No user input directly rendered in auth context |
+
+### Related Tasks
+
+- TASK-37-2: Header Navigation (related to FEAT-037)
+- TASK-37-7: Indicators Button Fix (related to FEAT-037)
+
+---
 ## Dashboard API Endpoint (TASK-1-6)
 
 ### Feature Description
@@ -4208,6 +4357,175 @@ Next.js API route for the Public SEO Audit Reports & Embeddable Score Widget fea
 - TASK-33-6: BadgeService (SVG generation)
 - TASK-33-14: Public Audit Page Route
 - TASK-33-16: Badge.js Embed Script
+
+---
+## PublicAudit Model (TASK-33-4)
+
+### Feature Description
+Core model for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033) that handles public audit data retrieval, hash generation, and visibility management. This is the foundation model enabling users to share SEO audit results publicly via unique URLs.
+
+### Component Locations
+- **Model:** `backend/app/Models/PublicAudit.php`
+- **Related Model:** `backend/app/Models/Audit.php` (contains `publicAudit` relationship)
+- **Migration:** `backend/database/migrations/xxxx_create_public_audits_table.php`
+- **Factory:** `backend/database/factories/PublicAuditFactory.php`
+- **Tests:** `backend/tests/Unit/Models/PublicAuditTest.php`
+- **Test Documentation:** `TESTS/TEST-33-4.md`
+
+### Database Schema
+
+**public_audits table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT | Primary key |
+| `audit_id` | BIGINT | Foreign key to audits |
+| `public_hash` | VARCHAR(32) | Unique 32-char alphanumeric hash |
+| `visibility` | ENUM | 'private' or 'public' |
+| `public_hash_created_at` | TIMESTAMP | When hash was generated |
+| `created_at` | TIMESTAMP | Record creation time |
+| `updated_at` | TIMESTAMP | Record update time |
+
+### Model Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `generateHash()` | string | Creates 32-char alphanumeric cryptographic random string |
+| `publish()` | void | Sets visibility='public', generates hash, sets timestamp |
+| `unpublish()` | void | Sets visibility='private', clears hash |
+| `isPublic()` | bool | Checks if visibility is 'public' |
+| `findByHash(string $hash)` | ?PublicAudit | Retrieves public audit by hash or null |
+
+### Model Relationships
+
+| Method | Type | Related Model |
+|--------|------|---------------|
+| `audit()` | BelongsTo | `Audit` |
+
+### Query Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `scopePublic($query)` | Filter only public audits |
+| `scopePrivate($query)` | Filter only private audits |
+| `scopeWithHash($query)` | Filter audits with hash |
+
+### Hash Generation
+
+**Characteristics:**
+- 32 characters alphanumeric (a-z, A-Z, 0-9)
+- Cryptographically random via `Str::random(32)`
+- NOT derived from audit ID (prevents enumeration)
+- Collision detection with automatic regeneration
+
+**Uniqueness Guarantee:**
+```php
+public function generateHash(): string
+{
+    do {
+        $hash = Str::random(32);
+    } while (self::where('public_hash', $hash)->exists());
+    
+    return $hash;
+}
+```
+
+### Publish/Unpublish Flow
+
+**Publish:**
+```php
+DB::transaction(function () use ($publicAudit) {
+    $publicAudit->public_hash = $publicAudit->generateHash();
+    $publicAudit->visibility = 'public';
+    $publicAudit->public_hash_created_at = now();
+    $publicAudit->save();
+});
+```
+
+**Unpublish:**
+```php
+$publicAudit->update([
+    'visibility' => 'private',
+    'public_hash' => null,
+    'public_hash_created_at' => null,
+]);
+```
+
+### Factory States
+
+| State | Description |
+|-------|-------------|
+| `published()` | Public audit with hash |
+| `unpublished()` | Private audit |
+| `withHash($hash)` | Custom hash |
+| `forAudit($audit)` | Link to specific audit |
+| `publishedAt($date)` | Time-based testing |
+| `publishedDaysAgo($days)` | Aging tests |
+| `recentlyPublished()` | Fresh public audit |
+| `oldHash()` | Long-published audit |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Hash Randomness | `Str::random(32)` - cryptographically secure |
+| No ID Enumeration | Hash NOT derived from audit ID |
+| Collision Prevention | Loop checks for existing hash |
+| Transaction Safety | `publish()` wrapped in database transaction |
+| SQL Injection | Eloquent ORM with parameterized queries |
+
+### Accessor Methods
+
+| Accessor | Description |
+|----------|-------------|
+| `public_url` | Returns full public URL: `https://seoindicator.com/audit/?h={hash}` |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| PublicAuditTest | 67 | 126 | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| MI: Model Instantiation | 5 | Table, fillable, defaults |
+| RE: Relationships | 3 | BelongsTo Audit, cascade delete |
+| GH: generateHash() | 6 | 32-char, alphanumeric, unique, crypto |
+| PB: publish() | 6 | Visibility, hash, timestamp, persistence |
+| UP: unpublish() | 5 | Visibility, hash clearing, persistence |
+| IP: isPublic() | 4 | Visibility check, null handling |
+| FH: findByHash() | 7 | Retrieval, null cases, case sensitivity |
+| UN: Uniqueness | 3 | Collision detection, unique constraint |
+| TR: Transaction Safety | 3 | Transaction wrap, rollback, concurrent |
+| SC: Security | 4 | Predictability, SQL injection, XSS, private access |
+| EC: Edge Cases | 8 | Double publish/unpublish, rapid cycles, unicode |
+| SQ: Model Scopes | 3 | public(), private(), withHash() |
+| ACC: Accessors | 2 | public_url accessor |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-06 |
+| Commit | `af932530` |
+| Production URL | https://seoindicator.com |
+| Health Check | ✅ 200 OK |
+| Tests | 67/67 passing (126 assertions) |
+| Status | Complete |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-1 | Done ✅ | Visibility columns in audits table |
+| TASK-33-2 | Done ✅ | public_audit_views table |
+| TASK-33-3 | Done ✅ | badge_impressions table |
+
+### Related Tasks
+
+- TASK-33-5: PublicAuditController (uses this model)
+- TASK-33-6: BadgeService (uses hash for badge generation)
+- TASK-33-14: Public Audit Page Route (displays public audits)
 
 ---
 ## Current Deployment Baseline (2026-03-10)
