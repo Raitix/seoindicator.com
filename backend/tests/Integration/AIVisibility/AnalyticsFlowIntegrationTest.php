@@ -345,6 +345,9 @@ class AnalyticsFlowIntegrationTest extends TestCase
     /** @test FLOW-012: Query flow handles special characters in brand name */
     public function test_query_flow_handles_special_characters(): void
     {
+        // Clear cache to ensure fresh AI response
+        Cache::flush();
+
         // Create project with special characters
         $specialProject = AIVisibilityProject::factory()->create([
             'user_id' => $this->user->id,
@@ -352,15 +355,15 @@ class AnalyticsFlowIntegrationTest extends TestCase
             'keywords' => ['c++ tools'],
         ]);
 
-        Http::fake([
-            'openrouter.ai/*' => Http::response([
-                'choices' => [[
-                    'message' => [
-                        'content' => 'C++ Tools is great for development.'
-                    ]
-                ]]
-            ], 200),
-        ]);
+        // Mock the OpenRouterClient to return a specific response
+        $mockClient = $this->mock(\App\Services\AI\Contracts\OpenRouterClientInterface::class);
+        $mockClient->shouldReceive('generate')
+            ->once()
+            ->andReturn(\App\Services\AI\DTOs\AIResponse::success(
+                content: 'C++ Tools is great for development.',
+                tokensUsed: 50,
+                latencyMs: 100
+            ));
 
         $job = new RunQueryJob($specialProject->id, 'chatgpt', 'Dev tools?');
         $job->handle(
@@ -377,6 +380,9 @@ class AnalyticsFlowIntegrationTest extends TestCase
     /** @test FLOW-013: Query flow handles unicode content */
     public function test_query_flow_handles_unicode_content(): void
     {
+        // Clear cache to ensure fresh AI response
+        Cache::flush();
+
         Http::fake([
             'openrouter.ai/*' => Http::response([
                 'choices' => [[

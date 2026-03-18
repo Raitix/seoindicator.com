@@ -22,7 +22,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginWithGoogle, isLoading, error, clearError, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, isLoading, error, clearError, isAuthenticated, user } = useAuth();
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
@@ -40,12 +40,21 @@ export default function LoginPage() {
     },
   });
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated with a valid user
+  // IMPORTANT: Check BOTH isAuthenticated AND user to prevent redirect loops
+  // when token is invalid but isAuthenticated was briefly true
   React.useEffect(() => {
-    if (isAuthenticated) {
+    // Don't redirect while auth is still loading (prevents flash redirect)
+    if (isLoading) {
+      return;
+    }
+
+    // Only redirect if we have BOTH a valid authentication state AND user data
+    // This prevents redirect loops when token is invalid
+    if (isAuthenticated && user) {
       router.push("/dashboard");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, isLoading, router]);
 
   // Clear errors on mount
   React.useEffect(() => {
@@ -77,17 +86,33 @@ export default function LoginPage() {
 
   const isLoadingState = isLoading || isSubmitting;
 
+  // Show loading state while checking token validity on mount
+  // This prevents flash of login form for already-authenticated users
+  // and prevents redirect loops for users with invalid tokens
+  const isCheckingAuth = isLoading && !isSubmitting;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
-          <CardDescription className="text-center">
-            Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
+      {/* Loading state while checking token validity */}
+      {isCheckingAuth ? (
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Checking authentication...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+            <CardDescription className="text-center">
+              Enter your credentials to access your account
+            </CardDescription>
+          </CardHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             {/* Error Message */}
             {(submitError || error) && (
@@ -235,6 +260,7 @@ export default function LoginPage() {
           </p>
         </CardFooter>
       </Card>
+      )}
     </div>
   );
 }
