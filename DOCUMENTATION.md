@@ -70555,3 +70555,258 @@ function ComparisonPage() {
 ---
 *Last updated: 2026-03-18*
 
+---
+## Login/Register Frontend Pages (TASK-25-18)
+
+### Feature Description
+Frontend authentication pages for user login, registration, password reset, and email verification flows. Part of FEAT-025 (User Accounts + Dashboard + Analysis History), Phase 4: Dashboard. Provides the primary user entry points for authentication via email and Google OAuth.
+
+### Component Locations
+
+| Page | Path | Description |
+|------|------|-------------|
+| Login | `frontend/app/login/page.tsx` | Email/password login with OAuth |
+| Register | `frontend/app/register/page.tsx` | User registration with validation |
+| Forgot Password | `frontend/app/forgot-password/page.tsx` | Password reset request |
+| Reset Password | `frontend/app/reset-password/page.tsx` | Password reset confirmation |
+| Verify Email | `frontend/app/verify-email/page.tsx` | Email verification notice |
+
+### Supporting Files
+
+| File | Description |
+|------|-------------|
+| `frontend/lib/validators/auth.ts` | Zod schemas for form validation |
+| `frontend/lib/contexts/AuthContext.tsx` | Auth state provider (TASK-25-17) |
+| `frontend/lib/api/auth.ts` | Auth API functions |
+
+### Pages Implementation
+
+#### Login Page (`/login`)
+
+**Features:**
+- Email/password form with Zod validation
+- "Remember me" checkbox for persistent sessions
+- Password visibility toggle
+- Google OAuth sign-in button
+- Redirect after successful authentication
+- Link to register and forgot password pages
+- Loading state during auth check (prevents redirect loops)
+
+**Redirect Logic:**
+- Priority: URL param `?redirect=` > localStorage `seoindicator_redirect` > `/dashboard`
+- Validates redirect path to prevent open redirect attacks
+- Sanitizes redirect to prevent XSS attacks
+- Redirects authenticated users (with valid token AND user data)
+
+**Security:**
+- Validates token with API before treating user as authenticated
+- Shows loading state "Checking authentication..." during token validation
+- Prevents redirect loops for users with invalid/expired tokens
+
+```tsx
+// Key redirect utilities
+function isValidRedirect(redirect: string): boolean {
+  // Must start with /, rejects //, https://, javascript:, data:
+  // Rejects path traversal attempts (../)
+}
+
+function getRedirectDestination(urlParam, localStorageValue): string {
+  // URL param > localStorage > /dashboard fallback
+}
+```
+
+#### Register Page (`/register`)
+
+**Features:**
+- Name, email, password, confirm password fields
+- Password strength indicator (Weak/Medium/Strong)
+- Password visibility toggles for both password fields
+- Google OAuth sign-up button
+- Form validation with react-hook-form + Zod
+- Redirect to `/verify-email` after registration
+
+**Password Strength Calculation:**
+| Criteria | Points |
+|----------|--------|
+| Length >= 8 | +1 |
+| Length >= 12 | +1 |
+| Contains lowercase | +1 |
+| Contains uppercase | +1 |
+| Contains number | +1 |
+| Contains special char | +1 |
+
+| Score | Label | Color |
+|-------|-------|-------|
+| 0-2 | Weak | Red |
+| 3-4 | Medium | Yellow |
+| 5-6 | Strong | Green |
+
+#### Forgot Password Page (`/forgot-password`)
+
+**Features:**
+- Email input with validation
+- Success state showing email confirmation
+- "Send another email" button to retry
+- Back to login link
+- 60-minute token expiry notice
+
+**Success Flow:**
+1. User enters email
+2. API sends reset link
+3. Page shows "Check Your Email" card
+4. User can send another email or return to login
+
+#### Reset Password Page (`/reset-password`)
+
+**Features:**
+- Token and email from URL params
+- Password strength indicator
+- Password visibility toggles
+- Invalid/expired token handling
+- Success state with redirect to login
+
+**URL Format:** `/reset-password?token=xxx&email=user@example.com`
+
+**Error States:**
+- Missing token/email → Redirect to `/forgot-password`
+- Invalid token → Show error, link to request new reset
+- Expired token → Show error with resend option
+
+#### Verify Email Page (`/verify-email`)
+
+**Features:**
+- Masked email display (j***@example.com)
+- Resend verification button with 60-second cooldown
+- Verification success state from URL param `?verified=true`
+- Verification error state from URL param `?error=expired|invalid`
+- Auto-redirect verified users to dashboard
+
+**URL States:**
+- `?verified=true` → Success card, redirect to dashboard
+- `?error=expired` → Expired link message, resend option
+- `?error=invalid` → Invalid link message, resend option
+
+### Form Validation Schemas
+
+```typescript
+// Login schema
+const loginSchema = z.object({
+  email: z.string().min(1).email().transform(val => val.trim().toLowerCase()),
+  password: z.string().min(1),
+  remember: z.boolean().optional().default(false),
+});
+
+// Register schema
+const registerSchema = z.object({
+  name: z.string().min(1).max(255).transform(val => val.trim()),
+  email: z.string().min(1).email().transform(val => val.trim().toLowerCase()),
+  password: z.string().min(8).regex(/[a-zA-Z]/).regex(/[0-9]/),
+  confirmPassword: z.string().min(1),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+// Reset password schema
+const resetPasswordSchema = z.object({
+  password: z.string().min(8).regex(/[a-zA-Z]/).regex(/[0-9]/),
+  confirmPassword: z.string().min(1),
+}).refine(data => data.password === data.confirmPassword);
+```
+
+### Accessibility Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Form labels | `<Label htmlFor="email">` on all inputs |
+| Error messages | `aria-describedby` linked to error elements |
+| Invalid state | `aria-invalid={!!errors.email}` |
+| Error alerts | `role="alert"` on error containers |
+| Password toggle | `aria-label="Show password"` |
+| Keyboard nav | Tab order follows visual order |
+| Focus management | Auto-focus on form fields |
+
+### Loading States
+
+| Page | Loading State |
+|------|---------------|
+| Login | "Checking authentication..." spinner during token validation |
+| Login | "Signing in..." button text during form submit |
+| Register | "Creating account..." button text during submit |
+| Forgot Password | "Sending..." button text during submit |
+| Reset Password | "Resetting password..." button text during submit |
+| Verify Email | "Sending..." button text during resend |
+
+### Authentication Context Integration
+
+All pages use the `useAuth()` hook from `AuthContext`:
+
+```tsx
+const {
+  user,              // Current user object
+  isAuthenticated,   // Boolean auth state
+  isLoading,         // Loading state during auth check
+  error,             // Auth error object
+  login,             // (email, password, remember) => Promise
+  loginWithGoogle,   // () => Promise
+  register,          // (RegisterData) => Promise
+  resetPassword,     // (email, token, password) => Promise
+  resendVerification,// () => Promise
+  clearError,        // () => void
+} = useAuth();
+```
+
+### Test Coverage
+
+| Test File | Tests | Description |
+|-----------|-------|-------------|
+| `__tests__/app/login/page.test.tsx` | 35 | Login page tests |
+| `__tests__/app/register/page.test.tsx` | 38 | Registration page tests |
+| `__tests__/app/forgot-password/page.test.tsx` | 22 | Password reset request tests |
+| `__tests__/app/reset-password/page.test.tsx` | 28 | Password reset confirmation tests |
+| `__tests__/app/verify-email/page.test.tsx` | 18 | Email verification tests |
+| `__tests__/integration/auth-flow.test.tsx` | 15 | End-to-end auth flow |
+| **Total** | **156** | |
+
+### Production Deployment
+
+| Metric | Value |
+|--------|-------|
+| Feature | FEAT-025: User Accounts + Dashboard |
+| Specification | SPEC-25 |
+| Task | TASK-25-18 |
+| Deploy Date | 2026-03-18 |
+| Deployment ID | `20260318T115605Z-deeb893c` |
+| Commit | `fb458e9e` |
+| Status | Complete ✅ |
+
+### Production URLs
+
+| Page | URL |
+|------|-----|
+| Login | `https://seoindicator.com/login` |
+| Register | `https://seoindicator.com/register` |
+| Forgot Password | `https://seoindicator.com/forgot-password` |
+| Reset Password | `https://seoindicator.com/reset-password` |
+| Verify Email | `https://seoindicator.com/verify-email` |
+
+### Dependencies
+
+| Dependency | Task | Status |
+|------------|------|--------|
+| AuthContext | TASK-25-17 | Done ✅ |
+| AuthController | TASK-25-3 | Done ✅ |
+| Google OAuth | TASK-25-6 to 25-9 | Done ✅ |
+| Password Reset | TASK-25-4 | Done ✅ |
+| Email Verification | TASK-25-5 | Done ✅ |
+
+### Related Tasks
+
+- TASK-25-17: Auth Context & Provider (Done)
+- TASK-25-19: Dashboard Page (Done)
+- TASK-25-20: Analysis History Page (Done)
+- TASK-25-25: Security Audit (Blocked)
+
+---
+*Last updated: 2026-03-18*
+
