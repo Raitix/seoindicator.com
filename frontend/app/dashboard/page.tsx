@@ -6,6 +6,7 @@ import { RefreshCw, BarChart3, Clock, TrendingUp, Activity } from "lucide-react"
 
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useDashboard } from "@/lib/hooks/useDashboard";
+import { clearAuthStorage } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import {
   StatsCard,
@@ -18,12 +19,71 @@ import {
   AuthLoadingState,
 } from "@/components/dashboard";
 
+// ==================== Auth Error Detection ====================
+
+/**
+ * Detects if an error is an authentication error (401)
+ * Handles multiple error format variations from different API clients
+ */
+function isAuthError(error: unknown): boolean {
+  if (!error) return false;
+
+  // Check for error.status property
+  if (typeof error === "object" && error !== null) {
+    const err = error as Record<string, unknown>;
+
+    // Direct status property (number or string)
+    if (err.status === 401 || err.status === "401") return true;
+
+    // statusCode property
+    if (err.statusCode === 401 || err.statusCode === "401") return true;
+
+    // Nested response.status property
+    if (
+      typeof err.response === "object" &&
+      err.response !== null &&
+      (err.response as Record<string, unknown>).status === 401
+    ) {
+      return true;
+    }
+
+    // Check message for 401 or Unauthorized (only if status is not 500+)
+    const message = typeof err.message === "string" ? err.message : "";
+    const hasUnauthorizedInMessage =
+      message.includes("401") || message.toLowerCase().includes("unauthorized");
+
+    // Only treat as auth error if it's not a server error
+    // (e.g., "Unauthorized access detected in logs" with status 500 is NOT an auth error)
+    const status = err.status ?? err.statusCode;
+    if (hasUnauthorizedInMessage && status !== 500 && status !== "500") {
+      return true;
+    }
+  }
+
+  // Check if error is an Error instance with 401 in message
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("401") || message.includes("unauthorized")) {
+      // Also check for explicit status property
+      const errWithStatus = error as Error & { status?: number };
+      if (errWithStatus.status === undefined || errWithStatus.status === 401) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 // ==================== Dashboard Page ====================
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: dashboard, isLoading, error, refresh } = useDashboard();
+
+  // Track if we've already processed an auth error to prevent re-renders
+  const hasProcessedAuthError = React.useRef(false);
 
   // Redirect to login if not authenticated
   React.useEffect(() => {
@@ -66,7 +126,17 @@ export default function DashboardPage() {
     );
   }
 
-  // Handle error state
+  // Handle 401 auth errors - clear storage and redirect to login
+  if (error && isAuthError(error) && !hasProcessedAuthError.current) {
+    // Mark as processed to prevent re-renders from triggering multiple redirects
+    hasProcessedAuthError.current = true;
+    // Clear auth storage and redirect to login
+    clearAuthStorage();
+    router.push("/login");
+    return null;
+  }
+
+  // Handle non-auth error state
   if (error) {
     return (
       <div className="min-h-screen bg-slate-950">
