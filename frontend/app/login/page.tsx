@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -19,13 +19,116 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  getStoredRedirectUrl,
+  clearStoredRedirectUrl,
+} from "@/lib/api/auth";
+
+// ==================== Redirect Utilities ====================
+
+const REDIRECT_STORAGE_KEY = "seoindicator_redirect";
+
+/**
+ * Validates a redirect path to prevent open redirect attacks.
+ * Only allows relative paths starting with "/".
+ * Rejects external URLs, javascript:, data:, and protocol-relative URLs.
+ */
+function isValidRedirect(redirect: string | null | undefined): boolean {
+  if (!redirect) return false;
+  if (typeof redirect !== "string") return false;
+  
+  const trimmed = redirect.trim();
+  if (trimmed === "") return false;
+
+  // Must start with /
+  if (!trimmed.startsWith("/")) return false;
+
+  // Reject protocol-relative URLs (//evil.com)
+  if (trimmed.startsWith("//")) return false;
+
+  // Reject absolute URLs (https://, http://)
+  if (/^https?:\/\//i.test(trimmed)) return false;
+
+  // Reject javascript: URLs
+  if (/^javascript:/i.test(trimmed)) return false;
+
+  // Reject data: URLs
+  if (/^data:/i.test(trimmed)) return false;
+
+  // Reject path traversal attempts
+  if (trimmed.includes("../") || trimmed.includes("..\\")) return false;
+
+  return true;
+}
+
+/**
+ * Sanitizes a redirect path to prevent XSS attacks.
+ * Removes any HTML tags or script content.
+ */
+function sanitizeRedirect(redirect: string): string {
+  // Remove any HTML tags
+  return redirect.replace(/<[^>]*>/g, "");
+}
+
+/**
+ * Gets the redirect destination with priority:
+ * 1. URL param (?redirect=/path)
+ * 2. localStorage (seoindicator_redirect)
+ * 3. Default to /dashboard
+ */
+function getRedirectDestination(
+  urlParam: string | null,
+  localStorageValue: string | null
+): string {
+  // URL param takes priority
+  if (urlParam && isValidRedirect(urlParam)) {
+    return sanitizeRedirect(urlParam);
+  }
+
+  // Fall back to localStorage
+  if (localStorageValue && isValidRedirect(localStorageValue)) {
+    return sanitizeRedirect(localStorageValue);
+  }
+
+  // Default to dashboard
+  return "/dashboard";
+}
+
+/**
+ * Clears the stored redirect URL from localStorage
+ */
+function clearRedirectStorage(): void {
+  if (typeof window === "undefined") return;
+  
+  try {
+    localStorage.removeItem(REDIRECT_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, loginWithGoogle, isLoading, error, clearError, isAuthenticated, user } = useAuth();
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+
+  // Get redirect target from URL param and localStorage
+  const redirectFromUrl = searchParams.get("redirect");
+  const [redirectFromStorage, setRedirectFromStorage] = React.useState<string | null>(null);
+
+  // Read localStorage redirect on mount
+  React.useEffect(() => {
+    const stored = getStoredRedirectUrl();
+    setRedirectFromStorage(stored);
+  }, []);
+
+  // Calculate final redirect destination
+  const redirectDestination = React.useMemo(() => {
+    return getRedirectDestination(redirectFromUrl, redirectFromStorage);
+  }, [redirectFromUrl, redirectFromStorage]);
 
   const {
     register,
@@ -52,9 +155,14 @@ export default function LoginPage() {
     // Only redirect if we have BOTH a valid authentication state AND user data
     // This prevents redirect loops when token is invalid
     if (isAuthenticated && user) {
-      router.push("/dashboard");
+      // Clear stored redirect after use
+      clearStoredRedirectUrl();
+      clearRedirectStorage();
+      
+      // Redirect to the stored destination
+      router.push(redirectDestination);
     }
-  }, [isAuthenticated, user, isLoading, router]);
+  }, [isAuthenticated, user, isLoading, router, redirectDestination]);
 
   // Clear errors on mount
   React.useEffect(() => {
