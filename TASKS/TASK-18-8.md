@@ -1,6 +1,7 @@
 # TASK-18-8: SuggestionGeneratorService
 
-## STATUS`n`Tests Coverage In Progress`
+## STATUS
+`Tests Coverage In Progress`
 
 ## PRIORITY
 `Medium`
