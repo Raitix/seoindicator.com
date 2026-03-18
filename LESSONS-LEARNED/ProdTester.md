@@ -347,3 +347,110 @@ Route::middleware(['auth:sanctum'])->group(function () {
 ---
 
 Last updated: 2026-03-15
+
+---
+
+## 2026-03-18: TASK-37-4 Token Expiry Handling
+- Token expiry handler implemented in `frontend/lib/api/token-expiry-handler.ts`
+- Integrated in `AuthContext.tsx` via `setupUnauthorizedInterceptor()` call
+- Session expired message shown client-side (React), not in SSR HTML - expected SPA behavior
+- API 401 responses return JSON: `{"message":"Unauthenticated."}`
+
+**Token Expiry Handler Integration Verification:**
+1. Check `AuthContext.tsx` for import of `setupUnauthorizedInterceptor`
+2. Verify interceptor is called during initialization (useEffect)
+3. Test session expired message parameter: `/login?message=session_expired`
+4. Verify 401 responses return JSON (not HTML 404)
+5. Test XSS prevention in message parameter
+
+**Production Test Pattern:**
+```powershell
+# Test API 401 response format
+curl.exe -k -s -H "Accept: application/json" "https://seoindicator.com/api/v1/auth/user"
+# Expected: {"message":"Unauthenticated."}
+
+# Test XSS prevention
+curl.exe -k -s "https://seoindicator.com/login/?message=%3Cscript%3Ealert(1)%3C/script%3E"
+# Expected: No <script> tag rendered in HTML
+
+# Test session expired parameter
+curl.exe -k -s "https://seoindicator.com/login/?message=session_expired"
+# Expected: Login page loads (message shown client-side)
+```
+
+**Token Expiry Flow:**
+1. API returns 401 → `setupUnauthorizedInterceptor` catches it
+2. `clearAuthStorageHandler()` removes token/user from localStorage
+3. Redirect to `/login?message=session_expired`
+4. `AuthContext` shows error: "Your session has expired. Please log in again."
+
+---
+
+Last updated: 2026-03-18
+
+---
+
+## 2026-03-18: TASK-37-5 Login Page Redirect Loop Prevention
+- Login page shows loading state ("Checking authentication...") before rendering form
+- No hardcoded redirect to dashboard in login page HTML
+- Client-side auth check prevents redirect loops for users with invalid tokens
+- Loading state elements: `animate-spin` class, `lucide-loader-circle` icon
+
+**Redirect Loop Prevention Flow:**
+1. User visits `/login` with stale token in localStorage
+2. Login page shows loading spinner while AuthContext validates token
+3. If token invalid → login form renders (no redirect)
+4. If token valid → redirect to dashboard
+5. No redirect loop possible because redirect only happens after successful validation
+
+**Production Test Pattern:**
+```powershell
+# Check login page loads
+curl.exe -k -s -w "`nHTTP: %{http_code}" "https://seoindicator.com/login/"
+
+# Check for loading state
+curl.exe -k -s "https://seoindicator.com/login/" | Select-String "Checking authentication|animate-spin"
+
+# Verify no hardcoded redirect
+curl.exe -k -s "https://seoindicator.com/login/" | Select-String "window.location.*dashboard"
+# Expected: No match
+```
+
+---
+
+Last updated: 2026-03-18
+
+---
+
+## 2026-03-18: TASK-25-18 Login/Register Frontend Pages
+- Login page shows "Checking authentication..." loading state in SSR (client-side auth check)
+- Register and forgot-password pages render full forms in SSR
+- Reset-password and verify-email pages use client-side rendering (BAILOUT_TO_CLIENT_SIDE_RENDERING)
+- All auth pages have proper accessibility: skip link, ARIA labels, form labels, role attributes
+- Password visibility toggle has `aria-label="Show password"` for screen readers
+- Google OAuth button text: "Sign up with Google" / "Sign in with Google"
+- Autocomplete attributes: `name`, `email`, `new-password` for proper browser autofill
+
+**Frontend Auth Page Test Pattern:**
+```powershell
+# Check page loads
+curl.exe -k -s -w "`nHTTP: %{http_code}" "https://seoindicator.com/login/"
+
+# Check for form elements in SSR
+curl.exe -k -s "https://seoindicator.com/register/" | Select-String 'for="email"'
+
+# Check XSS protection
+curl.exe -k -s "https://seoindicator.com/login/?redirect=%3Cscript%3Ealert(1)%3C/script%3E" | Select-String "<script>alert"
+
+# Check for exposed secrets
+curl.exe -k -s "https://seoindicator.com/register/" | Select-String "api_key|secret|password_hash"
+```
+
+**Client-Side Rendering Detection:**
+- `BAILOUT_TO_CLIENT_SIDE_RENDERING` template in HTML indicates CSR
+- These pages show "Loading..." placeholder in SSR
+- Full content rendered after JavaScript loads
+
+---
+
+Last updated: 2026-03-18
