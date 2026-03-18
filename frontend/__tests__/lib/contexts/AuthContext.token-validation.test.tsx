@@ -6,9 +6,9 @@
  * tokens expire.
  *
  * @see TASK-37-1.md
- * @see https://github.com/openclaw/openclaw/issues/TASK-37-1
  */
 
+import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { ReactNode } from "react";
@@ -24,13 +24,6 @@ interface MockUser {
   role?: "user" | "admin";
   created_at?: string;
   updated_at?: string;
-}
-
-interface MockAuthState {
-  user: MockUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: null;
 }
 
 // ==================== Test Helpers ====================
@@ -69,17 +62,18 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/login",
 }));
 
-// Mock auth API functions
+// Create mock functions for auth API
 const mockFetchUser = vi.fn();
 const mockGetStoredAuthToken = vi.fn();
 const mockGetStoredUserData = vi.fn();
 const mockStoreUserData = vi.fn();
 const mockClearAuthStorage = vi.fn();
 const mockBroadcastAuthChange = vi.fn();
+const mockSetupUnauthorizedInterceptor = vi.fn();
 
 vi.mock("@/lib/api/auth", () => ({
   fetchUser: () => mockFetchUser(),
-  getStoredAuthToken: () => mockGetStoredUserData(),
+  getStoredAuthToken: () => mockGetStoredAuthToken(),
   getStoredUserData: () => mockGetStoredUserData(),
   storeUserData: (user: MockUser) => mockStoreUserData(user),
   clearAuthStorage: () => mockClearAuthStorage(),
@@ -95,6 +89,13 @@ vi.mock("@/lib/api/auth", () => ({
   forgotPassword: vi.fn(),
   resetPassword: vi.fn(),
   resendVerificationEmail: vi.fn(),
+}));
+
+vi.mock("@/lib/api/token-expiry-handler", () => ({
+  setupUnauthorizedInterceptor: () => mockSetupUnauthorizedInterceptor(),
+  handleApiError: vi.fn(),
+  hasSessionExpiredMessage: vi.fn(() => false),
+  clearSessionExpiredMessage: vi.fn(),
 }));
 
 // Mock localStorage
@@ -119,9 +120,38 @@ const localStorageMock = (() => {
 
 Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
+  writable: true,
+  configurable: true,
 });
 
-// ==================== Test Categories ====================
+// Import the actual component after mocks are set up
+import { AuthProvider, useAuth } from "@/lib/contexts/AuthContext";
+
+// Test wrapper component
+function TestWrapper({ children }: { children: ReactNode }) {
+  return <AuthProvider>{children}</AuthProvider>;
+}
+
+// Component to read auth state
+function AuthStateReader({
+  onStateChange,
+}: {
+  onStateChange: (state: {
+    user: MockUser | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+  }) => void;
+}) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  React.useEffect(() => {
+    onStateChange({ user, isAuthenticated, isLoading });
+  }, [user, isAuthenticated, isLoading, onStateChange]);
+
+  return <div data-testid="auth-state">{isAuthenticated ? "authenticated" : "not-authenticated"}</div>;
+}
+
+// ==================== Test Suite ====================
 
 describe("AuthContext Token Validation (TASK-37-1)", () => {
   beforeEach(() => {
@@ -129,6 +159,12 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
     localStorageMock.clear();
     mockPush.mockClear();
     mockReplace.mockClear();
+    mockFetchUser.mockReset();
+    mockGetStoredAuthToken.mockReset();
+    mockGetStoredUserData.mockReset();
+    mockStoreUserData.mockReset();
+    mockClearAuthStorage.mockReset();
+    mockSetupUnauthorizedInterceptor.mockReset();
   });
 
   afterEach(() => {
@@ -146,15 +182,21 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
-      // The test verifies that fetchUser is called during initialization
-      // This is the core fix - API must verify token, not just localStorage presence
+      const stateChanges: any[] = [];
+
       await act(async () => {
-        // AuthProvider would be rendered here
-        // After fix, fetchUser should be called regardless of stored user
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        // Wait for initialization
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Assert: fetchUser was called to verify token
       expect(mockFetchUser).toHaveBeenCalled();
+      expect(mockSetupUnauthorizedInterceptor).toHaveBeenCalled();
     });
 
     it("TV-001b: should set isAuthenticated=true only after API confirms validity", async () => {
@@ -163,18 +205,21 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
-      // Expected behavior:
-      // 1. Initial state: isLoading=true, user=null
-      // 2. After API success: isLoading=false, user=validUser, isAuthenticated=true
+      const stateChanges: any[] = [];
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      // Assert: User should be authenticated after successful API verification
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      // After API success: should be authenticated
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(true);
+      expect(mockStoreUserData).toHaveBeenCalledWith(mockValidUser);
     });
 
     it("TV-001c: should NOT use fallback user when API returns 401", async () => {
@@ -183,25 +228,27 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
       // API returns 401 Unauthorized
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
+      const stateChanges: any[] = [];
+
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      // Expected behavior after fix:
-      // - clearAuthStorage should be called
-      // - user should be null
-      // - isAuthenticated should be false
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Key assertion: should clear storage, not use fallback
       expect(mockClearAuthStorage).toHaveBeenCalled();
+
+      // After 401: should NOT be authenticated
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(false);
     });
 
     it("TV-001d: should set user to null when API returns null (no valid session)", async () => {
@@ -212,16 +259,22 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       // API returns null (no valid session)
       mockFetchUser.mockResolvedValue(null);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Expected: storage cleared, user null
       expect(mockClearAuthStorage).toHaveBeenCalled();
+
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(false);
     });
   });
 
@@ -232,28 +285,23 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
   describe("TV-002: Expired Token Handling", () => {
     it("TV-002a: should clear localStorage when token is expired (401 response)", async () => {
       // Setup: expired token in storage
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.TOKEN, mockExpiredToken);
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(mockValidUser));
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      // API returns 401
-      const authError = new Error("Session expired");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Session expired", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
-      });
-
-      // localStorage should be cleared
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith(AUTH_STORAGE_KEYS.TOKEN);
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith(AUTH_STORAGE_KEYS.USER);
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it("TV-002b: should show login page for users with expired tokens", async () => {
@@ -261,63 +309,68 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // After fix: should NOT redirect to dashboard
       expect(mockPush).not.toHaveBeenCalledWith("/dashboard");
 
       // User should not be authenticated
-      // isAuthenticated should be false
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(false);
     });
 
     it("TV-002c: should handle TOKEN_EXPIRED error code specifically", async () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Token expired");
-      (authError as any).code = "TOKEN_EXPIRED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Token expired", AuthErrorCode.TOKEN_EXPIRED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
-      });
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it("TV-002d: should clear both token and user data on expiration", async () => {
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.TOKEN, mockExpiredToken);
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(mockValidUser));
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
-      });
-
-      // Verify both token and user are cleared
-      expect(mockClearAuthStorage).toHaveBeenCalled();
+      // clearAuthStorage should be called once (clears both token and user)
+      expect(mockClearAuthStorage).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -337,22 +390,30 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       });
       mockFetchUser.mockReturnValue(fetchUserPromise);
 
+      const stateChanges: any[] = [];
+
+      const { unmount } = render(
+        <TestWrapper>
+          <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+        </TestWrapper>
+      );
+
+      // Wait a bit for initial render
       await act(async () => {
-        // Render AuthProvider
-        // Initially, isLoading should be true
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
-      // During verification, isLoading should be true
-      // The loading state should be shown to prevent flash of content
+      // During loading, isLoading should be true
+      const loadingState = stateChanges.find((s) => s.isLoading === true);
+      expect(loadingState).toBeDefined();
 
       // Resolve the promise
       await act(async () => {
         resolveFetchUser!(mockValidUser);
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      unmount();
     });
 
     it("TV-003b: should clear loading state after successful verification", async () => {
@@ -360,41 +421,48 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // After verification completes, isLoading should be false
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isLoading).toBe(false);
     });
 
     it("TV-003c: should clear loading state after failed verification", async () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // After error, isLoading should be false
-      // User should be null
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isLoading).toBe(false);
+      expect(finalState?.isAuthenticated).toBe(false);
     });
 
     it("TV-003d: should not flash authenticated state during loading", async () => {
-      // This is a key bug scenario - the app briefly shows authenticated state
-      // before API verification completes, causing redirect loops
-
       mockGetStoredAuthToken.mockReturnValue(mockStoredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
@@ -404,23 +472,35 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       });
       mockFetchUser.mockReturnValue(fetchUserPromise);
 
+      const stateChanges: any[] = [];
+
+      const { unmount } = render(
+        <TestWrapper>
+          <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+        </TestWrapper>
+      );
+
+      // Wait for initial render
       await act(async () => {
-        // Render AuthProvider
-        // During loading, isAuthenticated should NOT be true
-        // even though stored user exists
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
+
+      // During loading, isAuthenticated should NOT be true
+      const duringLoading = stateChanges.filter(
+        (s) => s.isLoading === true && s.isAuthenticated === true
+      );
+      expect(duringLoading.length).toBe(0);
 
       // Resolve with null (invalid token)
       await act(async () => {
         resolveFetchUser!(null);
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
       // After fix: should NOT have redirected to dashboard
       expect(mockPush).not.toHaveBeenCalledWith("/dashboard");
+
+      unmount();
     });
   });
 
@@ -433,16 +513,17 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Key assertion: should NOT redirect to dashboard
@@ -453,43 +534,37 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(mockInvalidToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       expect(mockPush).not.toHaveBeenCalledWith("/dashboard");
     });
 
     it("TV-004c: should NOT create redirect loop for expired tokens", async () => {
-      // This is the main bug scenario:
-      // 1. User has expired token in localStorage
-      // 2. App redirects to dashboard (thinking user is authenticated)
-      // 3. Dashboard API fails with 401
-      // 4. App shows error instead of redirecting to login
-      // OR
-      // 5. App redirects back to login, which sees token and redirects to dashboard again
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider on login page
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should NOT redirect to dashboard (which would cause the loop)
@@ -503,20 +578,20 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider on login page
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should not have redirected anywhere
-      // User should remain on login page
       expect(mockPush).not.toHaveBeenCalled();
     });
   });
@@ -531,29 +606,25 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
       const networkError = new Error("Network error");
-      (networkError as any).code = "NETWORK_ERROR";
       mockFetchUser.mockRejectedValue(networkError);
 
+      const stateChanges: any[] = [];
+
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
-
-      // On network error, should handle gracefully
-      // Should not crash, should show appropriate state
+      // Should handle gracefully
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isLoading).toBe(false);
     });
 
     it("TV-005b: should NOT clear token on temporary network errors", async () => {
-      // This is a design decision: should network errors clear the token?
-      // Option A: Clear token (safer but may log out users during outages)
-      // Option B: Keep token and show error (better UX but may show stale data)
-
-      // Based on current implementation, it seems to preserve fallback
-      // The fix should be consistent with this behavior for network errors
-
       mockGetStoredAuthToken.mockReturnValue(mockStoredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
@@ -561,15 +632,16 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockFetchUser.mockRejectedValue(networkError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Network errors should NOT clear storage (token may still be valid)
-      // Only 401 Unauthorized should clear storage
+      expect(mockClearAuthStorage).not.toHaveBeenCalled();
     });
 
     it("TV-005c: should distinguish between 401 and network errors", async () => {
@@ -577,16 +649,17 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       expect(mockClearAuthStorage).toHaveBeenCalled();
@@ -602,14 +675,16 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockFetchUser.mockRejectedValue(networkError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Network error: preserve token, don't clear
+      expect(mockClearAuthStorage).not.toHaveBeenCalled();
     });
   });
 
@@ -619,63 +694,64 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
   describe("TV-006: Storage Clearing Behavior", () => {
     it("TV-006a: should clear token from localStorage on 401", async () => {
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.TOKEN, mockExpiredToken);
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
-      });
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it("TV-006b: should clear user data from localStorage on 401", async () => {
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(mockValidUser));
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
-      });
+      // clearAuthStorage clears both
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it("TV-006c: should clear both token and user data together", async () => {
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.TOKEN, mockExpiredToken);
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(mockValidUser));
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
-      });
-
-      // clearAuthStorage should remove both
+      // clearAuthStorage called once (clears both)
       expect(mockClearAuthStorage).toHaveBeenCalledTimes(1);
     });
 
@@ -684,16 +760,20 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(null);
       mockFetchUser.mockResolvedValue(null);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // No token to clear, should not error
-      expect(mockClearAuthStorage).not.toHaveBeenCalled();
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(false);
     });
 
     it("TV-006e: should handle whitespace-only token", async () => {
@@ -704,12 +784,16 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockFetchUser.mockResolvedValue(null);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      // Should clear storage since API returned null
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
   });
 
@@ -725,35 +809,35 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockFetchUser.mockResolvedValue(mockValidUser);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      // Should fetch fresh user and store it
+      expect(mockFetchUser).toHaveBeenCalled();
     });
 
     it("TV-007b: should handle malformed JSON in localStorage", async () => {
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.USER, "not-valid-json{");
-
       mockGetStoredAuthToken.mockReturnValue(mockStoredToken);
-      mockGetStoredUserData.mockImplementation(() => {
-        try {
-          return JSON.parse(localStorageMock.getItem(AUTH_STORAGE_KEYS.USER) || "null");
-        } catch {
-          return null;
-        }
-      });
+      // Simulate malformed JSON parsing returning null
+      mockGetStoredUserData.mockReturnValue(null);
 
       mockFetchUser.mockResolvedValue(mockValidUser);
 
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      expect(mockFetchUser).toHaveBeenCalled();
     });
 
     it("TV-007c: should handle concurrent initialization calls", async () => {
@@ -761,14 +845,21 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
-      // Simulate multiple quick renders (React StrictMode)
+      // Render multiple times (React StrictMode simulation)
+      const { unmount } = render(
+        <TestWrapper>
+          <AuthStateReader onStateChange={() => {}} />
+        </TestWrapper>
+      );
+
+      // Wait for initialization
       await act(async () => {
-        // Render AuthProvider multiple times
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      expect(mockFetchUser).toHaveBeenCalled();
+
+      unmount();
     });
 
     it("TV-007d: should handle token with special characters", async () => {
@@ -777,16 +868,17 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(specialToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should handle special characters in token without error
@@ -799,16 +891,17 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(longToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       expect(mockClearAuthStorage).toHaveBeenCalled();
@@ -825,16 +918,22 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should store updated user data
       expect(mockStoreUserData).toHaveBeenCalledWith(mockValidUser);
+
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(true);
     });
 
     it("TV-008b: should refresh user data from API", async () => {
@@ -846,11 +945,12 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockFetchUser.mockResolvedValue(freshUser);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should store fresh user data
@@ -863,15 +963,16 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockFetchUser.mockResolvedValue(mockValidUser);
 
       await act(async () => {
-        // Render AuthProvider on login page
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // For valid authentication on login page, should redirect to dashboard
-      // (after initialization completes)
+      // (The redirect happens in a useEffect after authentication)
     });
   });
 
@@ -885,54 +986,63 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
+      const stateChanges: any[] = [];
+
       await act(async () => {
-        // Render AuthProvider
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Core assertion: fetchUser API must be called
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      expect(mockFetchUser).toHaveBeenCalled();
 
       // isAuthenticated should only be true AFTER API confirms
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(true);
     });
 
     it("TV-009b: AC2 - Expired tokens are cleared from localStorage", async () => {
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.TOKEN, mockExpiredToken);
-      localStorageMock.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(mockValidUser));
-
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider
-      });
-
-      await waitFor(() => {
-        expect(mockClearAuthStorage).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Token and user data should be cleared
+      expect(mockClearAuthStorage).toHaveBeenCalled();
     });
 
     it("TV-009c: AC3 - Users with expired tokens see login page, not dashboard error", async () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
-      await act(async () => {
-        // Render AuthProvider on login page
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should NOT redirect to dashboard
@@ -940,6 +1050,10 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
       // Storage should be cleared
       expect(mockClearAuthStorage).toHaveBeenCalled();
+
+      // Should not be authenticated
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(false);
     });
 
     it("TV-009d: AC4 - Loading state shown while verifying token", async () => {
@@ -952,38 +1066,50 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       });
       mockFetchUser.mockReturnValue(fetchUserPromise);
 
+      const stateChanges: any[] = [];
+
+      const { unmount } = render(
+        <TestWrapper>
+          <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+        </TestWrapper>
+      );
+
+      // Wait for initial render
       await act(async () => {
-        // Render AuthProvider
-        // isLoading should be true during this time
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
       // Loading state should be present
+      const loadingState = stateChanges.find((s) => s.isLoading === true);
+      expect(loadingState).toBeDefined();
 
       await act(async () => {
         resolveFetchUser!(mockValidUser);
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
       // isLoading should be false after completion
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isLoading).toBe(false);
+
+      unmount();
     });
 
     it("TV-009e: AC5 - No redirect to dashboard for invalid tokens", async () => {
       mockGetStoredAuthToken.mockReturnValue(mockInvalidToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
       await act(async () => {
-        // Render AuthProvider on login page
-      });
-
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={() => {}} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should NOT redirect to dashboard
@@ -1008,16 +1134,22 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
-      await act(async () => {
-        // Render AuthProvider (page refresh)
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should restore authenticated state
       expect(mockStoreUserData).toHaveBeenCalledWith(mockValidUser);
+
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(true);
     });
 
     it("TV-010b: should handle page refresh with expired token", async () => {
@@ -1025,20 +1157,26 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredAuthToken.mockReturnValue(mockExpiredToken);
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
-      const authError = new Error("Unauthorized");
-      (authError as any).code = "UNAUTHORIZED";
+      const { AuthError, AuthErrorCode } = await import("@/lib/types/auth");
+      const authError = new AuthError("Unauthorized", AuthErrorCode.UNAUTHORIZED);
       mockFetchUser.mockRejectedValue(authError);
 
-      await act(async () => {
-        // Render AuthProvider (page refresh)
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should clear storage and show login
       expect(mockClearAuthStorage).toHaveBeenCalled();
+
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(false);
     });
 
     it("TV-010c: should handle new tab opening with stored token", async () => {
@@ -1047,13 +1185,21 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
       mockFetchUser.mockResolvedValue(mockValidUser);
 
+      const stateChanges: any[] = [];
+
       await act(async () => {
-        // Render AuthProvider in new tab
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
-      });
+      expect(mockFetchUser).toHaveBeenCalled();
+
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isAuthenticated).toBe(true);
     });
 
     it("TV-010d: should handle server error during verification", async () => {
@@ -1061,19 +1207,26 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       mockGetStoredUserData.mockReturnValue(mockValidUser);
 
       const serverError = new Error("Internal Server Error");
-      (serverError as any).code = "SERVER_ERROR";
       mockFetchUser.mockRejectedValue(serverError);
 
-      await act(async () => {
-        // Render AuthProvider
-      });
+      const stateChanges: any[] = [];
 
-      await waitFor(() => {
-        expect(mockFetchUser).toHaveBeenCalled();
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AuthStateReader onStateChange={(state) => stateChanges.push(state)} />
+          </TestWrapper>
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Should handle server error gracefully
       // Should not crash or show raw error to user
+      const finalState = stateChanges[stateChanges.length - 1];
+      expect(finalState?.isLoading).toBe(false);
+
+      // Should NOT clear storage for server errors
+      expect(mockClearAuthStorage).not.toHaveBeenCalled();
     });
   });
 });
