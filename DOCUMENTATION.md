@@ -28971,13 +28971,20 @@ REST API controller for public-facing SEO audit sharing functionality. Provides 
 - **Tests:** `backend/tests/Feature/Api/V1/PublicAuditControllerTest.php`
 - **Test Documentation:** `TESTS/TEST-33-5.md`
 
-### Verification Note (2026-03-10 - Repaired)
+### Verification Note (2026-03-18 - Re-verified)
 The test suite has been repaired and reconciled with the current controller implementation.
 
-**Repair Summary:**
+**Repair Summary (2026-03-10):**
 - Test suite now exercises the live named limiter flow (`throttle:public-audit`) instead of legacy mock path.
 - Badge endpoint assertions updated to match current payload: `audit_url`, `impressions_endpoint`, `clicks_endpoint`, `sizes`, `themes`, `embed_code`.
 - Rate-limit coverage validates real contract: 100 requests/hour per IP, `429` on request 101.
+
+**Re-verification (2026-03-18):**
+- All 85 tests passing with 1013 assertions
+- Documentation updated to match actual controller implementation:
+  - Removed `hash` field from `show()` response (not returned by controller)
+  - Changed `performance` to `mobile` in `category_scores` to match implementation
+  - Updated `badge()` response fields to match actual payload
 
 **Current Verification Command:**
 ```bash
@@ -29015,7 +29022,6 @@ Result: `85 passed (1013 assertions)` ✅
 {
   "success": true,
   "data": {
-    "hash": "abc123def456...",
     "site_url": "https://example.com",
     "audited_at": "2026-03-06T12:00:00Z",
     "overall_score": 85,
@@ -29023,11 +29029,11 @@ Result: `85 passed (1013 assertions)` ✅
       "technical": 90,
       "on_page": 85,
       "content": 80,
-      "performance": 88
+      "mobile": 88
     },
     "top_issues": [
-      { "id": 1, "name": "Missing meta description", "severity": "medium" },
-      { "id": 2, "name": "H1 tag missing", "severity": "high" }
+      { "category": "technical", "issue": "Missing H1 tag", "severity": "critical" },
+      { "category": "on_page", "issue": "Meta description too long", "severity": "warning" }
     ],
     "is_partial": true
   }
@@ -29037,12 +29043,11 @@ Result: `85 passed (1013 assertions)` ✅
 **Response Fields:**
 | Field | Type | Description |
 |-------|------|-------------|
-| `hash` | string | 32-character public audit hash |
 | `site_url` | string | Audited site URL |
 | `audited_at` | string | ISO 8601 timestamp of audit |
 | `overall_score` | integer | Overall SEO score (0-100) |
-| `category_scores` | object | Scores by category (technical, on_page, content, performance) |
-| `top_issues` | array | Top issues found in audit |
+| `category_scores` | object | Scores by category (technical, on_page, content, mobile) |
+| `top_issues` | array | Top issues found in audit (max 10, sorted by severity) |
 | `is_partial` | boolean | true for anonymous users, false for audit owners |
 
 **Error Responses:**
@@ -29098,17 +29103,29 @@ Result: `85 passed (1013 assertions)` ✅
   "data": {
     "hash": "abc123def456...",
     "score": 85,
-    "site_url": "https://example.com",
-    "badge_url": "https://seoindicator.com/badge/abc123def456",
+    "site_url": "example.com",
+    "audit_url": "https://seoindicator.com/audit/public/abc123def456",
+    "impressions_endpoint": "https://seoindicator.com/api/v1/badge/impression",
+    "clicks_endpoint": "https://seoindicator.com/api/v1/badge/click",
     "sizes": ["small", "medium", "large"],
     "themes": ["light", "dark"],
-    "embed_code": {
-      "svg": "<a href=\"https://seoindicator.com/audit/abc123/\"><img src=\"https://seoindicator.com/badge/abc123/small.svg\" /></a>",
-      "js": "<div data-seoindicator-badge=\"abc123\"></div><script src=\"https://seoindicator.com/badge.js\"></script>"
-    }
+    "embed_code": "<a href=\"https://seoindicator.com/audit/public/abc123def456\" target=\"_blank\" rel=\"noopener\">\n  <img src=\"https://seoindicator.com/audit/public/abc123def456/badge/small.svg\" alt=\"SEO Score: 85\" />\n</a>"
   }
 }
 ```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `hash` | string | 32-character public audit hash |
+| `score` | integer | Current SEO score (0-100) |
+| `site_url` | string | Site URL without protocol (display format) |
+| `audit_url` | string | Full URL to the public audit page |
+| `impressions_endpoint` | string | API endpoint for tracking badge impressions |
+| `clicks_endpoint` | string | API endpoint for tracking badge clicks |
+| `sizes` | array | Available badge sizes: small, medium, large |
+| `themes` | array | Available themes: light, dark |
+| `embed_code` | string | Pre-generated HTML embed code |
 
 **Error Responses:**
 | Status | Condition |
@@ -29168,7 +29185,18 @@ Lead emails are stored in `public_audit_views` table:
 
 | Test File | Tests | Assertions | Status |
 |-----------|-------|------------|--------|
-| `PublicAuditControllerTest.php` | 85 | 225 | ✅ PASS |
+| `PublicAuditControllerTest.php` | 85 | 1013 | ✅ PASS |
+
+**Test Categories:**
+- GET show endpoint: 17 tests (success cases, 404 cases, validation)
+- POST lead endpoint: 13 tests (validation, storage, deduplication)
+- GET badge endpoint: 10 tests (configuration, score, embed code)
+- Rate limiting: 7 tests (100/hour limit, IP isolation, reset)
+- Security: 7 tests (SQL injection, XSS, path traversal, enumeration)
+- Edge cases: 11 tests (unicode, long hashes, boundaries)
+- HTTP methods: 6 tests (method restrictions)
+- Performance: 3 tests (response time bounds)
+- Acceptance criteria: 11 tests (full AC coverage)
 
 **Test Categories:**
 | Category | Tests | Description |
