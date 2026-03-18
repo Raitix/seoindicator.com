@@ -1,0 +1,26 @@
+{
+  "task": "TASK-37-11",
+  "agent": "PreTester",
+  "status": "To Develop",
+  "completedAt": "2026-03-18T14:15:00+02:00",
+  "testsWritten": 52,
+  "testsPassing": 37,
+  "testsTDD": 15,
+  "files": [
+    "PROJECT-SEOINDICATOR/frontend/__tests__/app/login/redirect-handling.test.tsx",
+    "PROJECT-SEOINDICATOR/TESTS/TEST-37-11.md"
+  ],
+  "dependencies": {
+    "TASK-37-1": "Done",
+    "TASK-37-10": "Tests Ready"
+  },
+  "acceptanceCriteria": {
+    "redirectTargetStored": "Ready (via TASK-37-10)",
+    "redirectToStoredDestination": "TDD Ready",
+    "fallbackToDashboard": "Passing",
+    "clearAfterUse": "TDD Ready",
+    "urlParamStorage": "Passing",
+    "localStorageStorage": "TDD Ready",
+    "unitTests": "52 tests written"
+  }
+}

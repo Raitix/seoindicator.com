@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import PublicAuditPage from '@/components/audit/PublicAuditPage';
 import type { PublicAuditData } from '@/components/audit/PublicAuditPage';
+import { generateJsonLdSchema } from '@/lib/audit/json-ld-schema';
 import NotFound from './not-found';
 
 /**
@@ -65,6 +66,38 @@ async function fetchAuditData(hash: string): Promise<PublicAuditData | null> {
 }
 
 /**
+ * Inject JSON-LD structured data for SEO rich snippets
+ * Creates a script tag with application/ld+json type in document head
+ */
+function injectJsonLd(audit: PublicAuditData | null, hash: string) {
+  // Remove any existing JSON-LD script tag
+  const existingScript = document.querySelector('script[type="application/ld+json"][data-json-ld="audit"]');
+  if (existingScript) {
+    existingScript.remove();
+  }
+
+  if (!audit) {
+    return;
+  }
+
+  // Build JSON-LD schema with the hash from URL params
+  const jsonLd = generateJsonLdSchema({
+    ...audit,
+    publicHash: audit.hash || hash,
+  });
+  
+  if (!jsonLd) {
+    return;
+  }
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.setAttribute('data-json-ld', 'audit');
+  script.textContent = JSON.stringify(jsonLd);
+  document.head.appendChild(script);
+}
+
+/**
  * Update document metadata for SEO
  */
 function updateMetadata(audit: PublicAuditData | null, hash: string) {
@@ -121,6 +154,9 @@ function updateMetadata(audit: PublicAuditData | null, hash: string) {
     document.head.appendChild(canonical);
   }
   canonical.setAttribute('href', canonicalUrl);
+
+  // Inject JSON-LD structured data
+  injectJsonLd(audit, hash);
 }
 
 /**

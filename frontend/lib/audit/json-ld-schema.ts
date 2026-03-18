@@ -6,26 +6,16 @@
 
 /**
  * Public audit data interface for JSON-LD schema generation
+ * Only includes fields needed for schema generation
  */
 export interface PublicAuditData {
   siteUrl: string;
   auditedAt: string;
   overallScore: number;
-  categoryScores: Array<{
-    name: string;
-    score: number;
-    maxScore: number;
-    issues: number;
-  }>;
-  topIssues: Array<{
-    id: string;
-    title: string;
-    severity: 'critical' | 'warning' | 'info';
-    description: string;
-  }>;
-  recommendations: string[];
-  isPartial: boolean;
-  publicHash: string;
+  publicHash?: string;
+  hash?: string;
+  // Allow additional properties from the full audit data
+  [key: string]: unknown;
 }
 
 /**
@@ -110,8 +100,11 @@ export function generateJsonLdSchema(
       .replace(/\/$/, '')
   );
 
+  // Get hash from either publicHash or hash field
+  const auditHash = audit.publicHash || audit.hash || '';
+  
   // Build canonical audit URL
-  const pageUrl = `${siteUrl}/audit/${audit.publicHash}/`;
+  const pageUrl = `${siteUrl}/audit/${auditHash}/`;
 
   return {
     '@context': 'https://schema.org',
