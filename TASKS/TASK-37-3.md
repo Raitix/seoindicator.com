@@ -1,7 +1,7 @@
 # TASK-37-3: Fix Dashboard Error Handling
 
 ## STATUS
-`To Write Tests`
+`To Test Locally`
 
 ## PRIORITY
 `High`
@@ -767,3 +767,91 @@ if (error) {
 **Effort:** Small (1-2 hours) - straightforward error handling logic
 
 **Handoff:** PreTester - Design tests for dashboard error handling scenarios
+
+### PreTester Test Design (2026-03-18 13:26 GMT+2)
+**Status Changed:** `To Write Tests` → `To Develop` ✅
+**Tests Written:** 47 test scenarios across 12 categories
+**Test File:** `frontend/__tests__/app/dashboard/error-handling.test.tsx`
+**Documentation:** `TESTS/TEST-37-3.md`
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| DE-001 | 4 | 401 Error Detection |
+| DE-002 | 3 | localStorage Clearing on 401 |
+| DE-003 | 3 | Redirect to Login |
+| DE-004 | 4 | No Error Message for Auth Failures |
+| DE-005 | 3 | Loading State During Auth Check |
+| DE-006 | 5 | Non-Auth Error Handling |
+| DE-007 | 6 | Error Status Code Detection |
+| DE-008 | 5 | Edge Cases |
+| DE-009 | 3 | Integration with Auth Context |
+| DE-010 | 6 | Acceptance Criteria Verification |
+| DE-011 | 3 | Security Considerations |
+| DE-012 | 2 | Performance |
+
+**Test Results (Pre-Implementation):**
+- Passed: 21 tests (non-401 error handling, loading states, existing functionality)
+- Failed: 26 tests (401-specific detection and handling - requires implementation)
+
+**Implementation Required:**
+1. Add `isAuthError()` helper to detect 401 from various error formats
+2. Import and call `clearAuthStorage()` from `@/lib/api/auth`
+3. Add redirect logic for 401 errors using `router.push('/login')`
+4. Only show error UI for non-401 errors
+
+**Acceptance Criteria Mapping:**
+| AC | Test IDs | Status |
+|----|----------|--------|
+| AC1: Detect 401 | DE-001.1-4, DE-007.1-5 | Tests ready |
+| AC2: Clear localStorage | DE-002.1-3 | Tests ready |
+| AC3: Redirect to login | DE-003.1-3 | Tests ready |
+| AC4: No error message | DE-004.1-4 | Tests ready |
+| AC5: Loading state | DE-005.1-3 | Tests ready |
+| AC6: Unit tests | DE-010.1-6 | Tests exist |
+
+**Next Agent:** Developer - Implement 401 error handling in `frontend/app/dashboard/page.tsx`
+
+### Developer Implementation (2026-03-18 13:36 GMT+2)
+**Status Changed:** `To Develop` → `In Development` → `To Test Locally` ✅
+
+**Implementation Complete:**
+All 47 tests passing after implementation.
+
+**Changes Made:**
+1. **Added `isAuthError()` helper function** - Detects 401 errors from multiple formats:
+   - `error.status === 401` (number or string)
+   - `error.statusCode === 401`
+   - `error.response.status === 401`
+   - Error message containing "401" or "Unauthorized"
+   - Smart detection: doesn't treat "Unauthorized" message with status 500 as auth error
+
+2. **Added 401 error handling** in dashboard page:
+   - Detects auth errors before showing error UI
+   - Calls `clearAuthStorage()` to clear localStorage
+   - Redirects to `/login` on auth failure
+   - Shows error UI only for non-401 errors
+
+3. **Added re-render protection** using `useRef`:
+   - Prevents multiple redirects on component re-renders
+   - Uses `hasProcessedAuthError` ref to track if auth error was already handled
+
+**Files Modified:**
+- `frontend/app/dashboard/page.tsx` - Added 401 error detection and handling
+
+**Test Results:**
+```
+✓ 47 tests passed (all acceptance criteria verified)
+```
+
+**Acceptance Criteria Status:**
+| AC | Status |
+|----|--------|
+| AC1: Detect 401 error | ✅ Implemented |
+| AC2: Clear localStorage | ✅ Implemented |
+| AC3: Redirect to login | ✅ Implemented |
+| AC4: No error message | ✅ Implemented |
+| AC5: Loading state | ✅ Already working |
+| AC6: Unit tests | ✅ All 47 tests passing |
+
+**Next Agent:** LocalTester - Run tests and verify local functionality
