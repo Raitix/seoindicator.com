@@ -264,6 +264,147 @@ The homepage has its own inline header that also needed the fix:
 - TASK-37-6: Nav Hover States
 
 ---
+## Dashboard Error Handling (TASK-37-3)
+
+### Feature Description
+Fix for the dashboard page to handle authentication errors gracefully. Part of the Production Critical Fixes - Auth & Navigation feature (FEAT-037). When a user's session expires or token is invalid, the dashboard now properly detects 401 errors, clears localStorage, and redirects to the login page instead of showing a confusing error message.
+
+### Component Locations
+- **Dashboard Page:** `frontend/app/dashboard/page.tsx`
+- **Tests:** `frontend/__tests__/app/dashboard/error-handling.test.tsx`
+- **Test Documentation:** `TESTS/TEST-37-3.md`
+
+### Problem Solved
+
+| Issue | Before | After |
+|-------|--------|-------|
+| 401 error handling | Showed "Failed to load dashboard data" | Redirects to login |
+| localStorage on auth failure | Not cleared | Automatically cleared |
+| User experience | Confusing error message | Seamless redirect to login |
+| Re-render protection | N/A | Prevents multiple redirects |
+
+### Implementation Details
+
+**`isAuthError()` helper function:**
+Detects 401 errors from multiple formats:
+- `error.status === 401` (number or string)
+- `error.statusCode === 401`
+- `error.response.status === 401`
+- Error message containing "401" or "Unauthorized"
+- Smart detection: doesn't treat "Unauthorized" message with status 500 as auth error
+
+**Dashboard error handling:**
+```typescript
+// In DashboardPage component
+if (error) {
+  // Check if it's an auth error
+  if (isAuthError(error)) {
+    // Clear auth storage and redirect
+    clearAuthStorage();
+    router.push('/login');
+    return null;
+  }
+  
+  // Show error UI for other errors
+  return <ErrorUI />;
+}
+```
+
+**Re-render protection:**
+Uses `useRef` to prevent multiple redirects on component re-renders:
+```typescript
+const hasProcessedAuthError = useRef(false);
+
+if (error && isAuthError(error) && !hasProcessedAuthError.current) {
+  hasProcessedAuthError.current = true;
+  clearAuthStorage();
+  router.push('/login');
+  return null;
+}
+```
+
+### Technical Changes
+
+| File | Change |
+|------|--------|
+| `frontend/app/dashboard/page.tsx` | Added `isAuthError()` helper and 401 error handling |
+
+### Acceptance Criteria Verification
+
+| AC | Requirement | Status |
+|----|-------------|--------|
+| AC1 | Dashboard detects 401 error from API | ✅ Verified |
+| AC2 | localStorage cleared on 401 error | ✅ Verified |
+| AC3 | User redirected to /login/ on auth failure | ✅ Verified |
+| AC4 | No error message shown for auth failures | ✅ Verified |
+| AC5 | Loading state shown while checking auth | ✅ Verified |
+| AC6 | Unit tests for error handling | ✅ 47 tests passing |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| error-handling.test.tsx | 47 | ✅ ALL PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| DE-001 | 4 | 401 Error Detection |
+| DE-002 | 3 | localStorage Clearing on 401 |
+| DE-003 | 3 | Redirect to Login |
+| DE-004 | 4 | No Error Message for Auth Failures |
+| DE-005 | 3 | Loading State During Auth Check |
+| DE-006 | 5 | Non-Auth Error Handling |
+| DE-007 | 6 | Error Status Code Detection |
+| DE-008 | 5 | Edge Cases |
+| DE-009 | 3 | Integration with Auth Context |
+| DE-010 | 6 | Acceptance Criteria Verification |
+| DE-011 | 3 | Security Considerations |
+| DE-012 | 2 | Performance |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-18 |
+| Deployment ID | `20260318T121123Z-3c481793` |
+| Commit | `ed000205` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-18 14:43 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Dashboard API (unauthenticated) | 401 | 401 | ✅ PASS |
+| Invalid token handling | 401 | 401 | ✅ PASS |
+| XSS prevention | Blocked | Blocked | ✅ PASS |
+| Login page accessibility | 200 OK | 200 OK | ✅ PASS |
+| Unit tests | 47 pass | 47 pass | ✅ PASS |
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Auth Error Detection | Smart `isAuthError()` helper with multiple format support |
+| Storage Clearing | Uses `clearAuthStorage()` from `@/lib/api/auth` |
+| Redirect Safety | Internal navigation only via `router.push('/login')` |
+| XSS Prevention | React's default escaping, no dangerouslySetInnerHTML |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-37-1 | Done ✅ | Token Validation in AuthContext |
+
+### Related Tasks
+
+- TASK-37-1: Token Validation in AuthContext (prerequisite)
+- TASK-37-2: Header Navigation Fix
+- TASK-37-7: Indicators Button Fix
+
+---
 ## Token Validation in AuthContext (TASK-37-1)
 
 ### Feature Description
@@ -7360,7 +7501,7 @@ interface MetricCardProps {
 
 | Task | Status | Description |
 |------|--------|-------------|
-| TASK-34-10 (Dashboard Page) | Ready for Testing | Dashboard integration point |
+| TASK-34-10 (Dashboard Page) | Done ✅ | Dashboard page with metric cards, charts, recent mentions |
 | TASK-34-14 (Analytics API) | Done ✅ | API endpoints for chart data |
 
 ### Integration Points
