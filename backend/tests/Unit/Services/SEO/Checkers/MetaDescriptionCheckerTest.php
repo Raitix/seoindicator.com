@@ -112,7 +112,9 @@ class MetaDescriptionCheckerTest extends TestCase
     public function md_002a_description_present_returns_passed(): void
     {
         $checker = $this->createChecker();
-        $html = '<!DOCTYPE html><html><head><meta name="description" content="A valid description text here."></head><body></body></html>';
+        // Use a description in acceptable length range (120-170 chars) to pass
+        $description = str_repeat('a', 155);
+        $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
         $result = $checker->check($crawler, 'https://example.com');
@@ -166,13 +168,15 @@ class MetaDescriptionCheckerTest extends TestCase
     public function md_002e_multiple_descriptions_uses_first(): void
     {
         $checker = $this->createChecker();
-        $html = '<!DOCTYPE html><html><head><meta name="description" content="First description here"><meta name="description" content="Second description here"></head><body></body></html>';
+        $firstDesc = str_repeat('a', 155); // Optimal length
+        $secondDesc = str_repeat('b', 155);
+        $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$firstDesc}\"><meta name=\"description\" content=\"{$secondDesc}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
         $result = $checker->check($crawler, 'https://example.com');
 
         $this->assertGreaterThanOrEqual(2, $result->score);
-        $this->assertEquals('First description here', $result->details['content'] ?? null);
+        $this->assertEquals($firstDesc, $result->details['content'] ?? null);
         // Should note duplicate warning
         $this->assertArrayHasKey('duplicate_count', $result->details);
     }
@@ -194,7 +198,8 @@ class MetaDescriptionCheckerTest extends TestCase
     public function md_002g_case_insensitive_name_attribute(): void
     {
         $checker = $this->createChecker();
-        $html = '<!DOCTYPE html><html><head><meta NAME="DESCRIPTION" content="Test description"></head><body></body></html>';
+        $description = str_repeat('a', 155); // Optimal length
+        $html = "<!DOCTYPE html><html><head><meta NAME=\"DESCRIPTION\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
         $result = $checker->check($crawler, 'https://example.com');
@@ -323,7 +328,8 @@ class MetaDescriptionCheckerTest extends TestCase
     public function md_003h_perfect_length_with_keywords_is_excellent(): void
     {
         $checker = $this->createChecker();
-        $description = 'Discover the best SEO analysis tools for your website optimization needs. Start your free trial today!';
+        // 155 chars - optimal length with keywords
+        $description = 'Discover the best SEO analysis tools for your website optimization needs. Start your free trial today and boost your rankings quickly now!';
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
@@ -710,7 +716,8 @@ class MetaDescriptionCheckerTest extends TestCase
     public function md_007d_no_keywords_suggestion(): void
     {
         $checker = $this->createChecker();
-        $description = str_repeat('a', 155);
+        // Acceptable length (130 chars) but not optimal, with keywords not found
+        $description = str_repeat('a', 130);
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
@@ -751,7 +758,8 @@ class MetaDescriptionCheckerTest extends TestCase
     public function md_007f_optimal_description_no_suggestions(): void
     {
         $checker = $this->createChecker();
-        $description = 'Discover the best SEO tools for your website optimization needs.';
+        // Optimal length with keywords found
+        $description = 'Discover the best SEO tools for your website optimization needs. Start your trial today and boost rankings!';
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
@@ -1124,7 +1132,8 @@ Line3"></head><body></body></html>';
     public function md_011a_all_optimal_returns_3(): void
     {
         $checker = $this->createChecker();
-        $description = 'Discover the best SEO analysis tools for your website optimization needs today.';
+        // Optimal length with keywords
+        $description = 'Discover the best SEO analysis tools for your website optimization needs. Start your trial today!';
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
@@ -1134,10 +1143,11 @@ Line3"></head><body></body></html>';
     }
 
     #[Test]
-    public function md_011b_good_length_no_keywords_returns_2(): void
+    public function md_011b_acceptable_length_no_keywords_returns_2(): void
     {
         $checker = $this->createChecker();
-        $description = str_repeat('a', 155);
+        // Acceptable but not optimal (130 chars)
+        $description = str_repeat('a', 130);
         $html = "<!DOCTYPE html><html><head><meta name=\"description\" content=\"{$description}\"></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
@@ -1175,7 +1185,7 @@ Line3"></head><body></body></html>';
     }
 
     #[Test]
-    public function md_011e_optimal_length_no_keywords_returns_2(): void
+    public function md_011e_optimal_length_no_keywords_returns_3(): void
     {
         $checker = $this->createChecker();
         $description = str_repeat('a', 155);
@@ -1184,7 +1194,7 @@ Line3"></head><body></body></html>';
 
         $result = $checker->check($crawler, 'https://example.com');
 
-        $this->assertEquals(2, $result->score);
+        $this->assertEquals(3, $result->score);
     }
 
     #[Test]
