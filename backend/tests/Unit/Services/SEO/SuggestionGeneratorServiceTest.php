@@ -2,10 +2,13 @@
 
 namespace Tests\Unit\Services\SEO;
 
+use App\Services\SEO\Checkers\IndicatorCheckerInterface;
 use App\Services\SEO\Checkers\IndicatorResult;
 use App\Services\SEO\Checkers\Suggestion;
 use App\Services\SEO\SuggestionGeneratorService;
 use App\Services\SEO\SuggestionCollection;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,707 +22,675 @@ class SuggestionGeneratorServiceTest extends TestCase
     // ============================================
     // SG-001: Service Instantiation
     // ============================================
-    describe('Service Instantiation', () => {
-        it('SG-001-01: creates instance with default config', () => {
-            $service = new SuggestionGeneratorService();
 
-            expect($service)->toBeInstanceOf(SuggestionGeneratorService::class);
-        });
+    #[Test]
+    public function sg_001_01_creates_instance_with_default_config(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-        it('SG-001-02: accepts custom config for limit per indicator', () => {
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 5]);
+        $this->assertInstanceOf(SuggestionGeneratorService::class, $service);
+    }
 
-            expect($service->getLimitPerIndicator())->toBe(5);
-        });
+    #[Test]
+    public function sg_001_02_accepts_custom_config_for_limit_per_indicator(): void
+    {
+        $service = new SuggestionGeneratorService(['limitPerIndicator' => 5]);
 
-        it('SG-001-03: default limit per indicator is 3', () => {
-            $service = new SuggestionGeneratorService();
+        $this->assertEquals(5, $service->getLimitPerIndicator());
+    }
 
-            expect($service->getLimitPerIndicator())->toBe(3);
-        });
+    #[Test]
+    public function sg_001_03_default_limit_per_indicator_is_3(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-        it('SG-001-04: accepts array of checkers in constructor', () => {
-            $checker1 = $this->createMockChecker('title_tag', 'Title Tag', 'content');
-            $checker2 = $this->createMockChecker('meta_desc', 'Meta Description', 'content');
+        $this->assertEquals(3, $service->getLimitPerIndicator());
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker1, $checker2]);
+    #[Test]
+    public function sg_001_04_accepts_array_of_checkers_in_constructor(): void
+    {
+        $checker1 = $this->createMockChecker('title_tag', 'Title Tag', 'content');
+        $checker2 = $this->createMockChecker('meta_desc', 'Meta Description', 'content');
 
-            expect($service->getCheckerCount())->toBe(2);
-        });
-    });
+        $service = new SuggestionGeneratorService([], [$checker1, $checker2]);
+
+        $this->assertEquals(2, $service->getCheckerCount());
+    }
 
     // ============================================
     // SG-002: Generate Suggestions from Results
     // ============================================
-    describe('Generate Suggestions from Results', () => {
-        it('SG-002-01: accepts array of IndicatorResult objects', () => {
-            $service = new SuggestionGeneratorService();
-            $results = [$this->createDefaultResult()];
 
-            $collection = $service->generate($results);
+    #[Test]
+    public function sg_002_01_accepts_array_of_indicator_result_objects(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $results = [$this->createDefaultResult()];
 
-            expect($collection)->toBeInstanceOf(SuggestionCollection::class);
-        });
+        $collection = $service->generate($results);
 
-        it('SG-002-02: calls getSuggestions on each checker', () => {
-            $checker = $this->createMockChecker('title_tag', 'Title Tag', 'content');
-            $checker->expects($this->once())
-                ->method('getSuggestions')
-                ->willReturn([]);
+        $this->assertInstanceOf(SuggestionCollection::class, $collection);
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('title_tag', 'Title Tag', 'content');
+    #[Test]
+    public function sg_002_02_calls_get_suggestions_on_each_checker(): void
+    {
+        $checker = $this->createMockChecker('title_tag', 'Title Tag', 'content');
+        $checker->expects($this->once())
+            ->method('getSuggestions')
+            ->willReturn([]);
 
-            $service->generate([$result]);
-        });
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('title_tag', 'Title Tag', 'content');
 
-        it('SG-002-03: aggregates suggestions from all checkers', () => {
-            $checker1 = $this->createMockCheckerWithSuggestions('title_tag', [
-                new Suggestion('warning', 'Title too short', null, 2),
-            ]);
-            $checker2 = $this->createMockCheckerWithSuggestions('meta_desc', [
-                new Suggestion('error', 'Missing meta description', null, 3),
-            ]);
+        $service->generate([$result]);
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker1, $checker2]);
-            $results = [
-                $this->createResultForChecker('title_tag', 'Title Tag', 'content'),
-                $this->createResultForChecker('meta_desc', 'Meta Description', 'content'),
-            ];
+    #[Test]
+    public function sg_002_03_aggregates_suggestions_from_all_checkers(): void
+    {
+        $checker1 = $this->createMockCheckerWithSuggestions('title_tag', [
+            new Suggestion('warning', 'Title too short', null, 2),
+        ]);
+        $checker2 = $this->createMockCheckerWithSuggestions('meta_desc', [
+            new Suggestion('error', 'Missing meta description', null, 3),
+        ]);
 
-            $collection = $service->generate($results);
+        $service = new SuggestionGeneratorService([], [$checker1, $checker2]);
+        $results = [
+            $this->createResultForChecker('title_tag', 'Title Tag', 'content'),
+            $this->createResultForChecker('meta_desc', 'Meta Description', 'content'),
+        ];
 
-            expect($collection->count())->toBe(2);
-        });
+        $collection = $service->generate($results);
 
-        it('SG-002-04: returns empty collection for empty results', () => {
-            $service = new SuggestionGeneratorService();
+        $this->assertEquals(2, $collection->count());
+    }
 
-            $collection = $service->generate([]);
+    #[Test]
+    public function sg_002_04_returns_empty_collection_for_empty_results(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            expect($collection->isEmpty())->toBeTrue();
-        });
+        $collection = $service->generate([]);
 
-        it('SG-002-05: handles null result array', () => {
-            $service = new SuggestionGeneratorService();
+        $this->assertTrue($collection->isEmpty());
+    }
 
-            $collection = $service->generate(null);
+    #[Test]
+    public function sg_002_05_handles_null_result_array(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            expect($collection->isEmpty())->toBeTrue();
-        });
-    });
+        $collection = $service->generate(null);
+
+        $this->assertTrue($collection->isEmpty());
+    }
 
     // ============================================
     // SG-003: Prioritization by Impact
     // ============================================
-    describe('Prioritization by Impact', () => {
-        it('SG-003-01: sorts by priority (high first)', () => {
-            $suggestions = [
-                new Suggestion('warning', 'Low priority', null, 1),
-                new Suggestion('error', 'High priority', null, 3),
-                new Suggestion('info', 'Medium priority', null, 2),
-            ];
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_003_01_sorts_by_priority_high_first(): void
+    {
+        $suggestions = [
+            new Suggestion('warning', 'Low priority', null, 1),
+            new Suggestion('error', 'High priority', null, 3),
+            new Suggestion('info', 'Medium priority', null, 2),
+        ];
 
-            $collection = $service->generate([$result]);
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            $sorted = $collection->all();
-            expect($sorted[0]->priority)->toBe(3);
-            expect($sorted[1]->priority)->toBe(2);
-            expect($sorted[2]->priority)->toBe(1);
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-003-02: considers indicator weight in sorting', () => {
-            $highWeightChecker = $this->createMockCheckerWithWeight('title_tag', 1.0, [
-                new Suggestion('warning', 'Title issue', null, 2),
-            ]);
-            $lowWeightChecker = $this->createMockCheckerWithWeight('meta_desc', 0.5, [
-                new Suggestion('error', 'Meta issue', null, 3),
-            ]);
+        $sorted = $collection->all();
+        $this->assertEquals(3, $sorted[0]->priority);
+        $this->assertEquals(2, $sorted[1]->priority);
+        $this->assertEquals(1, $sorted[2]->priority);
+    }
 
-            $service = new SuggestionGeneratorService([], [$highWeightChecker, $lowWeightChecker]);
-            $results = [
-                $this->createResultWithWeight('title_tag', 'Title Tag', 'content', 1.0),
-                $this->createResultWithWeight('meta_desc', 'Meta Description', 'content', 0.5),
-            ];
+    #[Test]
+    public function sg_003_02_considers_indicator_weight_in_sorting(): void
+    {
+        $highWeightChecker = $this->createMockCheckerWithWeight('title_tag', 1.0, [
+            new Suggestion('warning', 'Title issue', null, 2),
+        ]);
+        $lowWeightChecker = $this->createMockCheckerWithWeight('meta_desc', 0.5, [
+            new Suggestion('error', 'Meta issue', null, 3),
+        ]);
 
-            $collection = $service->generate($results);
+        $service = new SuggestionGeneratorService([], [$highWeightChecker, $lowWeightChecker]);
+        $results = [
+            $this->createResultWithWeight('title_tag', 'Title Tag', 'content', 1.0),
+            $this->createResultWithWeight('meta_desc', 'Meta Description', 'content', 0.5),
+        ];
 
-            // Even though meta has higher priority, title has higher weight
-            expect($collection->first()->message)->toBe('Title issue');
-        });
+        $collection = $service->generate($results);
 
-        it('SG-003-03: same priority sorted by type (error > warning > info)', () => {
-            $suggestions = [
-                new Suggestion('info', 'Info message', null, 2),
-                new Suggestion('warning', 'Warning message', null, 2),
-                new Suggestion('error', 'Error message', null, 2),
-            ];
+        // Even though meta has higher priority, title has higher weight
+        $this->assertEquals('Title issue', $collection->first()->message);
+    }
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_003_03_same_priority_sorted_by_type_error_warning_info(): void
+    {
+        $suggestions = [
+            new Suggestion('info', 'Info message', null, 2),
+            new Suggestion('warning', 'Warning message', null, 2),
+            new Suggestion('error', 'Error message', null, 2),
+        ];
 
-            $collection = $service->generate([$result]);
-            $sorted = $collection->all();
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($sorted[0]->type)->toBe('error');
-            expect($sorted[1]->type)->toBe('warning');
-            expect($sorted[2]->type)->toBe('info');
-        });
+        $collection = $service->generate([$result]);
+        $sorted = $collection->all();
 
-        it('SG-003-04: calculates impact score correctly', () => {
-            $service = new SuggestionGeneratorService();
-            $suggestion = new Suggestion('error', 'Test', null, 3);
-            $weight = 1.0;
+        $this->assertEquals('error', $sorted[0]->type);
+        $this->assertEquals('warning', $sorted[1]->type);
+        $this->assertEquals('info', $sorted[2]->type);
+    }
 
-            $impact = $service->calculateImpactScore($suggestion, $weight);
+    #[Test]
+    public function sg_003_04_calculates_impact_score_correctly(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $suggestion = new Suggestion('error', 'Test', null, 3);
+        $weight = 1.0;
 
-            expect($impact)->toBeGreaterThan(0);
-        });
-    });
+        $impact = $service->calculateImpactScore($suggestion, $weight);
+
+        $this->assertGreaterThan(0, $impact);
+    }
 
     // ============================================
     // SG-004: Grouping by Category
     // ============================================
-    describe('Grouping by Category', () => {
-        it('SG-004-01: groups suggestions by indicator category', () => {
-            $contentChecker = $this->createMockCheckerWithSuggestions('title_tag', [
-                new Suggestion('warning', 'Title issue', null, 2),
-            ]);
-            $technicalChecker = $this->createMockCheckerWithSuggestions('ssl', [
-                new Suggestion('error', 'SSL issue', null, 3),
-            ]);
 
-            $service = new SuggestionGeneratorService([], [$contentChecker, $technicalChecker]);
-            $results = [
-                $this->createResultForChecker('title_tag', 'Title Tag', 'content'),
-                $this->createResultForChecker('ssl', 'SSL', 'technical'),
-            ];
+    #[Test]
+    public function sg_004_01_groups_suggestions_by_indicator_category(): void
+    {
+        $contentChecker = $this->createMockCheckerWithSuggestions('title_tag', [
+            new Suggestion('warning', 'Title issue', null, 2),
+        ]);
+        $technicalChecker = $this->createMockCheckerWithSuggestions('ssl', [
+            new Suggestion('error', 'SSL issue', null, 3),
+        ]);
 
-            $collection = $service->generate($results);
-            $grouped = $collection->groupByCategory();
+        $service = new SuggestionGeneratorService([], [$contentChecker, $technicalChecker]);
+        $results = [
+            $this->createResultForChecker('title_tag', 'Title Tag', 'content'),
+            $this->createResultForChecker('ssl', 'SSL', 'technical'),
+        ];
 
-            expect($grouped)->toHaveKey('content');
-            expect($grouped)->toHaveKey('technical');
-        });
+        $collection = $service->generate($results);
+        $grouped = $collection->groupByCategory();
 
-        it('SG-004-02: returns all 4 categories even if empty', () => {
-            $checker = $this->createMockCheckerWithSuggestions('title_tag', [
-                new Suggestion('warning', 'Title issue', null, 2),
-            ]);
+        $this->assertArrayHasKey('content', $grouped);
+        $this->assertArrayHasKey('technical', $grouped);
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('title_tag', 'Title Tag', 'content');
+    #[Test]
+    public function sg_004_02_returns_all_4_categories_even_if_empty(): void
+    {
+        $checker = $this->createMockCheckerWithSuggestions('title_tag', [
+            new Suggestion('warning', 'Title issue', null, 2),
+        ]);
 
-            $collection = $service->generate([$result]);
-            $grouped = $collection->groupByCategory();
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('title_tag', 'Title Tag', 'content');
 
-            expect($grouped)->toHaveKeys(['content', 'technical', 'accessibility', 'performance']);
-        });
+        $collection = $service->generate([$result]);
+        $grouped = $collection->groupByCategory();
 
-        it('SG-004-03: multiple suggestions in same category', () => {
-            $checker1 = $this->createMockCheckerWithSuggestions('title_tag', [
-                new Suggestion('warning', 'Title issue', null, 2),
-            ]);
-            $checker2 = $this->createMockCheckerWithSuggestions('meta_desc', [
-                new Suggestion('error', 'Meta issue', null, 3),
-            ]);
+        $this->assertArrayHasKey('content', $grouped);
+        $this->assertArrayHasKey('technical', $grouped);
+        $this->assertArrayHasKey('accessibility', $grouped);
+        $this->assertArrayHasKey('performance', $grouped);
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker1, $checker2]);
-            $results = [
-                $this->createResultForChecker('title_tag', 'Title Tag', 'content'),
-                $this->createResultForChecker('meta_desc', 'Meta Description', 'content'),
-            ];
+    #[Test]
+    public function sg_004_03_multiple_suggestions_in_same_category(): void
+    {
+        $checker1 = $this->createMockCheckerWithSuggestions('title_tag', [
+            new Suggestion('warning', 'Title issue', null, 2),
+        ]);
+        $checker2 = $this->createMockCheckerWithSuggestions('meta_desc', [
+            new Suggestion('error', 'Meta issue', null, 3),
+        ]);
 
-            $collection = $service->generate([$result]);
-            $grouped = $collection->groupByCategory();
+        $service = new SuggestionGeneratorService([], [$checker1, $checker2]);
+        $results = [
+            $this->createResultForChecker('title_tag', 'Title Tag', 'content'),
+            $this->createResultForChecker('meta_desc', 'Meta Description', 'content'),
+        ];
 
-            expect($grouped['content'])->toHaveCount(2);
-        });
+        $collection = $service->generate($results);
+        $grouped = $collection->groupByCategory();
 
-        it('SG-004-04: category order is consistent', () => {
-            $service = new SuggestionGeneratorService();
-            $expectedOrder = ['content', 'technical', 'accessibility', 'performance'];
+        $this->assertCount(2, $grouped['content']);
+    }
 
-            $order = $service->getCategoryOrder();
+    #[Test]
+    public function sg_004_04_category_order_is_consistent(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $expectedOrder = ['content', 'technical', 'accessibility', 'performance'];
 
-            expect($order)->toBe($expectedOrder);
-        });
-    });
+        $order = $service->getCategoryOrder();
+
+        $this->assertEquals($expectedOrder, $order);
+    }
 
     // ============================================
     // SG-005: Limit Suggestions Per Indicator
     // ============================================
-    describe('Limit Suggestions Per Indicator', () => {
-        it('SG-005-01: limits suggestions to configured limit', () => {
-            $suggestions = [
-                new Suggestion('warning', 'Issue 1', null, 3),
-                new Suggestion('warning', 'Issue 2', null, 2),
-                new Suggestion('warning', 'Issue 3', null, 1),
-                new Suggestion('warning', 'Issue 4', null, 1),
-                new Suggestion('warning', 'Issue 5', null, 1),
-            ];
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 3], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_005_01_limits_suggestions_to_configured_limit(): void
+    {
+        $suggestions = [
+            new Suggestion('warning', 'Issue 1', null, 3),
+            new Suggestion('warning', 'Issue 2', null, 2),
+            new Suggestion('warning', 'Issue 3', null, 1),
+            new Suggestion('warning', 'Issue 4', null, 1),
+            new Suggestion('warning', 'Issue 5', null, 1),
+        ];
 
-            $collection = $service->generate([$result]);
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService(['limitPerIndicator' => 3], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->count())->toBe(3);
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-005-02: keeps highest priority suggestions when limiting', () => {
-            $suggestions = [
-                new Suggestion('warning', 'Low 1', null, 1),
-                new Suggestion('warning', 'Low 2', null, 1),
-                new Suggestion('warning', 'High', null, 3),
-                new Suggestion('warning', 'Medium', null, 2),
-            ];
+        $this->assertEquals(3, $collection->count());
+    }
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 2], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_005_02_keeps_highest_priority_suggestions_when_limiting(): void
+    {
+        $suggestions = [
+            new Suggestion('warning', 'Low 1', null, 1),
+            new Suggestion('warning', 'Low 2', null, 1),
+            new Suggestion('warning', 'High', null, 3),
+            new Suggestion('warning', 'Medium', null, 2),
+        ];
 
-            $collection = $service->generate([$result]);
-            $messages = array_map(fn($s) => $s->message, $collection->all());
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService(['limitPerIndicator' => 2], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($messages)->toContain('High');
-            expect($messages)->toContain('Medium');
-        });
+        $collection = $service->generate([$result]);
+        $messages = array_map(fn($s) => $s->message, $collection->all());
 
-        it('SG-005-03: no limit when set to 0 or null', () => {
-            $suggestions = array_map(
-                fn($i) => new Suggestion('warning', "Issue $i", null, 1),
-                range(1, 10)
-            );
+        $this->assertContains('High', $messages);
+        $this->assertContains('Medium', $messages);
+    }
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 0], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_005_03_no_limit_when_set_to_0(): void
+    {
+        $suggestions = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $suggestions[] = new Suggestion('warning', "Issue $i", null, 1);
+        }
 
-            $collection = $service->generate([$result]);
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService(['limitPerIndicator' => 0], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->count())->toBe(10);
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-005-04: limit can be changed after instantiation', () => {
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 3]);
+        $this->assertEquals(10, $collection->count());
+    }
 
-            $service->setLimitPerIndicator(5);
+    #[Test]
+    public function sg_005_04_limit_can_be_changed_after_instantiation(): void
+    {
+        $service = new SuggestionGeneratorService(['limitPerIndicator' => 3]);
 
-            expect($service->getLimitPerIndicator())->toBe(5);
-        });
-    });
+        $service->setLimitPerIndicator(5);
+
+        $this->assertEquals(5, $service->getLimitPerIndicator());
+    }
 
     // ============================================
     // SG-006: SuggestionCollection Return Type
     // ============================================
-    describe('SuggestionCollection Return Type', () => {
-        it('SG-006-01: returns SuggestionCollection instance', () => {
-            $service = new SuggestionGeneratorService();
 
-            $collection = $service->generate([]);
+    #[Test]
+    public function sg_006_01_returns_suggestion_collection_instance(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            expect($collection)->toBeInstanceOf(SuggestionCollection::class);
-        });
+        $collection = $service->generate([]);
 
-        it('SG-006-02: collection has all() method', () => {
-            $service = new SuggestionGeneratorService();
-            $checker = $this->createMockCheckerWithSuggestions('test', [
-                new Suggestion('warning', 'Test', null, 1),
-            ]);
-            $service->addChecker($checker);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+        $this->assertInstanceOf(SuggestionCollection::class, $collection);
+    }
 
-            $collection = $service->generate([$result]);
+    #[Test]
+    public function sg_006_02_collection_has_all_method(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $checker = $this->createMockCheckerWithSuggestions('test', [
+            new Suggestion('warning', 'Test', null, 1),
+        ]);
+        $service->addChecker($checker);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->all())->toBeArray();
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-006-03: collection has count() method', () => {
-            $service = new SuggestionGeneratorService();
+        $this->assertIsArray($collection->all());
+    }
 
-            $collection = $service->generate([]);
+    #[Test]
+    public function sg_006_03_collection_has_count_method(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            expect($collection->count())->toBeInt();
-        });
+        $collection = $service->generate([]);
 
-        it('SG-006-04: collection has isEmpty() method', () => {
-            $service = new SuggestionGeneratorService();
+        $this->assertIsInt($collection->count());
+    }
 
-            $collection = $service->generate([]);
+    #[Test]
+    public function sg_006_04_collection_has_is_empty_method(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            expect($collection->isEmpty())->toBeTrue();
-        });
+        $collection = $service->generate([]);
 
-        it('SG-006-05: collection has first() method', () => {
-            $service = new SuggestionGeneratorService();
-            $checker = $this->createMockCheckerWithSuggestions('test', [
-                new Suggestion('warning', 'First', null, 1),
-            ]);
-            $service->addChecker($checker);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+        $this->assertTrue($collection->isEmpty());
+    }
 
-            $collection = $service->generate([$result]);
+    #[Test]
+    public function sg_006_05_collection_has_first_method(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $checker = $this->createMockCheckerWithSuggestions('test', [
+            new Suggestion('warning', 'First', null, 1),
+        ]);
+        $service->addChecker($checker);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->first())->toBeInstanceOf(Suggestion::class);
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-006-06: collection has groupByCategory() method', () => {
-            $service = new SuggestionGeneratorService();
+        $this->assertInstanceOf(Suggestion::class, $collection->first());
+    }
 
-            $collection = $service->generate([]);
+    #[Test]
+    public function sg_006_06_collection_has_group_by_category_method(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            expect($collection->groupByCategory())->toBeArray();
-        });
+        $collection = $service->generate([]);
 
-        it('SG-006-07: collection has getByPriority() method', () => {
-            $service = new SuggestionGeneratorService();
-            $checker = $this->createMockCheckerWithSuggestions('test', [
-                new Suggestion('warning', 'High', null, 3),
-                new Suggestion('warning', 'Low', null, 1),
-            ]);
-            $service->addChecker($checker);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+        $this->assertIsArray($collection->groupByCategory());
+    }
 
-            $collection = $service->generate([$result]);
-            $high = $collection->getByPriority(3);
+    #[Test]
+    public function sg_006_07_collection_has_get_by_priority_method(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $checker = $this->createMockCheckerWithSuggestions('test', [
+            new Suggestion('warning', 'High', null, 3),
+            new Suggestion('warning', 'Low', null, 1),
+        ]);
+        $service->addChecker($checker);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($high)->toHaveCount(1);
-            expect($high[0]->message)->toBe('High');
-        });
+        $collection = $service->generate([$result]);
+        $high = $collection->getByPriority(3);
 
-        it('SG-006-08: collection has getByType() method', () => {
-            $service = new SuggestionGeneratorService();
-            $checker = $this->createMockCheckerWithSuggestions('test', [
-                new Suggestion('error', 'Error', null, 2),
-                new Suggestion('warning', 'Warning', null, 2),
-            ]);
-            $service->addChecker($checker);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+        $this->assertCount(1, $high);
+        $this->assertEquals('High', $high[0]->message);
+    }
 
-            $collection = $service->generate([$result]);
-            $errors = $collection->getByType('error');
+    #[Test]
+    public function sg_006_08_collection_has_get_by_type_method(): void
+    {
+        $service = new SuggestionGeneratorService();
+        $checker = $this->createMockCheckerWithSuggestions('test', [
+            new Suggestion('error', 'Error', null, 2),
+            new Suggestion('warning', 'Warning', null, 2),
+        ]);
+        $service->addChecker($checker);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($errors)->toHaveCount(1);
-        });
-    });
+        $collection = $service->generate([$result]);
+        $errors = $collection->getByType('error');
+
+        $this->assertCount(1, $errors);
+    }
 
     // ============================================
     // SG-007: Handle Indicators with No Suggestions
     // ============================================
-    describe('Handle Indicators with No Suggestions', () => {
-        it('SG-007-01: checker returns empty array', () => {
-            $checker = $this->createMockCheckerWithSuggestions('test', []);
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            $collection = $service->generate([$result]);
+    #[Test]
+    public function sg_007_01_checker_returns_empty_array(): void
+    {
+        $checker = $this->createMockCheckerWithSuggestions('test', []);
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->isEmpty())->toBeTrue();
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-007-02: checker returns null from getSuggestions', () => {
-            $checker = $this->createMockChecker('test', 'Test', 'content');
-            $checker->method('getSuggestions')->willReturn(null);
+        $this->assertTrue($collection->isEmpty());
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_007_02_checker_returns_null_from_get_suggestions(): void
+    {
+        $checker = $this->createMockChecker('test', 'Test', 'content');
+        $checker->method('getSuggestions')->willReturn(null);
 
-            $collection = $service->generate([$result]);
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->isEmpty())->toBeTrue();
-        });
+        $collection = $service->generate([$result]);
 
-        it('SG-007-03: mixed results (some with suggestions, some without)', () => {
-            $checkerWith = $this->createMockCheckerWithSuggestions('with', [
-                new Suggestion('warning', 'Issue', null, 1),
-            ]);
-            $checkerWithout = $this->createMockCheckerWithSuggestions('without', []);
+        $this->assertTrue($collection->isEmpty());
+    }
 
-            $service = new SuggestionGeneratorService([], [$checkerWith, $checkerWithout]);
-            $results = [
-                $this->createResultForChecker('with', 'With', 'content'),
-                $this->createResultForChecker('without', 'Without', 'content'),
-            ];
+    #[Test]
+    public function sg_007_03_mixed_results_some_with_suggestions_some_without(): void
+    {
+        $checkerWith = $this->createMockCheckerWithSuggestions('with', [
+            new Suggestion('warning', 'Issue', null, 1),
+        ]);
+        $checkerWithout = $this->createMockCheckerWithSuggestions('without', []);
 
-            $collection = $service->generate($results);
+        $service = new SuggestionGeneratorService([], [$checkerWith, $checkerWithout]);
+        $results = [
+            $this->createResultForChecker('with', 'With', 'content'),
+            $this->createResultForChecker('without', 'Without', 'content'),
+        ];
 
-            expect($collection->count())->toBe(1);
-        });
+        $collection = $service->generate($results);
 
-        it('SG-007-04: result with score 3 (excellent) may have no suggestions', () => {
-            $checker = $this->createMockChecker('test', 'Test', 'content');
-            $checker->method('getSuggestions')->willReturn([]);
+        $this->assertEquals(1, $collection->count());
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = new IndicatorResult(
-                id: 'test',
-                name: 'Test',
-                category: 'content',
-                score: 3,
-                weight: 1.0,
-                passed: true
-            );
+    #[Test]
+    public function sg_007_04_result_with_score_3_may_have_no_suggestions(): void
+    {
+        $checker = $this->createMockChecker('test', 'Test', 'content');
+        $checker->method('getSuggestions')->willReturn([]);
 
-            $collection = $service->generate([$result]);
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = new IndicatorResult(
+            id: 'test',
+            name: 'Test',
+            category: 'content',
+            score: 3,
+            weight: 1.0,
+            passed: true
+        );
 
-            expect($collection->isEmpty())->toBeTrue();
-        });
-    });
+        $collection = $service->generate([$result]);
+
+        $this->assertTrue($collection->isEmpty());
+    }
 
     // ============================================
     // SG-008: Quick Wins Category
     // ============================================
-    describe('Quick Wins Category', () => {
-        it('SG-008-01: identifies quick wins (easy fixes)', () => {
-            $checker = $this->createMockCheckerWithSuggestions('test', [
-                new Suggestion('warning', 'Easy fix', 'Add title tag', 2),
-            ]);
 
-            $service = new SuggestionGeneratorService(['enableQuickWins' => true], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_008_01_identifies_quick_wins_easy_fixes(): void
+    {
+        $checker = $this->createMockCheckerWithSuggestions('test', [
+            new Suggestion('warning', 'Easy fix', 'Add title tag', 2),
+        ]);
 
-            $collection = $service->generate([$result]);
-            $quickWins = $collection->getQuickWins();
+        $service = new SuggestionGeneratorService(['enableQuickWins' => true], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($quickWins)->toHaveCount(1);
-        });
+        $collection = $service->generate([$result]);
+        $quickWins = $collection->getQuickWins();
 
-        it('SG-008-02: quick wins are high impact, easy to fix', () => {
-            $suggestions = [
-                new Suggestion('warning', 'Complex fix', 'Rewrite entire site', 3),
-                new Suggestion('warning', 'Easy fix', 'Add alt text', 2),
-            ];
+        $this->assertCount(1, $quickWins);
+    }
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService(['enableQuickWins' => true], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_008_02_quick_wins_are_high_impact_easy_to_fix(): void
+    {
+        $suggestions = [
+            new Suggestion('warning', 'Complex fix', 'Rewrite entire site', 3),
+            new Suggestion('warning', 'Easy fix', 'Add alt text', 2),
+        ];
 
-            $collection = $service->generate([$result]);
-            $quickWins = $collection->getQuickWins();
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService(['enableQuickWins' => true], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            // "Add alt text" should be identified as quick win
-            expect($quickWins[0]->action)->toContain('Add');
-        });
+        $collection = $service->generate([$result]);
+        $quickWins = $collection->getQuickWins();
 
-        it('SG-008-03: can disable quick wins feature', () => {
-            $checker = $this->createMockCheckerWithSuggestions('test', [
-                new Suggestion('warning', 'Fix', 'Add title', 2),
-            ]);
+        // "Add alt text" should be identified as quick win
+        $this->assertStringContainsString('Add', $quickWins[0]->action);
+    }
 
-            $service = new SuggestionGeneratorService(['enableQuickWins' => false], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_008_03_can_disable_quick_wins_feature(): void
+    {
+        $checker = $this->createMockCheckerWithSuggestions('test', [
+            new Suggestion('warning', 'Fix', 'Add title', 2),
+        ]);
 
-            $collection = $service->generate([$result]);
+        $service = new SuggestionGeneratorService(['enableQuickWins' => false], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->getQuickWins())->toHaveCount(0);
-        });
-    });
+        $collection = $service->generate([$result]);
+
+        $this->assertCount(0, $collection->getQuickWins());
+    }
 
     // ============================================
     // SG-009: Error Handling
     // ============================================
-    describe('Error Handling', () => {
-        it('SG-009-01: handles checker throwing exception', () => {
-            $checker = $this->createMockChecker('test', 'Test', 'content');
-            $checker->method('getSuggestions')
-                ->willThrowException(new \Exception('Checker error'));
 
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_009_01_handles_checker_throwing_exception(): void
+    {
+        $checker = $this->createMockChecker('test', 'Test', 'content');
+        $checker->method('getSuggestions')
+            ->willThrowException(new \Exception('Checker error'));
 
-            // Should not throw, should handle gracefully
-            $collection = $service->generate([$result]);
+        $service = new SuggestionGeneratorService([], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection)->toBeInstanceOf(SuggestionCollection::class);
-        });
+        // Should not throw, should handle gracefully
+        $collection = $service->generate([$result]);
 
-        it('SG-009-02: logs error when checker fails', () => {
-            $checker = $this->createMockChecker('test', 'Test', 'content');
-            $checker->method('getSuggestions')
-                ->willThrowException(new \Exception('Checker error'));
+        $this->assertInstanceOf(SuggestionCollection::class, $collection);
+    }
 
-            $service = new SuggestionGeneratorService([], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_009_03_continues_processing_other_checkers_on_error(): void
+    {
+        $failingChecker = $this->createMockChecker('fail', 'Fail', 'content');
+        $failingChecker->method('getSuggestions')
+            ->willThrowException(new \Exception('Error'));
 
-            $service->generate([$result]);
+        $workingChecker = $this->createMockCheckerWithSuggestions('work', [
+            new Suggestion('warning', 'Works', null, 1),
+        ]);
 
-            // Logger should have been called
-            // Implementation will need a logger mock
-        });
+        $service = new SuggestionGeneratorService([], [$failingChecker, $workingChecker]);
+        $results = [
+            $this->createResultForChecker('fail', 'Fail', 'content'),
+            $this->createResultForChecker('work', 'Work', 'content'),
+        ];
 
-        it('SG-009-03: continues processing other checkers on error', () => {
-            $failingChecker = $this->createMockChecker('fail', 'Fail', 'content');
-            $failingChecker->method('getSuggestions')
-                ->willThrowException(new \Exception('Error'));
+        $collection = $service->generate($results);
 
-            $workingChecker = $this->createMockCheckerWithSuggestions('work', [
-                new Suggestion('warning', 'Works', null, 1),
-            ]);
+        $this->assertEquals(1, $collection->count());
+    }
 
-            $service = new SuggestionGeneratorService([], [$failingChecker, $workingChecker]);
-            $results = [
-                $this->createResultForChecker('fail', 'Fail', 'content'),
-                $this->createResultForChecker('work', 'Work', 'content'),
-            ];
+    #[Test]
+    public function sg_009_04_handles_invalid_result_type(): void
+    {
+        $service = new SuggestionGeneratorService();
 
-            $collection = $service->generate($results);
-
-            expect($collection->count())->toBe(1);
-        });
-
-        it('SG-009-04: handles invalid result type', () => {
-            $service = new SuggestionGeneratorService();
-
-            // Should throw or handle gracefully
-            expect(fn() => $service->generate(['not a result']))
-                ->toThrow(\InvalidArgumentException::class);
-        });
-    });
+        // Should throw or handle gracefully
+        $this->expectException(\InvalidArgumentException::class);
+        $service->generate(['not a result']);
+    }
 
     // ============================================
     // SG-010: Performance Tests
     // ============================================
-    describe('Performance', () => {
-        it('SG-010-01: handles 17 indicators efficiently', () => {
-            $checkers = [];
-            $results = [];
 
-            foreach (range(1, 17) as $i) {
-                $id = "indicator_$i";
-                $checkers[] = $this->createMockCheckerWithSuggestions($id, [
-                    new Suggestion('warning', "Suggestion $i", null, 2),
-                ]);
-                $results[] = $this->createResultForChecker($id, "Indicator $i", 'content');
-            }
+    #[Test]
+    public function sg_010_01_handles_17_indicators_efficiently(): void
+    {
+        $checkers = [];
+        $results = [];
 
-            $service = new SuggestionGeneratorService([], $checkers);
+        foreach (range(1, 17) as $i) {
+            $id = "indicator_$i";
+            $checkers[] = $this->createMockCheckerWithSuggestions($id, [
+                new Suggestion('warning', "Suggestion $i", null, 2),
+            ]);
+            $results[] = $this->createResultForChecker($id, "Indicator $i", 'content');
+        }
 
-            $start = microtime(true);
-            $collection = $service->generate($results);
-            $duration = microtime(true) - $start;
+        $service = new SuggestionGeneratorService([], $checkers);
 
-            expect($collection->count())->toBe(17);
-            expect($duration)->toBeLessThan(0.1); // 100ms max
-        });
+        $start = microtime(true);
+        $collection = $service->generate($results);
+        $duration = microtime(true) - $start;
 
-        it('SG-010-02: handles large suggestion counts', () => {
-            $suggestions = [];
-            for ($i = 1; $i <= 100; $i++) {
-                $suggestions[] = new Suggestion('warning', "Suggestion $i", null, 1);
-            }
+        $this->assertEquals(17, $collection->count());
+        $this->assertLessThan(0.1, $duration); // 100ms max
+    }
 
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 0], [$checker]);
-            $result = $this->createResultForChecker('test', 'Test', 'content');
+    #[Test]
+    public function sg_010_02_handles_large_suggestion_counts(): void
+    {
+        $suggestions = [];
+        for ($i = 1; $i <= 100; $i++) {
+            $suggestions[] = new Suggestion('warning', "Suggestion $i", null, 1);
+        }
 
-            $start = microtime(true);
-            $collection = $service->generate([$result]);
-            $duration = microtime(true) - $start;
+        $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
+        $service = new SuggestionGeneratorService(['limitPerIndicator' => 0], [$checker]);
+        $result = $this->createResultForChecker('test', 'Test', 'content');
 
-            expect($collection->count())->toBe(100);
-            expect($duration)->toBeLessThan(0.05); // 50ms max
-        });
-    });
+        $start = microtime(true);
+        $collection = $service->generate([$result]);
+        $duration = microtime(true) - $start;
 
-    // ============================================
-    // SG-011: Integration Scenarios
-    // ============================================
-    describe('Integration Scenarios', () => {
-        it('SG-011-01: realistic onboarding flow', () => {
-            // Simulate a typical onboarding with mixed results
-            $checkers = [
-                $this->createMockCheckerWithSuggestions('title_tag', [
-                    new Suggestion('error', 'Missing title tag', 'Add a title tag', 3),
-                ]),
-                $this->createMockCheckerWithSuggestions('meta_desc', [
-                    new Suggestion('warning', 'Meta description too short', 'Expand to 150+ characters', 2),
-                ]),
-                $this->createMockCheckerWithSuggestions('h1', [
-                    new Suggestion('warning', 'Multiple H1 tags found', 'Use only one H1', 2),
-                ]),
-                $this->createMockCheckerWithSuggestions('images_alt', [
-                    new Suggestion('info', '3 images missing alt text', 'Add descriptive alt text', 1),
-                ]),
-            ];
-
-            $results = [
-                $this->createResultForChecker('title_tag', 'Title Tag', 'content', 1),
-                $this->createResultForChecker('meta_desc', 'Meta Description', 'content', 2),
-                $this->createResultForChecker('h1', 'H1 Tag', 'content', 1),
-                $this->createResultForChecker('images_alt', 'Image Alt Text', 'accessibility', 2),
-            ];
-
-            $service = new SuggestionGeneratorService(['enableQuickWins' => true], $checkers);
-            $collection = $service->generate($results);
-
-            // Verify prioritization
-            expect($collection->count())->toBe(4);
-            expect($collection->first()->priority)->toBe(3); // Error first
-
-            // Verify grouping
-            $grouped = $collection->groupByCategory();
-            expect($grouped['content'])->toHaveCount(3);
-            expect($grouped['accessibility'])->toHaveCount(1);
-
-            // Verify quick wins
-            $quickWins = $collection->getQuickWins();
-            expect($quickWins)->toHaveCount(1);
-        });
-
-        it('SG-011-02: all indicators pass (excellent site)', () => {
-            $checkers = [];
-            $results = [];
-
-            foreach (['title_tag', 'meta_desc', 'h1', 'ssl'] as $id) {
-                $checkers[] = $this->createMockCheckerWithSuggestions($id, []);
-                $results[] = new IndicatorResult(
-                    id: $id,
-                    name: ucfirst(str_replace('_', ' ', $id)),
-                    category: 'content',
-                    score: 3,
-                    weight: 1.0,
-                    passed: true
-                );
-            }
-
-            $service = new SuggestionGeneratorService([], $checkers);
-            $collection = $service->generate($results);
-
-            expect($collection->isEmpty())->toBeTrue();
-        });
-
-        it('SG-011-03: all indicators fail (poor site)', () => {
-            $suggestions = [
-                new Suggestion('error', 'Critical issue 1', 'Fix immediately', 3),
-                new Suggestion('error', 'Critical issue 2', 'Fix immediately', 3),
-                new Suggestion('warning', 'Warning issue', 'Consider fixing', 2),
-            ];
-
-            $checker = $this->createMockCheckerWithSuggestions('test', $suggestions);
-            $service = new SuggestionGeneratorService(['limitPerIndicator' => 0], [$checker]);
-            $result = new IndicatorResult(
-                id: 'test',
-                name: 'Test',
-                category: 'content',
-                score: 1,
-                weight: 1.0,
-                passed: false
-            );
-
-            $collection = $service->generate([$result]);
-
-            expect($collection->count())->toBe(3);
-            $errors = $collection->getByType('error');
-            expect($errors)->toHaveCount(2);
-        });
-    });
+        $this->assertEquals(100, $collection->count());
+        $this->assertLessThan(0.05, $duration); // 50ms max
+    }
 
     // ============================================
     // Helper Methods
