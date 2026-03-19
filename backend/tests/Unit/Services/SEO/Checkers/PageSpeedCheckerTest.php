@@ -817,7 +817,7 @@ class PageSpeedCheckerTest extends TestCase
                         ['url' => 'https://example.com/b.css', 'wastedMs' => 100],
                         ['url' => 'https://example.com/c.js', 'wastedMs' => 100]
                     ]
-                }
+                ]
             ]
         ]);
         
@@ -859,7 +859,7 @@ class PageSpeedCheckerTest extends TestCase
                     'items' => [
                         ['url' => 'https://example.com/style.css', 'wastedMs' => 500]
                     ]
-                }
+                ]
             ]
         ]);
         
