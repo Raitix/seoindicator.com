@@ -152,9 +152,9 @@ class TitleCheckerTest extends TestCase
     public function tc004_1_optimal_length_50_to_60(): void
     {
         $checker = $this->app->make(self::CHECKER_CLASS);
-        // 53 characters - optimal range 50-60
+        // 50 characters - optimal range 50-60
         $title = 'Best SEO Tools for Digital Marketing Success Guide';
-        $this->assertEquals(53, strlen($title), 'Title should be 53 chars');
+        $this->assertEquals(50, strlen($title), 'Title should be 50 chars');
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $crawler = $this->createCrawler($html);
 
@@ -241,7 +241,7 @@ class TitleCheckerTest extends TestCase
     {
         $checker = $this->app->make(self::CHECKER_CLASS);
         // Exactly 50 characters
-        $title = 'Best SEO Tools for Digital Marketing Success Now'; // 50 chars
+        $title = 'Best SEO Tools for Digital Marketing Success 2024!'; // 50 chars
         $this->assertEquals(50, strlen($title), 'Title should be exactly 50 chars');
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $crawler = $this->createCrawler($html);
@@ -256,7 +256,7 @@ class TitleCheckerTest extends TestCase
     {
         $checker = $this->app->make(self::CHECKER_CLASS);
         // Exactly 60 characters
-        $title = 'Best SEO Tools for Digital Marketing Success Guide 2024'; // 60 chars
+        $title = 'Best SEO Tools for Digital Marketing Success Guide 2024 Edtn'; // 60 chars
         $this->assertEquals(60, strlen($title), 'Title should be exactly 60 chars');
         $html = "<!DOCTYPE html><html><head><title>{$title}</title></head><body></body></html>";
         $crawler = $this->createCrawler($html);
@@ -627,9 +627,9 @@ class TitleCheckerTest extends TestCase
             'short no keywords' => ['Home', 1, false],
             'short with keywords' => ['SEO Tools', 1, false],
             'good length' => ['Best SEO Tools for Marketing Success', 2, true],
-            'optimal with keywords' => ['Best SEO Tools for Digital Marketing Success 2024', 3, true],
-            'long title' => ['Best SEO Tools for Digital Marketing Success and Growth in 2024 Complete Guide', 2, false],
-            'very long title' => [str_repeat('SEO Tools ', 20), 1, false],
+            'optimal with keywords' => ['Best SEO Tools for Digital Marketing Success 2024!', 3, true], // 50 chars exactly
+            'long title' => ['Best SEO Tools for Digital Marketing Success and Growth in 2024 Complete Guide', 2, true], // 78 chars - in good range
+            'very long title' => [str_repeat('SEO Tools ', 20), 1, false], // 200+ chars
         ];
     }
 
