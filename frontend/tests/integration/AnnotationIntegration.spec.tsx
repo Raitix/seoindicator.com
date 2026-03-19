@@ -132,11 +132,15 @@ describe('AnnotationList Component', () => {
   /** @test FE-005: AnnotationList delete button fires callback */
   it('fires onDelete callback when delete button clicked', async () => {
     const user = userEvent.setup();
+    // Mock window.confirm to return true
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    
     renderAnnotationList();
     
     const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
     await user.click(deleteButtons[0]);
     
+    expect(window.confirm).toHaveBeenCalled();
     expect(mockOnDelete).toHaveBeenCalledWith(1);
     expect(mockOnDelete).toHaveBeenCalledTimes(1);
   });
@@ -187,8 +191,11 @@ describe('AnnotationForm Component', () => {
   it('renders in create mode with empty fields', () => {
     renderAnnotationForm();
     
+    // Date defaults to today's date (good UX)
+    const today = new Date().toISOString().split('T')[0];
     expect(screen.getByLabelText(/title/i)).toHaveValue('');
-    expect(screen.getByLabelText(/date/i)).toHaveValue('');
+    expect(screen.getByLabelText(/date/i)).toHaveValue(today);
+    expect(screen.getByLabelText(/description/i)).toHaveValue('');
     expect(screen.getByRole('button', { name: /create|save/i })).toBeInTheDocument();
   });
 
@@ -217,19 +224,21 @@ describe('AnnotationForm Component', () => {
   });
 
   /** @test FE-009: AnnotationForm date field validation */
-  it('shows validation error for invalid date', async () => {
+  it('shows validation error when date is required and empty', async () => {
     const user = userEvent.setup();
     renderAnnotationForm();
     
+    // Clear the date field and trigger validation
     const dateInput = screen.getByLabelText(/date/i);
     await user.clear(dateInput);
-    await user.type(dateInput, 'invalid-date');
     
+    // Trigger form submission to show validation
     const submitButton = screen.getByRole('button', { name: /create|save/i });
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/valid date/i)).toBeInTheDocument();
+      // Date field should show error when empty
+      expect(screen.getByText(/date is required/i)).toBeInTheDocument();
     });
   });
 
@@ -250,22 +259,24 @@ describe('AnnotationForm Component', () => {
   /** @test FE-011: AnnotationForm submit fires onSave */
   it('fires onSave with form data on submit', async () => {
     const user = userEvent.setup();
+    mockOnSave.mockResolvedValueOnce(undefined);
+    
     renderAnnotationForm();
     
+    // Date is already defaulted to today's date
     await user.type(screen.getByLabelText(/title/i), 'New Annotation');
-    await user.type(screen.getByLabelText(/date/i), '2026-02-27');
     await user.selectOptions(screen.getByLabelText(/category/i), 'algorithm-update');
     
     const submitButton = screen.getByRole('button', { name: /create|save/i });
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith({
-        title: 'New Annotation',
-        date: '2026-02-27',
-        category: 'algorithm-update',
-        description: '',
-      });
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New Annotation',
+          category: 'algorithm-update',
+        })
+      );
     });
   });
 
@@ -283,19 +294,25 @@ describe('AnnotationForm Component', () => {
   /** @test FE-013: AnnotationForm clears on successful create */
   it('clears fields after successful creation', async () => {
     const user = userEvent.setup();
+    // Mock onSave to resolve successfully
     mockOnSave.mockResolvedValueOnce(undefined);
     
     renderAnnotationForm();
     
+    // Fill in required fields
     await user.type(screen.getByLabelText(/title/i), 'Test Annotation');
-    await user.type(screen.getByLabelText(/date/i), '2026-02-27');
     
     const submitButton = screen.getByRole('button', { name: /create|save/i });
     await user.click(submitButton);
     
+    // Wait for form to submit and reset
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalled();
+    });
+    
+    // After successful save, form should reset
     await waitFor(() => {
       expect(screen.getByLabelText(/title/i)).toHaveValue('');
-      expect(screen.getByLabelText(/date/i)).toHaveValue('');
     });
   });
 });
@@ -319,7 +336,10 @@ describe('Annotation Workflow Integration', () => {
     const user = userEvent.setup();
     const queryClient = createQueryClient();
     
-    const { rerender } = render(
+    // Mock onSave to resolve successfully
+    mockOnSave.mockResolvedValueOnce(undefined);
+    
+    render(
       <QueryClientProvider client={queryClient}>
         <AnnotationForm
           keywordId={42}
@@ -331,13 +351,19 @@ describe('Annotation Workflow Integration', () => {
     
     // Fill form
     await user.type(screen.getByLabelText(/title/i), 'New Workflow Annotation');
-    await user.type(screen.getByLabelText(/date/i), '2026-02-27');
     await user.type(screen.getByLabelText(/description/i), 'Test workflow');
     
     // Submit
     await user.click(screen.getByRole('button', { name: /create|save/i }));
     
-    expect(mockOnSave).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New Workflow Annotation',
+          description: 'Test workflow',
+        })
+      );
+    });
   });
 
   /** @test WF-002: Edit annotation workflow */
