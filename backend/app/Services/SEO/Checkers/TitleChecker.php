@@ -81,6 +81,7 @@ class TitleChecker extends BaseIndicatorChecker
                 score: 0,
                 passed: false,
                 details: [
+                    'exists' => false,
                     'title' => null,
                     'length' => 0,
                     'length_status' => 'missing',
@@ -99,6 +100,7 @@ class TitleChecker extends BaseIndicatorChecker
                 score: 0,
                 passed: false,
                 details: [
+                    'exists' => true,
                     'title' => $title ?? '',
                     'length' => 0,
                     'length_status' => 'empty',
@@ -136,6 +138,7 @@ class TitleChecker extends BaseIndicatorChecker
             score: $score,
             passed: $passed,
             details: [
+                'exists' => true,
                 'title' => $title,
                 'length' => $length,
                 'length_status' => $lengthStatus,
