@@ -1,7 +1,7 @@
 # TASK-17-9: Step 4 - Alert Preferences Component
 
 ## STATUS
-`To Write Tests`
+`To Develop`
 
 ## PRIORITY
 `Medium`
@@ -79,6 +79,40 @@ const defaultPreferences = {
 
 ## Notes
 These preferences are stored in user_onboarding.alert_preferences JSON field. The actual email/scheduled report functionality is handled by separate features (TASK-4-11 scheduled reports).
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-03-18 18:55 GMT+2] Agent: PreTester
+**Test Design Complete**
+
+Created comprehensive test suite for Step 4 Alert Preferences Component:
+
+**Files Created:**
+- `TESTS/TEST-17-9.md` - Test documentation with 40 test scenarios
+- `frontend/tests/components/onboarding/Step4AlertPreferences.test.tsx` - 40 unit tests
+
+**Test Categories:**
+- AP-001: Component Rendering (8 tests)
+- AP-002: Toggle Rendering (8 tests)
+- AP-003: Toggle Interaction (8 tests)
+- AP-004: Initial Data (5 tests)
+- AP-005: Continue Button (6 tests)
+- AP-006: Back Button (5 tests)
+- AP-007: Skip Functionality (5 tests)
+- AP-008: Accessibility (10 tests)
+- AP-009: Edge Cases (6 tests)
+
+**Key Implementation Notes:**
+1. Component at `frontend/components/onboarding/Step4AlertPreferences.tsx`
+2. Default preferences: email=true, weekly=false
+3. Data structure: `{ alert_preferences: { email: boolean, weekly: boolean } }`
+4. Toggles must have role="switch" with aria-checked
+5. Keyboard support: Enter and Space to toggle
+
+**Status: To Write Tests → To Develop**
 
 ---
 
