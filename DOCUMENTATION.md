@@ -554,6 +554,219 @@ export function shouldClearToken(error: unknown): boolean {
 - TASK-37-7: Indicators Button Fix (related to FEAT-037)
 
 ---
+## Graceful Token Expiry Handling (TASK-37-4)
+
+### Feature Description
+Implementation of graceful token expiry handling throughout the application. When any API call returns a 401 response, the application automatically clears the invalid session and redirects to the login page with a user-friendly "session expired" message. Part of the Production Critical Fixes - Auth & Navigation feature (FEAT-037).
+
+### Component Locations
+- **Token Expiry Handler:** `frontend/lib/api/token-expiry-handler.ts`
+- **Auth Context:** `frontend/lib/contexts/AuthContext.tsx` - Integration point
+- **Login Page:** `frontend/app/login/page.tsx` - Session expired message display
+- **Tests:** `frontend/__tests__/lib/api/token-expiry-handler.test.ts`, `frontend/__tests__/integration/token-expiry-flow.test.tsx`
+- **Test Documentation:** `TESTS/TEST-37-4.md`
+
+### Problem Solved
+
+| Issue | Before | After |
+|-------|--------|-------|
+| 401 response handling | No centralized handling | Response interceptor catches all 401s |
+| Invalid token in storage | User sees raw error messages | Automatic logout with friendly message |
+| Post-login navigation | Lost intended destination | Current URL saved as redirect target |
+| User experience | Confusing error states | Clear "session expired" message |
+
+### Implementation Details
+
+**Token Expiry Handler Functions:**
+
+| Function | Purpose |
+|----------|---------|
+| `handleTokenExpiry(redirectPath?)` | Main handler for 401 responses |
+| `setupUnauthorizedInterceptor()` | Registers fetch interceptor for 401s |
+| `isUnauthorizedResponse(error)` | Type guard for 401 errors |
+| `clearAuthStorage()` | Clears token and user from localStorage |
+| `storeRedirectTarget(path)` | Saves intended destination for post-login |
+
+**API Client Interceptor:**
+```typescript
+// token-expiry-handler.ts
+export function setupUnauthorizedInterceptor(): void {
+  const originalFetch = window.fetch;
+  
+  window.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    
+    if (response.status === 401) {
+      // Exclude auth endpoints (login, register, etc.)
+      const url = args[0]?.toString() || '';
+      if (shouldExcludeFromInterceptor(url)) {
+        return response;
+      }
+      
+      // Clear auth storage
+      clearAuthStorageHandler();
+      
+      // Store redirect target
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login') {
+        storeRedirectTarget(currentPath);
+      }
+      
+      // Redirect to login with session expired message
+      window.location.href = '/login?message=session_expired';
+    }
+    
+    return response;
+  };
+}
+```
+
+**AuthContext Integration:**
+```typescript
+// AuthContext.tsx - initialization
+import { setupUnauthorizedInterceptor } from "@/lib/api/token-expiry-handler";
+
+// Called during context initialization
+useEffect(() => {
+  setupUnauthorizedInterceptor();
+}, []);
+```
+
+**Login Page Message Display:**
+```typescript
+// login/page.tsx
+const { hasSessionExpiredMessage, clearSessionExpiredMessage } = useSessionExpired();
+
+useEffect(() => {
+  if (hasSessionExpiredMessage()) {
+    // Show toast: "Your session has expired. Please log in again."
+    clearSessionExpiredMessage();
+  }
+}, []);
+```
+
+### Token Expiry Flow
+
+```
+User makes API request with expired token
+    │
+    ↓
+API returns 401 Unauthorized
+    │
+    ↓
+Interceptor catches 401 response
+    │
+    ↓
+Check if endpoint is excluded (login, register, etc.)
+    │
+    ├─ YES → Return response, let auth flow handle
+    │
+    └─ NO → Proceed with expiry handling
+              │
+              ↓
+         Clear localStorage (token, user)
+              │
+              ↓
+         Store current URL as redirect target
+              │
+              ↓
+         Redirect to /login?message=session_expired
+              │
+              ↓
+         Login page shows "Session expired" toast
+```
+
+### Excluded Endpoints
+
+The interceptor excludes these paths from automatic 401 handling:
+
+| Endpoint | Reason |
+|----------|--------|
+| `/api/v1/auth/login` | User is trying to authenticate |
+| `/api/v1/auth/register` | User is creating account |
+| `/api/v1/auth/forgot-password` | Password recovery |
+| `/api/v1/auth/reset-password` | Password reset |
+| `/api/v1/auth/user` | Token validation (handled separately) |
+
+### Security Measures
+
+| Measure | Implementation |
+|---------|---------------|
+| Token not in URL | Token cleared before redirect, never passed in URL |
+| XSS prevention | Redirect path sanitized, no script execution |
+| Open redirect prevention | Only relative paths allowed, external URLs blocked |
+| Timing | Token cleared before redirect to prevent race conditions |
+
+### Acceptance Criteria Verification
+
+| Criteria | Status |
+|----------|--------|
+| AC1: 401 responses trigger automatic logout | ✅ PASS |
+| AC2: localStorage cleared on any 401 response | ✅ PASS |
+| AC3: User redirected to login page | ✅ PASS |
+| AC4: Current URL saved as redirect target | ✅ PASS |
+| AC5: User-friendly "session expired" message shown | ✅ PASS |
+| AC6: No raw error messages for auth failures | ✅ PASS |
+| AC7: Unit tests for 401 handling | ✅ PASS (48 tests) |
+
+### Test Coverage
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| token-expiry-handler.test.ts | 36 | ✅ ALL PASS |
+| token-expiry-flow.test.tsx | 12 | ✅ ALL PASS |
+| **Total** | **48** | ✅ ALL PASS |
+
+**Test Categories:**
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| TH-001 to TH-003 | 3 | 401 triggers automatic logout |
+| TH-004 to TH-006 | 3 | localStorage cleared on 401 |
+| TH-007 to TH-009 | 3 | User redirected to login |
+| TH-010 to TH-012 | 3 | Redirect target saved |
+| TH-013 to TH-015 | 3 | User-friendly message |
+| TH-016 to TH-018 | 3 | No raw error messages |
+| Security | 6 | XSS prevention, open redirect prevention, token safety |
+| Accessibility | 2 | Screen reader announcements |
+| Storage edge cases | 3 | Quota exceeded, corrupt data, private browsing |
+| Interceptor integration | 5 | Fetch interceptor behavior |
+| Redirect flow | 5 | Login redirect flow |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-18 |
+| Deployment ID | `20260318T110555Z-f790d940` |
+| Commit | `60d600471a280e1d2e5519c633b7a7bf5464392f` |
+| Production URL | https://seoindicator.com |
+| Production Validation | 2026-03-18 13:45 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| API 401 format | JSON response | `{"message":"Unauthenticated."}` | ✅ PASS |
+| XSS in message param | No script execution | `<script>` not rendered | ✅ PASS |
+| Open redirect prevention | External URLs blocked | External URLs blocked | ✅ PASS |
+| Token not in URL | No token exposure | No token in URL | ✅ PASS |
+| Integration verified | Handler exists and called | Confirmed in AuthContext | ✅ PASS |
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-37-1 | Done ✅ | Token Validation in AuthContext |
+
+### Related Tasks
+
+- TASK-37-1: Token Validation in AuthContext (prerequisite)
+- TASK-37-10: Protected Route Middleware (redirect storage)
+- TASK-37-11: Post-Login Redirect Handling (uses stored redirect)
+
+---
 ## Post-Login Redirect Handling (TASK-37-11)
 
 ### Feature Description
@@ -1390,6 +1603,199 @@ User can use credits for AI analysis
 | Tasks Done | 21/27 (77.8%) |
 | Effective Completion | 96.3% (including near-complete) |
 # DOCUMENTATION.md
+
+---
+## Public SEO Audit Reports & Embeddable Score Widget (FEAT-033)
+
+### Feature Description
+Enable users to share SEO audit results publicly via unique URLs and embed SEO score badges on their websites. This drives organic traffic through backlinks from embedded widgets, captures leads through free public audits, and provides client-facing deliverables for agencies.
+
+### Component Locations
+- **Public Audit Page:** `frontend/app/audit/page.tsx` - Query parameter route with Suspense boundary
+- **Audit Client Component:** `frontend/app/audit/AuditPageClient.tsx` - Client-side data fetching
+- **Audit Layout:** `frontend/app/audit/layout.tsx` - Layout wrapper (no auth required)
+- **Legacy Route:** `frontend/app/audit/[hash]/page.tsx` - Placeholder for static export
+- **Badge Script:** `frontend/public/badge.js` - JavaScript embed script with auto-refresh
+- **Badge TypeScript Source:** `frontend/lib/scripts/badge.ts` - TypeScript source
+- **Backend Controller:** `backend/app/Http/Controllers/Api/V1/PublicAuditController.php`
+- **Badge Service:** `backend/app/Services/BadgeService.php`
+- **PublicAudit Model:** `backend/app/Models/PublicAudit.php`
+- **Tests:** `frontend/__tests__/app/audit/`, `backend/tests/Feature/Controllers/Api/V1/PublicAuditControllerTest.php`
+
+### Database Schema
+
+**Audits Table Modifications:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `visibility` | ENUM('private', 'public') | Audit visibility setting (default: 'private') |
+| `public_hash` | VARCHAR(32) UNIQUE NULL | 32-char alphanumeric hash for public URLs |
+| `public_hash_created_at` | TIMESTAMP NULL | When public hash was generated |
+
+**Public Audit Views Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `audit_id` | BIGINT | Foreign key to audits |
+| `public_hash` | VARCHAR(32) | Public audit hash |
+| `viewed_at` | TIMESTAMP | View timestamp |
+| `referrer` | VARCHAR(500) | Referrer URL |
+| `ip_hash` | VARCHAR(64) | Hashed IP for privacy |
+| `country_code` | VARCHAR(2) | Country code |
+
+**Badge Impressions Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `audit_id` | BIGINT | Foreign key to audits |
+| `public_hash` | VARCHAR(32) | Public audit hash |
+| `referrer_domain` | VARCHAR(255) | Domain where badge is embedded |
+| `impression_at` | TIMESTAMP | Impression timestamp |
+| `clicked_at` | TIMESTAMP NULL | Click timestamp |
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/public-audit/{hash}` | Get public audit data |
+| POST | `/api/v1/public-audit/{hash}/lead` | Submit lead capture email |
+| GET | `/api/v1/public-audit/{hash}/badge` | Get badge configuration |
+| POST | `/api/v1/audits/{id}/publish` | Generate public hash |
+| DELETE | `/api/v1/audits/{id}/unpublish` | Remove public access |
+| GET | `/api/v1/audits/{id}/embed-code` | Get embed code snippets |
+| GET | `/badge/{hash}/{size}.svg` | Get SVG badge |
+| POST | `/api/v1/badge/impression` | Track badge impression |
+| POST | `/api/v1/badge/click` | Track badge click |
+
+### Public Audit URL Format
+
+**Query Parameter Approach (Static Export Compatible):**
+```
+https://seoindicator.com/audit/?h={32-char-hash}
+```
+
+**Score Color Mapping:**
+| Score Range | Color | Status |
+|-------------|-------|--------|
+| 90-100 | Green (#22c55e) | Excellent |
+| 70-89 | Blue (#3b82f6) | Good |
+| 50-69 | Yellow (#eab308) | Needs Work |
+| 30-49 | Orange (#f97316) | Poor |
+| 0-29 | Red (#ef4444) | Critical Issues |
+
+### Badge Embed Code Types
+
+**Small Badge (SVG):**
+```html
+<a href="https://seoindicator.com/audit/?h={hash}">
+  <img src="https://seoindicator.com/badge/{hash}/small.svg" alt="SEO Score: 85/100" />
+</a>
+```
+
+**Medium Badge (JS):**
+```html
+<div data-seoindicator-badge="{hash}" data-size="medium" data-theme="light"></div>
+<script src="https://seoindicator.com/badge.js" async></script>
+```
+
+**Large Badge (iframe):**
+```html
+<iframe src="https://seoindicator.com/badge/{hash}/large?theme=dark" 
+        width="300" height="150" frameborder="0">
+</iframe>
+```
+
+### Badge Auto-Refresh Features
+
+| Feature | Description |
+|---------|-------------|
+| Background refresh | Every 24 hours (configurable) |
+| localStorage tracking | Last check time and score |
+| Graceful degradation | Works without localStorage |
+| Score change detection | Only updates when score changes |
+| Animation | Smooth CSS transitions |
+| Motion preferences | Respects `prefers-reduced-motion` |
+
+**localStorage Schema:**
+```javascript
+localStorage.setItem(`seoindicator_${hash}_lastCheck`, Date.now());
+localStorage.setItem(`seoindicator_${hash}_lastScore`, score);
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Hash security | 32-char alphanumeric (62^32 combinations) |
+| ID enumeration prevention | Hash is random UUID, not derived from ID |
+| Privacy by default | `visibility` defaults to 'private' |
+| IP anonymization | Hashed with SHA-256 + salt before storage |
+| No PII in public reports | Only technical SEO data exposed |
+| XSS prevention | No user content in badges, sanitize all data |
+| Rate limiting | 100 views/hour per hash for anonymous users |
+
+### SEO Implementation
+
+**Meta Tags:**
+```html
+<title>{Site URL} SEO Audit Report | SEOIndicator</title>
+<meta name="description" content="SEO audit for {site_url} - Score: {score}/100">
+<link rel="canonical" href="https://seoindicator.com/audit/?h={hash}">
+```
+
+**Open Graph Tags:**
+```html
+<meta property="og:title" content="{Site URL} SEO Score: {score}/100">
+<meta property="og:image" content="https://seoindicator.com/badge/{hash}/og.png">
+```
+
+**JSON-LD Schema:**
+```json
+{
+  "@type": "WebPage",
+  "mainEntity": {
+    "@type": "Analysis",
+    "result": { "@type": "Rating", "ratingValue": "{score}" }
+  }
+}
+```
+
+### Test Coverage
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| Public Audit Route Tests | 162 | ✅ PASS |
+| Badge Auto-Refresh Tests | 44 | ✅ PASS |
+| Backend Controller Tests | Various | ✅ PASS |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Feature | FEAT-033: Public SEO Audit Reports & Embeddable Score Widget |
+| Status | Complete (35/36 tasks) |
+| Tasks Done | 35/36 (97.2%) |
+| Specification | SPEC-033 |
+| Deploy Date | 2026-03-17 |
+
+### Architecture Notes
+
+**Static Export Compatibility:**
+- Uses query parameter approach (`/audit/?h={hash}`) for static export compatibility
+- Client-side data fetching via `useSearchParams()` and `fetch()`
+- Not Found state rendered client-side (Next.js `notFound()` doesn't work with static export)
+- Legacy route `/audit/{hash}/` only generates placeholder `/audit/_/` for static export
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-1 | Done ✅ | Visibility columns in audits table |
+| TASK-33-14 | Done ✅ | Public audit page route |
+| TASK-33-16 | Done ✅ | Badge.js embed script |
+| TASK-33-19 | Done ✅ | Badge auto-refresh mechanism |
+
+### Related Tasks
+
+- TASK-33-1 to TASK-33-35: All implementation tasks complete
+- TASK-33-36: Re-deployment follow-up (pending)
 
 ---
 ## Tools Infrastructure (TASK-16-1)
@@ -71328,6 +71734,200 @@ const {
 - TASK-25-19: Dashboard Page (Done)
 - TASK-25-20: Analysis History Page (Done)
 - TASK-25-25: Security Audit (Blocked)
+
+---
+## JSON-LD Schema for Public Audit Pages (TASK-33-26)
+
+### Feature Description
+JSON-LD structured data implementation for the Public SEO Audit Reports & Embeddable Score Widget feature (FEAT-033). Adds schema.org compliant structured data to public audit pages for enhanced search engine visibility and rich snippets in search results. Uses client-side injection via React useEffect for compatibility with static export.
+
+### Component Locations
+- **JSON-LD Library:** `frontend/lib/audit/json-ld-schema.ts`
+- **Integration:** `frontend/app/audit/AuditPageClient.tsx`
+- **Tests:** `frontend/__tests__/lib/audit/json-ld-schema.test.ts`
+- **Test Documentation:** `TESTS/TEST-33-26.md`
+
+### Core Functionalities
+
+| Function | Description |
+|----------|-------------|
+| `generateJsonLdSchema(audit, publicHash)` | Generate complete JSON-LD schema for public audit |
+| `isValidJsonLd(schema)` | Validate schema structure |
+| `parseJsonLdScript(text)` | Parse JSON-LD text with validation |
+| `sanitizeString(input)` | Remove XSS vectors from input strings |
+
+### JSON-LD Schema Structure
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "{siteUrl} SEO Audit Report",
+  "description": "SEO audit results for {siteUrl} - Score: {score}/100",
+  "url": "https://seoindicator.com/audit/{hash}/",
+  "publisher": {
+    "@type": "Organization",
+    "name": "SEOIndicator",
+    "url": "https://seoindicator.com",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://seoindicator.com/logo.png"
+    }
+  },
+  "mainEntity": {
+    "@type": "Analysis",
+    "result": {
+      "@type": "Rating",
+      "ratingValue": "85",
+      "bestRating": "100",
+      "worstRating": "0"
+    }
+  },
+  "datePublished": "2026-03-18T12:00:00Z",
+  "dateModified": "2026-03-18T12:00:00Z"
+}
+```
+
+### Schema Types Used
+
+| Schema Type | Purpose | Properties |
+|-------------|---------|------------|
+| `WebPage` | Root type | name, description, url, publisher, mainEntity |
+| `Organization` | Publisher | name, url, logo |
+| `ImageObject` | Logo | url |
+| `Analysis` | Main entity | result |
+| `Rating` | Score | ratingValue, bestRating, worstRating |
+
+### Rating Scale
+
+| Score Range | Interpretation | Schema Rating |
+|-------------|----------------|---------------|
+| 90-100 | Excellent | High rating value |
+| 70-89 | Good | Good rating value |
+| 50-69 | Needs Work | Moderate rating value |
+| 30-49 | Poor | Low rating value |
+| 0-29 | Critical Issues | Very low rating value |
+
+### Client-Side Injection
+
+The JSON-LD is injected client-side via React useEffect:
+
+```typescript
+// In AuditPageClient.tsx
+const injectJsonLd = (audit: PublicAuditData, hash: string) => {
+  if (typeof document === 'undefined') return;
+  
+  // Remove existing JSON-LD script (prevents duplicates)
+  const existing = document.querySelector('script[data-json-ld="audit"]');
+  if (existing) existing.remove();
+  
+  // Generate schema
+  const schema = generateJsonLdSchema(audit, hash);
+  if (!schema) return;
+  
+  // Create and inject script tag
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.setAttribute('data-json-ld', 'audit');
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
+};
+
+// useEffect integration
+useEffect(() => {
+  if (data && hash) {
+    injectJsonLd(data, hash);
+  }
+}, [data, hash]);
+
+// Cleanup on unmount
+useEffect(() => {
+  return () => {
+    const script = document.querySelector('script[data-json-ld="audit"]');
+    if (script) script.remove();
+  };
+}, []);
+```
+
+### Security Implementation
+
+| Security Measure | Implementation |
+|------------------|----------------|
+| Input Sanitization | `sanitizeString()` removes HTML tags, script patterns, event handlers |
+| XSS Prevention | No dangerouslySetInnerHTML, JSON.stringify handles escaping |
+| No Sensitive Data | Schema contains only public audit data (URL, score, date) |
+| Null Handling | Graceful handling of null/undefined audit data |
+
+### SEO Benefits
+
+| Benefit | Mechanism |
+|---------|-----------|
+| Rich Snippets | Rating displayed in search results |
+| Knowledge Graph | Organization schema for SEOIndicator |
+| Click-Through Rate | Score visibility in SERPs |
+| Search Visibility | Structured data improves indexing |
+
+### Test Coverage
+
+| Test Suite | Tests | Assertions | Status |
+|------------|-------|------------|--------|
+| json-ld-schema.test.ts | 95 | - | ✅ PASS |
+
+**Test Categories:**
+| Category | Tests | Description |
+|----------|-------|-------------|
+| SCHEMA-STRUCTURE | 8 | @context, @type, mainEntity structure |
+| WEBPAGE-SCHEMA | 12 | name, description, url, publisher, dates |
+| ANALYSIS-SCHEMA | 8 | mainEntity type, result object |
+| RATING-SCHEMA | 10 | ratingValue, bestRating, worstRating, 0-100 scale |
+| ORG-SCHEMA | 8 | SEOIndicator publisher, logo |
+| INTEGRATION | 10 | JSON serialization, validation, parsing |
+| EDGE-CASES | 12 | Null, score boundaries, unicode, long URLs |
+| SECURITY | 8 | XSS, injection, special chars |
+| UNIQUE-SCHEMA | 6 | Different audits produce different schemas |
+| AC | 10 | All acceptance criteria verified |
+| PERFORMANCE | 3 | Generation speed, memory efficiency |
+
+### Production Status
+
+| Metric | Value |
+|--------|-------|
+| Deploy Date | 2026-03-18 |
+| Deployment ID | `20260318T140114Z-8f76fc4b` |
+| Commit | `158bbba2` |
+| Production URL | https://seoindicator.com/audit/?h={hash} |
+| Production Validation | 2026-03-18 16:20 GMT+2 |
+| Status | Complete |
+
+### Production Validation Results
+
+| Test | Expected | Actual | Status |
+|------|----------|--------|--------|
+| Unit tests | 95 pass | 95 pass (42ms) | ✅ |
+| Library deployed | Yes | `json-ld-schema.ts` in bundle | ✅ |
+| Integration deployed | Yes | `injectJsonLd()` in AuditPageClient | ✅ |
+| Correct file | Query param route | `audit/AuditPageClient.tsx` | ✅ |
+| Security (XSS) | Blocked | sanitizeString() implemented | ✅ |
+
+### Integration Note
+
+**Critical Architecture Decision:**
+The JSON-LD integration was added to `frontend/app/audit/AuditPageClient.tsx` (query parameter route: `/audit/?h={hash}`) instead of `frontend/app/audit/[hash]/AuditPageClient.tsx` (legacy dynamic route) because:
+1. Static export (`output: 'export'`) does not support dynamic routes without `generateStaticParams()`
+2. Public audit hashes are generated at runtime, not at build time
+3. Query parameter approach works with static export
+
+### Dependencies
+
+| Task | Status | Description |
+|------|--------|-------------|
+| TASK-33-14 | Done ✅ | Public Audit Page Route (query param) |
+
+### Related Tasks
+
+- TASK-33-14: Public Audit Page Route (uses JSON-LD)
+- TASK-33-25: Meta Tags and OG Tags (complementary SEO)
+- TASK-33-27: OG Image Generation (complementary SEO)
 
 ---
 *Last updated: 2026-03-18*
