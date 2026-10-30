@@ -1,0 +1,225 @@
+# TASK-24-7: PWASuggestionService
+
+## STATUS
+`Done`
+
+## PRIORITY
+`Medium`
+
+## RISK
+`Low`
+
+## Description
+Create service to generate actionable improvement suggestions based on PWA analysis results.
+
+## Acceptance Criteria
+- [x] PWASuggestionService created with methods:
+  - generateSuggestions(PWAAnalysis $analysis): array
+  - getSuggestionForField(string $field, bool $present): ?array
+  - getSuggestionForIcon(string $size, bool $present): ?array
+- [x] Suggestion structure:
+  - priority (high, medium, low)
+  - field (field name or icon size)
+  - message (human-readable suggestion)
+  - guide (anchor link to guide page section)
+- [x] Generates suggestions for all missing items per SPEC-024:
+  - High priority: no manifest, missing required fields, missing required icons
+  - Medium priority: missing recommended icons, theme_color, background_color
+  - Low priority: missing description
+- [x] Suggestions sorted by priority
+- [x] Unit tests for all suggestion scenarios
+
+## Dependencies
+- TASK-24-1 (Database migration)
+- TASK-24-2 (PWAAnalysis model)
+
+## Effort Estimate
+`Small` (2-3 hours)
+
+## Technical Notes
+- Use suggestion templates from SPEC-024
+- Consider i18n support for messages
+- Link to relevant guide sections
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-03-11 09:45 GMT+2] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+- Added comprehensive PWASuggestionService documentation to `DOCUMENTATION.md`
+- Documentation includes: service description, methods, suggestion structure, priority mapping, field/icon suggestions, security implementation, test coverage (51 tests, 200 assertions)
+- Production status: Deployed 2026-03-05 (commit 4b9982cd)
+- Task status updated to `Done`
+- Completion marker written: `logs/completed/task/TASK-24-7.json`
+
+### [2026-02-28] Agent: SpecSystemAnalyst
+Created task for suggestion generation. Pure logic service that transforms validation gaps into actionable user guidance. Low risk, follows established suggestion patterns from other indicators.
+
+### [2026-03-03 14:22 GMT+2] Agent: PreTester
+**Test Coverage Complete**
+
+Created comprehensive test suite for PWASuggestionService:
+
+**Test Documentation:** `TESTS/TEST-24-7.md`
+**Test Implementation:** `backend/tests/Unit/Services/PWASuggestionServiceTest.php`
+
+**Test Categories (47 tests):**
+1. **Generate Suggestions - No Manifest (GS-NM) - 2 tests:** No manifest returns high priority, invalid manifest returns high priority
+2. **Generate Suggestions - Required Fields (GS-RF) - 4 tests:** Missing name, short_name, start_url, display
+3. **Generate Suggestions - Recommended Fields (GS-RC) - 3 tests:** Missing theme_color (medium), background_color (medium), description (low)
+4. **Generate Suggestions - Icons (GS-IC) - 6 tests:** Missing 192x192 (high), 512x512 (high), 180x180 (medium), complete PWA, sorting, multiple missing
+5. **Get Suggestion For Field (GF) - 10 tests:** All field types, present field returns null, invalid field, guide anchor
+6. **Get Suggestion For Icon (GI) - 6 tests:** All icon sizes, present icon returns null, invalid size, naming convention
+7. **Edge Cases (EC) - 5 tests:** Empty analysis, null manifest JSON, all fields present, only manifest missing, only icons missing
+8. **Suggestion Content (SC) - 4 tests:** Human-readable message, valid guide format, field format, valid priority
+9. **Sorting (SO) - 4 tests:** High first, medium after high, low last, stable order
+10. **Integration (INT) - 3 tests:** Container resolution, real model, count matching
+11. **Additional Field Suggestions - 4 tests:** Manifest guide, invalid manifest message, all fields structure, all icons structure
+
+**Suggestion Structure Expected:**
+```php
+[
+    'priority' => 'high',        // 'high', 'medium', or 'low'
+    'field' => 'name',           // Field name or icon size (e.g., 'icon_192')
+    'message' => 'Add a name field to your manifest',
+    'guide' => '#manifest-name'  // Anchor link to guide section
+]
+```
+
+**Priority Mapping:**
+| Priority | Triggers |
+|----------|----------|
+| High | No manifest, invalid manifest, missing required fields (name, short_name, start_url, display), missing required icons (192x192, 512x512) |
+| Medium | Missing theme_color, background_color, missing 180x180 icon |
+| Low | Missing description |
+
+**Notes for Developer:**
+- Service should be created at `backend/app/Services/PWASuggestionService.php`
+- Methods required: `generateSuggestions()`, `getSuggestionForField()`, `getSuggestionForIcon()`
+- Suggestions must be sorted by priority (high → medium → low)
+- Field naming for icons: `icon_192`, `icon_512`, `icon_180`
+- Guide anchors should follow pattern: `#section-name`
+
+Status updated to `Tests Coverage In Progress`. Ready for Developer to implement service.
+
+### [2026-03-05 15:32 GMT+2] Agent: Developer
+**Implementation Complete**
+
+The PWASuggestionService was already implemented in `backend/app/Services/PWASuggestionService.php`. The service includes:
+
+**Implementation Details:**
+- `FIELD_SUGGESTIONS` constant with templates for all manifest fields
+- `ICON_SUGGESTIONS` constant with templates for all icon sizes
+- `generateSuggestions(PWAAnalysis $analysis)` - generates all suggestions for an analysis
+- `getSuggestionForField(string $field, bool $present)` - returns suggestion for missing field
+- `getSuggestionForIcon(string $size, bool $present)` - returns suggestion for missing icon
+- `sortByPriority()` - sorts suggestions high → medium → low
+
+**Test Fix:**
+Fixed one failing test (`gs_015_multiple_missing_fields_return_multiple_suggestions`) - the test was expecting 6 suggestions but factory defaults set all non-specified fields to `false`, causing 10 suggestions. Updated test to explicitly set recommended fields to `true` to match expected behavior.
+
+**All 51 tests passing.**
+
+Status updated to `To Test Locally`.
+
+### [2026-03-05 15:50 GMT+2] Agent: LocalTester
+**Local Testing Complete - PASS**
+
+**Test Results:**
+- All 51 unit tests passed (200 assertions)
+- Duration: 9.70s
+
+**Test Categories Verified:**
+1. Generate Suggestions - No Manifest (GS-NM): 2 tests ✓
+2. Generate Suggestions - Required Fields (GS-RF): 4 tests ✓
+3. Generate Suggestions - Recommended Fields (GS-RC): 3 tests ✓
+4. Generate Suggestions - Icons (GS-IC): 6 tests ✓
+5. Get Suggestion For Field (GF): 10 tests ✓
+6. Get Suggestion For Icon (GI): 6 tests ✓
+7. Edge Cases (EC): 5 tests ✓
+8. Suggestion Content (SC): 4 tests ✓
+9. Sorting (SO): 4 tests ✓
+10. Integration (INT): 3 tests ✓
+11. Additional Field Suggestions: 4 tests ✓
+
+**Adversarial Tests Passed:**
+- Empty string field → null (safe)
+- SQL injection attempt → null (safe)
+- XSS attempt → null (safe)
+- Negative icon size → null (safe)
+- Large icon size → null (safe)
+- Null byte injection → null (safe)
+- Unicode characters → null (safe)
+- Whitespace in field → null (safe)
+
+**Security Assessment:**
+- No SQL injection vectors (uses constant templates, no DB queries)
+- No XSS vectors (returns structured arrays, not HTML)
+- Input validation via whitelist (only known fields/sizes accepted)
+- No sensitive data exposure
+
+**Deployment Ready:** ✅
+
+Status updated to `To Deploy`.
+
+### [2026-03-05 15:58 GMT+2] Agent: DevOps
+**Deployment Started**
+
+- Service code already in origin/main (commit 4b9982cd)
+- Tests already in origin/main (commits ab75665e, e013c8b8)
+- No new code deployment needed - service already deployed
+- Verifying health check...
+
+Status updated to `In Deployment`.
+
+### [2026-03-05 16:02 GMT+2] Agent: DevOps
+**Deployment Complete - SUCCESS**
+
+**Deployment Summary:**
+- Service code already deployed (commit 4b9982cd)
+- Tests already deployed (commits ab75665e, e013c8b8)
+- No additional deployment needed
+- Health Check: 200 OK, database connected
+
+**Deployed Files:**
+- `backend/app/Services/PWASuggestionService.php` - PWA suggestion generation service
+- `backend/tests/Unit/Services/PWASuggestionServiceTest.php` - 51 unit tests
+
+**Production Verification:**
+- Health endpoint: `GET https://seoindicator.com/api/health` → 200 OK
+- Database: connected
+- Timestamp: 2026-03-05T14:01:51+00:00
+
+Status updated to `To Test Prod`.
+
+### [2026-03-05 16:27 GMT+2] Agent: ProdTester
+**Production Testing Complete - PASS**
+
+**Test Results:**
+- Health Check: `GET https://seoindicator.com/api/health` → 200 OK, database connected
+- Unit Tests: 51 tests passed (200 assertions), Duration: 9.71s
+
+**Production Smoke Tests (10/10 PASS):**
+1. Service Resolution: PASS (service resolved from container)
+2. getSuggestionForField('name', false): Returns correct high priority suggestion
+3. getSuggestionForIcon('192', false): Returns correct high priority suggestion
+4. Present field returns null: PASS
+5. Invalid field returns null: PASS
+6. Suggestion structure validation: PASS (all keys present)
+7. Priority validation: PASS (all priorities valid)
+8. Adversarial - SQL injection: PASS (null returned, safe)
+9. Adversarial - XSS attempt: PASS (null returned, safe)
+10. Adversarial - Empty string: PASS (null returned)
+
+**Security Assessment:**
+- No SQL injection vectors (uses constant templates)
+- No XSS vectors (returns structured arrays, not HTML)
+- Input validation via whitelist (only known fields/sizes accepted)
+- No sensitive data exposure
+
+**Production Ready:** ✅
+
+Status updated to `Documentation`.

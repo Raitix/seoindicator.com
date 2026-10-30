@@ -1,0 +1,277 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ComparisonCard Snapshots > SN-001: Matches snapshot with logos 1`] = `
+<div>
+  <a
+    class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all "
+    data-testid="comparison-card"
+    href="/compare/seoindicator-vs-ahrefs"
+  >
+    <div
+      class="flex items-center gap-4 mb-4"
+    >
+      <div
+        class="flex items-center gap-2"
+      >
+        <img
+          alt="SEOIndicator logo"
+          class="w-8 h-8 object-contain"
+          data-testid="logo-a"
+          src="/logos/seoindicator.svg"
+        />
+        <span
+          class="font-medium text-white"
+          data-testid="name-a"
+        >
+          SEOIndicator
+        </span>
+      </div>
+      <span
+        aria-hidden="true"
+        class="text-slate-400"
+      >
+        vs
+      </span>
+      <div
+        class="flex items-center gap-2"
+      >
+        <img
+          alt="Ahrefs logo"
+          class="w-8 h-8 object-contain"
+          data-testid="logo-b"
+          src="/logos/ahrefs.svg"
+        />
+        <span
+          class="font-medium text-white"
+          data-testid="name-b"
+        >
+          Ahrefs
+        </span>
+      </div>
+    </div>
+    <h3
+      class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+      data-testid="card-title"
+    >
+      SEOIndicator vs Ahrefs
+    </h3>
+    <p
+      class="text-sm text-slate-400 mt-2"
+      data-testid="card-description"
+    >
+      Compare SEOIndicator with Ahrefs for SEO analysis
+    </p>
+  </a>
+</div>
+`;
+
+exports[`ComparisonCard Snapshots > SN-002: Matches snapshot without logos 1`] = `
+<div>
+  <a
+    class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all "
+    data-testid="comparison-card"
+    href="/compare/seoindicator-vs-semrush"
+  >
+    <div
+      class="flex items-center gap-4 mb-4"
+    >
+      <div
+        class="flex items-center gap-2"
+      >
+        <div
+          class="w-8 h-8 bg-slate-700 rounded flex items-center justify-center"
+          data-testid="logo-placeholder-a"
+        >
+          <span
+            class="text-xs font-bold text-slate-300"
+          >
+            S
+          </span>
+        </div>
+        <span
+          class="font-medium text-white"
+          data-testid="name-a"
+        >
+          SEOIndicator
+        </span>
+      </div>
+      <span
+        aria-hidden="true"
+        class="text-slate-400"
+      >
+        vs
+      </span>
+      <div
+        class="flex items-center gap-2"
+      >
+        <div
+          class="w-8 h-8 bg-slate-700 rounded flex items-center justify-center"
+          data-testid="logo-placeholder-b"
+        >
+          <span
+            class="text-xs font-bold text-slate-300"
+          >
+            S
+          </span>
+        </div>
+        <span
+          class="font-medium text-white"
+          data-testid="name-b"
+        >
+          Semrush
+        </span>
+      </div>
+    </div>
+    <h3
+      class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+      data-testid="card-title"
+    >
+      SEOIndicator vs Semrush
+    </h3>
+    <p
+      class="text-sm text-slate-400 mt-2"
+      data-testid="card-description"
+    >
+      Detailed comparison of features and pricing
+    </p>
+  </a>
+</div>
+`;
+
+exports[`ComparisonCard Snapshots SN-001: Matches snapshot with logos 1`] = `
+<div>
+  <a
+    class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all "
+    data-testid="comparison-card"
+    href="/compare/seoindicator-vs-ahrefs"
+  >
+    <div
+      class="flex items-center gap-4 mb-4"
+    >
+      <div
+        class="flex items-center gap-2"
+      >
+        <img
+          alt="SEOIndicator logo"
+          class="w-8 h-8 object-contain"
+          data-testid="logo-a"
+          src="/logos/seoindicator.svg"
+        />
+        <span
+          class="font-medium text-white"
+          data-testid="name-a"
+        >
+          SEOIndicator
+        </span>
+      </div>
+      <span
+        aria-hidden="true"
+        class="text-slate-400"
+      >
+        vs
+      </span>
+      <div
+        class="flex items-center gap-2"
+      >
+        <img
+          alt="Ahrefs logo"
+          class="w-8 h-8 object-contain"
+          data-testid="logo-b"
+          src="/logos/ahrefs.svg"
+        />
+        <span
+          class="font-medium text-white"
+          data-testid="name-b"
+        >
+          Ahrefs
+        </span>
+      </div>
+    </div>
+    <h3
+      class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+      data-testid="card-title"
+    >
+      SEOIndicator vs Ahrefs
+    </h3>
+    <p
+      class="text-sm text-slate-400 mt-2"
+      data-testid="card-description"
+    >
+      Compare SEOIndicator with Ahrefs for SEO analysis
+    </p>
+  </a>
+</div>
+`;
+
+exports[`ComparisonCard Snapshots SN-002: Matches snapshot without logos 1`] = `
+<div>
+  <a
+    class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all "
+    data-testid="comparison-card"
+    href="/compare/seoindicator-vs-semrush"
+  >
+    <div
+      class="flex items-center gap-4 mb-4"
+    >
+      <div
+        class="flex items-center gap-2"
+      >
+        <div
+          class="w-8 h-8 bg-slate-700 rounded flex items-center justify-center"
+          data-testid="logo-placeholder-a"
+        >
+          <span
+            class="text-xs font-bold text-slate-300"
+          >
+            S
+          </span>
+        </div>
+        <span
+          class="font-medium text-white"
+          data-testid="name-a"
+        >
+          SEOIndicator
+        </span>
+      </div>
+      <span
+        aria-hidden="true"
+        class="text-slate-400"
+      >
+        vs
+      </span>
+      <div
+        class="flex items-center gap-2"
+      >
+        <div
+          class="w-8 h-8 bg-slate-700 rounded flex items-center justify-center"
+          data-testid="logo-placeholder-b"
+        >
+          <span
+            class="text-xs font-bold text-slate-300"
+          >
+            S
+          </span>
+        </div>
+        <span
+          class="font-medium text-white"
+          data-testid="name-b"
+        >
+          Semrush
+        </span>
+      </div>
+    </div>
+    <h3
+      class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+      data-testid="card-title"
+    >
+      SEOIndicator vs Semrush
+    </h3>
+    <p
+      class="text-sm text-slate-400 mt-2"
+      data-testid="card-description"
+    >
+      Detailed comparison of features and pricing
+    </p>
+  </a>
+</div>
+`;

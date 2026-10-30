@@ -1,0 +1,235 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordNotification;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use App\Models\Account;
+use App\Models\TeamMember;
+use App\Models\AIVisibility\AIVisibilityProject;
+
+class User extends Authenticatable implements MustVerifyEmail
+{
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'avatar',
+        'email_verified_at',
+        'last_login_at',
+        'plan',
+        'ai_visibility_preferences',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'last_login_at' => 'datetime',
+            'ai_visibility_preferences' => 'array',
+        ];
+    }
+
+    /**
+     * Get the AI visibility projects for this user.
+     */
+    public function aiVisibilityProjects(): HasMany
+    {
+        return $this->hasMany(AIVisibilityProject::class);
+    }
+
+    /**
+     * Get the competitors for this user.
+     */
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(Competitor::class);
+    }
+
+    /**
+     * Get the keywords for this user.
+     */
+    public function keywords(): HasMany
+    {
+        return $this->hasMany(Keyword::class);
+    }
+
+    /**
+     * Get the GSC connections for this user.
+     */
+    public function gscConnections(): HasMany
+    {
+        return $this->hasMany(GSCConnection::class);
+    }
+
+    /**
+     * Get the projects/sites for this user.
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    /**
+     * Get the project memberships for this user.
+     */
+    public function projectMemberships(): HasMany
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    /**
+     * Get the projects this user is a member of (many-to-many through project_members).
+     */
+    public function memberProjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_members')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the accounts owned by this user.
+     */
+    public function ownedAccounts(): HasMany
+    {
+        return $this->hasMany(Account::class, 'owner_id');
+    }
+
+    /**
+     * Get the team memberships for this user.
+     */
+    public function teamMemberships(): HasMany
+    {
+        return $this->hasMany(TeamMember::class);
+    }
+
+    /**
+     * Get the accounts this user is a member of (many-to-many through team_members).
+     */
+    public function accounts(): BelongsToMany
+    {
+        return $this->belongsToMany(Account::class, 'team_members')
+            ->withPivot('role', 'invited_by', 'invited_at', 'accepted_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the SEO analyses for this user.
+     */
+    public function seoAnalyses(): HasMany
+    {
+        return $this->hasMany(SEOAnalysis::class);
+    }
+
+    /**
+     * Get the analysis history for this user.
+     */
+    public function analysisHistory(): HasMany
+    {
+        return $this->hasMany(AnalysisHistory::class);
+    }
+
+    /**
+     * Get the social accounts (OAuth connections) for this user.
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
+    /**
+     * Get the credit record for this user.
+     */
+    public function credit(): HasOne
+    {
+        return $this->hasOne(Credit::class);
+    }
+
+    /**
+     * Get the credit transactions for this user.
+     */
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(CreditTransaction::class);
+    }
+
+    /**
+     * Get the credit transactions for this user (alias).
+     */
+    public function transactions(): HasMany
+    {
+        return $this->creditTransactions();
+    }
+
+    /**
+     * Get the AI model preferences for this user.
+     */
+    public function modelPreferences(): HasMany
+    {
+        return $this->hasMany(UserModelPreference::class);
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Check if the user is an admin.
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' || $this->role === 'super_admin';
+    }
+
+    /**
+     * Check if the user is a super admin.
+     *
+     * @return bool
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+}

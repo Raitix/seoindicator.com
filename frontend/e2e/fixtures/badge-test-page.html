@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badge Embedding Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    h2 { color: #666; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .badge-container {
+      padding: 20px;
+      border: 1px dashed #ccc;
+      min-height: 100px;
+    }
+    .badge-dark-bg {
+      background: #1a1a1a;
+      padding: 20px;
+    }
+    #error-badge-container {
+      border: 1px solid red;
+    }
+    #loading-badge-container {
+      opacity: 0.5;
+    }
+    .log-container {
+      background: #1a1a1a;
+      color: #0f0;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .log-entry { margin: 2px 0; }
+    .log-impression { color: #3b82f6; }
+    .log-click { color: #22c55e; }
+    .log-error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>SEOIndicator Badge Embedding Test Page</h1>
+  <p>This page tests various badge embedding scenarios for E2E tests.</p>
+
+  <!-- Section 1: SVG Badge Tests -->
+  <div class="container">
+    <h2>1. SVG Badge Tests</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Small SVG Badge</h3>
+        <a href="https://seoindicator.com/audit/test-audit-hash-001/">
+          <img src="https://seoindicator.com/badge/test-audit-hash-001/small.svg" 
+               alt="SEO Score: 85/100" 
+               id="svg-badge-small" />
+        </a>
+      </div>
+      <div>
+        <h3>Medium SVG Badge</h3>
+        <a href="https://seoindicator.com/audit/test-audit-hash-002/">
+          <img src="https://seoindicator.com/badge/test-audit-hash-002/medium.svg" 
+               alt="SEO Score: 72/100" 
+               id="svg-badge-medium" />
+        </a>
+      </div>
+      <div>
+        <h3>Large SVG Badge</h3>
+        <a href="https://seoindicator.com/audit/test-audit-hash-003/">
+          <img src="https://seoindicator.com/badge/test-audit-hash-003/large.svg" 
+               alt="SEO Score: 45/100" 
+               id="svg-badge-large" />
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: JS Badge Tests (Auto-init) -->
+  <div class="container">
+    <h2>2. JavaScript Badge Tests (Auto-init)</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Small JS Badge</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="small" 
+             data-theme="light"
+             id="js-badge-small"></div>
+      </div>
+      <div>
+        <h3>Medium JS Badge</h3>
+        <div data-seoindicator-badge="test-audit-hash-002" 
+             data-size="medium" 
+             data-theme="light"
+             id="js-badge-medium"></div>
+      </div>
+      <div>
+        <h3>Large JS Badge</h3>
+        <div data-seoindicator-badge="test-audit-hash-003" 
+             data-size="large" 
+             data-theme="light"
+             id="js-badge-large"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Theme Tests -->
+  <div class="container">
+    <h2>3. Theme Tests</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Light Theme</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium" 
+             data-theme="light"
+             id="js-badge-light"></div>
+      </div>
+      <div class="badge-dark-bg">
+        <h3 style="color: white;">Dark Theme</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium" 
+             data-theme="dark"
+             id="js-badge-dark"></div>
+      </div>
+      <div>
+        <h3>Invalid Theme (fallback to light)</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium" 
+             data-theme="invalid"
+             id="js-badge-invalid-theme"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Error States -->
+  <div class="container">
+    <h2>4. Error States</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Invalid Hash</h3>
+        <div data-seoindicator-badge="invalid-hash-404" 
+             data-size="medium"
+             id="js-badge-invalid"></div>
+      </div>
+      <div>
+        <h3>Empty Hash</h3>
+        <div data-seoindicator-badge="" 
+             data-size="medium"
+             id="js-badge-empty"></div>
+      </div>
+      <div>
+        <h3>Whitespace Hash</h3>
+        <div data-seoindicator-badge="   " 
+             data-size="medium"
+             id="js-badge-whitespace"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: iframe Badge -->
+  <div class="container">
+    <h2>5. iframe Badge</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Small iframe</h3>
+        <iframe src="https://seoindicator.com/badge/test-audit-hash-001/small?theme=light" 
+                width="120" 
+                height="40" 
+                frameborder="0"
+                id="iframe-badge-small"></iframe>
+      </div>
+      <div>
+        <h3>Medium iframe</h3>
+        <iframe src="https://seoindicator.com/badge/test-audit-hash-001/medium?theme=light" 
+                width="150" 
+                height="100" 
+                frameborder="0"
+                id="iframe-badge-medium"></iframe>
+      </div>
+      <div>
+        <h3>Large iframe</h3>
+        <iframe src="https://seoindicator.com/badge/test-audit-hash-001/large?theme=light" 
+                width="300" 
+                height="150" 
+                frameborder="0"
+                id="iframe-badge-large"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Tracking Tests -->
+  <div class="container">
+    <h2>6. Tracking Tests</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Tracking Enabled (default)</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium"
+             id="js-badge-tracking-on"></div>
+      </div>
+      <div>
+        <h3>Tracking Disabled</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium"
+             data-no-tracking="true"
+             id="js-badge-tracking-off"></div>
+      </div>
+    </div>
+    <h3>Tracking Log</h3>
+    <div class="log-container" id="tracking-log">
+      <!-- Logs will be added here by test script -->
+    </div>
+  </div>
+
+  <!-- Section 7: Manual Init Tests -->
+  <div class="container">
+    <h2>7. Manual Init Tests</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Manual Init Container</h3>
+        <div id="manual-badge-container"></div>
+      </div>
+      <div>
+        <h3>Multiple Badges</h3>
+        <div id="multi-badge-1" class="badge-container"></div>
+        <div id="multi-badge-2" class="badge-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 8: Score Colors -->
+  <div class="container">
+    <h2>8. Score Color Tests</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Excellent (90-100)</h3>
+        <div data-seoindicator-badge="test-score-excellent" 
+             data-size="medium"
+             id="js-badge-score-95"></div>
+      </div>
+      <div>
+        <h3>Good (70-89)</h3>
+        <div data-seoindicator-badge="test-score-good" 
+             data-size="medium"
+             id="js-badge-score-75"></div>
+      </div>
+      <div>
+        <h3>Needs Work (50-69)</h3>
+        <div data-seoindicator-badge="test-score-average" 
+             data-size="medium"
+             id="js-badge-score-55"></div>
+      </div>
+      <div>
+        <h3>Poor (30-49)</h3>
+        <div data-seoindicator-badge="test-score-poor" 
+             data-size="medium"
+             id="js-badge-score-35"></div>
+      </div>
+      <div>
+        <h3>Critical (0-29)</h3>
+        <div data-seoindicator-badge="test-score-bad" 
+             data-size="medium"
+             id="js-badge-score-15"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 9: Auto-refresh Test -->
+  <div class="container">
+    <h2>9. Auto-refresh Test</h2>
+    <p>This badge will auto-refresh (configurable interval).</p>
+    <div data-seoindicator-badge="test-audit-hash-001" 
+         data-size="medium"
+         data-refresh="30000"
+         id="js-badge-auto-refresh"></div>
+    <p id="refresh-counter">Refresh count: 0</p>
+  </div>
+
+  <!-- Section 10: Accessibility Tests -->
+  <div class="container">
+    <h2>10. Accessibility Tests</h2>
+    <div class="badge-grid">
+      <div>
+        <h3>Keyboard Navigation</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium"
+             id="js-badge-a11y-keyboard"></div>
+        <p><small>Tab to focus, Enter to activate</small></p>
+      </div>
+      <div>
+        <h3>ARIA Labels</h3>
+        <div data-seoindicator-badge="test-audit-hash-001" 
+             data-size="medium"
+             id="js-badge-a11y-aria"></div>
+        <p><small>Check for role="img" and aria-label</small></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load badge.js script -->
+  <script>
+    // Mock API responses for E2E testing
+    window.__BADGE_MOCK_DATA = {
+      'test-audit-hash-001': {
+        hash: 'test-audit-hash-001',
+        site_url: 'https://example.com',
+        score: 85,
+        audit_url: 'https://seoindicator.com/audit/test-audit-hash-001/'
+      },
+      'test-audit-hash-002': {
+        hash: 'test-audit-hash-002',
+        site_url: 'https://testsite.org',
+        score: 72,
+        audit_url: 'https://seoindicator.com/audit/test-audit-hash-002/'
+      },
+      'test-audit-hash-003': {
+        hash: 'test-audit-hash-003',
+        site_url: 'https://poorlyranked.net',
+        score: 45,
+        audit_url: 'https://seoindicator.com/audit/test-audit-hash-003/'
+      },
+      'test-score-excellent': {
+        hash: 'test-score-excellent',
+        site_url: 'https://excellent-site.com',
+        score: 95,
+        audit_url: 'https://seoindicator.com/audit/test-score-excellent/'
+      },
+      'test-score-good': {
+        hash: 'test-score-good',
+        site_url: 'https://good-site.com',
+        score: 75,
+        audit_url: 'https://seoindicator.com/audit/test-score-good/'
+      },
+      'test-score-average': {
+        hash: 'test-score-average',
+        site_url: 'https://average-site.com',
+        score: 55,
+        audit_url: 'https://seoindicator.com/audit/test-score-average/'
+      },
+      'test-score-poor': {
+        hash: 'test-score-poor',
+        site_url: 'https://poor-site.com',
+        score: 35,
+        audit_url: 'https://seoindicator.com/audit/test-score-poor/'
+      },
+      'test-score-bad': {
+        hash: 'test-score-bad',
+        site_url: 'https://bad-site.com',
+        score: 15,
+        audit_url: 'https://seoindicator.com/audit/test-score-bad/'
+      }
+    };
+    
+    // Tracking log for E2E tests
+    window.__TRACKING_LOG = [];
+    
+    // Intercept fetch for tracking
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      const url = args[0];
+      
+      if (typeof url === 'string') {
+        if (url.includes('/impression')) {
+          window.__TRACKING_LOG.push({ type: 'impression', url, timestamp: Date.now() });
+          console.log('[Badge] Impression tracked:', url);
+        } else if (url.includes('/click')) {
+          window.__TRACKING_LOG.push({ type: 'click', url, timestamp: Date.now() });
+          console.log('[Badge] Click tracked:', url);
+        }
+      }
+      
+      return originalFetch.apply(this, args);
+    };
+  </script>
+  
+  <!-- The actual badge.js would be loaded here in production -->
+  <!-- <script src="https://seoindicator.com/badge.js" async></script> -->
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Flow Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        .step { margin: 10px 0; padding: 10px; background: #16213e; border-radius: 4px; }
+        .pass { border-left: 4px solid #4ecca3; }
+        .fail { border-left: 4px solid #ff6b6b; }
+        .pending { border-left: 4px solid #ffd93d; }
+        pre { white-space: pre-wrap; word-break: break-all; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>TASK-35-26: Auth Flow Validation</h1>
+    <p>Testing: Registration → Protected Route → Same-session Auth</p>
+    
+    <div>
+        <button onclick="runFullTest()">Run Full Auth Test</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const API_ORIGIN = 'http://127.0.0.1:8000';
+        const resultsDiv = document.getElementById('results');
+        let testUser = null;
+        let testToken = null;
+        
+        function addResult(step, status, message, data = null) {
+            const div = document.createElement('div');
+            div.className = `step ${status}`;
+            div.innerHTML = `<strong>${step}</strong><br>${message}`;
+            if (data) {
+                div.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            resultsDiv.appendChild(div);
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+            testUser = null;
+            testToken = null;
+            localStorage.clear();
+        }
+        
+        async function fetchWithCookies(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...options.headers
+                }
+            });
+            return response;
+        }
+        
+        async function runFullTest() {
+            clearResults();
+            
+            // Step 1: Get CSRF cookie
+            addResult('Step 1: CSRF Cookie', 'pending', 'Fetching CSRF cookie...');
+            try {
+                const csrfResp = await fetchWithCookies(`${API_ORIGIN}/sanctum/csrf-cookie`);
+                if (csrfResp.ok || csrfResp.status === 204) {
+                    addResult('Step 1: CSRF Cookie', 'pass', `Status: ${csrfResp.status}`);
+                } else {
+                    addResult('Step 1: CSRF Cookie', 'fail', `Unexpected status: ${csrfResp.status}`);
+                    return;
+                }
+            } catch (e) {
+                addResult('Step 1: CSRF Cookie', 'fail', `Error: ${e.message}`);
+                return;
+            }
+            
+            // Step 2: Register new user
+            const timestamp = Date.now();
+            const email = `test-local-${timestamp}@example.com`;
+            const name = `Test User ${timestamp}`;
+            const password = 'Test123!pass';
+            
+            addResult('Step 2: Register', 'pending', `Registering ${email}...`);
+            try {
+                const regResp = await fetchWithCookies(`${API_ORIGIN}/api/v1/auth/register`, {
+                    method: 'POST',
+                    body: JSON.stringify({ name, email, password, password_confirmation: password })
+                });
+                const regData = await regResp.json();
+                
+                if (regResp.ok && regData.data) {
+                    testUser = regData.data;
+                    testToken = regData.data.token;
+                    localStorage.setItem('seoindicator_user', JSON.stringify(testUser));
+                    if (testToken) {
+                        localStorage.setItem('seoindicator_token', testToken);
+                    }
+                    addResult('Step 2: Register', 'pass', 
+                        `Registration successful. Token received: ${testToken ? 'YES' : 'NO'}`,
+                        { user: testUser, hasToken: !!testToken });
+                } else {
+                    addResult('Step 2: Register', 'fail', `Registration failed`, regData);
+                    return;
+                }
+            } catch (e) {
+                addResult('Step 2: Register', 'fail', `Error: ${e.message}`);
+                return;
+            }
+            
+            // Step 3: Verify token can access protected route
+            addResult('Step 3: Token Auth', 'pending', 'Testing token-based auth to /api/v1/auth/user...');
+            try {
+                const userResp = await fetchWithCookies(`${API_ORIGIN}/api/v1/auth/user`, {
+                    headers: {
+                        'Authorization': `Bearer ${testToken}`
+                    }
+                });
+                const userData = await userResp.json();
+                
+                if (userResp.ok && userData.data) {
+                    addResult('Step 3: Token Auth', 'pass', 
+                        `Token-based auth works! User: ${userData.data.email}`,
+                        userData);
+                } else {
+                    addResult('Step 3: Token Auth', 'fail', 
+                        `Token auth failed with status ${userResp.status}`,
+                        userData);
+                }
+            } catch (e) {
+                addResult('Step 3: Token Auth', 'fail', `Error: ${e.message}`);
+            }
+            
+            // Step 4: Test session-based auth (without token header)
+            addResult('Step 4: Session Auth', 'pending', 'Testing session-based auth (cookie only)...');
+            try {
+                const sessionResp = await fetchWithCookies(`${API_ORIGIN}/api/v1/auth/user`);
+                const sessionData = await sessionResp.json();
+                
+                if (sessionResp.ok && sessionData.data) {
+                    addResult('Step 4: Session Auth', 'pass', 
+                        `Session-based auth works!`,
+                        sessionData);
+                } else {
+                    addResult('Step 4: Session Auth', 'fail', 
+                        `Session auth failed - this is expected for SPA fallback mode`,
+                        sessionData);
+                }
+            } catch (e) {
+                addResult('Step 4: Session Auth', 'fail', `Error: ${e.message}`);
+            }
+            
+            // Step 5: Login with the created user
+            addResult('Step 5: Login', 'pending', `Logging in as ${email}...`);
+            try {
+                const loginResp = await fetchWithCookies(`${API_ORIGIN}/api/v1/auth/login`, {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+                const loginData = await loginResp.json();
+                
+                if (loginResp.ok && loginData.data) {
+                    const loginToken = loginData.data.token;
+                    addResult('Step 5: Login', 'pass', 
+                        `Login successful. Token: ${loginToken ? 'YES' : 'NO'}`,
+                        { user: loginData.data, hasToken: !!loginToken });
+                    
+                    // Update stored token
+                    if (loginToken) {
+                        testToken = loginToken;
+                        localStorage.setItem('seoindicator_token', testToken);
+                    }
+                } else {
+                    addResult('Step 5: Login', 'fail', `Login failed`, loginData);
+                }
+            } catch (e) {
+                addResult('Step 5: Login', 'fail', `Error: ${e.message}`);
+            }
+            
+            // Step 6: Logout
+            addResult('Step 6: Logout', 'pending', 'Logging out...');
+            try {
+                const logoutResp = await fetchWithCookies(`${API_ORIGIN}/api/v1/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${testToken}`
+                    }
+                });
+                
+                if (logoutResp.ok) {
+                    addResult('Step 6: Logout', 'pass', 'Logout successful');
+                    localStorage.removeItem('seoindicator_user');
+                    localStorage.removeItem('seoindicator_token');
+                } else {
+                    const logoutData = await logoutResp.json();
+                    addResult('Step 6: Logout', 'fail', `Logout failed`, logoutData);
+                }
+            } catch (e) {
+                addResult('Step 6: Logout', 'fail', `Error: ${e.message}`);
+            }
+            
+            // Summary
+            const summary = document.createElement('div');
+            summary.className = 'step';
+            summary.innerHTML = '<strong>Test Summary</strong><br>All auth flow steps completed. Check results above.';
+            resultsDiv.appendChild(summary);
+        }
+    </script>
+</body>
+</html>

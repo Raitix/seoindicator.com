@@ -1,0 +1,44 @@
+{
+  "taskId": "TASK-35-26",
+  "agent": "LocalTester",
+  "sessionId": "localtester-task-35-26-f260f7cf-7e17-4225-a4d1-95d635a3fd3a",
+  "validatedAt": "2026-03-10T15:19:00Z",
+  "result": "fail",
+  "summary": {
+    "targetedTaskSuites": {
+      "command": "npm exec vitest run __tests__/contexts/AuthContext.production-spa-auth.test.tsx __tests__/lib/api/auth.production-routing.test.ts",
+      "passed": true,
+      "testFiles": 2,
+      "tests": 12
+    },
+    "broaderAuthSuite": {
+      "command": "npm exec vitest run __tests__/contexts/AuthContext.production-spa-auth.test.tsx __tests__/contexts/AuthContext.test.tsx __tests__/lib/api/auth.production-routing.test.ts",
+      "passed": false,
+      "testFiles": {
+        "passed": 2,
+        "failed": 1
+      },
+      "tests": {
+        "passed": 14,
+        "failed": 31
+      },
+      "firstFailure": "__tests__/contexts/AuthContext.test.tsx -> AuthContext -> Refresh user -> refreshes user data",
+      "error": "invariant expected app router to be mounted"
+    },
+    "frontendBuild": {
+      "command": "npm run build",
+      "passed": true
+    },
+    "browserValidation": {
+      "setup": "static export served at http://127.0.0.1:3000 with same-origin proxy for /api and /sanctum to local backend :8000",
+      "registration": "navigated from /register to /dashboard",
+      "protectedRouteCheck": "navigating to /sites/1/local redirected to /login instead of staying on the protected Local SEO route",
+      "postRedirectStorage": {
+        "seoindicator_user": null,
+        "seoindicator_token": null,
+        "seoindicator_redirect": "/sites/1/local/"
+      },
+      "loginRetry": "login form showed 'Server error. Please try again later.'"
+    }
+  }
+}

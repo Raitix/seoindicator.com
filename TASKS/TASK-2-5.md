@@ -1,0 +1,79 @@
+# TASK-002-5: Create NotificationDispatcher Service
+
+## STATUS
+`Done`
+
+## PRIORITY
+`High`
+
+## RISK
+`Medium`
+
+## Related
+- Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
+- Feature: [FEAT-002](../FEATURES/FEAT-002.md)
+
+---
+
+## Description
+Create the `NotificationDispatcher` service that queues and sends alert notifications via configured channels.
+
+## Acceptance Criteria
+- [ ] Service class created at `App\Services\NotificationDispatcher`
+- [ ] Method `dispatch(User $user, Keyword $keyword, array $events)` sends notifications
+- [ ] Checks user's notification_channels preference (email, in_app)
+- [ ] For email channel: queues RankingAlertEmail mailable
+- [ ] For in_app channel: creates Notification record in database
+- [ ] Respects quiet_hours_start and quiet_hours_end settings (delays email if in quiet hours)
+- [ ] Handles digest_mode: 'instant' sends immediately, 'daily'/'weekly' queues for batch
+- [ ] Logs all dispatch attempts with success/failure status
+- [ ] Unit tests for each channel type
+- [ ] Unit tests for quiet hours logic
+- [ ] Unit tests for digest mode handling
+
+## Dependencies
+- TASK-002-1 (alert_settings model)
+- TASK-002-3 (notifications model)
+- TASK-002-10 (RankingAlertEmail mailable)
+
+## Effort Estimate
+`Medium` (2-4 hours)
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-22] Agent: SpecSystemAnalyst
+Handles notification delivery. Medium risk due to quiet hours and digest logic complexity.
+
+### [2026-03-15 23:28 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - Orchestrator-triggered processing for `TASK-2-5`.
+
+Verification:
+- TASK-2-5.md status: `Done` ✅
+- SPEC-2.md status: `Done` ✅
+- FEAT-2.md status: `Done` ✅
+- DOCUMENTATION.md: Present (Ranking Change Alert System section) ✅
+
+Actions:
+- Written completion marker: `logs/completed/task/TASK-2-5.json`
+- Removed stale lock file `TASKS/.locks/TASK-2-5.lock`
+
+Task complete - no documentation updates required.
+
+### [2026-03-15 23:33 GMT+2] Agent: DocSystemAnalyst
+**Re-verification Pass** - Orchestrator-triggered processing for `TASK-2-5`.
+
+Verification:
+- TASK-2-5.md status: `Done` ✅
+- SPEC-2.md status: `Done` ✅
+- FEAT-2.md status: `Done` ✅
+- DOCUMENTATION.md: Present (Ranking Change Alert System section) ✅
+
+Actions:
+- Refreshed completion marker: `logs/completed/task/TASK-2-5.json`
+- Removed stale lock file `TASKS/.locks/TASK-2-5.lock`
+- Cleared active-agents entry
+
+Task complete - no documentation updates required.
