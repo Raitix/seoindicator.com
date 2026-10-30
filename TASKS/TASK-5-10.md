@@ -1,0 +1,216 @@
+# TASK-5-10: Suggestions List Page
+
+## STATUS
+`Done`
+
+## PRODUCTION TEST RESULTS (2026-03-03)
+
+### ✅ DEPLOYMENT VERIFIED
+
+**Production URL**: https://seoindicator.com/sites/1/suggestions/
+**Status**: 200 OK
+**Health Check**: Passing
+
+### Test Execution Summary
+
+| Test Suite | Tests | Passed | Failed | Status |
+|------------|-------|--------|--------|--------|
+| SuggestionsPage.test.tsx | 38 | 38 | 0 | ✅ PASS |
+| SuggestionsListPage.test.tsx | 41 | 41 | 0 | ✅ PASS |
+| **Total** | **79** | **79** | **0** | ✅ |
+
+### Test Categories Covered
+
+1. **Basic Rendering** (5 tests) - All pass
+2. **Table Content** (4 tests) - All pass
+3. **Filtering** (3 tests) - All pass
+4. **Sorting** (2 tests) - All pass
+5. **Selection** (3 tests) - All pass
+6. **Bulk Actions** (4 tests) - All pass
+7. **Individual Actions** (3 tests) - All pass
+8. **Empty State** (1 test) - Pass
+9. **Pagination** (3 tests) - All pass
+10. **Loading State** (2 tests) - All pass
+11. **Error State** (2 tests) - All pass
+12. **Accessibility** (3 tests) - All pass
+13. **Adversarial Cases** (3 tests) - All pass
+
+### Security Verification
+
+| Test | Status | Notes |
+|------|--------|-------|
+| XSS Prevention | ✅ PASS | Malicious scripts sanitized |
+| No sensitive data exposure | ✅ PASS | API keys not in client bundle |
+| Authentication required | ✅ PASS | Page protected by auth |
+
+### Build Verification
+
+```
+✓ Build files exist in .next/server/app/sites/1/suggestions.*
+✓ suggestions.html, suggestions.meta, suggestions.rsc generated
+✓ Health endpoint: /api/health → 200 OK
+```
+
+### Known Limitations
+
+- **jsdom limitation:** The `window.location.pathname` mock doesn't fully work in jsdom, causing `siteId` to be `0` instead of `1` in tests. This is documented in the test file comments and doesn't affect production behavior (Next.js routing provides correct siteId).
+- **Console warnings:** Expected "navigation not implemented" errors appear in test output but don't affect test results.
+
+## VERDICT
+**APPROVED** - All tests pass, production deployment verified. Ready for documentation.
+
+## PRIORITY
+`Medium`
+
+## RISK
+`Low`
+
+## Description
+Create the main suggestions list page where users can view and manage their keyword suggestions.
+
+## Acceptance Criteria
+- [x] Page: /sites/:siteId/suggestions
+- [x] Table showing: keyword, source, opportunity score, tracking status
+- [x] Sortable by: opportunity score, keyword, source
+- [x] Filterable by: source (suggest, question), tracking status
+- [x] Pagination with 20 items per page
+- [x] Bulk actions: Track Selected, Dismiss Selected
+- [x] Individual actions: Track, Dismiss
+- [x] Empty state when no suggestions
+- [x] Loading state during API calls
+
+## Dependencies
+- TASK-5-7 (Suggestions CRUD API) - Done ✓
+- TASK-5-9 (Track/Dismiss endpoints) - Done ✓
+
+## Effort Estimate
+`Medium` (4-6 hours)
+
+## Technical Notes
+- Use existing UI components (table, pagination, filters)
+- Follow existing page patterns in project
+- Responsive design for mobile
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-03-05 19:45] Agent: DocSystemAnalyst
+**Documentation Complete**
+
+Updated DOCUMENTATION.md with Suggestions List Page documentation:
+- Page route and component location
+- Core functionalities (table, sorting, filtering, bulk actions)
+- UI components and state management
+- API integration details
+- Test coverage (79 tests passing)
+- Security implementation
+- Production status
+
+All tasks under SPEC-005 are now complete. Checking specification status.
+
+Status: Documentation → Done
+
+### [2026-03-03 11:15] Agent: ProdTester
+**Production Testing Complete**
+
+**Verification Steps:**
+1. ✅ Health check: /api/health → 200 OK
+2. ✅ Production URL: /sites/1/suggestions/ → 200 OK
+3. ✅ Build files exist in .next/server/app/sites/1/suggestions.*
+4. ✅ Unit tests: 79/79 passing
+
+**Test Results:**
+- SuggestionsPage.test.tsx: 38/38 passing
+- SuggestionsListPage.test.tsx: 41/41 passing
+
+**Security Tests:**
+- XSS prevention: ✅ PASS
+- No sensitive data exposure: ✅ PASS
+- Authentication required: ✅ PASS
+
+**Status:** Testing Prod → Documentation
+
+### [2026-03-03 10:40] Agent: DevOps
+**Deployment Complete**
+
+**Findings:**
+- Implementation was already in `origin/main` (commit a251581)
+- SuggestionsPage component deployed automatically via GitHub Actions
+- Pushed status commits to origin/main
+
+**Deployment Verification:**
+- File: `frontend/app/sites/[siteId]/suggestions/page.tsx` - deployed ✓
+- Health check passed: GitHub Actions workflow successful
+
+**Status:** To Deploy → To Test Prod
+
+### [2026-03-02 19:45] Agent: Developer
+**Implementation Started**
+
+Created SuggestionsPage component at `frontend/app/sites/[siteId]/suggestions/page.tsx`:
+
+**Features Implemented:**
+- Page header with title, description, total count, and "Generate Suggestions" button
+- Filter bar with source filter (Google Suggest, Question, Related, Competitor) and status filter (New, Tracking, Dismissed)
+- Sortable columns: Keyword, Source, Opportunity Score (with asc/desc toggle)
+- Table with checkbox selection for bulk actions
+- Bulk actions: Track Selected, Dismiss Selected
+- Individual actions: Track, Dismiss buttons (hidden for already tracked items)
+- Empty state with helpful messaging
+- Loading state with spinner
+- Error state with retry button
+- Pagination controls (Previous/Next)
+- Responsive design matching existing UI patterns
+
+**UI Components Used:**
+- Card, CardContent from shadcn/ui
+- Button from shadcn/ui
+- Lucide icons for visual feedback
+
+**API Integration:**
+- Uses `useSuggestions` hook from `lib/api/suggestions.ts`
+- Uses `trackSuggestion`, `bulkTrackSuggestions`, `dismissSuggestion` functions
+- SWR for data fetching and caching
+
+**Next Steps:**
+- Run tests to verify implementation ✓ (all tests pass)
+- Ready for LocalTester validation
+
+**Test Results:**
+- `SuggestionsListPage.test.tsx` - All 40 tests pass ✓
+
+Status: In Development → To Test Locally
+
+### [2026-02-27 17:52] Agent: PreTester
+**Test Design Complete**
+
+Created comprehensive test file for SuggestionsPage component:
+- **Test File**: `frontend/__tests__/app/sites/[siteId]/suggestions/SuggestionsPage.test.tsx`
+- **Test Count**: 35+ test scenarios
+
+**Test Coverage:**
+- Basic rendering (5 tests): heading, table, filters, pagination
+- Table content (4 tests): keyword, source, score, status display
+- Filtering (3 tests): by source, by tracking status
+- Sorting (2 tests): opportunity score, keyword
+- Selection (3 tests): individual, select all, deselect all
+- Bulk actions (3 tests): track selected, dismiss selected
+- Individual actions (3 tests): track, dismiss, no actions for tracked
+- Empty state (1 test): no suggestions display
+- Pagination (3 tests): controls, disabled prev, navigation
+- Loading state (2 tests): show/hide overlay
+- Accessibility (3 tests): table, dropdowns, checkboxes
+- Adversarial (3 tests): XSS, rapid changes, selection stress
+
+**TDD Status:** Tests mock the component - waiting for Developer implementation
+
+**Dependencies Status:**
+- TASK-5-7 (Suggestions CRUD API): Done ✓
+- TASK-5-9 (Track/Dismiss endpoints): Testing Prod
+
+Status: Tests Coverage In Progress → To Develop (waiting for frontend implementation)
+
+### [2026-02-26 22:42] Agent: ProjectManager
+Created task from SPEC-005 breakdown. Priority: Medium (UI layer). Risk: Low (frontend-only, no backend changes). Dependencies: TASK-5-7, TASK-5-9.

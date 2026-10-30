@@ -1,0 +1,59 @@
+{
+  "taskId": "TASK-35-17",
+  "capturedAt": "2026-03-10T11:08:00Z",
+  "environment": {
+    "baseUrl": "https://seoindicator.com",
+    "page": "/sites/1/local/"
+  },
+  "disposableUser": {
+    "email": "prodtester+task3517-20260310c@example.com",
+    "userId": 10041
+  },
+  "authFlow": {
+    "loginResponse": {
+      "status": 200,
+      "tokenIssued": true
+    },
+    "guestAuthUser": {
+      "status": 401,
+      "contentType": "application/json; charset=UTF-8",
+      "body": "{\"message\":\"Unauthenticated.\"}"
+    },
+    "bearerAuthUser": {
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "body": "{\"success\":true,\"data\":{\"user\":{\"id\":10041,\"name\":\"ProdTester TASK-35-17\",\"email\":\"prodtester+task3517-20260310c@example.com\",\"email_verified\":false,\"role\":\"user\",\"avatar\":null,\"created_at\":\"2026-03-10T11:02:55.000000Z\",\"social_accounts\":[]}}}"
+    },
+    "routePersistence": {
+      "url": "https://seoindicator.com/sites/1/local/",
+      "tokenPresentInLocalStorage": true,
+      "result": "Protected Local SEO route rendered instead of redirecting back to /login/."
+    }
+  },
+  "locationsApi": {
+    "listSite1WithBearer": {
+      "status": 500,
+      "contentType": "application/json; charset=UTF-8",
+      "body": "{\n    \"message\": \"Server Error\"\n}"
+    },
+    "listSite999999WithBearer": {
+      "status": 500,
+      "contentType": "application/json; charset=UTF-8",
+      "body": "{\n    \"message\": \"Server Error\"\n}"
+    },
+    "createSite1WithBearer": {
+      "status": 500,
+      "contentType": "application/json; charset=UTF-8",
+      "body": "{\n    \"message\": \"Server Error\"\n}"
+    }
+  },
+  "uiObservation": {
+    "pageTextSnippet": "Location management ... Failed to load locations ... Server Error",
+    "summary": "The page shell and auth-aware route access are live, but the data layer remains broken so add/edit/delete and the details dialog path cannot be validated in production."
+  },
+  "verdict": {
+    "authFallback": "resolved for this route",
+    "blockingIssue": "TASK-35-27 still active - locations API returns 500 for both existing and obviously invalid site ids",
+    "taskStatus": "To Develop"
+  }
+}

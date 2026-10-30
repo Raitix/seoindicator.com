@@ -1,0 +1,23 @@
+# Cache headers for Netlify deployment
+# Public audit pages - ISR-like caching
+/audit/*/  Cache-Control: public, max-age=3600, stale-while-revalidate=60
+
+# Badge SVG images - long cache with immutable
+/badge/*/*.svg  Cache-Control: public, max-age=86400, immutable
+/badge/*/*.svg  Content-Type: image/svg+xml
+
+# Badge PNG images
+/badge/*/*.png  Cache-Control: public, max-age=86400, immutable
+
+# OG images for social sharing
+/badge/*/og.png  Cache-Control: public, max-age=86400, immutable
+
+# Badge.js embed script
+/badge.js  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+/badge.js  Content-Type: application/javascript
+
+# Static assets (JS, CSS, images) - long cache
+/_next/static/*  Cache-Control: public, max-age=31536000, immutable
+
+# Public assets
+/public/*  Cache-Control: public, max-age=86400

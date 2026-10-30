@@ -1,0 +1,11 @@
+#!/bin/sh
+while read local_ref local_sha remote_ref remote_sha
+do
+  if [ "$remote_ref" = "refs/heads/main" ] && [ "$local_sha" != "0000000000000000000000000000000000000000" ]; then
+    repo_root=$(git rev-parse --show-toplevel)
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo_root\scripts\deploy-prod.ps1" -Trigger post-push -GitRef "$local_sha" -Branch main
+    exit $?
+  fi
+done
+
+exit 0

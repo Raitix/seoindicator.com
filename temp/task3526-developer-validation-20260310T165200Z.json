@@ -1,0 +1,43 @@
+{
+  "task": "TASK-35-26",
+  "timestampUtc": "2026-03-10T16:52:00Z",
+  "summary": "Closed the remaining SPA auth persistence gap by returning a bearer token from backend registration and restoring the legacy AuthContext suite under Vitest/App Router mocks.",
+  "changes": [
+    {
+      "path": "backend/app/Http/Controllers/Api/V1/AuthController.php",
+      "summary": "Registration now creates and returns a Sanctum bearer token in data.token, matching login."
+    },
+    {
+      "path": "backend/tests/Feature/Controllers/Api/V1/AuthControllerTest.php",
+      "summary": "Registration asserts token presence and proves the returned token can access /api/v1/auth/user."
+    },
+    {
+      "path": "frontend/__tests__/contexts/AuthContext.test.tsx",
+      "summary": "Migrated legacy mocks to Vitest/App Router-safe vi.mock usage and fixed the duplicate-login regression to use an overlapping in-flight request."
+    }
+  ],
+  "validation": [
+    {
+      "command": "php artisan test tests/Feature/Controllers/Api/V1/AuthControllerTest.php",
+      "cwd": "backend",
+      "result": "passed",
+      "details": "37 tests, 112 assertions"
+    },
+    {
+      "command": "npm exec vitest run __tests__/contexts/AuthContext.production-spa-auth.test.tsx __tests__/contexts/AuthContext.test.tsx __tests__/lib/api/auth.production-routing.test.ts --reporter=basic",
+      "cwd": "frontend",
+      "result": "passed",
+      "details": "45 tests passed"
+    },
+    {
+      "command": "npm run build",
+      "cwd": "frontend",
+      "result": "passed",
+      "details": "Next.js static export build completed successfully"
+    }
+  ],
+  "notes": [
+    "The remaining acceptance risk is browser-only verification of the same-origin export/proxy flow after registration and subsequent navigation to /sites/{siteId}/local.",
+    "Vitest still logs existing act-environment warnings from the legacy AuthContext suite, but the suite now passes end-to-end."
+  ]
+}

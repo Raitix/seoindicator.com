@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 const fs = require('fs');
@@ -53,12 +54,13 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+=======
+const { defineConfig } = require('@playwright/test');
+>>>>>>> d58f04db878e4d583ae76b3478f0a955539c0036
 
-/**
- * @see https://playwright.dev/docs/test-configuration
- */
 module.exports = defineConfig({
   testDir: './tests',
+<<<<<<< HEAD
   outputDir: outputDir,
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -143,3 +145,16 @@ module.exports = defineConfig({
   //   reuseExistingServer: !process.env.CI,
   // },
 });
+=======
+  timeout: 30000,
+  retries: 2,
+  reporter: 'html',
+  use: {
+    browserName: 'chromium',
+    headless: true,
+    viewport: { width: 1280, height: 720 },
+    video: 'retain-on-failure',
+    screenshot: 'on',
+  },
+});
+>>>>>>> d58f04db878e4d583ae76b3478f0a955539c0036
