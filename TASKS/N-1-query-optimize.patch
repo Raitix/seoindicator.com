@@ -1,0 +1,12 @@
+## PATCH: Optimize N+1 Queries in KeywordController::index
+
+**Files Touched:**
+- app/Http/Controllers/KeywordController.php
+**Issue:** Each keyword triggers its own query.
+- Impact: High - 1 main query + multiple per requested rows.
+
+---
+
+```php
+// Original Issues Highlighted:
+// // N+Issues Loop Updated (Main Use():)

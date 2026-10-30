@@ -1,0 +1,658 @@
+{
+  "runId": "task353-1773159084",
+  "startedAt": "2026-03-10T16:11:24.819574+00:00",
+  "productionUrl": "https://seoindicator.com",
+  "setup": {
+    "fixture": {
+      "run_id": "task353-1773159084",
+      "email": "prodtester+task353-1773159084@seoindicator.test",
+      "user_id": 10063,
+      "site_id": 34,
+      "location_id": 13,
+      "review_ids": {
+        "positive": 29,
+        "neutral": 30,
+        "negative": 31
+      }
+    },
+    "modelChecks": {
+      "location_review_relation_count": 3,
+      "location_insight_relation_count": 2,
+      "location_post_relation_count": 2,
+      "insight_total_actions": 21,
+      "insight_date_range_count": 2,
+      "review_positive_count": 1,
+      "review_negative_count": 1,
+      "review_neutral_count": 1,
+      "review_unresponded_count": 2,
+      "review_has_owner_response": true,
+      "review_sentiment_label": "Positive",
+      "post_published_count": 1,
+      "post_scheduled_count": 1,
+      "post_type_label": "Event"
+    }
+  },
+  "setupRaw": {
+    "exitCode": 0,
+    "stdout": "{\n    \"token\": \"71|aGiVuk67XWhw7mvytYdB0gQnZdfD94usSsWXER0r6d68381f\",\n    \"fixture\": {\n        \"run_id\": \"task353-1773159084\",\n        \"email\": \"prodtester+task353-1773159084@seoindicator.test\",\n        \"user_id\": 10063,\n        \"site_id\": 34,\n        \"location_id\": 13,\n        \"review_ids\": {\n            \"positive\": 29,\n            \"neutral\": 30,\n            \"negative\": 31\n        }\n    },\n    \"modelChecks\": {\n        \"location_review_relation_count\": 3,\n        \"location_insight_relation_count\": 2,\n        \"location_post_relation_count\": 2,\n        \"insight_total_actions\": 21,\n        \"insight_date_range_count\": 2,\n        \"review_positive_count\": 1,\n        \"review_negative_count\": 1,\n        \"review_neutral_count\": 1,\n        \"review_unresponded_count\": 2,\n        \"review_has_owner_response\": true,\n        \"review_sentiment_label\": \"Positive\",\n        \"post_published_count\": 1,\n        \"post_scheduled_count\": 1,\n        \"post_type_label\": \"Event\"\n    }\n}\n",
+    "stderr": ""
+  },
+  "http": {
+    "auth_user": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "247",
+        "Date": "Tue, 10 Mar 2026 16:10:44 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": 10063,
+            "name": "ProdTester TASK-35-3",
+            "email": "prodtester+task353-1773159084@seoindicator.test",
+            "email_verified": true,
+            "role": "user",
+            "avatar": null,
+            "created_at": "2026-03-10T16:10:44.000000Z",
+            "social_accounts": []
+          }
+        }
+      }
+    },
+    "reviews_index": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "59",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "1658",
+        "Date": "Tue, 10 Mar 2026 16:10:44 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "data": [
+          {
+            "id": 30,
+            "gbp_review_id": "review-neutral-task353-1773159084",
+            "rating": 3,
+            "text": "Okay overall.",
+            "author": "Nora Neutral",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-08T16:10:44+00:00",
+            "sentiment": "neutral",
+            "has_response": false,
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:44+00:00"
+          },
+          {
+            "id": 29,
+            "gbp_review_id": "review-positive-task353-1773159084",
+            "rating": 5,
+            "text": "Great service.",
+            "author": "Alice Positive",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-07T16:10:44+00:00",
+            "sentiment": "positive",
+            "has_response": false,
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:44+00:00"
+          },
+          {
+            "id": 31,
+            "gbp_review_id": "review-negative-task353-1773159084",
+            "rating": 1,
+            "text": "Poor experience.",
+            "author": "Nick Negative",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-06T16:10:44+00:00",
+            "sentiment": "negative",
+            "has_response": true,
+            "response": {
+              "text": "We are sorry and will improve.",
+              "responded_at": "2026-03-09T16:10:44+00:00",
+              "responder_name": null
+            },
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:44+00:00"
+          }
+        ],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "last": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": [
+            1,
+            1
+          ],
+          "from": 1,
+          "last_page": [
+            1,
+            1
+          ],
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/locations/13/reviews",
+          "per_page": [
+            15,
+            15
+          ],
+          "to": 3,
+          "total": [
+            3,
+            3
+          ]
+        }
+      }
+    },
+    "reviews_rating_5": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "58",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "925",
+        "Date": "Tue, 10 Mar 2026 16:10:44 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "data": [
+          {
+            "id": 29,
+            "gbp_review_id": "review-positive-task353-1773159084",
+            "rating": 5,
+            "text": "Great service.",
+            "author": "Alice Positive",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-07T16:10:44+00:00",
+            "sentiment": "positive",
+            "has_response": false,
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:44+00:00"
+          }
+        ],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "last": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": [
+            1,
+            1
+          ],
+          "from": 1,
+          "last_page": [
+            1,
+            1
+          ],
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/locations/13/reviews",
+          "per_page": [
+            15,
+            15
+          ],
+          "to": 1,
+          "total": [
+            1,
+            1
+          ]
+        }
+      }
+    },
+    "reviews_has_response_before": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "57",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "1043",
+        "Date": "Tue, 10 Mar 2026 16:10:44 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "data": [
+          {
+            "id": 31,
+            "gbp_review_id": "review-negative-task353-1773159084",
+            "rating": 1,
+            "text": "Poor experience.",
+            "author": "Nick Negative",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-06T16:10:44+00:00",
+            "sentiment": "negative",
+            "has_response": true,
+            "response": {
+              "text": "We are sorry and will improve.",
+              "responded_at": "2026-03-09T16:10:44+00:00",
+              "responder_name": null
+            },
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:44+00:00"
+          }
+        ],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "last": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": [
+            1,
+            1
+          ],
+          "from": 1,
+          "last_page": [
+            1,
+            1
+          ],
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/locations/13/reviews",
+          "per_page": [
+            15,
+            15
+          ],
+          "to": 1,
+          "total": [
+            1,
+            1
+          ]
+        }
+      }
+    },
+    "reviews_stats_before": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "56",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "227",
+        "Date": "Tue, 10 Mar 2026 16:10:44 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "data": {
+          "average_rating": 3,
+          "previous_rating": 3,
+          "total_count": 3,
+          "previous_count": 3,
+          "distribution": [
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "sentiment_breakdown": {
+            "positive": 1,
+            "negative": 1,
+            "neutral": 1
+          },
+          "response_rate": 33.3,
+          "average_response_time_hours": 72
+        }
+      }
+    },
+    "reviews_respond": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "10",
+        "X-RateLimit-Remaining": "5",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "78",
+        "Date": "Tue, 10 Mar 2026 16:10:45 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "message": "Response posted successfully.",
+        "response_id": "resp-30-1773159045"
+      }
+    },
+    "reviews_has_response_after": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "54",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "1489",
+        "Date": "Tue, 10 Mar 2026 16:10:45 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "data": [
+          {
+            "id": 30,
+            "gbp_review_id": "review-neutral-task353-1773159084",
+            "rating": 3,
+            "text": "Okay overall.",
+            "author": "Nora Neutral",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-08T16:10:44+00:00",
+            "sentiment": "neutral",
+            "has_response": true,
+            "response": {
+              "text": "Thanks for the feedback ? ProdTester fixture response.",
+              "responded_at": "2026-03-10T16:10:45+00:00",
+              "responder_name": null
+            },
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:45+00:00"
+          },
+          {
+            "id": 31,
+            "gbp_review_id": "review-negative-task353-1773159084",
+            "rating": 1,
+            "text": "Poor experience.",
+            "author": "Nick Negative",
+            "avatar_url": null,
+            "reviewed_at": "2026-03-06T16:10:44+00:00",
+            "sentiment": "negative",
+            "has_response": true,
+            "response": {
+              "text": "We are sorry and will improve.",
+              "responded_at": "2026-03-09T16:10:44+00:00",
+              "responder_name": null
+            },
+            "created_at": "2026-03-10T16:10:44+00:00",
+            "updated_at": "2026-03-10T16:10:44+00:00"
+          }
+        ],
+        "links": {
+          "first": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "last": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+          "prev": null,
+          "next": null
+        },
+        "meta": {
+          "current_page": [
+            1,
+            1
+          ],
+          "from": 1,
+          "last_page": [
+            1,
+            1
+          ],
+          "links": [
+            {
+              "url": null,
+              "label": "&laquo; Previous",
+              "page": null,
+              "active": false
+            },
+            {
+              "url": "https://seoindicator.com/api/v1/locations/13/reviews?page=1",
+              "label": "1",
+              "page": 1,
+              "active": true
+            },
+            {
+              "url": null,
+              "label": "Next &raquo;",
+              "page": null,
+              "active": false
+            }
+          ],
+          "path": "https://seoindicator.com/api/v1/locations/13/reviews",
+          "per_page": [
+            15,
+            15
+          ],
+          "to": 2,
+          "total": [
+            2,
+            2
+          ]
+        }
+      }
+    },
+    "reviews_stats_after": {
+      "status": 200,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "53",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "227",
+        "Date": "Tue, 10 Mar 2026 16:10:45 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "data": {
+          "average_rating": 3,
+          "previous_rating": 3,
+          "total_count": 3,
+          "previous_count": 3,
+          "distribution": [
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "sentiment_breakdown": {
+            "positive": 1,
+            "negative": 1,
+            "neutral": 1
+          },
+          "response_rate": 66.7,
+          "average_response_time_hours": 60
+        }
+      }
+    },
+    "insights_index": {
+      "status": 500,
+      "headers": {
+        "Connection": "close",
+        "X-Powered-By": "PHP/8.2.29",
+        "Cache-Control": "no-cache, private",
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-RateLimit-Limit": "60",
+        "X-RateLimit-Remaining": "52",
+        "Access-Control-Allow-Origin": "*",
+        "Content-Length": "33",
+        "Date": "Tue, 10 Mar 2026 16:10:45 GMT",
+        "Server": "LiteSpeed",
+        "platform": "hostinger",
+        "panel": "hpanel",
+        "Retry-After": "60",
+        "Content-Security-Policy": "upgrade-insecure-requests",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "alt-svc": "h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, h3-Q050=\":443\"; ma=2592000, h3-Q046=\":443\"; ma=2592000, h3-Q043=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\""
+      },
+      "body": {
+        "message": "Server Error"
+      }
+    }
+  },
+  "cleanup": {
+    "exitCode": 0,
+    "stdout": "{\n    \"email\": \"prodtester+task353-1773159084@seoindicator.test\",\n    \"deleted\": true\n}\n",
+    "stderr": "",
+    "parsed": {
+      "email": "prodtester+task353-1773159084@seoindicator.test",
+      "deleted": true
+    }
+  },
+  "summary": {
+    "auth_ok": false,
+    "reviews_index_ok": true,
+    "reviews_rating_filter_ok": true,
+    "reviews_response_filter_before_ok": true,
+    "reviews_stats_before_ok": true,
+    "reviews_respond_ok": true,
+    "reviews_response_filter_after_ok": true,
+    "reviews_stats_after_ok": true,
+    "insights_index_ok": false
+  },
+  "endedAt": "2026-03-10T16:11:26.746379+00:00"
+}

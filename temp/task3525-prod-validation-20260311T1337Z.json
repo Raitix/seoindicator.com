@@ -1,0 +1,41 @@
+{
+    "timestamp":  "2026-03-11T13:37:11.6908677+02:00",
+    "tests":  [
+                  {
+                      "status":  204,
+                      "name":  "csrf-cookie",
+                      "passed":  true
+                  },
+                  {
+                      "hasToken":  true,
+                      "name":  "register-token",
+                      "passed":  true
+                  },
+                  {
+                      "hasToken":  true,
+                      "name":  "login-token",
+                      "passed":  true
+                  },
+                  {
+                      "name":  "auth-user-bearer",
+                      "passed":  false
+                  },
+                  {
+                      "name":  "locations-bearer",
+                      "passed":  true
+                  },
+                  {
+                      "name":  "login-page",
+                      "passed":  true
+                  },
+                  {
+                      "name":  "local-page",
+                      "passed":  true
+                  }
+              ],
+    "summary":  {
+                    "success":  false,
+                    "total":  7,
+                    "passed":  6
+                }
+}
