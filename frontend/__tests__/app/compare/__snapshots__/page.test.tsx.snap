@@ -1,0 +1,399 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Integration > IN-003: Page matches snapshot 1`] = `
+<div>
+  <main
+    class="min-h-screen bg-slate-950 text-white"
+    role="main"
+  >
+    <nav
+      aria-label="Breadcrumb"
+      class="border-b border-slate-800 bg-slate-900/50"
+    >
+      <div
+        class="mx-auto max-w-5xl px-4 py-3"
+      >
+        <ol
+          class="flex items-center gap-2 text-sm text-slate-400"
+        >
+          <li>
+            <a
+              class="hover:text-emerald-400 transition-colors"
+              href="/"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            aria-hidden="true"
+            class="text-slate-600"
+          >
+            /
+          </li>
+          <li
+            aria-current="page"
+            class="text-white"
+          >
+            Compare
+          </li>
+        </ol>
+      </div>
+    </nav>
+    <div
+      class="mx-auto max-w-5xl px-4 py-10"
+    >
+      <header
+        class="text-center mb-12"
+      >
+        <h1
+          class="text-3xl md:text-4xl font-bold mb-4"
+        >
+          SEO Tool Comparisons
+        </h1>
+        <p
+          class="text-lg text-slate-400 max-w-2xl mx-auto"
+        >
+          Compare SEOIndicator with other popular SEO tools. Find the best fit for your needs, budget, and workflow.
+        </p>
+      </header>
+      <section
+        aria-labelledby="primary-heading"
+        class="mb-12"
+      >
+        <h2
+          class="text-2xl font-bold mb-6 text-white"
+          id="primary-heading"
+        >
+          SEOIndicator Comparisons
+        </h2>
+        <div
+          class="grid gap-4 md:grid-cols-2"
+        >
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            href="/compare/seoindicator-vs-ahrefs"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Ahrefs
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            href="/compare/seoindicator-vs-moz"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Moz
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            href="/compare/seoindicator-vs-semrush"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs SEMrush
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            href="/compare/seoindicator-vs-ubersuggest"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Ubersuggest
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+        </div>
+      </section>
+      <section
+        aria-labelledby="cross-heading"
+      >
+        <h2
+          class="text-2xl font-bold mb-6 text-white"
+          id="cross-heading"
+        >
+          Other Comparisons
+        </h2>
+        <div
+          class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        >
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            href="/compare/ahrefs-vs-moz"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Ahrefs vs Moz
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            href="/compare/ahrefs-vs-semrush"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Ahrefs vs SEMrush
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            href="/compare/ahrefs-vs-ubersuggest"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Ahrefs vs Ubersuggest
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            href="/compare/moz-vs-semrush"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Moz vs SEMrush
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            href="/compare/moz-vs-ubersuggest"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Moz vs Ubersuggest
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            href="/compare/semrush-vs-ubersuggest"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              SEMrush vs Ubersuggest
+            </h3>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+`;
+
+exports[`Integration IN-003: Page matches snapshot 1`] = `
+<div>
+  <main
+    class="min-h-screen bg-slate-950 text-white"
+    role="main"
+  >
+    <nav
+      aria-label="Breadcrumb"
+      class="border-b border-slate-800 bg-slate-900/50"
+    >
+      <div
+        class="mx-auto max-w-5xl px-4 py-3"
+      >
+        <ol
+          class="flex items-center gap-2 text-sm text-slate-400"
+        >
+          <li>
+            <a
+              class="hover:text-emerald-400 transition-colors"
+              data-testid="link"
+              href="/"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            aria-hidden="true"
+            class="text-slate-600"
+          >
+            /
+          </li>
+          <li
+            aria-current="page"
+            class="text-white"
+          >
+            Compare
+          </li>
+        </ol>
+      </div>
+    </nav>
+    <div
+      class="mx-auto max-w-5xl px-4 py-10"
+    >
+      <header
+        class="text-center mb-12"
+      >
+        <h1
+          class="text-3xl md:text-4xl font-bold mb-4"
+        >
+          SEO Tool Comparisons
+        </h1>
+        <p
+          class="text-lg text-slate-400 max-w-2xl mx-auto"
+        >
+          Compare SEOIndicator with other popular SEO tools. Find the best fit for your needs, budget, and workflow.
+        </p>
+      </header>
+      <section
+        aria-labelledby="primary-heading"
+        class="mb-12"
+      >
+        <h2
+          class="text-2xl font-bold mb-6 text-white"
+          id="primary-heading"
+        >
+          SEOIndicator Comparisons
+        </h2>
+        <div
+          class="grid gap-4 md:grid-cols-2"
+        >
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            data-testid="link"
+            href="/compare/seoindicator-vs-ahrefs"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Ahrefs
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            data-testid="link"
+            href="/compare/seoindicator-vs-semrush"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Semrush
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            data-testid="link"
+            href="/compare/seoindicator-vs-moz"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Moz
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+          <a
+            class="group block p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/50 transition-all"
+            data-testid="link"
+            href="/compare/seoindicator-vs-ubersuggest"
+          >
+            <h3
+              class="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors"
+            >
+              SEOIndicator vs Ubersuggest
+            </h3>
+            <p
+              class="text-sm text-slate-400 mt-2"
+            >
+              View detailed comparison →
+            </p>
+          </a>
+        </div>
+      </section>
+      <section
+        aria-labelledby="cross-heading"
+      >
+        <h2
+          class="text-2xl font-bold mb-6 text-white"
+          id="cross-heading"
+        >
+          Other Comparisons
+        </h2>
+        <div
+          class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        >
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            data-testid="link"
+            href="/compare/ahrefs-vs-semrush"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Ahrefs vs Semrush
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            data-testid="link"
+            href="/compare/ahrefs-vs-moz"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Ahrefs vs Moz
+            </h3>
+          </a>
+          <a
+            class="group block p-4 bg-slate-800/30 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all"
+            data-testid="link"
+            href="/compare/semrush-vs-moz"
+          >
+            <h3
+              class="font-medium text-white group-hover:text-blue-400 transition-colors"
+            >
+              Semrush vs Moz
+            </h3>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+`;

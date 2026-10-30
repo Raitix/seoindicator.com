@@ -1,0 +1,50 @@
+# TASK-002-4: Create AlertEvaluator Service
+
+## STATUS
+`Done`
+
+## PRIORITY
+`High`
+
+## RISK
+`Medium`
+
+## Related
+- Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
+- Feature: [FEAT-002](../FEATURES/FEAT-002.md)
+
+---
+
+## Description
+Create the `AlertEvaluator` service class that compares old and new keyword positions to determine if an alert should be triggered.
+
+## Acceptance Criteria
+- [ ] Service class created at `App\Services\AlertEvaluator`
+- [ ] Method `evaluate(Keyword $keyword, int $oldPosition, int $newPosition): array` returns triggered events
+- [ ] Evaluates all MVP event types: position_drop, position_gain, entered_top_10, left_top_10
+- [ ] Respects user's global threshold and per-keyword custom threshold
+- [ ] Checks if keyword alert is enabled before evaluating
+- [ ] Returns array of triggered events with metadata:
+  ```php
+  [
+    ['event' => 'position_drop', 'change' => 5, 'threshold' => 3],
+    ['event' => 'left_top_10', 'old' => 8, 'new' => 12]
+  ]
+  ```
+- [ ] Unit tests for all event type combinations
+- [ ] Unit tests for threshold respect (global and custom)
+
+## Dependencies
+- TASK-002-1 (alert_settings model)
+- TASK-002-2 (keyword_alert_settings model)
+
+## Effort Estimate
+`Medium` (2-4 hours)
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-22] Agent: SpecSystemAnalyst
+Core business logic for alert detection. Medium risk due to complex threshold logic.

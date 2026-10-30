@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Benchmark">
+            <directory>tests/Benchmark</directory>
+        </testsuite>
+        <testsuite name="Performance">
+            <directory>tests/Performance</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <ini name="memory_limit" value="4G"/>
+        <env name="APP_KEY" value="base64:3hv5pBNXsUP3Uk5p/YIcMA2S/o86sngt7A39dHck/SQ="/>
+        <env name="DB_TESTING_NO_TRANSACTIONS" value="true"/>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_FOREIGN_KEYS" value="false"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Google OAuth Configuration (Development/Test Values) -->
+        <env name="GOOGLE_CLIENT_ID" value="123456789012-dev-oauth-client.apps.googleusercontent.com"/>
+        <env name="GOOGLE_CLIENT_SECRET" value="GOCSPX-dev-oauth-secret-key-12345"/>
+        <env name="GOOGLE_REDIRECT_URI" value="http://localhost:8000/api/v1/auth/google/callback"/>
+        <!-- PayPal Configuration (Development/Test Values) -->
+        <env name="PAYPAL_CLIENT_ID" value="test-client-id"/>
+        <env name="PAYPAL_CLIENT_SECRET" value="test-client-secret"/>
+        <env name="PAYPAL_WEBHOOK_ID" value="test-webhook-id"/>
+        <env name="PAYPAL_RETURN_URL" value="http://localhost:3000/payment/success"/>
+        <env name="PAYPAL_CANCEL_URL" value="http://localhost:3000/payment/cancel"/>
+        <!-- OpenRouter Configuration (Development/Test Values) -->
+        <env name="OPENROUTER_API_KEY" value="test-api-key"/>
+    </php>
+</phpunit>

@@ -1,0 +1,405 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Snapshots > SN-001: Default icon matches snapshot 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-002: All sizes match snapshot > size-lg 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-8 [&_svg]:stroke-[2.5] text-current"
+  data-color="default"
+  data-size="lg"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-002: All sizes match snapshot > size-md 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-002: All sizes match snapshot > size-sm 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-4 [&_svg]:stroke-[1.5] text-current"
+  data-color="default"
+  data-size="sm"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-003: All colors match snapshot > color-default 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-003: All colors match snapshot > color-error 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-destructive dark:text-destructive"
+  data-color="error"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-003: All colors match snapshot > color-primary 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-primary dark:text-primary"
+  data-color="primary"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-003: All colors match snapshot > color-success 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-emerald-600 dark:text-emerald-400"
+  data-color="success"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-003: All colors match snapshot > color-warning 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-amber-500 dark:text-amber-400"
+  data-color="warning"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots > SN-004: Custom icon matches snapshot > custom-icon 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    viewBox="0 0 24 24"
+  >
+    <rect
+      height="16"
+      rx="2"
+      width="16"
+      x="4"
+      y="4"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-001: Default icon matches snapshot 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-002: All sizes match snapshot: size-lg 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-8 [&_svg]:stroke-[2.5] text-current"
+  data-color="default"
+  data-size="lg"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-002: All sizes match snapshot: size-md 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-002: All sizes match snapshot: size-sm 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-4 [&_svg]:stroke-[1.5] text-current"
+  data-color="default"
+  data-size="sm"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-003: All colors match snapshot: color-default 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-003: All colors match snapshot: color-error 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-destructive dark:text-destructive"
+  data-color="error"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-003: All colors match snapshot: color-primary 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-primary dark:text-primary"
+  data-color="primary"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-003: All colors match snapshot: color-success 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-emerald-600 dark:text-emerald-400"
+  data-color="success"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-003: All colors match snapshot: color-warning 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-amber-500 dark:text-amber-400"
+  data-color="warning"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    data-testid="lucide-activity"
+    focusable="false"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M22 12h-4l-3 9L9 3l-3 9H2"
+    />
+  </svg>
+</span>
+`;
+
+exports[`Snapshots SN-004: Custom icon matches snapshot: custom-icon 1`] = `
+<span
+  aria-hidden="true"
+  class="inline-flex items-center justify-center rounded-sm [&_svg]:size-full [&_svg]:stroke-linecap-round [&_svg]:stroke-linejoin-round size-6 [&_svg]:stroke-2 text-current"
+  data-color="default"
+  data-size="md"
+  data-slot="indicator-icon"
+>
+  <svg
+    viewBox="0 0 24 24"
+  >
+    <rect
+      height="16"
+      rx="2"
+      width="16"
+      x="4"
+      y="4"
+    />
+  </svg>
+</span>
+`;

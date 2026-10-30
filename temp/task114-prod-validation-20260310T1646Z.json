@@ -1,0 +1,34 @@
+﻿{
+    "checkedAtUtc":  "2026-03-10T16:46:20.6791685Z",
+    "task":  "TASK-1-14",
+    "addPage":  {
+                    "backlink":  "/sites/1/keywords/",
+                    "status":  200,
+                    "url":  "https://seoindicator.com/sites/1/keywords/new/",
+                    "heading":  "Add a new keyword",
+                    "hasNaN":  false
+                },
+    "editPage":  {
+                     "backlink":  "/sites/1/keywords/",
+                     "status":  200,
+                     "url":  "https://seoindicator.com/sites/1/keywords/1/edit/",
+                     "heading":  "Edit keyword",
+                     "hasNaN":  false
+                 },
+    "listPage":  {
+                     "status":  200,
+                     "url":  "https://seoindicator.com/sites/1/keywords/",
+                     "addKeywordLink":  "/sites/1/keywords/new/",
+                     "hasNaN":  false
+                 },
+    "health":  {
+                   "status":  200,
+                   "url":  "https://seoindicator.com/api/health",
+                   "database":  "connected"
+               },
+    "notes":  [
+                  "Add/edit form routes render expected copy in live browser DOM.",
+                  "Back links and add-keyword link use concrete site id 1, not NaN.",
+                  "Public keyword list for site 1 currently returns an empty state / empty dataset; not blocking TASK-1-14 acceptance criteria."
+              ]
+}

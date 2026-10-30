@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 RewriteEngine On
 
 # Allow direct access to API files (must be first)
@@ -21,3 +22,18 @@ RewriteRule ^([^/]+)/?$ $1.php [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [L,QSA] 
+=======
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Route API requests to Laravel (backend/public)
+    # Preserve full REQUEST_URI so Laravel sees /api/health, /api/v1/... correctly
+    RewriteCond %{REQUEST_URI} ^/api/ [NC]
+    RewriteRule ^ backend/public/index.php [L]
+
+    # Serve existing files/directories as-is
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+</IfModule>
+>>>>>>> d58f04db878e4d583ae76b3478f0a955539c0036

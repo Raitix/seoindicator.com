@@ -1,0 +1,11 @@
+{
+    "success": false,
+    "error": {
+        "code": "PARSE_ERROR",
+        "message": "Unable to parse AI response: invalid JSON structure",
+        "details": {
+            "raw_response": "This is not valid JSON at all, just plain text that the AI returned instead of structured data.",
+            "expected_format": "JSON object with indicators array"
+        }
+    }
+}

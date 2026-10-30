@@ -1,0 +1,52 @@
+# TASK-002-10: Create RankingAlertEmail Mailable and Blade Template
+
+## STATUS
+`Done`
+
+## PRIORITY
+`High`
+
+## RISK
+`Low`
+
+## Related
+- Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
+- Feature: [FEAT-002](../FEATURES/FEAT-002.md)
+
+---
+
+## Description
+Create Laravel Mailable class and Blade email template for ranking change alerts.
+
+## Acceptance Criteria
+- [ ] Mailable created at `App\Mail\RankingAlertEmail`
+- [ ] Constructor accepts: User $user, Keyword $keyword, array $events
+- [ ] Email subject: "[SEOIndicator] Alert: {keyword} {change_type}"
+- [ ] Blade template at `resources/views/emails/ranking-alert.blade.php`
+- [ ] Email body includes:
+  - User greeting
+  - Keyword name
+  - Previous position
+  - New position
+  - Change magnitude
+  - Event type (position_drop, position_gain, entered_top_10, left_top_10)
+  - Link to dashboard
+  - Unsubscribe link with signed URL
+- [ ] Plain text version also rendered
+- [ ] Unsubscribe link routes to endpoint that disables email alerts
+- [ ] Feature test: email renders correctly with test data
+- [ ] Feature test: unsubscribe link works without login
+
+## Dependencies
+- None (standalone email task)
+
+## Effort Estimate
+`Small` (1-2 hours)
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-22] Agent: SpecSystemAnalyst
+Email template for alerts. Low risk. Unsubscribe is legal requirement (CAN-SPAM, GDPR).

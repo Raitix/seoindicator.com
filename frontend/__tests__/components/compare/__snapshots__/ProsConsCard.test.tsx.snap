@@ -1,0 +1,969 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ProsConsCard > Snapshots > matches snapshot with default props 1`] = `
+<div>
+  <div
+    aria-label="Pros and cons for SEOIndicator"
+    class="text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-slate-900/50 border-slate-800 pros-cons-card"
+    data-slot="card"
+    data-testid="card"
+    role="region"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+      data-testid="card-header"
+    >
+      <div
+        class="leading-none font-semibold text-white flex items-center justify-between"
+        data-slot="card-title"
+      >
+        <h3
+          class="text-lg font-semibold"
+        >
+          SEOIndicator
+        </h3>
+      </div>
+    </div>
+    <div
+      class="px-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+      data-slot="card-content"
+      data-testid="card-content"
+    >
+      <div
+        aria-label="pros-section"
+        class="space-y-2"
+      >
+        <h4
+          class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👍
+          </span>
+          Pros
+        </h4>
+        <ul
+          aria-label="pros list"
+          class="space-y-1.5 text-sm text-slate-300"
+          data-testid="pros-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Easy to use
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Affordable pricing
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Great support
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div
+        aria-label="cons-section"
+        class="space-y-2"
+      >
+        <h4
+          class="text-sm font-semibold text-slate-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👎
+          </span>
+          Cons
+        </h4>
+        <ul
+          aria-label="cons list"
+          class="space-y-1.5 text-sm text-slate-300"
+          data-testid="cons-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Limited integrations
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              No mobile app
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ProsConsCard > Snapshots > matches snapshot with many items 1`] = `
+<div>
+  <div
+    aria-label="Pros and cons for SEOIndicator"
+    class="text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-slate-900/50 border-slate-800 pros-cons-card"
+    data-slot="card"
+    data-testid="card"
+    role="region"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+      data-testid="card-header"
+    >
+      <div
+        class="leading-none font-semibold text-white flex items-center justify-between"
+        data-slot="card-title"
+      >
+        <h3
+          class="text-lg font-semibold"
+        >
+          SEOIndicator
+        </h3>
+      </div>
+    </div>
+    <div
+      class="px-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+      data-slot="card-content"
+      data-testid="card-content"
+    >
+      <div
+        aria-label="pros-section"
+        class="space-y-2"
+      >
+        <h4
+          class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👍
+          </span>
+          Pros
+        </h4>
+        <ul
+          aria-label="pros list"
+          class="space-y-1.5 text-sm text-slate-300"
+          data-testid="pros-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 1
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 2
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 3
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 4
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 5
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 6
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 7
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Pro 8
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div
+        aria-label="cons-section"
+        class="space-y-2"
+      >
+        <h4
+          class="text-sm font-semibold text-slate-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👎
+          </span>
+          Cons
+        </h4>
+        <ul
+          aria-label="cons list"
+          class="space-y-1.5 text-sm text-slate-300"
+          data-testid="cons-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Con 1
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Con 2
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Con 3
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Con 4
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Con 5
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Con 6
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ProsConsCard > Snapshots > matches snapshot with rating 1`] = `
+<div>
+  <div
+    aria-label="Pros and cons for SEOIndicator"
+    class="text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-slate-900/50 border-slate-800 pros-cons-card"
+    data-slot="card"
+    data-testid="card"
+    role="region"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+      data-testid="card-header"
+    >
+      <div
+        class="leading-none font-semibold text-white flex items-center justify-between"
+        data-slot="card-title"
+      >
+        <h3
+          class="text-lg font-semibold"
+        >
+          SEOIndicator
+        </h3>
+        <div
+          aria-label="Rating: 4.5 out of 5"
+          class="flex items-center gap-0.5"
+          role="img"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-star w-4 h-4 fill-yellow-400 text-yellow-400"
+            data-filled="true"
+            data-testid="star-icon"
+            fill="none"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            />
+          </svg>
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-star w-4 h-4 fill-yellow-400 text-yellow-400"
+            data-filled="true"
+            data-testid="star-icon"
+            fill="none"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            />
+          </svg>
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-star w-4 h-4 fill-yellow-400 text-yellow-400"
+            data-filled="true"
+            data-testid="star-icon"
+            fill="none"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            />
+          </svg>
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-star w-4 h-4 fill-yellow-400 text-yellow-400"
+            data-filled="true"
+            data-testid="star-icon"
+            fill="none"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            />
+          </svg>
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-star w-4 h-4 fill-none text-slate-600"
+            data-filled="false"
+            data-testid="star-icon"
+            fill="none"
+            height="24"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            />
+          </svg>
+          <span
+            class="ml-2 text-sm text-slate-400"
+          >
+            4.5
+             out of 5
+          </span>
+        </div>
+      </div>
+    </div>
+    <div
+      class="px-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+      data-slot="card-content"
+      data-testid="card-content"
+    >
+      <div
+        aria-label="pros-section"
+        class="space-y-2"
+      >
+        <h4
+          class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👍
+          </span>
+          Pros
+        </h4>
+        <ul
+          aria-label="pros list"
+          class="space-y-1.5 text-sm text-slate-300"
+          data-testid="pros-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Easy to use
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Affordable pricing
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-check w-4 h-4 text-emerald-400 mt-0.5 shrink-0"
+              data-testid="check-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 6 9 17l-5-5"
+              />
+            </svg>
+            <span>
+              Great support
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div
+        aria-label="cons-section"
+        class="space-y-2"
+      >
+        <h4
+          class="text-sm font-semibold text-slate-400 mb-2 flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+          >
+            👎
+          </span>
+          Cons
+        </h4>
+        <ul
+          aria-label="cons list"
+          class="space-y-1.5 text-sm text-slate-300"
+          data-testid="cons-list"
+        >
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              Limited integrations
+            </span>
+          </li>
+          <li
+            class="flex items-start gap-2"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x w-4 h-4 text-slate-500 mt-0.5 shrink-0"
+              data-testid="x-icon"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+            <span>
+              No mobile app
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+`;

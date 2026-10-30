@@ -1,0 +1,49 @@
+# TASK-002-13: Create Notification Center Component (Frontend)
+
+## STATUS
+`Done`
+
+## PRIORITY
+`Medium`
+
+## RISK
+`Low`
+
+## Related
+- Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
+- Feature: [FEAT-002](../FEATURES/FEAT-002.md)
+
+---
+
+## Description
+Create frontend notification center for viewing in-app notifications.
+
+## Acceptance Criteria
+- [ ] Page route: `/notifications`
+- [ ] Component created at `components/NotificationCenter.tsx`
+- [ ] Displays list of notifications from API (GET /api/notifications)
+- [ ] Each notification shows: event type, keyword, position change, timestamp
+- [ ] Unread notifications have visual indicator (bold, dot)
+- [ ] Click notification marks as read and navigates to keyword detail
+- [ ] "Mark all as read" button
+- [ ] Filter toggle: "Unread only"
+- [ ] Pagination or infinite scroll (20 per page)
+- [ ] Empty state when no notifications
+- [ ] Responsive design (mobile-friendly)
+- [ ] E2E test: notifications display correctly
+- [ ] E2E test: mark as read works
+- [ ] E2E test: mark all as read works
+
+## Dependencies
+- TASK-002-9 (Notifications API)
+
+## Effort Estimate
+`Medium` (2-3 hours)
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-22] Agent: SpecSystemAnalyst
+In-app notification viewing. Low risk, standard list UI.

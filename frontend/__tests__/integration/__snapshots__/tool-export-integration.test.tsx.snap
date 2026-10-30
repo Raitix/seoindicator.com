@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Snapshots matches snapshot for Keyword Density Checker 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Export analysis results"
+    data-has-results="true"
+    data-testid="export-results-button"
+    data-tool="keyword-density-checker"
+    data-url="https://example.com"
+  >
+    Export Results
+  </button>
+</DocumentFragment>
+`;
+
+exports[`Snapshots matches snapshot for Meta Tag Analyzer 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Export analysis results"
+    data-has-results="true"
+    data-testid="export-results-button"
+    data-tool="meta-tag-analyzer"
+    data-url="https://example.com"
+  >
+    Export Results
+  </button>
+</DocumentFragment>
+`;
+
+exports[`Snapshots matches snapshot for Mobile-Friendly Checker 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Export analysis results"
+    data-has-results="true"
+    data-testid="export-results-button"
+    data-tool="mobile-friendly-checker"
+    data-url="https://example.com"
+  >
+    Export Results
+  </button>
+</DocumentFragment>
+`;
+
+exports[`Snapshots matches snapshot for Social Media Preview 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Export analysis results"
+    data-has-results="true"
+    data-testid="export-results-button"
+    data-tool="social-media-preview"
+    data-url="https://example.com"
+  >
+    Export Results
+  </button>
+</DocumentFragment>
+`;

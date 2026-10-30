@@ -1,0 +1,49 @@
+# TASK-002-7: Create AlertSettingsController with GET/PUT Endpoints
+
+## STATUS
+`Done`
+
+## PRIORITY
+`High`
+
+## RISK
+`Low`
+
+## Related
+- Specification: [SPEC-002](../SPECIFICATIONS/SPEC-002.md)
+- Feature: [FEAT-002](../FEATURES/FEAT-002.md)
+
+---
+
+## Description
+Create API controller for managing user-level alert settings.
+
+## Acceptance Criteria
+- [ ] Controller created at `App\Http\Controllers\Api\AlertSettingsController`
+- [ ] GET /api/user/alert-settings returns current user's settings (or defaults if not set)
+- [ ] PUT /api/user/alert-settings updates user's settings with validation
+- [ ] Validation rules:
+  - global_enabled: boolean
+  - default_threshold: integer, min 1, max 100
+  - quiet_hours_start: time format, nullable
+  - quiet_hours_end: time format, nullable
+  - digest_mode: enum (instant, daily, weekly)
+- [ ] Returns JSON response with updated settings
+- [ ] Uses Form Request class for validation
+- [ ] Feature test: GET returns settings
+- [ ] Feature test: PUT updates settings
+- [ ] Feature test: validation errors returned correctly
+
+## Dependencies
+- TASK-002-1 (alert_settings model)
+
+## Effort Estimate
+`Small` (1-2 hours)
+
+---
+
+## Comments
+_Agent communication log_
+
+### [2026-02-22] Agent: SpecSystemAnalyst
+Simple CRUD for user alert preferences. Low risk.

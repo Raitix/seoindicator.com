@@ -1,0 +1,121 @@
+{
+  "taskId": "TASK-35-22",
+  "validatedAtUtc": "2026-03-10T15:26:35Z",
+  "validatedBy": "ProdTester",
+  "outcome": "FAIL",
+  "fixture": {
+    "ownerUserEmail": "task3522.prod.20260310.1712@example.com",
+    "ownerUserId": 10058,
+    "outsiderUserId": 10042,
+    "projectId": 9993,
+    "siteId": 30,
+    "locationId": 9,
+    "keywordIds": [1, 2],
+    "trackedCompetitorIds": [1, 2],
+    "quotaSeed": {
+      "used": 6,
+      "limit": 50
+    }
+  },
+  "httpRouteChecks": [
+    {
+      "url": "https://seoindicator.com/locations/9/rankings/",
+      "status": 404,
+      "expected": 200,
+      "note": "real standalone rankings route is not exported/live"
+    },
+    {
+      "url": "https://seoindicator.com/sites/30/local/9/rankings/",
+      "status": 404,
+      "expected": 200,
+      "note": "real site-scoped rankings route is not exported/live"
+    },
+    {
+      "url": "https://seoindicator.com/locations/preview/rankings/",
+      "status": 200,
+      "expected": 200,
+      "note": "placeholder preview path is live"
+    },
+    {
+      "url": "https://seoindicator.com/sites/preview/local/preview/rankings/",
+      "status": 200,
+      "expected": 200,
+      "note": "placeholder nested preview path is live"
+    }
+  ],
+  "browserChecks": [
+    {
+      "url": "https://seoindicator.com/locations/9/rankings/",
+      "result": "404 page rendered",
+      "pageTitle": "This Page Does Not Exist"
+    },
+    {
+      "url": "https://seoindicator.com/sites/30/local/9/rankings/",
+      "result": "404 page rendered",
+      "pageTitle": "This Page Does Not Exist"
+    }
+  ],
+  "apiChecks": [
+    {
+      "label": "owner-auth-user",
+      "status": 200,
+      "endpoint": "/api/v1/auth/user"
+    },
+    {
+      "label": "owner-location-detail",
+      "status": 200,
+      "endpoint": "/api/v1/locations/9"
+    },
+    {
+      "label": "outsider-location-detail",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9"
+    },
+    {
+      "label": "owner-rankings",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9/rankings",
+      "expected": 200
+    },
+    {
+      "label": "owner-history",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9/rankings/history",
+      "expected": 200
+    },
+    {
+      "label": "owner-quota",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9/rankings/quota",
+      "expected": 200
+    },
+    {
+      "label": "owner-competitors",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9/competitors",
+      "expected": 200
+    },
+    {
+      "label": "owner-check-all",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9/rankings/check",
+      "expected": 202
+    },
+    {
+      "label": "owner-check-single",
+      "status": 403,
+      "endpoint": "/api/v1/locations/9/rankings/check/1",
+      "expected": 202
+    }
+  ],
+  "remoteDeploymentCheck": {
+    "currentHead": "3b04fec90239ac42d4c8bf15bcadfd40debb6545",
+    "expectedFromDevOpsHandoff": "5b2319e8243fb18f9145ceb7d98be290b1d091ed",
+    "policyFileObservation": "backend/app/Policies/BusinessLocationPolicy.php on production still lacks viewRankings/checkRankings/viewQuota/viewCompetitors/addCompetitor/deleteCompetitor"
+  },
+  "summary": [
+    "Real rankings routes for non-preview IDs are 404 in production.",
+    "Owner-authenticated rankings/history/quota/competitor/check APIs still return 403 in production.",
+    "Production backend HEAD does not match the DevOps-reported TASK-35-22 commit."
+  ]
+}
