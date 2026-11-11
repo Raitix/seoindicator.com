@@ -35,6 +35,7 @@ import {
   hasSessionExpiredMessage,
   clearSessionExpiredMessage,
 } from "@/lib/api/token-expiry-handler";
+import { isPublicRoute as isPublicRoutePath } from "@/lib/routes";
 
 // ==================== Redirect Utilities ====================
 
@@ -105,27 +106,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ==================== Public Routes ====================
 
-  const publicRoutes = React.useMemo(
-    () => [
-      "/",
-      "/login",
-      "/register",
-      "/forgot-password",
-      "/reset-password",
-      "/verify-email",
-      "/tools",
-      "/seo-guides",
-    ],
-    []
-  );
-
+  // Route lists live in `@/lib/routes` so the client-side check below and the
+  // Next.js middleware always agree. In a static export the middleware does
+  // not run, so this check is what actually protects routes in production.
   const isPublicRoute = React.useCallback(
-    (path: string) => {
-      return publicRoutes.some(
-        (route) => path === route || path.startsWith(route + "/")
-      );
-    },
-    [publicRoutes]
+    (path: string) => isPublicRoutePath(path),
+    []
   );
 
   // ==================== Initialize User on Mount ====================

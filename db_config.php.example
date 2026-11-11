@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * SEOIndicator - database configuration for the legacy plain-PHP endpoints.
+ *
+ * Copy this file to `db_config.php` and fill in your own values.
+ * `db_config.php` is gitignored: never commit real credentials.
+ *
+ * The Laravel backend reads its database settings from `backend/.env`
+ * (see `backend/.env.example`) instead.
+ *
+ * @see .gitignore
+ */
+
+// Database Configuration
+define('DB_HOST', 'localhost');
+define('DB_USER', 'root');
+define('DB_PASS', 'your-database-password');
+define('DB_NAME', 'seo');

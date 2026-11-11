@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * SEOIndicator - application configuration.
+ *
+ * Copy this file to `config.php` and fill in your own values.
+ * `config.php` is gitignored: never commit real credentials.
+ *
+ * @see .gitignore
+ */
+
+// ---------------------------------------------------------------------------
+// AI provider selection
+// ---------------------------------------------------------------------------
+
+/**
+ * Which AI provider to use for analysis.
+ *   'vercel'    -> Vercel AI Gateway (https://ai-gateway.vercel.sh)
+ *   'openrouter'-> OpenRouter (https://openrouter.ai)
+ */
+define('AI_PROVIDER', 'vercel');
+
+// ---------------------------------------------------------------------------
+// Vercel AI Gateway
+// ---------------------------------------------------------------------------
+
+/** Vercel AI Gateway API key. Create one at https://vercel.com/ai-gateway */
+define('VERCEL_AI_GATEWAY_API_KEY', 'your-vercel-ai-gateway-key');
+
+/** Model slug passed to the gateway, e.g. 'openai/gpt-4o-mini'. */
+define('VERCEL_AI_MODEL', 'openai/gpt-4o-mini');
+
+// ---------------------------------------------------------------------------
+// OpenRouter
+// ---------------------------------------------------------------------------
+
+/** OpenRouter API key. Create one at https://openrouter.ai/keys */
+define('OPENROUTER_API_KEY', 'your-openrouter-api-key');
+
+/**
+ * Model slug passed to OpenRouter.
+ * Models ending in ':free' are free to use, e.g. 'deepseek/deepseek-chat-v3-0324:free'
+ */
+define('OPENROUTER_MODEL', 'deepseek/deepseek-chat-v3-0324:free');
+
+// ---------------------------------------------------------------------------
+// Google
+// ---------------------------------------------------------------------------
+
+/** Google PageSpeed Insights API key. Create one in the Cloud console. */
+define('GOOGLE_PAGESPEED_API_KEY', 'your-google-api-key');
+
+// ---------------------------------------------------------------------------
+// Database
+// ---------------------------------------------------------------------------
+//
+// The canonical database configuration for the Laravel backend lives in
+// `backend/.env` (see `backend/.env.example`). These constants are kept for
+// the legacy plain-PHP endpoints under `api/`.
+//
+// define('DB_HOST', 'localhost');
+// define('DB_USER', 'root');
+// define('DB_PASS', 'your-database-password');
+// define('DB_NAME', 'seo');

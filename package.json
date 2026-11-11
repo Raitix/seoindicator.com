@@ -1,30 +1,13 @@
 {
-<<<<<<< HEAD
-  "name": "seoindicator-tests",
-  "version": "1.0.0",
-  "scripts": {
-    "test": "npx playwright test",
-    "test:playwright": "npx playwright test",
-    "start": "node start index.js"
-  },
-  "devDependencies": {
-    "@babel/preset-env": "^7.29.0",
-    "@babel/preset-react": "^7.28.5",
-    "@playwright/test": "^1.33.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^13.0.0",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.4.2"
-  },
-  "dependencies": {
-    "react": "latest",
-    "react-dom": "latest"
-=======
   "name": "project-seoindicator",
   "private": true,
   "scripts": {
     "lint": "npm --prefix frontend run lint",
-    "test": "npx mocha \"tests/**/*.test.js\" --recursive"
+    "test": "npx mocha \"tests/**/*.test.js\" --recursive",
+    "test:e2e": "npx playwright test",
+    "test:headed": "npx playwright test --headed --reporter=list",
+    "test:ui": "npx playwright test --ui",
+    "test:report": "npx playwright show-report"
   },
   "version": "1.0.0",
   "main": "index.js",
@@ -32,14 +15,20 @@
     "type": "git",
     "url": "git+https://github.com/Raitix/seoindicator.com.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "seo",
+    "seo-analysis",
+    "laravel",
+    "nextjs",
+    "openrouter"
+  ],
+  "author": "Raitis Ozols <raioz@inbox.lv>",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Raitix/seoindicator.com/issues"
   },
   "homepage": "https://github.com/Raitix/seoindicator.com#readme",
-  "description": "",
+  "description": "SEOIndicator - an SEO analysis platform that crawls a domain, runs static SEO indicator checks and asks an AI model for scored, actionable suggestions.",
   "dependencies": {
     "playwright": "^1.58.2"
   },
@@ -49,6 +38,5 @@
     "mocha": "^11.7.5",
     "sinon": "^21.0.1",
     "supertest": "^7.2.2"
->>>>>>> d58f04db878e4d583ae76b3478f0a955539c0036
   }
 }

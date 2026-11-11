@@ -296,13 +296,35 @@ def deploy_remote(frontend_out_dir: Path, env: Dict[str, str], git_ref: str, log
     log.start_step('Deploy to production')
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(
-        hostname=env['SSH_HOST'],
-        port=int(env['SSH_PORT']),
-        username=env['SSH_USERNAME'],
-        password=env['SSH_PASSWORD'],
-        timeout=30,
-    )
+
+    # Authenticate with an SSH key when one is configured, otherwise fall back
+    # to password auth. Key auth is preferred: it avoids storing a password in
+    # the secrets file, and it is the method the production host accepts.
+    key_path = env.get('SSH_KEY_PATH', '').strip()
+    connect_kwargs = {
+        'hostname': env['SSH_HOST'],
+        'port': int(env['SSH_PORT']),
+        'username': env['SSH_USERNAME'],
+        'timeout': 30,
+    }
+
+    if key_path:
+        key_file = Path(key_path).expanduser()
+        if not key_file.exists():
+            raise DeployError(f'SSH key not found: {key_file}')
+        connect_kwargs['key_filename'] = str(key_file)
+        connect_kwargs['look_for_keys'] = False
+        connect_kwargs['allow_agent'] = False
+    else:
+        password = env.get('SSH_PASSWORD', '').strip()
+        if not password:
+            raise DeployError(
+                'No SSH authentication method configured. Set SSH_KEY_PATH in the '
+                'secrets file (recommended) or SSH_PASSWORD.'
+            )
+        connect_kwargs['password'] = password
+
+    ssh.connect(**connect_kwargs)
 
     try:
         remote_script = f"""
@@ -386,12 +408,21 @@ def main():
 
         env = read_env_file(SECRETS_FILE)
         required = [
-            'SSH_HOST', 'SSH_PORT', 'SSH_USERNAME', 'SSH_PASSWORD', 'SSH_DEPLOY_PATH',
+            'SSH_HOST', 'SSH_PORT', 'SSH_USERNAME', 'SSH_DEPLOY_PATH',
             'GH_PAT',
         ]
         missing = [key for key in required if not env.get(key)]
         if missing:
             raise DeployError('Missing required secrets: ' + ', '.join(missing))
+
+        # Authentication is either an SSH key or a password. SSH_KEY_PATH is
+        # preferred; SSH_PASSWORD is the fallback.
+        if not env.get('SSH_KEY_PATH') and not env.get('SSH_PASSWORD'):
+            raise DeployError(
+                'No SSH authentication configured. Set SSH_KEY_PATH (recommended) '
+                'or SSH_PASSWORD in the secrets file.'
+            )
+
         fetch_origin(log)
         resolved_ref = resolve_ref(args.git_ref)
         log.set_commit(resolved_ref)
