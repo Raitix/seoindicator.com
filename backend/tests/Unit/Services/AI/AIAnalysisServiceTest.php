@@ -87,7 +87,7 @@ class AIAnalysisServiceTest extends TestCase
                 ['id' => 'url', 'name' => 'URL Structure', 'score' => 2, 'passed' => true],
                 ['id' => 'title_tag', 'name' => 'Title Tag', 'score' => 2, 'passed' => true],
             ],
-            model: 'google/gemini-2.0-flash-exp:free',
+            model: 'baidu/ernie-5.5-flash-preview:free',
             promptTokens: 1500,
             responseTokens: 800,
             latencyMs: 2500,
@@ -102,7 +102,7 @@ class AIAnalysisServiceTest extends TestCase
     private function setupFullAnalysisMocks(): void
     {
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
 
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
@@ -119,7 +119,7 @@ class AIAnalysisServiceTest extends TestCase
     private function setupBasicMocks(): void
     {
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt');
     }
@@ -309,7 +309,7 @@ class AIAnalysisServiceTest extends TestCase
 
         // Set up mocks individually to avoid conflict with put expectation
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
         $this->aiClient->shouldReceive('generate')->andReturn(
@@ -338,7 +338,7 @@ class AIAnalysisServiceTest extends TestCase
 
         // Set up mocks individually to avoid conflict with put capture
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
         $this->aiClient->shouldReceive('generate')->andReturn(
@@ -394,7 +394,7 @@ class AIAnalysisServiceTest extends TestCase
             ->andReturn(1000);
 
         $this->contextManager->shouldReceive('selectOptimalModel')
-            ->andReturn('google/gemini-2.0-flash-exp:free');
+            ->andReturn('baidu/ernie-5.5-flash-preview:free');
 
         $this->contextManager->shouldReceive('getEffectiveLimit')
             ->andReturn(896600);
@@ -423,7 +423,7 @@ class AIAnalysisServiceTest extends TestCase
         $this->contextManager->shouldReceive('selectOptimalModel')
             ->once()
             ->with(1000 + 3400) // tokens + overhead
-            ->andReturn('meta-llama/llama-3-8b-instruct:free');
+            ->andReturn('liquid/lfm-2.5-2.6b:free');
         // Set effective limit large enough to not trigger truncation
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
 
@@ -535,7 +535,7 @@ class AIAnalysisServiceTest extends TestCase
 
         // Set up mocks individually to avoid conflict with put capture
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
         $this->aiClient->shouldReceive('generate')->andReturn(
@@ -601,14 +601,14 @@ class AIAnalysisServiceTest extends TestCase
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(250);
         $this->contextManager->shouldReceive('selectOptimalModel')
             ->with(250 + 3400)
-            ->andReturn('meta-llama/llama-3-8b-instruct:free');
+            ->andReturn('liquid/lfm-2.5-2.6b:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(3972);
 
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt');
         $this->aiClient->shouldReceive('generate')
             ->once()
             ->with('prompt', Mockery::on(function ($options) {
-                return $options['model'] === 'meta-llama/llama-3-8b-instruct:free';
+                return $options['model'] === 'liquid/lfm-2.5-2.6b:free';
             }))
             ->andReturn(AIResponse::success('{}', 100, 100));
 
@@ -636,14 +636,14 @@ class AIAnalysisServiceTest extends TestCase
         $this->aiClient->shouldReceive('generate')
             ->once()
             ->with('prompt', Mockery::on(function ($options) {
-                return $options['model'] === 'qwen/qwen-2-7b-instruct:free';
+                return $options['model'] === 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free';
             }))
             ->andReturn(AIResponse::success('{}', 100, 100));
 
         $this->parser->shouldReceive('parse')->andReturn($this->createMockAnalysisResult());
         $this->cache->shouldReceive('put');
 
-        $this->service->analyze($url, $html, ['model' => 'qwen/qwen-2-7b-instruct:free']);
+        $this->service->analyze($url, $html, ['model' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']);
     }
 
     #[Test]
@@ -652,7 +652,7 @@ class AIAnalysisServiceTest extends TestCase
     {
         $url = 'https://example.com';
         $html = '<html><body>Test</body></html>';
-        $specificModel = 'mistralai/mistral-7b-instruct:free';
+        $specificModel = 'liquid/lfm-3-1.7b:free';
 
         $this->cache->shouldReceive('generateHash')->andReturn('cache-key');
         $this->cache->shouldReceive('get')->andReturn(null);
@@ -1082,13 +1082,13 @@ class AIAnalysisServiceTest extends TestCase
         $this->contextManager->shouldReceive('selectOptimalModel')
             ->once()
             ->with(12500 + 3400)
-            ->andReturn('qwen/qwen-2-7b-instruct:free');
-        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(26091);
+            ->andReturn('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
+        $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(55582);
 
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt');
         $this->aiClient->shouldReceive('generate')
             ->once()
-            ->with('prompt', Mockery::on(fn($opts) => str_contains($opts['model'], 'qwen')))
+            ->with('prompt', Mockery::on(fn($opts) => str_contains($opts['model'], 'nemotron')))
             ->andReturn(AIResponse::success('{}', 100, 100));
 
         $this->parser->shouldReceive('parse')->andReturn($this->createMockAnalysisResult());
@@ -1182,7 +1182,7 @@ class AIAnalysisServiceTest extends TestCase
 
         // Set up mocks individually without using setupFullAnalysisMocks to avoid conflict with put expectation
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1000);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt content');
         $this->aiClient->shouldReceive('generate')->andReturn(
@@ -1241,7 +1241,7 @@ class AIAnalysisServiceTest extends TestCase
         $this->cache->shouldReceive('get')->andReturn(null);
 
         $this->contextManager->shouldReceive('estimateTokens')->andReturn(1500);
-        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('google/gemini-2.0-flash-exp:free');
+        $this->contextManager->shouldReceive('selectOptimalModel')->andReturn('baidu/ernie-5.5-flash-preview:free');
         $this->contextManager->shouldReceive('getEffectiveLimit')->andReturn(896600);
 
         $this->promptService->shouldReceive('buildPrompt')->andReturn('prompt');

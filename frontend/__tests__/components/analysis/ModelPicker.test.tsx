@@ -16,7 +16,7 @@ import { ModelPicker } from '@/components/analysis/ModelPicker';
 // Mock data - defined at module level for hoisting
 const mockModelsData = [
   {
-    id: 'google/gemini-2.0-flash-exp:free',
+    id: 'baidu/ernie-5.5-flash-preview:free',
     name: 'Gemini 2.0 Flash',
     provider: 'Google',
     context_window: 1000000,
@@ -27,7 +27,7 @@ const mockModelsData = [
     best_for: 'Large pages (100K+ characters)',
   },
   {
-    id: 'qwen/qwen-2-7b-instruct:free',
+    id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
     name: 'Qwen 2 7B',
     provider: 'Alibaba',
     context_window: 32768,
@@ -38,7 +38,7 @@ const mockModelsData = [
     best_for: 'Medium pages',
   },
   {
-    id: 'mistralai/mistral-7b-instruct:free',
+    id: 'liquid/lfm-3-1.7b:free',
     name: 'Mistral 7B',
     provider: 'Mistral AI',
     context_window: 32768,
@@ -49,7 +49,7 @@ const mockModelsData = [
     best_for: 'Fast analysis',
   },
   {
-    id: 'meta-llama/llama-3-8b-instruct:free',
+    id: 'liquid/lfm-2.5-2.6b:free',
     name: 'Llama 3 8B',
     provider: 'Meta',
     context_window: 8192,
@@ -63,7 +63,7 @@ const mockModelsData = [
 
 // Mutable state for tests - must be at module level
 let mockModels = [...mockModelsData];
-let mockDefaultModel = 'google/gemini-2.0-flash-exp:free';
+let mockDefaultModel = 'baidu/ernie-5.5-flash-preview:free';
 let mockUserPreference: string | null = null;
 let mockIsLoading = false;
 let mockError: Error | null = null;
@@ -95,7 +95,7 @@ vi.mock('@/hooks/useAIModels', () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mockModels = [...mockModelsData];
-  mockDefaultModel = 'google/gemini-2.0-flash-exp:free';
+  mockDefaultModel = 'baidu/ernie-5.5-flash-preview:free';
   mockUserPreference = null;
   mockIsLoading = false;
   mockError = null;
@@ -116,21 +116,21 @@ describe('MP-RENDER: Component Rendering', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="google/gemini-2.0-flash-exp:free" 
+        selectedModel="baidu/ernie-5.5-flash-preview:free" 
         onModelChange={onModelChange} 
       />
     );
-    expect(screen.getByTestId('check-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 
   it('MP-RENDER-003: Renders all models from API', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
-    expect(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
-    expect(screen.getByTestId('model-card-mistralai/mistral-7b-instruct:free')).toBeInTheDocument();
-    expect(screen.getByTestId('model-card-meta-llama/llama-3-8b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
+    expect(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
+    expect(screen.getByTestId('model-card-liquid/lfm-3-1.7b:free')).toBeInTheDocument();
+    expect(screen.getByTestId('model-card-liquid/lfm-2.5-2.6b:free')).toBeInTheDocument();
   });
 
   it('MP-RENDER-004: Renders model name', () => {
@@ -148,13 +148,13 @@ describe('MP-RENDER: Component Rendering', () => {
   it('MP-RENDER-006: Renders context window', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toHaveTextContent('1M tokens');
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toHaveTextContent('1M tokens');
   });
 
   it('MP-RENDER-007: Renders latency', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
-    expect(screen.getByTestId('latency-google/gemini-2.0-flash-exp:free')).toHaveTextContent('~3.0s');
+    expect(screen.getByTestId('latency-baidu/ernie-5.5-flash-preview:free')).toHaveTextContent('~3.0s');
   });
 
   it('MP-RENDER-008: Renders label', () => {
@@ -296,20 +296,20 @@ describe('MP-SELECT: Selection Behavior', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    await user.click(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free'));
-    expect(onModelChange).toHaveBeenCalledWith('qwen/qwen-2-7b-instruct:free');
+    await user.click(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'));
+    expect(onModelChange).toHaveBeenCalledWith('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
   });
 
   it('MP-SELECT-002: Selected model highlighted', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="qwen/qwen-2-7b-instruct:free" 
+        selectedModel="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" 
         onModelChange={onModelChange} 
       />
     );
     
-    const selectedCard = screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free');
+    const selectedCard = screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     expect(selectedCard).toHaveClass('selected');
   });
 
@@ -317,22 +317,22 @@ describe('MP-SELECT: Selection Behavior', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="qwen/qwen-2-7b-instruct:free" 
+        selectedModel="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" 
         onModelChange={onModelChange} 
       />
     );
-    expect(screen.getByTestId('check-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
   });
 
   it('MP-SELECT-004: No check on unselected', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="google/gemini-2.0-flash-exp:free" 
+        selectedModel="baidu/ernie-5.5-flash-preview:free" 
         onModelChange={onModelChange} 
       />
     );
-    expect(screen.queryByTestId('check-qwen/qwen-2-7b-instruct:free')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('check-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).not.toBeInTheDocument();
   });
 
   it('MP-SELECT-005: Default model selected when null', () => {
@@ -340,7 +340,7 @@ describe('MP-SELECT: Selection Behavior', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Default model should be selected
-    expect(screen.getByTestId('check-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 
   it('MP-SELECT-006: Selection updates UI', async () => {
@@ -351,21 +351,21 @@ describe('MP-SELECT: Selection Behavior', () => {
     );
     
     // Initially default selected
-    expect(screen.getByTestId('check-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
     
     // Click different model
-    await user.click(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free'));
+    await user.click(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'));
     
     // Rerender with new selection
     rerender(
       <ModelPicker 
-        selectedModel="qwen/qwen-2-7b-instruct:free" 
+        selectedModel="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" 
         onModelChange={onModelChange} 
       />
     );
     
-    expect(screen.getByTestId('check-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
-    expect(screen.queryByTestId('check-google/gemini-2.0-flash-exp:free')).not.toBeInTheDocument();
+    expect(screen.getByTestId('check-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
+    expect(screen.queryByTestId('check-baidu/ernie-5.5-flash-preview:free')).not.toBeInTheDocument();
   });
 
   it('MP-SELECT-007: Disabled state prevents click', async () => {
@@ -373,7 +373,7 @@ describe('MP-SELECT: Selection Behavior', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} disabled />);
     
-    await user.click(screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free'));
+    await user.click(screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free'));
     expect(onModelChange).not.toHaveBeenCalled();
   });
 
@@ -392,11 +392,11 @@ describe('MP-SELECT: Selection Behavior', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    const card = screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free');
+    const card = screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     card.focus();
     await user.keyboard('{Enter}');
     
-    expect(onModelChange).toHaveBeenCalledWith('qwen/qwen-2-7b-instruct:free');
+    expect(onModelChange).toHaveBeenCalledWith('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
   });
 
   it('MP-SELECT-010: Tab navigation', async () => {
@@ -404,18 +404,18 @@ describe('MP-SELECT: Selection Behavior', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    const firstCard = screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free');
+    const firstCard = screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free');
     firstCard.focus();
     
     await user.tab();
-    expect(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free')).toHaveFocus();
+    expect(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toHaveFocus();
   });
 
   it('MP-SELECT-011: Focus visible', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    const card = screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free');
+    const card = screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free');
     card.focus();
     expect(card).toHaveFocus();
   });
@@ -425,8 +425,8 @@ describe('MP-SELECT: Selection Behavior', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    await user.click(screen.getByTestId('model-card-mistralai/mistral-7b-instruct:free'));
-    expect(onModelChange).toHaveBeenCalledWith('mistralai/mistral-7b-instruct:free');
+    await user.click(screen.getByTestId('model-card-liquid/lfm-3-1.7b:free'));
+    expect(onModelChange).toHaveBeenCalledWith('liquid/lfm-3-1.7b:free');
   });
 });
 
@@ -439,7 +439,7 @@ describe('MP-RECOMMEND: Recommended Model Badge', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('recommended-badge-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('recommended-badge-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
     expect(screen.getByText('Recommended')).toBeInTheDocument();
   });
 
@@ -447,7 +447,7 @@ describe('MP-RECOMMEND: Recommended Model Badge', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    const badge = screen.getByTestId('recommended-badge-google/gemini-2.0-flash-exp:free');
+    const badge = screen.getByTestId('recommended-badge-baidu/ernie-5.5-flash-preview:free');
     expect(badge).toHaveClass('recommended-badge');
   });
 
@@ -455,8 +455,8 @@ describe('MP-RECOMMEND: Recommended Model Badge', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    const card = screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free');
-    const badge = screen.getByTestId('recommended-badge-google/gemini-2.0-flash-exp:free');
+    const card = screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free');
+    const badge = screen.getByTestId('recommended-badge-baidu/ernie-5.5-flash-preview:free');
     
     expect(card).toContainElement(badge);
   });
@@ -465,7 +465,7 @@ describe('MP-RECOMMEND: Recommended Model Badge', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.queryByTestId('recommended-badge-qwen/qwen-2-7b-instruct:free')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('recommended-badge-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).not.toBeInTheDocument();
   });
 
   it('MP-RECOMMEND-005: Only one recommended', () => {
@@ -486,21 +486,21 @@ describe('MP-CONTEXT: Context Window Display', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toHaveTextContent('1M tokens');
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toHaveTextContent('1M tokens');
   });
 
   it('MP-CONTEXT-002: Formats 32K tokens', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('context-qwen/qwen-2-7b-instruct:free')).toHaveTextContent('32K tokens');
+    expect(screen.getByTestId('context-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toHaveTextContent('32K tokens');
   });
 
   it('MP-CONTEXT-003: Formats 8K tokens', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('context-meta-llama/llama-3-8b-instruct:free')).toHaveTextContent('8K tokens');
+    expect(screen.getByTestId('context-liquid/lfm-2.5-2.6b:free')).toHaveTextContent('8K tokens');
   });
 
   it('MP-CONTEXT-004: Database icon shown', () => {
@@ -516,7 +516,7 @@ describe('MP-CONTEXT: Context Window Display', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Context should be displayed alongside icon
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 
   it('MP-CONTEXT-006: Shows context window in tooltip', () => {
@@ -524,7 +524,7 @@ describe('MP-CONTEXT: Context Window Display', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Context window text is visible
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toBeVisible();
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toBeVisible();
   });
 
   it('MP-CONTEXT-007: Context comparison works', () => {
@@ -532,8 +532,8 @@ describe('MP-CONTEXT: Context Window Display', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Different models have different context values
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toHaveTextContent('1M tokens');
-    expect(screen.getByTestId('context-meta-llama/llama-3-8b-instruct:free')).toHaveTextContent('8K tokens');
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toHaveTextContent('1M tokens');
+    expect(screen.getByTestId('context-liquid/lfm-2.5-2.6b:free')).toHaveTextContent('8K tokens');
   });
 
   it('MP-CONTEXT-008: Zero context handled', () => {
@@ -559,14 +559,14 @@ describe('MP-LATENCY: Latency Display', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('latency-google/gemini-2.0-flash-exp:free')).toHaveTextContent('~3.0s');
+    expect(screen.getByTestId('latency-baidu/ernie-5.5-flash-preview:free')).toHaveTextContent('~3.0s');
   });
 
   it('MP-LATENCY-002: Formats 1500ms', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    expect(screen.getByTestId('latency-meta-llama/llama-3-8b-instruct:free')).toHaveTextContent('~1.5s');
+    expect(screen.getByTestId('latency-liquid/lfm-2.5-2.6b:free')).toHaveTextContent('~1.5s');
   });
 
   it('MP-LATENCY-003: Formats 500ms', () => {
@@ -595,7 +595,7 @@ describe('MP-LATENCY: Latency Display', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Latency is displayed with time unit
-    expect(screen.getByTestId('latency-google/gemini-2.0-flash-exp:free')).toHaveTextContent('s');
+    expect(screen.getByTestId('latency-baidu/ernie-5.5-flash-preview:free')).toHaveTextContent('s');
   });
 });
 
@@ -614,7 +614,7 @@ describe('MP-FIT: Content Fit Warning', () => {
       />
     );
     
-    expect(screen.getByTestId('warning-meta-llama/llama-3-8b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('warning-liquid/lfm-2.5-2.6b:free')).toBeInTheDocument();
   });
 
   it('MP-FIT-002: Disables card when too large', () => {
@@ -627,7 +627,7 @@ describe('MP-FIT: Content Fit Warning', () => {
       />
     );
     
-    const llamaCard = screen.getByTestId('model-card-meta-llama/llama-3-8b-instruct:free');
+    const llamaCard = screen.getByTestId('model-card-liquid/lfm-2.5-2.6b:free');
     expect(llamaCard).toHaveClass('disabled');
     expect(llamaCard).toBeDisabled();
   });
@@ -643,7 +643,7 @@ describe('MP-FIT: Content Fit Warning', () => {
       />
     );
     
-    await user.click(screen.getByTestId('model-card-meta-llama/llama-3-8b-instruct:free'));
+    await user.click(screen.getByTestId('model-card-liquid/lfm-2.5-2.6b:free'));
     expect(onModelChange).not.toHaveBeenCalled();
   });
 
@@ -657,7 +657,7 @@ describe('MP-FIT: Content Fit Warning', () => {
       />
     );
     
-    expect(screen.queryByTestId('warning-meta-llama/llama-3-8b-instruct:free')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('warning-liquid/lfm-2.5-2.6b:free')).not.toBeInTheDocument();
   });
 
   it('MP-FIT-005: No tokens specified', () => {
@@ -688,7 +688,7 @@ describe('MP-FIT: Content Fit Warning', () => {
     );
     
     // Should NOT fit (strict less than check)
-    expect(screen.getByTestId('warning-meta-llama/llama-3-8b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('warning-liquid/lfm-2.5-2.6b:free')).toBeInTheDocument();
   });
 
   it('MP-FIT-007: Just over boundary', () => {
@@ -701,7 +701,7 @@ describe('MP-FIT: Content Fit Warning', () => {
       />
     );
     
-    expect(screen.getByTestId('warning-meta-llama/llama-3-8b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('warning-liquid/lfm-2.5-2.6b:free')).toBeInTheDocument();
   });
 
   it('MP-FIT-008: Multiple models disabled', () => {
@@ -715,12 +715,12 @@ describe('MP-FIT: Content Fit Warning', () => {
     );
     
     // Llama, Qwen, Mistral should be disabled (context < 40000)
-    expect(screen.getByTestId('model-card-meta-llama/llama-3-8b-instruct:free')).toHaveClass('disabled');
-    expect(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free')).toHaveClass('disabled');
-    expect(screen.getByTestId('model-card-mistralai/mistral-7b-instruct:free')).toHaveClass('disabled');
+    expect(screen.getByTestId('model-card-liquid/lfm-2.5-2.6b:free')).toHaveClass('disabled');
+    expect(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toHaveClass('disabled');
+    expect(screen.getByTestId('model-card-liquid/lfm-3-1.7b:free')).toHaveClass('disabled');
     
     // Gemini should still be enabled (1M context)
-    expect(screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free')).not.toHaveClass('disabled');
+    expect(screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free')).not.toHaveClass('disabled');
   });
 });
 
@@ -741,12 +741,12 @@ describe('MP-A11Y: Accessibility', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="google/gemini-2.0-flash-exp:free" 
+        selectedModel="baidu/ernie-5.5-flash-preview:free" 
         onModelChange={onModelChange} 
       />
     );
     
-    const selectedCard = screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free');
+    const selectedCard = screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free');
     expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -754,12 +754,12 @@ describe('MP-A11Y: Accessibility', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="google/gemini-2.0-flash-exp:free" 
+        selectedModel="baidu/ernie-5.5-flash-preview:free" 
         onModelChange={onModelChange} 
       />
     );
     
-    const unselectedCard = screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free');
+    const unselectedCard = screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     expect(unselectedCard).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -773,7 +773,7 @@ describe('MP-A11Y: Accessibility', () => {
       />
     );
     
-    const llamaCard = screen.getByTestId('model-card-meta-llama/llama-3-8b-instruct:free');
+    const llamaCard = screen.getByTestId('model-card-liquid/lfm-2.5-2.6b:free');
     expect(llamaCard).toHaveAttribute('aria-disabled', 'true');
   });
 
@@ -791,7 +791,7 @@ describe('MP-A11Y: Accessibility', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     await user.tab();
-    expect(screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free')).toHaveFocus();
+    expect(screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free')).toHaveFocus();
   });
 
   it('MP-A11Y-007: Enter activates card', async () => {
@@ -799,7 +799,7 @@ describe('MP-A11Y: Accessibility', () => {
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    const card = screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free');
+    const card = screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     card.focus();
     await user.keyboard('{Enter}');
     
@@ -812,8 +812,8 @@ describe('MP-A11Y: Accessibility', () => {
     
     // Provider, context, and latency should all be visible
     expect(screen.getByText('Google')).toBeInTheDocument();
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
-    expect(screen.getByTestId('latency-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
+    expect(screen.getByTestId('latency-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 });
 
@@ -890,17 +890,17 @@ describe('MP-HOOK: useAIModels Hook Integration', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Default model (Gemini) should be selected
-    expect(screen.getByTestId('check-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 
   it('MP-HOOK-004: Returns user preference', () => {
-    mockUserPreference = 'qwen/qwen-2-7b-instruct:free';
+    mockUserPreference = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free';
     
     const onModelChange = vi.fn();
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // User preference should override default
-    expect(screen.getByTestId('check-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
   });
 
   it('MP-HOOK-005: Returns loading state', () => {
@@ -1012,7 +1012,7 @@ describe('MP-EDGE: Edge Cases', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Default should be selected
-    expect(screen.getByTestId('check-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 
   it('MP-EDGE-006: Invalid model ID selected', () => {
@@ -1066,22 +1066,22 @@ describe('MP-INT: Integration Scenarios', () => {
     );
     
     // Initial state - default selected
-    expect(screen.getByTestId('check-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
     
     // Click different model
-    await user.click(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free'));
-    expect(onModelChange).toHaveBeenCalledWith('qwen/qwen-2-7b-instruct:free');
+    await user.click(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'));
+    expect(onModelChange).toHaveBeenCalledWith('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     
     // Simulate parent updating selectedModel
     rerender(
       <ModelPicker 
-        selectedModel="qwen/qwen-2-7b-instruct:free" 
+        selectedModel="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" 
         onModelChange={onModelChange} 
       />
     );
     
     // New selection reflected
-    expect(screen.getByTestId('check-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
   });
 
   it('MP-INT-002: Loading → success → select', async () => {
@@ -1100,7 +1100,7 @@ describe('MP-INT: Integration Scenarios', () => {
     
     expect(screen.getByTestId('model-picker')).toBeInTheDocument();
     
-    await user.click(screen.getByTestId('model-card-mistralai/mistral-7b-instruct:free'));
+    await user.click(screen.getByTestId('model-card-liquid/lfm-3-1.7b:free'));
     expect(onModelChange).toHaveBeenCalled();
   });
 
@@ -1136,7 +1136,7 @@ describe('MP-INT: Integration Scenarios', () => {
       />
     );
     
-    await user.click(screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free'));
+    await user.click(screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free'));
     expect(onModelChange).not.toHaveBeenCalled();
   });
 
@@ -1146,9 +1146,9 @@ describe('MP-INT: Integration Scenarios', () => {
     
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
-    await user.click(screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free'));
+    await user.click(screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'));
     
-    expect(onModelChange).toHaveBeenCalledWith('qwen/qwen-2-7b-instruct:free');
+    expect(onModelChange).toHaveBeenCalledWith('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
   });
 });
 
@@ -1172,12 +1172,12 @@ describe('AC: Acceptance Criteria', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     // Context windows
-    expect(screen.getByTestId('context-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
-    expect(screen.getByTestId('context-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('context-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
+    expect(screen.getByTestId('context-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
     
     // Latency
-    expect(screen.getByTestId('latency-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
-    expect(screen.getByTestId('latency-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('latency-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
+    expect(screen.getByTestId('latency-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
   });
 
   it('AC-003: Indicates recommended model', () => {
@@ -1185,21 +1185,21 @@ describe('AC: Acceptance Criteria', () => {
     render(<ModelPicker selectedModel={null} onModelChange={onModelChange} />);
     
     expect(screen.getByText('Recommended')).toBeInTheDocument();
-    expect(screen.getByTestId('recommended-badge-google/gemini-2.0-flash-exp:free')).toBeInTheDocument();
+    expect(screen.getByTestId('recommended-badge-baidu/ernie-5.5-flash-preview:free')).toBeInTheDocument();
   });
 
   it('AC-004: Highlights selected model', () => {
     const onModelChange = vi.fn();
     render(
       <ModelPicker 
-        selectedModel="qwen/qwen-2-7b-instruct:free" 
+        selectedModel="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" 
         onModelChange={onModelChange} 
       />
     );
     
-    const selectedCard = screen.getByTestId('model-card-qwen/qwen-2-7b-instruct:free');
+    const selectedCard = screen.getByTestId('model-card-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     expect(selectedCard).toHaveClass('selected');
-    expect(screen.getByTestId('check-qwen/qwen-2-7b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('check-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')).toBeInTheDocument();
   });
 
   it('AC-005: Disables models that can\'t fit content', () => {
@@ -1212,10 +1212,10 @@ describe('AC: Acceptance Criteria', () => {
       />
     );
     
-    const llamaCard = screen.getByTestId('model-card-meta-llama/llama-3-8b-instruct:free');
+    const llamaCard = screen.getByTestId('model-card-liquid/lfm-2.5-2.6b:free');
     expect(llamaCard).toHaveClass('disabled');
     expect(llamaCard).toBeDisabled();
-    expect(screen.getByTestId('warning-meta-llama/llama-3-8b-instruct:free')).toBeInTheDocument();
+    expect(screen.getByTestId('warning-liquid/lfm-2.5-2.6b:free')).toBeInTheDocument();
   });
 
   it('AC-006: Handles loading and error states', () => {
@@ -1247,7 +1247,7 @@ describe('AC: Acceptance Criteria', () => {
     
     // Tab to first card
     await user.tab();
-    expect(screen.getByTestId('model-card-google/gemini-2.0-flash-exp:free')).toHaveFocus();
+    expect(screen.getByTestId('model-card-baidu/ernie-5.5-flash-preview:free')).toHaveFocus();
     
     // Enter to select
     await user.keyboard('{Enter}');

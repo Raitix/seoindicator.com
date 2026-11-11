@@ -11,12 +11,12 @@ use Illuminate\Http\Client\ConnectionException;
  * Vercel AI Provider implementation.
  *
  * Provides access to Vercel's AI models including free tier models like
- * gpt-4o-mini and claude-3-haiku. Implements the AIProviderInterface for
+ * gpt-4o-mini and claude-haiku-4.5. Implements the AIProviderInterface for
  * consistent integration with the AI suggestion system.
  *
  * Free Tier Models:
  * - gpt-4o-mini (default)
- * - claude-3-haiku-20240307
+ * - claude-haiku-4-5
  *
  * @see https://vercel.com/docs/ai
  */

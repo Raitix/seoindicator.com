@@ -181,7 +181,7 @@ class AIModelTest extends TestCase
     {
         $model = AIModel::create([
             'provider' => 'openrouter',
-            'model_id' => 'meta-llama/llama-3-8b-instruct:free',
+            'model_id' => 'liquid/lfm-2.5-2.6b:free',
             'display_name' => 'Llama 3 8B Free',
             'cost_per_1k_input' => 0,
             'cost_per_1k_output' => 0,

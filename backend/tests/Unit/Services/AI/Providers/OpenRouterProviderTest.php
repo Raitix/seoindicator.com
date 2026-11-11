@@ -68,8 +68,8 @@ class OpenRouterProviderTest extends TestCase
     {
         $provider = new OpenRouterProvider(['api_key' => 'test-key']);
 
-        // Model should default to Llama 3.1 8B free
-        $this->assertStringContainsString('llama', strtolower($provider->getModel()));
+        // Model should default to the largest free model
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $provider->getModel());
     }
 
     /** @test ORC-006: Constructor sets default timeout */
@@ -787,7 +787,7 @@ class OpenRouterProviderTest extends TestCase
         $provider = new OpenRouterProvider(['api_key' => 'test-key']);
 
         $this->assertEquals(
-            'meta-llama/llama-3.1-8b-instruct:free',
+            'baidu/ernie-5.5-flash-preview:free',
             $provider->getModel()
         );
     }

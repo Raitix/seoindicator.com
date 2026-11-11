@@ -38,7 +38,7 @@ class OpenRouterClientTest extends TestCase
     {
         $config = [
             'api_key' => 'test-key',
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ];
 
         $client = new OpenRouterClient($config);
@@ -60,7 +60,7 @@ class OpenRouterClientTest extends TestCase
     {
         $client = new OpenRouterClient(['api_key' => 'test-key']);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $client->getModel());
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $client->getModel());
     }
 
     /** @test ORC-005: Constructor sets default timeout */
@@ -307,11 +307,11 @@ class OpenRouterClientTest extends TestCase
         ]);
 
         $client = new OpenRouterClient(['api_key' => 'test-key']);
-        $client->generate('test prompt', ['model' => 'qwen/qwen-2-7b-instruct:free']);
+        $client->generate('test prompt', ['model' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']);
 
         Http::assertSent(function ($request) {
             $body = json_decode($request->body(), true);
-            return $body['model'] === 'qwen/qwen-2-7b-instruct:free';
+            return $body['model'] === 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free';
         });
     }
 
@@ -460,12 +460,12 @@ class OpenRouterClientTest extends TestCase
 
         $client = new OpenRouterClient([
             'api_key' => 'test-key',
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         $response = $client->generate('test prompt');
 
         // Check if model is accessible (extended DTO or method)
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $response->model ?? 'google/gemini-2.0-flash-exp:free');
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $response->model ?? 'baidu/ernie-5.5-flash-preview:free');
     }
 
     /** @test RES-008: Handle non-streaming response */
@@ -834,7 +834,7 @@ class OpenRouterClientTest extends TestCase
         $client = new OpenRouterClient(['api_key' => 'test-key']);
         $models = $client->getAvailableModels();
 
-        $this->assertArrayHasKey('google/gemini-2.0-flash-exp:free', $models);
+        $this->assertArrayHasKey('baidu/ernie-5.5-flash-preview:free', $models);
     }
 
     /** @test MOD-003: getAvailableModels includes Qwen 2 */
@@ -843,7 +843,7 @@ class OpenRouterClientTest extends TestCase
         $client = new OpenRouterClient(['api_key' => 'test-key']);
         $models = $client->getAvailableModels();
 
-        $this->assertArrayHasKey('qwen/qwen-2-7b-instruct:free', $models);
+        $this->assertArrayHasKey('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $models);
     }
 
     /** @test MOD-004: getAvailableModels includes Mistral 7B */
@@ -852,7 +852,7 @@ class OpenRouterClientTest extends TestCase
         $client = new OpenRouterClient(['api_key' => 'test-key']);
         $models = $client->getAvailableModels();
 
-        $this->assertArrayHasKey('mistralai/mistral-7b-instruct:free', $models);
+        $this->assertArrayHasKey('liquid/lfm-3-1.7b:free', $models);
     }
 
     /** @test MOD-005: getAvailableModels includes Llama 3 */
@@ -861,7 +861,7 @@ class OpenRouterClientTest extends TestCase
         $client = new OpenRouterClient(['api_key' => 'test-key']);
         $models = $client->getAvailableModels();
 
-        $this->assertArrayHasKey('meta-llama/llama-3-8b-instruct:free', $models);
+        $this->assertArrayHasKey('liquid/lfm-2.5-2.6b:free', $models);
     }
 
     /** @test MOD-006: Model info has name property */
@@ -870,7 +870,7 @@ class OpenRouterClientTest extends TestCase
         $client = new OpenRouterClient(['api_key' => 'test-key']);
         $models = $client->getAvailableModels();
 
-        $this->assertArrayHasKey('name', $models['google/gemini-2.0-flash-exp:free']);
+        $this->assertArrayHasKey('name', $models['baidu/ernie-5.5-flash-preview:free']);
     }
 
     /** @test MOD-007: Model info has context_window property */
@@ -879,14 +879,14 @@ class OpenRouterClientTest extends TestCase
         $client = new OpenRouterClient(['api_key' => 'test-key']);
         $models = $client->getAvailableModels();
 
-        $this->assertArrayHasKey('context_window', $models['google/gemini-2.0-flash-exp:free']);
+        $this->assertArrayHasKey('context_window', $models['baidu/ernie-5.5-flash-preview:free']);
     }
 
     /** @test MOD-008: getModelInfo returns model details */
     public function test_get_model_info_returns_model_details(): void
     {
         $client = new OpenRouterClient(['api_key' => 'test-key']);
-        $info = $client->getModelInfo('google/gemini-2.0-flash-exp:free');
+        $info = $client->getModelInfo('baidu/ernie-5.5-flash-preview:free');
 
         $this->assertIsArray($info);
         $this->assertArrayHasKey('name', $info);
@@ -902,13 +902,13 @@ class OpenRouterClientTest extends TestCase
         $this->assertNull($info);
     }
 
-    /** @test MOD-010: Gemini context window is 1000000 */
-    public function test_gemini_context_window(): void
+    /** @test MOD-010: the largest model's context window is 1024000 */
+    public function test_largest_model_context_window(): void
     {
         $client = new OpenRouterClient(['api_key' => 'test-key']);
-        $info = $client->getModelInfo('google/gemini-2.0-flash-exp:free');
+        $info = $client->getModelInfo('baidu/ernie-5.5-flash-preview:free');
 
-        $this->assertEquals(1000000, $info['context_window']);
+        $this->assertEquals(1024000, $info['context_window']);
     }
 
     // =================================================================

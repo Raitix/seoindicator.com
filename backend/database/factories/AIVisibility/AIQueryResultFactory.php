@@ -28,7 +28,7 @@ class AIQueryResultFactory extends Factory
             'platform' => fake()->randomElement(['chatgpt', 'perplexity']),
             'query_text' => fake()->sentence(),
             'response_text' => fake()->paragraph(),
-            'model_used' => 'google/gemini-2.0-flash-exp:free',
+            'model_used' => 'baidu/ernie-5.5-flash-preview:free',
             'tokens_used' => fake()->numberBetween(100, 1000),
             'latency_ms' => fake()->numberBetween(500, 3000),
             'success' => true,

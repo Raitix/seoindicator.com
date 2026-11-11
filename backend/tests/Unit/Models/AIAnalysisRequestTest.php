@@ -45,7 +45,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertInstanceOf(AIAnalysisRequest::class, $request);
@@ -59,7 +59,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertEquals($analysis->id, $request->analysis_id);
@@ -72,10 +72,10 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $request->model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $request->model);
     }
 
     /** @test MF-004: prompt_tokens is fillable */
@@ -85,7 +85,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
         ]);
 
@@ -99,7 +99,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'response_tokens' => 500,
         ]);
 
@@ -113,7 +113,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'total_tokens' => 2000,
         ]);
 
@@ -127,7 +127,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 2500,
         ]);
 
@@ -143,7 +143,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'truncation_strategies' => $strategies,
         ]);
 
@@ -159,7 +159,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'request_hash' => $hash,
         ]);
 
@@ -173,7 +173,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -187,7 +187,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
             'error_message' => 'API timeout after 30 seconds',
         ]);
@@ -202,7 +202,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $data = [
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -232,7 +232,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -246,7 +246,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -264,7 +264,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -296,7 +296,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
         ]);
 
@@ -310,7 +310,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'response_tokens' => 500,
         ]);
 
@@ -324,7 +324,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'total_tokens' => 2000,
         ]);
 
@@ -338,7 +338,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 2500,
         ]);
 
@@ -352,7 +352,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'truncation_strategies' => ['primary' => 'summarize'],
         ]);
 
@@ -366,7 +366,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertNull($request->truncation_strategies);
@@ -386,7 +386,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'truncation_strategies' => $nested,
         ]);
 
@@ -401,7 +401,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $request->created_at);
@@ -415,7 +415,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -437,7 +437,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 0,
             'response_tokens' => 0,
             'total_tokens' => 0,
@@ -468,7 +468,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $relation = $request->analysis();
@@ -482,7 +482,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertEquals($analysis->id, $request->analysis->id);
@@ -496,7 +496,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         // Verify the relationship query uses analysis_id
@@ -510,7 +510,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $loaded = AIAnalysisRequest::with('analysis')->find($request->id);
@@ -526,7 +526,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $requestId = $request->id;
@@ -543,14 +543,14 @@ class AIAnalysisRequestTest extends TestCase
         // Create first request
         $request1 = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
         ]);
 
         // Create second request (retry)
         $request2 = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -566,7 +566,7 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -586,11 +586,11 @@ class AIAnalysisRequestTest extends TestCase
 
         $request1 = AIAnalysisRequest::create([
             'analysis_id' => $analysis1->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         $request2 = AIAnalysisRequest::create([
             'analysis_id' => $analysis2->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
         ]);
 
         $this->assertEquals('one.com', $request1->analysis->domain);
@@ -604,7 +604,7 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -634,7 +634,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -648,13 +648,13 @@ class AIAnalysisRequestTest extends TestCase
 
         $pending = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
         $failed = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
         ]);
 
@@ -676,7 +676,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'truncation_strategies' => ['primary' => 'summarize'],
         ]);
 
@@ -690,7 +690,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'truncation_strategies' => [],
         ]);
 
@@ -704,7 +704,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertFalse($request->wasTruncated());
@@ -724,7 +724,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 2500,
         ]);
 
@@ -738,7 +738,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertEquals(0.0, $request->getLatencySeconds());
@@ -762,17 +762,17 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'status' => 'pending',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'mistralai/mistral-7b-instruct:free',
+            'model' => 'liquid/lfm-3-1.7b:free',
             'status' => 'failed',
         ]);
 
@@ -796,12 +796,12 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'status' => 'failed',
         ]);
 
@@ -818,14 +818,14 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
         ]);
 
-        $gemini = AIAnalysisRequest::where('model', 'google/gemini-2.0-flash-exp:free')->get();
+        $gemini = AIAnalysisRequest::where('model', 'baidu/ernie-5.5-flash-preview:free')->get();
 
         $this->assertCount(1, $gemini);
     }
@@ -837,12 +837,12 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 500,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'latency_ms' => 5000,
         ]);
 
@@ -859,12 +859,12 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'total_tokens' => 500,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'total_tokens' => 5000,
         ]);
 
@@ -884,12 +884,12 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'request_hash' => $hash1,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'request_hash' => $hash2,
         ]);
 
@@ -906,17 +906,17 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'status' => 'completed',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'mistralai/mistral-7b-instruct:free',
+            'model' => 'liquid/lfm-3-1.7b:free',
             'status' => 'failed',
         ]);
 
@@ -935,12 +935,12 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 5000,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'latency_ms' => 500,
         ]);
 
@@ -978,7 +978,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'request_hash' => $hash,
         ]);
 
@@ -995,7 +995,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
             'error_message' => $message,
         ]);
@@ -1012,7 +1012,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
             'error_message' => $malicious,
         ]);
@@ -1047,7 +1047,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
             'error_message' => $largeMessage,
         ]);
@@ -1062,7 +1062,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => -100,
         ]);
 
@@ -1077,7 +1077,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => -100,
             'response_tokens' => -50,
             'total_tokens' => -150,
@@ -1096,7 +1096,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'truncation_strategies' => [],
         ]);
 
@@ -1111,7 +1111,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -1137,7 +1137,7 @@ class AIAnalysisRequestTest extends TestCase
         // Create pending request
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -1166,7 +1166,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
             'error_message' => 'Rate limit exceeded',
         ]);
@@ -1182,7 +1182,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
             'truncation_strategies' => [
                 'primary' => 'summarize',
@@ -1202,7 +1202,7 @@ class AIAnalysisRequestTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             AIAnalysisRequest::create([
                 'analysis_id' => $analysis->id,
-                'model' => 'google/gemini-2.0-flash-exp:free',
+                'model' => 'baidu/ernie-5.5-flash-preview:free',
                 'status' => 'completed',
                 'prompt_tokens' => 1000 * ($i + 1),
                 'response_tokens' => 500 * ($i + 1),
@@ -1233,7 +1233,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request1 = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'request_hash' => $hash,
             'status' => 'completed',
         ]);
@@ -1251,13 +1251,13 @@ class AIAnalysisRequestTest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 1500,
             'total_tokens' => 2000,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'latency_ms' => 3000,
             'total_tokens' => 3000,
         ]);
@@ -1277,7 +1277,7 @@ class AIAnalysisRequestTest extends TestCase
         // Create a request with an older timestamp
         $old = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         // Manually update the timestamp to simulate an older record using direct DB update
         \DB::table('ai_analysis_requests')
@@ -1287,7 +1287,7 @@ class AIAnalysisRequestTest extends TestCase
         // Create a new request
         $new = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         // Refresh to get the actual timestamps
@@ -1310,7 +1310,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $requestId = $request->id;
@@ -1327,7 +1327,7 @@ class AIAnalysisRequestTest extends TestCase
 
         $request = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -1349,7 +1349,7 @@ class AIAnalysisRequestTest extends TestCase
         for ($i = 0; $i < 50; $i++) {
             AIAnalysisRequest::create([
                 'analysis_id' => $analysis->id,
-                'model' => 'google/gemini-2.0-flash-exp:free',
+                'model' => 'baidu/ernie-5.5-flash-preview:free',
                 'prompt_tokens' => 1000,
                 'response_tokens' => 500,
                 'total_tokens' => 1500,

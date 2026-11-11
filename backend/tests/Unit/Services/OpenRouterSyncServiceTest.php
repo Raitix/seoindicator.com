@@ -816,7 +816,7 @@ class OpenRouterSyncServiceTest extends TestCase
             'openrouter.ai/api/v1/models' => Http::response([
                 'data' => [
                     [
-                        'id' => 'meta-llama/llama-3-8b-instruct:free',
+                        'id' => 'liquid/lfm-2.5-2.6b:free',
                         'name' => 'Llama 3 8B Free',
                         'context_length' => 8192,
                         'pricing' => [
@@ -831,7 +831,7 @@ class OpenRouterSyncServiceTest extends TestCase
         $this->service->syncModels();
 
         $this->assertDatabaseHas('ai_models', [
-            'model_id' => 'meta-llama/llama-3-8b-instruct:free',
+            'model_id' => 'liquid/lfm-2.5-2.6b:free',
             'is_free_tier' => true,
         ]);
     }
@@ -903,7 +903,7 @@ class OpenRouterSyncServiceTest extends TestCase
             'openrouter.ai/api/v1/models' => Http::response([
                 'data' => [
                     [
-                        'id' => 'meta-llama/llama-3-8b-instruct:free',
+                        'id' => 'liquid/lfm-2.5-2.6b:free',
                         'name' => 'Llama 3 8B Free',
                         'context_length' => 8192,
                         'pricing' => [
@@ -920,7 +920,7 @@ class OpenRouterSyncServiceTest extends TestCase
 
         $this->service->syncModels();
 
-        $model = AIModel::where('model_id', 'meta-llama/llama-3-8b-instruct:free')->first();
+        $model = AIModel::where('model_id', 'liquid/lfm-2.5-2.6b:free')->first();
         $this->assertTrue($model->is_free_tier);
         // Free tier limit may be parsed from per_request_limits or other fields
     }

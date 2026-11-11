@@ -122,7 +122,7 @@ if ($stmt) {
 }
 
 // Analyze all indicators with ONE OpenRouter API call
-$analysis_results = analyze_all_indicators_single_call($final_url, $page_content, $conn, $job_id);
+$analysis_results = analyze_all_indicators_single_call($final_url, $page_content);
 
 // Store all results
 $stmt = $conn->prepare("UPDATE job_results SET status='done', score=?, details=?, suggestion=? WHERE job_id=? AND indicator=?");

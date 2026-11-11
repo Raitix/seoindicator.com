@@ -81,14 +81,14 @@ class OpenRouterProviderIntegrationTest extends TestCase
 
         $provider = new OpenRouterProvider([
             'api_key' => 'test-key',
-            'model' => 'meta-llama/llama-3.1-8b-instruct:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         $provider->generate('test prompt');
 
         Http::assertSent(function ($request) {
             $body = json_decode($request->body(), true);
 
-            return $body['model'] === 'meta-llama/llama-3.1-8b-instruct:free' &&
+            return $body['model'] === 'baidu/ernie-5.5-flash-preview:free' &&
                 isset($body['messages']) &&
                 is_array($body['messages']) &&
                 isset($body['max_tokens']) &&

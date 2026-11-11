@@ -32,13 +32,13 @@ return [
     | model for production use.
     |
     | Available free models:
-    | - google/gemini-2.0-flash-exp:free
-    | - qwen/qwen-2-7b-instruct:free
-    | - mistralai/mistral-7b-instruct:free
-    | - meta-llama/llama-3-8b-instruct:free
+    | - baidu/ernie-5.5-flash-preview:free
+    | - nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+    | - liquid/lfm-3-1.7b:free
+    | - liquid/lfm-2.5-2.6b:free
     |
     */
-    'default_model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-exp:free'),
+    'default_model' => env('OPENROUTER_MODEL', 'baidu/ernie-5.5-flash-preview:free'),
 
     /*
     |--------------------------------------------------------------------------
@@ -72,25 +72,25 @@ return [
     |
     */
     'free_models' => [
-        'google/gemini-2.0-flash-exp:free' => [
-            'name' => 'Gemini 2.0 Flash',
-            'context_window' => 1000000,
-            'provider' => 'google',
+        'baidu/ernie-5.5-flash-preview:free' => [
+            'name' => 'ERNIE 5.5 Flash',
+            'context_window' => 1024000,
+            'provider' => 'baidu',
         ],
-        'qwen/qwen-2-7b-instruct:free' => [
-            'name' => 'Qwen 2 7B',
-            'context_window' => 32768,
-            'provider' => 'qwen',
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => [
+            'name' => 'Nemotron 3 Nano Omni 30B',
+            'context_window' => 256000,
+            'provider' => 'nvidia',
         ],
-        'mistralai/mistral-7b-instruct:free' => [
-            'name' => 'Mistral 7B',
-            'context_window' => 32768,
-            'provider' => 'mistral',
+        'liquid/lfm-3-1.7b:free' => [
+            'name' => 'LFM 3 1.7B',
+            'context_window' => 262144,
+            'provider' => 'liquid',
         ],
-        'meta-llama/llama-3-8b-instruct:free' => [
-            'name' => 'Llama 3 8B',
-            'context_window' => 8192,
-            'provider' => 'meta',
+        'liquid/lfm-2.5-2.6b:free' => [
+            'name' => 'LFM 2.5 2.6B',
+            'context_window' => 65536,
+            'provider' => 'liquid',
         ],
     ],
 ];

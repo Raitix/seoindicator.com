@@ -58,34 +58,34 @@ class ModelSelectionServiceTest extends TestCase
     {
         $models = [
             [
-                'provider' => 'google',
-                'model_id' => 'google/gemini-2.0-flash-exp:free',
-                'display_name' => 'Gemini 2.0 Flash',
-                'context_window' => 1000000,
+                'provider' => 'baidu',
+                'model_id' => 'baidu/ernie-5.5-flash-preview:free',
+                'display_name' => 'ERNIE 5.5 Flash',
+                'context_window' => 1024000,
                 'is_free_tier' => true,
                 'is_active' => true,
             ],
             [
-                'provider' => 'qwen',
-                'model_id' => 'qwen/qwen-2-7b-instruct:free',
-                'display_name' => 'Qwen 2 7B',
-                'context_window' => 32768,
+                'provider' => 'nvidia',
+                'model_id' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+                'display_name' => 'Nemotron 3 Nano Omni 30B',
+                'context_window' => 256000,
                 'is_free_tier' => true,
                 'is_active' => true,
             ],
             [
-                'provider' => 'mistralai',
-                'model_id' => 'mistralai/mistral-7b-instruct:free',
-                'display_name' => 'Mistral 7B',
-                'context_window' => 32768,
+                'provider' => 'liquid',
+                'model_id' => 'liquid/lfm-3-1.7b:free',
+                'display_name' => 'LFM 3 1.7B',
+                'context_window' => 262144,
                 'is_free_tier' => true,
                 'is_active' => true,
             ],
             [
-                'provider' => 'meta-llama',
-                'model_id' => 'meta-llama/llama-3-8b-instruct:free',
-                'display_name' => 'Llama 3 8B',
-                'context_window' => 8192,
+                'provider' => 'liquid',
+                'model_id' => 'liquid/lfm-2.5-2.6b:free',
+                'display_name' => 'LFM 2.5 2.6B',
+                'context_window' => 65536,
                 'is_free_tier' => true,
                 'is_active' => true,
             ],
@@ -107,77 +107,77 @@ class ModelSelectionServiceTest extends TestCase
         // Small content should select Llama (smallest context)
         $model = $this->service->selectModel(500);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_002_select_llama_for_content_under_4k_tokens(): void
+    public function ms_002_select_smallest_for_content_under_55k_tokens(): void
     {
-        // Content under Llama's effective limit (3972)
+        // Content under the smallest model's effective limit (55582)
         $model = $this->service->selectModel(3000);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_003_select_qwen_for_4k_to_26k_tokens(): void
+    public function ms_003_select_second_model_for_55k_to_227k_tokens(): void
     {
-        // Content between Llama and Qwen limits
-        $model = $this->service->selectModel(10000);
+        // Content between the smallest (55582) and second model (227000) limits
+        $model = $this->service->selectModel(100000);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_004_select_gemini_for_26k_to_896k_tokens(): void
+    public function ms_004_select_largest_for_232k_to_918k_tokens(): void
     {
-        // Content between Qwen and Gemini limits
-        $model = $this->service->selectModel(50000);
+        // Content between the third model (232529) and largest model (918200) limits
+        $model = $this->service->selectModel(500000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_005_fallback_to_gemini_for_over_896k_tokens(): void
+    public function ms_005_fallback_to_largest_for_over_918k_tokens(): void
     {
-        // Content exceeding all limits, fallback to Gemini
+        // Content exceeding all limits, fallback to the largest model
         $model = $this->service->selectModel(1000000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_006_select_llama_at_exact_boundary(): void
+    public function ms_006_select_smallest_at_exact_boundary(): void
     {
-        // At exact Llama effective limit (3972)
-        $model = $this->service->selectModel(3972);
+        // At exact smallest-model effective limit (55582)
+        $model = $this->service->selectModel(55582);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_007_select_qwen_just_over_llama_boundary(): void
+    public function ms_007_select_second_model_just_over_smallest_boundary(): void
     {
-        // One token over Llama limit
-        $model = $this->service->selectModel(3973);
+        // One token over the smallest model's limit
+        $model = $this->service->selectModel(55583);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function ms_008_select_gemini_just_over_qwen_boundary(): void
+    public function ms_008_select_largest_just_over_third_boundary(): void
     {
-        // One token over Qwen limit (26091)
-        $model = $this->service->selectModel(26092);
+        // One token over the third model's limit (232529)
+        $model = $this->service->selectModel(232530);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
@@ -187,7 +187,7 @@ class ModelSelectionServiceTest extends TestCase
         // Zero tokens should select smallest model
         $model = $this->service->selectModel(0);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     // =========================================================================
@@ -198,9 +198,9 @@ class ModelSelectionServiceTest extends TestCase
     #[Group('preference')]
     public function up_001_respect_user_preference_when_fits(): void
     {
-        // User prefers Qwen, content fits
+        // User prefers the second model, content fits
         $user = User::factory()->create();
-        $qwenModel = AIModel::where('model_id', 'qwen/qwen-2-7b-instruct:free')->first();
+        $qwenModel = AIModel::where('model_id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')->first();
         
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -208,19 +208,19 @@ class ModelSelectionServiceTest extends TestCase
             'is_default' => true,
         ]);
 
-        // Content fits in Qwen context
+        // Content fits in the preferred model's context
         $model = $this->service->selectModel(5000, $user);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('preference')]
     public function up_002_ignore_preference_when_too_small(): void
     {
-        // User prefers Llama, but content doesn't fit
+        // User prefers the smallest model, but content doesn't fit
         $user = User::factory()->create();
-        $llamaModel = AIModel::where('model_id', 'meta-llama/llama-3-8b-instruct:free')->first();
+        $llamaModel = AIModel::where('model_id', 'liquid/lfm-2.5-2.6b:free')->first();
         
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -228,19 +228,19 @@ class ModelSelectionServiceTest extends TestCase
             'is_default' => true,
         ]);
 
-        // Content too large for Llama, should fall back to Qwen
-        $model = $this->service->selectModel(10000, $user);
+        // Content too large for the smallest model -> next model up
+        $model = $this->service->selectModel(100000, $user);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('preference')]
-    public function up_003_use_preference_for_gemini(): void
+    public function up_003_use_preference_for_largest_model(): void
     {
-        // User prefers Gemini for small content
+        // User prefers the largest model for small content
         $user = User::factory()->create();
-        $geminiModel = AIModel::where('model_id', 'google/gemini-2.0-flash-exp:free')->first();
+        $geminiModel = AIModel::where('model_id', 'baidu/ernie-5.5-flash-preview:free')->first();
         
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -248,10 +248,10 @@ class ModelSelectionServiceTest extends TestCase
             'is_default' => true,
         ]);
 
-        // Content would fit in Llama, but user prefers Gemini
+        // Content would fit the smallest model, but the user prefers the largest
         $model = $this->service->selectModel(3000, $user);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
@@ -261,10 +261,10 @@ class ModelSelectionServiceTest extends TestCase
         // User with no preference
         $user = User::factory()->create();
 
-        // Should return optimal model (Qwen for 5000 tokens)
-        $model = $this->service->selectModel(5000, $user);
+        // Should return the optimal model for 100000 tokens
+        $model = $this->service->selectModel(100000, $user);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
@@ -272,9 +272,9 @@ class ModelSelectionServiceTest extends TestCase
     public function up_005_null_user_returns_optimal(): void
     {
         // No user provided
-        $model = $this->service->selectModel(5000, null);
+        $model = $this->service->selectModel(100000, null);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
@@ -301,7 +301,7 @@ class ModelSelectionServiceTest extends TestCase
         // Should select optimal model instead
         $model = $this->service->selectModel(3000, $user);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
@@ -342,7 +342,7 @@ class ModelSelectionServiceTest extends TestCase
         // Should return null for preference, then select optimal model
         $model = $this->service->selectModel(3000, $user);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     // =========================================================================
@@ -353,7 +353,7 @@ class ModelSelectionServiceTest extends TestCase
     #[Group('availability')]
     public function ma_001_active_model_is_available(): void
     {
-        $available = $this->service->isModelAvailable('google/gemini-2.0-flash-exp:free');
+        $available = $this->service->isModelAvailable('baidu/ernie-5.5-flash-preview:free');
 
         $this->assertTrue($available);
     }
@@ -389,10 +389,10 @@ class ModelSelectionServiceTest extends TestCase
     public function ma_004_free_tier_model_available(): void
     {
         $models = [
-            'google/gemini-2.0-flash-exp:free',
-            'qwen/qwen-2-7b-instruct:free',
-            'mistralai/mistral-7b-instruct:free',
-            'meta-llama/llama-3-8b-instruct:free',
+            'baidu/ernie-5.5-flash-preview:free',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            'liquid/lfm-3-1.7b:free',
+            'liquid/lfm-2.5-2.6b:free',
         ];
 
         foreach ($models as $modelId) {
@@ -408,10 +408,10 @@ class ModelSelectionServiceTest extends TestCase
     public function ma_005_all_supported_models_available(): void
     {
         $supportedModels = [
-            'google/gemini-2.0-flash-exp:free',
-            'qwen/qwen-2-7b-instruct:free',
-            'mistralai/mistral-7b-instruct:free',
-            'meta-llama/llama-3-8b-instruct:free',
+            'baidu/ernie-5.5-flash-preview:free',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            'liquid/lfm-3-1.7b:free',
+            'liquid/lfm-2.5-2.6b:free',
         ];
 
         foreach ($supportedModels as $modelId) {
@@ -428,11 +428,11 @@ class ModelSelectionServiceTest extends TestCase
 
     #[Test]
     #[Group('fallback')]
-    public function fm_001_fallback_returns_gemini(): void
+    public function fm_001_fallback_returns_largest_model(): void
     {
         $fallback = $this->service->getFallbackModel();
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $fallback);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $fallback);
     }
 
     #[Test]
@@ -460,9 +460,9 @@ class ModelSelectionServiceTest extends TestCase
 
         // Test at each boundary
         $testCases = [
-            ['tokens' => 3000, 'expected' => 'meta-llama/llama-3-8b-instruct:free'],
-            ['tokens' => 15000, 'expected' => 'qwen/qwen-2-7b-instruct:free'],
-            ['tokens' => 100000, 'expected' => 'google/gemini-2.0-flash-exp:free'],
+            ['tokens' => 3000, 'expected' => 'liquid/lfm-2.5-2.6b:free'],
+            ['tokens' => 100000, 'expected' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'],
+            ['tokens' => 500000, 'expected' => 'baidu/ernie-5.5-flash-preview:free'],
         ];
 
         foreach ($testCases as $case) {
@@ -480,16 +480,24 @@ class ModelSelectionServiceTest extends TestCase
     public function ci_002_respects_context_limits(): void
     {
         // Verify that content just under limit fits
-        $llamaLimit = $this->contextManager->getEffectiveLimit('meta-llama/llama-3-8b-instruct:free');
-        $qwenLimit = $this->contextManager->getEffectiveLimit('qwen/qwen-2-7b-instruct:free');
+        $smallestLimit = $this->contextManager->getEffectiveLimit('liquid/lfm-2.5-2.6b:free');
+        $secondLimit = $this->contextManager->getEffectiveLimit('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
 
-        // At Llama limit
-        $model = $this->service->selectModel($llamaLimit);
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        // At the smallest model's limit
+        $model = $this->service->selectModel($smallestLimit);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
 
-        // Just over Llama limit
-        $model = $this->service->selectModel($llamaLimit + 1);
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        // Just over the smallest model's limit
+        $model = $this->service->selectModel($smallestLimit + 1);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
+
+        // At the second model's limit
+        $model = $this->service->selectModel($secondLimit);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
+
+        // Just over the second model's limit
+        $model = $this->service->selectModel($secondLimit + 1);
+        $this->assertEquals('liquid/lfm-3-1.7b:free', $model);
     }
 
     // =========================================================================
@@ -498,45 +506,47 @@ class ModelSelectionServiceTest extends TestCase
 
     #[Test]
     #[Group('priority')]
-    public function mp_001_under_4k_tokens_selects_llama(): void
+    public function mp_001_under_55k_tokens_selects_smallest_model(): void
     {
-        // Llama's effective limit is 3972 tokens (8192 * 0.9 - 3400)
-        // Content under this limit should select Llama
+        // The smallest model's effective limit is 55582 tokens (65536 * 0.9 - 3400)
+        // Content under this limit should select the smallest model
         $model = $this->service->selectModel(3000);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
     #[Group('priority')]
-    public function mp_002_4k_to_26k_tokens_selects_qwen(): void
+    public function mp_002_55k_to_227k_tokens_selects_second_model(): void
     {
-        // Qwen's effective limit is ~26091 tokens (32768 * 0.9 - 3400)
-        // Content between Llama limit (3972) and Qwen limit should select Qwen
-        $model = $this->service->selectModel(15000);
-
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
-    }
-
-    #[Test]
-    #[Group('priority')]
-    public function mp_003_26k_to_896k_tokens_selects_gemini(): void
-    {
-        // Gemini's effective limit is ~896600 tokens (1000000 * 0.9 - 3400)
-        // Content between Qwen limit (26091) and Gemini limit should select Gemini
+        // The second model's effective limit is 227000 tokens (256000 * 0.9 - 3400)
+        // Content between the smallest limit (55582) and the second limit should
+        // select the second model
         $model = $this->service->selectModel(100000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('priority')]
-    public function mp_004_over_1m_tokens_selects_gemini_with_truncation(): void
+    public function mp_003_232k_to_918k_tokens_selects_largest_model(): void
+    {
+        // The largest model's effective limit is 918200 tokens (1024000 * 0.9 - 3400)
+        // Content between the third limit (232529) and the largest limit should
+        // select the largest model
+        $model = $this->service->selectModel(500000);
+
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
+    }
+
+    #[Test]
+    #[Group('priority')]
+    public function mp_004_over_1m_tokens_selects_largest_with_truncation(): void
     {
         // Over 1M tokens requires truncation
         $model = $this->service->selectModel(2000000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     // =========================================================================
@@ -550,37 +560,37 @@ class ModelSelectionServiceTest extends TestCase
         // Negative tokens should be treated as 0 or small
         $model = $this->service->selectModel(-100);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
     #[Group('edge-cases')]
     public function ec_002_very_large_tokens(): void
     {
-        // Very large tokens should fallback to Gemini
+        // Very large tokens should fallback to the largest model
         $model = $this->service->selectModel(10000000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
     #[Group('edge-cases')]
-    public function ec_003_exactly_at_gemini_limit(): void
+    public function ec_003_exactly_at_largest_limit(): void
     {
-        // At exact Gemini limit (896600)
-        $model = $this->service->selectModel(896600);
+        // At exact largest-model limit (918200)
+        $model = $this->service->selectModel(918200);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
     #[Group('edge-cases')]
-    public function ec_004_one_over_gemini_limit(): void
+    public function ec_004_one_over_largest_limit(): void
     {
-        // One token over Gemini limit
-        $model = $this->service->selectModel(896601);
+        // One token over the largest model's limit
+        $model = $this->service->selectModel(918201);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
@@ -592,7 +602,7 @@ class ModelSelectionServiceTest extends TestCase
 
         $model = $this->service->selectModel(3000, $user);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     // =========================================================================
@@ -604,7 +614,7 @@ class ModelSelectionServiceTest extends TestCase
     public function get_user_preference_returns_model_id(): void
     {
         $user = User::factory()->create();
-        $qwenModel = AIModel::where('model_id', 'qwen/qwen-2-7b-instruct:free')->first();
+        $qwenModel = AIModel::where('model_id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')->first();
         
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -614,7 +624,7 @@ class ModelSelectionServiceTest extends TestCase
 
         $preference = $this->service->getUserPreference($user);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $preference);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $preference);
     }
 
     #[Test]
@@ -661,22 +671,22 @@ class ModelSelectionServiceTest extends TestCase
     {
         // AC: selectModel() returns optimal model for content size
         
-        // Small → Llama
+        // Small -> smallest model
         $this->assertEquals(
-            'meta-llama/llama-3-8b-instruct:free',
+            'liquid/lfm-2.5-2.6b:free',
             $this->service->selectModel(1000)
         );
 
-        // Medium → Qwen
+        // Medium -> second model
         $this->assertEquals(
-            'qwen/qwen-2-7b-instruct:free',
-            $this->service->selectModel(10000)
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            $this->service->selectModel(100000)
         );
 
-        // Large → Gemini
+        // Large -> largest model
         $this->assertEquals(
-            'google/gemini-2.0-flash-exp:free',
-            $this->service->selectModel(100000)
+            'baidu/ernie-5.5-flash-preview:free',
+            $this->service->selectModel(500000)
         );
     }
 
@@ -687,18 +697,18 @@ class ModelSelectionServiceTest extends TestCase
         // AC: User preferences respected when content fits
         
         $user = User::factory()->create();
-        $qwenModel = AIModel::where('model_id', 'qwen/qwen-2-7b-instruct:free')->first();
+        $preferredModel = AIModel::where('model_id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')->first();
         
         UserModelPreference::create([
             'user_id' => $user->id,
-            'model_id' => $qwenModel->id,
+            'model_id' => $preferredModel->id,
             'is_default' => true,
         ]);
 
-        // Content fits in Qwen
+        // Content fits in the preferred model
         $model = $this->service->selectModel(5000, $user);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
@@ -708,18 +718,18 @@ class ModelSelectionServiceTest extends TestCase
         // AC: Falls back gracefully when preferred model too small
         
         $user = User::factory()->create();
-        $llamaModel = AIModel::where('model_id', 'meta-llama/llama-3-8b-instruct:free')->first();
+        $smallestModel = AIModel::where('model_id', 'liquid/lfm-2.5-2.6b:free')->first();
         
         UserModelPreference::create([
             'user_id' => $user->id,
-            'model_id' => $llamaModel->id,
+            'model_id' => $smallestModel->id,
             'is_default' => true,
         ]);
 
-        // Content too large for Llama → fall back to Qwen
-        $model = $this->service->selectModel(10000, $user);
+        // Content too large for the smallest model -> next model up
+        $model = $this->service->selectModel(100000, $user);
 
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
@@ -757,10 +767,10 @@ class ModelSelectionServiceTest extends TestCase
         // Verify all our models are in the available list
         $modelIds = $availableModels->pluck('model_id')->toArray();
         
-        $this->assertContains('google/gemini-2.0-flash-exp:free', $modelIds);
-        $this->assertContains('qwen/qwen-2-7b-instruct:free', $modelIds);
-        $this->assertContains('mistralai/mistral-7b-instruct:free', $modelIds);
-        $this->assertContains('meta-llama/llama-3-8b-instruct:free', $modelIds);
+        $this->assertContains('baidu/ernie-5.5-flash-preview:free', $modelIds);
+        $this->assertContains('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $modelIds);
+        $this->assertContains('liquid/lfm-3-1.7b:free', $modelIds);
+        $this->assertContains('liquid/lfm-2.5-2.6b:free', $modelIds);
     }
 
     #[Test]
@@ -770,8 +780,8 @@ class ModelSelectionServiceTest extends TestCase
         // AC: Model availability checked
         
         // Active models should be available
-        $this->assertTrue($this->service->isModelAvailable('google/gemini-2.0-flash-exp:free'));
-        $this->assertTrue($this->service->isModelAvailable('meta-llama/llama-3-8b-instruct:free'));
+        $this->assertTrue($this->service->isModelAvailable('baidu/ernie-5.5-flash-preview:free'));
+        $this->assertTrue($this->service->isModelAvailable('liquid/lfm-2.5-2.6b:free'));
 
         // Unknown models should not be available
         $this->assertFalse($this->service->isModelAvailable('unknown/model'));
@@ -807,7 +817,7 @@ class ModelSelectionServiceTest extends TestCase
         $start = microtime(true);
         
         for ($i = 0; $i < 100; $i++) {
-            $this->service->isModelAvailable('google/gemini-2.0-flash-exp:free');
+            $this->service->isModelAvailable('baidu/ernie-5.5-flash-preview:free');
         }
         
         $end = microtime(true);
@@ -824,11 +834,11 @@ class ModelSelectionServiceTest extends TestCase
     public static function modelSelectionProvider(): array
     {
         return [
-            'tiny' => [500, 'meta-llama/llama-3-8b-instruct:free'],
-            'small' => [3000, 'meta-llama/llama-3-8b-instruct:free'],
-            'medium' => [10000, 'qwen/qwen-2-7b-instruct:free'],
-            'large' => [100000, 'google/gemini-2.0-flash-exp:free'],
-            'huge' => [1000000, 'google/gemini-2.0-flash-exp:free'],
+            'tiny' => [500, 'liquid/lfm-2.5-2.6b:free'],
+            'small' => [3000, 'liquid/lfm-2.5-2.6b:free'],
+            'medium' => [100000, 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'],
+            'large' => [500000, 'baidu/ernie-5.5-flash-preview:free'],
+            'huge' => [1000000, 'baidu/ernie-5.5-flash-preview:free'],
         ];
     }
 
@@ -844,11 +854,14 @@ class ModelSelectionServiceTest extends TestCase
     public static function boundaryProvider(): array
     {
         return [
-            'at llama limit' => [3972, 'meta-llama/llama-3-8b-instruct:free'],
-            'over llama limit' => [3973, 'qwen/qwen-2-7b-instruct:free'],
-            'at qwen limit' => [26091, 'qwen/qwen-2-7b-instruct:free'],
-            'over qwen limit' => [26092, 'google/gemini-2.0-flash-exp:free'],
-            'at gemini limit' => [896600, 'google/gemini-2.0-flash-exp:free'],
+            'at smallest limit' => [55582, 'liquid/lfm-2.5-2.6b:free'],
+            'over smallest limit' => [55583, 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'],
+            'at second limit' => [227000, 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'],
+            'over second limit' => [227001, 'liquid/lfm-3-1.7b:free'],
+            'at third limit' => [232529, 'liquid/lfm-3-1.7b:free'],
+            'over third limit' => [232530, 'baidu/ernie-5.5-flash-preview:free'],
+            'at largest limit' => [918200, 'baidu/ernie-5.5-flash-preview:free'],
+            'over largest limit' => [918201, 'baidu/ernie-5.5-flash-preview:free'],
         ];
     }
 

@@ -297,7 +297,7 @@ class RunQueryJob implements ShouldQueue
             'Authorization' => 'Bearer ' . config('services.openrouter.api_key'),
             'Content-Type' => 'application/json',
         ])->post('https://openrouter.ai/api/v1/chat/completions', [
-            'model' => config('ai-visibility.models.chatgpt', 'openai/gpt-3.5-turbo'),
+            'model' => config('ai-visibility.models.chatgpt', 'openai/gpt-3.5-turbo-16k'),
             'messages' => [
                 ['role' => 'user', 'content' => $this->queryText],
             ],

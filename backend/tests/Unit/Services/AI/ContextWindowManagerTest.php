@@ -37,15 +37,15 @@ class ContextWindowManagerTest extends TestCase
         $limits = $this->manager->getModelLimits();
 
         $this->assertIsArray($limits);
-        $this->assertArrayHasKey('google/gemini-2.0-flash-exp:free', $limits);
-        $this->assertArrayHasKey('qwen/qwen-2-7b-instruct:free', $limits);
-        $this->assertArrayHasKey('mistralai/mistral-7b-instruct:free', $limits);
-        $this->assertArrayHasKey('meta-llama/llama-3-8b-instruct:free', $limits);
+        $this->assertArrayHasKey('baidu/ernie-5.5-flash-preview:free', $limits);
+        $this->assertArrayHasKey('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $limits);
+        $this->assertArrayHasKey('liquid/lfm-3-1.7b:free', $limits);
+        $this->assertArrayHasKey('liquid/lfm-2.5-2.6b:free', $limits);
 
-        $this->assertEquals(1000000, $limits['google/gemini-2.0-flash-exp:free']);
-        $this->assertEquals(32768, $limits['qwen/qwen-2-7b-instruct:free']);
-        $this->assertEquals(32768, $limits['mistralai/mistral-7b-instruct:free']);
-        $this->assertEquals(8192, $limits['meta-llama/llama-3-8b-instruct:free']);
+        $this->assertEquals(1024000, $limits['baidu/ernie-5.5-flash-preview:free']);
+        $this->assertEquals(256000, $limits['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']);
+        $this->assertEquals(262144, $limits['liquid/lfm-3-1.7b:free']);
+        $this->assertEquals(65536, $limits['liquid/lfm-2.5-2.6b:free']);
     }
 
     #[Test]
@@ -176,42 +176,42 @@ class ContextWindowManagerTest extends TestCase
 
     #[Test]
     #[Group('effective-limit')]
-    public function it_calculates_effective_limit_for_gemini(): void
+    public function it_calculates_effective_limit_for_largest_model(): void
+    {
+        // 1,024,000 * 0.9 = 921,600 - 3400 = 918,200
+        $effective = $this->manager->getEffectiveLimit('baidu/ernie-5.5-flash-preview:free');
+
+        $this->assertEquals(918200, $effective);
+    }
+
+    #[Test]
+    #[Group('effective-limit')]
+    public function it_calculates_effective_limit_for_second_model(): void
+    {
+        // 256,000 * 0.9 = 230,400 - 3400 = 227,000
+        $effective = $this->manager->getEffectiveLimit('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
+
+        $this->assertEquals(227000, $effective);
+    }
+
+    #[Test]
+    #[Group('effective-limit')]
+    public function it_calculates_effective_limit_for_third_model(): void
+    {
+        // 256,000 * 0.9 = 230,400 - 3400 = 227,000
+        $effective = $this->manager->getEffectiveLimit('liquid/lfm-3-1.7b:free');
+
+        $this->assertEquals(232529, $effective);
+    }
+
+    #[Test]
+    #[Group('effective-limit')]
+    public function it_calculates_effective_limit_for_smallest_model(): void
     {
         // 1,000,000 * 0.9 = 900,000 - 3400 = 896,600
-        $effective = $this->manager->getEffectiveLimit('google/gemini-2.0-flash-exp:free');
+        $effective = $this->manager->getEffectiveLimit('liquid/lfm-2.5-2.6b:free');
 
-        $this->assertEquals(896600, $effective);
-    }
-
-    #[Test]
-    #[Group('effective-limit')]
-    public function it_calculates_effective_limit_for_qwen(): void
-    {
-        // 32,768 * 0.9 = 29,491.2 - 3400 = 26,091
-        $effective = $this->manager->getEffectiveLimit('qwen/qwen-2-7b-instruct:free');
-
-        $this->assertEquals(26091, $effective);
-    }
-
-    #[Test]
-    #[Group('effective-limit')]
-    public function it_calculates_effective_limit_for_mistral(): void
-    {
-        // 32,768 * 0.9 = 29,491.2 - 3400 = 26,091
-        $effective = $this->manager->getEffectiveLimit('mistralai/mistral-7b-instruct:free');
-
-        $this->assertEquals(26091, $effective);
-    }
-
-    #[Test]
-    #[Group('effective-limit')]
-    public function it_calculates_effective_limit_for_llama(): void
-    {
-        // 8,192 * 0.9 = 7,372.8 - 3400 = 3,972
-        $effective = $this->manager->getEffectiveLimit('meta-llama/llama-3-8b-instruct:free');
-
-        $this->assertEquals(3972, $effective);
+        $this->assertEquals(55582, $effective);
     }
 
     #[Test]
@@ -248,40 +248,40 @@ class ContextWindowManagerTest extends TestCase
 
     #[Test]
     #[Group('validation')]
-    public function it_validates_content_fits_in_gemini_context(): void
+    public function it_validates_content_fits_in_largest_context(): void
     {
-        // Gemini has ~896,600 effective limit
-        $fits = $this->manager->fitsInContext('google/gemini-2.0-flash-exp:free', 500000);
+        // ERNIE 5.5 Flash has ~918,200 effective limit
+        $fits = $this->manager->fitsInContext('baidu/ernie-5.5-flash-preview:free', 500000);
 
         $this->assertTrue($fits);
     }
 
     #[Test]
     #[Group('validation')]
-    public function it_validates_content_does_not_fit_in_gemini_context(): void
+    public function it_validates_content_does_not_fit_in_largest_context(): void
     {
-        // Gemini has ~896,600 effective limit
-        $fits = $this->manager->fitsInContext('google/gemini-2.0-flash-exp:free', 900000);
+        // ERNIE 5.5 Flash has ~918,200 effective limit
+        $fits = $this->manager->fitsInContext('baidu/ernie-5.5-flash-preview:free', 920000);
 
         $this->assertFalse($fits);
     }
 
     #[Test]
     #[Group('validation')]
-    public function it_validates_content_fits_in_llama_context(): void
+    public function it_validates_content_fits_in_smallest_context(): void
     {
-        // Llama has ~3,972 effective limit
-        $fits = $this->manager->fitsInContext('meta-llama/llama-3-8b-instruct:free', 3000);
+        // LFM 2.5 2.6B has ~55,582 effective limit
+        $fits = $this->manager->fitsInContext('liquid/lfm-2.5-2.6b:free', 30000);
 
         $this->assertTrue($fits);
     }
 
     #[Test]
     #[Group('validation')]
-    public function it_validates_content_does_not_fit_in_llama_context(): void
+    public function it_validates_content_does_not_fit_in_smallest_context(): void
     {
-        // Llama has ~3,972 effective limit
-        $fits = $this->manager->fitsInContext('meta-llama/llama-3-8b-instruct:free', 5000);
+        // LFM 2.5 2.6B has ~55,582 effective limit
+        $fits = $this->manager->fitsInContext('liquid/lfm-2.5-2.6b:free', 60000);
 
         $this->assertFalse($fits);
     }
@@ -290,8 +290,8 @@ class ContextWindowManagerTest extends TestCase
     #[Group('validation')]
     public function it_validates_at_exact_limit_boundary(): void
     {
-        // Llama has ~3,972 effective limit
-        $fits = $this->manager->fitsInContext('meta-llama/llama-3-8b-instruct:free', 3972);
+        // LFM 2.5 2.6B has ~55,582 effective limit
+        $fits = $this->manager->fitsInContext('liquid/lfm-2.5-2.6b:free', 55582);
 
         $this->assertTrue($fits, 'Content exactly at limit should fit');
     }
@@ -300,8 +300,8 @@ class ContextWindowManagerTest extends TestCase
     #[Group('validation')]
     public function it_validates_one_over_limit_boundary(): void
     {
-        // Llama has ~3,972 effective limit
-        $fits = $this->manager->fitsInContext('meta-llama/llama-3-8b-instruct:free', 3973);
+        // LFM 2.5 2.6B has ~55,582 effective limit
+        $fits = $this->manager->fitsInContext('liquid/lfm-2.5-2.6b:free', 55583);
 
         $this->assertFalse($fits, 'Content one token over limit should not fit');
     }
@@ -311,10 +311,10 @@ class ContextWindowManagerTest extends TestCase
     public function it_validates_zero_tokens_fits_any_model(): void
     {
         $models = [
-            'google/gemini-2.0-flash-exp:free',
-            'qwen/qwen-2-7b-instruct:free',
-            'mistralai/mistral-7b-instruct:free',
-            'meta-llama/llama-3-8b-instruct:free',
+            'baidu/ernie-5.5-flash-preview:free',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            'liquid/lfm-3-1.7b:free',
+            'liquid/lfm-2.5-2.6b:free',
         ];
 
         foreach ($models as $model) {
@@ -339,45 +339,45 @@ class ContextWindowManagerTest extends TestCase
 
     #[Test]
     #[Group('selection')]
-    public function it_selects_llama_for_small_content(): void
+    public function it_selects_smallest_model_for_small_content(): void
     {
-        // Small content fits in all models, should prefer smallest (Llama)
+        // Small content fits in all models, should prefer the smallest (LFM 2.5)
         $model = $this->manager->selectOptimalModel(3000);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function it_selects_qwen_for_medium_content(): void
+    public function it_selects_second_model_for_medium_content(): void
     {
-        // Content that doesn't fit in Llama but fits in Qwen/Mistral
-        // Llama limit: ~3,972, Qwen/Mistral limit: ~26,091
-        $model = $this->manager->selectOptimalModel(10000);
-
-        // Should prefer first available (Qwen comes before Mistral in the list)
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
-    }
-
-    #[Test]
-    #[Group('selection')]
-    public function it_selects_gemini_for_large_content(): void
-    {
-        // Content that only fits in Gemini
-        // Qwen/Mistral limit: ~26,091, Gemini limit: ~896,600
+        // Content that doesn't fit in LFM 2.5 but fits in Nemotron Nano Omni
+        // LFM 2.5 limit: ~55,582, Nemotron Nano Omni limit: ~227,000
         $model = $this->manager->selectOptimalModel(100000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        // Should prefer first available (Nemotron Nano Omni comes before LFM 3 in the list)
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function it_falls_back_to_gemini_for_content_exceeding_all_limits(): void
+    public function it_selects_largest_model_for_large_content(): void
     {
-        // Content that exceeds all limits should fallback to Gemini (largest)
+        // Content that only fits in ERNIE 5.5 Flash
+        // LFM 3 limit: ~232,529, ERNIE limit: ~918,200
+        $model = $this->manager->selectOptimalModel(500000);
+
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
+    }
+
+    #[Test]
+    #[Group('selection')]
+    public function it_falls_back_to_largest_for_content_exceeding_all_limits(): void
+    {
+        // Content that exceeds all limits should fallback to ERNIE (largest)
         $model = $this->manager->selectOptimalModel(1000000);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
@@ -385,24 +385,24 @@ class ContextWindowManagerTest extends TestCase
     public function it_selects_smallest_sufficient_model(): void
     {
         // Test the priority order: smallest sufficient model
-        // Llama (3,972) < Qwen/Mistral (26,091) < Gemini (896,600)
-        
-        // Should select Llama
+        // LFM 2.5 (55,582) < Nemotron Nano Omni (227,000) < LFM 3 (232,529) < ERNIE (918,200)
+
+        // Should select LFM 2.5
         $this->assertEquals(
-            'meta-llama/llama-3-8b-instruct:free',
+            'liquid/lfm-2.5-2.6b:free',
             $this->manager->selectOptimalModel(3500)
         );
 
-        // Should select Qwen
+        // Should select Nemotron Nano Omni
         $this->assertEquals(
-            'qwen/qwen-2-7b-instruct:free',
-            $this->manager->selectOptimalModel(10000)
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            $this->manager->selectOptimalModel(100000)
         );
 
-        // Should select Gemini
+        // Should select LFM 3
         $this->assertEquals(
-            'google/gemini-2.0-flash-exp:free',
-            $this->manager->selectOptimalModel(50000)
+            'liquid/lfm-3-1.7b:free',
+            $this->manager->selectOptimalModel(230000)
         );
     }
 
@@ -410,44 +410,44 @@ class ContextWindowManagerTest extends TestCase
     #[Group('selection')]
     public function it_selects_correct_model_at_boundary(): void
     {
-        // At exact Llama limit (3,972) should still select Llama
-        $model = $this->manager->selectOptimalModel(3972);
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        // At exact LFM 2.5 limit (55,582) should still select LFM 2.5
+        $model = $this->manager->selectOptimalModel(55582);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
 
-        // One over Llama limit should select Qwen
-        $model = $this->manager->selectOptimalModel(3973);
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        // One over the LFM 2.5 limit should select Nemotron Nano Omni
+        $model = $this->manager->selectOptimalModel(55583);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function it_selects_correct_model_at_qwen_boundary(): void
+    public function it_selects_correct_model_at_second_boundary(): void
     {
-        // At exact Qwen limit (26,091) should select Qwen
-        $model = $this->manager->selectOptimalModel(26091);
-        $this->assertEquals('qwen/qwen-2-7b-instruct:free', $model);
+        // At exact Nemotron Nano Omni limit (227,000) should select it
+        $model = $this->manager->selectOptimalModel(227000);
+        $this->assertEquals('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $model);
 
-        // One over Qwen limit should select Gemini
-        $model = $this->manager->selectOptimalModel(26092);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        // One over that limit should select LFM 3
+        $model = $this->manager->selectOptimalModel(227001);
+        $this->assertEquals('liquid/lfm-3-1.7b:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function it_selects_gemini_at_gemini_boundary(): void
+    public function it_selects_largest_model_at_largest_boundary(): void
     {
-        // At exact Gemini limit (896,600) should select Gemini
-        $model = $this->manager->selectOptimalModel(896600);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        // At exact ERNIE limit (918,200) should select ERNIE
+        $model = $this->manager->selectOptimalModel(918200);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
     #[Group('selection')]
-    public function it_falls_back_to_gemini_over_limit(): void
+    public function it_falls_back_to_largest_over_limit(): void
     {
-        // Over Gemini limit should still return Gemini (will need truncation)
-        $model = $this->manager->selectOptimalModel(896601);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        // Over the ERNIE limit should still return ERNIE (will need truncation)
+        $model = $this->manager->selectOptimalModel(918201);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     // =========================================================================
@@ -460,8 +460,8 @@ class ContextWindowManagerTest extends TestCase
     {
         $model = $this->manager->selectOptimalModel(0);
 
-        // Should select smallest model (Llama) for zero tokens
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        // Should select smallest model (LFM 2.5) for zero tokens
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
@@ -472,7 +472,7 @@ class ContextWindowManagerTest extends TestCase
         $model = $this->manager->selectOptimalModel(-100);
 
         // Should select smallest model
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $model);
     }
 
     #[Test]
@@ -482,8 +482,8 @@ class ContextWindowManagerTest extends TestCase
         // 10 million tokens - way over any limit
         $model = $this->manager->selectOptimalModel(10000000);
 
-        // Should fallback to Gemini
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        // Should fallback to ERNIE
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     #[Test]
@@ -531,13 +531,13 @@ class ContextWindowManagerTest extends TestCase
         $content = str_repeat('test content ', 100); // ~1300 chars
         $estimatedTokens = $this->manager->estimateTokens($content);
         
-        // Should fit in Llama
-        $fits = $this->manager->fitsInContext('meta-llama/llama-3-8b-instruct:free', $estimatedTokens);
+        // Should fit in LFM 2.5
+        $fits = $this->manager->fitsInContext('liquid/lfm-2.5-2.6b:free', $estimatedTokens);
         $this->assertTrue($fits);
 
-        // Should select Llama (smallest sufficient)
+        // Should select LFM 2.5 (smallest sufficient)
         $selectedModel = $this->manager->selectOptimalModel($estimatedTokens);
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $selectedModel);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $selectedModel);
     }
 
     #[Test]
@@ -545,20 +545,20 @@ class ContextWindowManagerTest extends TestCase
     public function full_workflow_large_content(): void
     {
         // Large content
-        $content = str_repeat('test content ', 10000); // ~130,000 chars
+        $content = str_repeat('test content ', 100000); // ~1,300,000 chars
         $estimatedTokens = $this->manager->estimateTokens($content);
-        
-        // Should NOT fit in Qwen/Mistral
-        $fitsQwen = $this->manager->fitsInContext('qwen/qwen-2-7b-instruct:free', $estimatedTokens);
+
+        // Should NOT fit in Nemotron Nano Omni
+        $fitsQwen = $this->manager->fitsInContext('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $estimatedTokens);
         $this->assertFalse($fitsQwen);
 
-        // Should fit in Gemini
-        $fitsGemini = $this->manager->fitsInContext('google/gemini-2.0-flash-exp:free', $estimatedTokens);
+        // Should fit in ERNIE
+        $fitsGemini = $this->manager->fitsInContext('baidu/ernie-5.5-flash-preview:free', $estimatedTokens);
         $this->assertTrue($fitsGemini);
 
-        // Should select Gemini
+        // Should select ERNIE
         $selectedModel = $this->manager->selectOptimalModel($estimatedTokens);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $selectedModel);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $selectedModel);
     }
 
     #[Test]
@@ -618,11 +618,12 @@ class ContextWindowManagerTest extends TestCase
         // AC: fitsInContext() correctly validates against model limits
         
         // Test each model with known limits
+        // Effective limits (raw context * 0.9 - 3400 prompt overhead)
         $models = [
-            'google/gemini-2.0-flash-exp:free' => 896600,
-            'qwen/qwen-2-7b-instruct:free' => 26091,
-            'mistralai/mistral-7b-instruct:free' => 26091,
-            'meta-llama/llama-3-8b-instruct:free' => 3972,
+            'baidu/ernie-5.5-flash-preview:free' => 918200,
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => 227000,
+            'liquid/lfm-3-1.7b:free' => 232529,
+            'liquid/lfm-2.5-2.6b:free' => 55582,
         ];
 
         foreach ($models as $model => $effectiveLimit) {
@@ -646,22 +647,22 @@ class ContextWindowManagerTest extends TestCase
     {
         // AC: selectOptimalModel() returns smallest sufficient model
         
-        // Small content → Llama
+        // Small content -> LFM 2.5
         $this->assertEquals(
-            'meta-llama/llama-3-8b-instruct:free',
+            'liquid/lfm-2.5-2.6b:free',
             $this->manager->selectOptimalModel(1000)
         );
 
-        // Medium content → Qwen
+        // Medium content -> Nemotron Nano Omni
         $this->assertEquals(
-            'qwen/qwen-2-7b-instruct:free',
-            $this->manager->selectOptimalModel(5000)
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            $this->manager->selectOptimalModel(100000)
         );
 
-        // Large content → Gemini
+        // Large content -> ERNIE
         $this->assertEquals(
-            'google/gemini-2.0-flash-exp:free',
-            $this->manager->selectOptimalModel(50000)
+            'baidu/ernie-5.5-flash-preview:free',
+            $this->manager->selectOptimalModel(500000)
         );
     }
 
@@ -720,10 +721,10 @@ class ContextWindowManagerTest extends TestCase
         $this->assertCount(4, $limits, 'Should support exactly 4 free-tier models');
         
         $expectedModels = [
-            'google/gemini-2.0-flash-exp:free',
-            'qwen/qwen-2-7b-instruct:free',
-            'mistralai/mistral-7b-instruct:free',
-            'meta-llama/llama-3-8b-instruct:free',
+            'baidu/ernie-5.5-flash-preview:free',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            'liquid/lfm-3-1.7b:free',
+            'liquid/lfm-2.5-2.6b:free',
         ];
 
         foreach ($expectedModels as $expectedModel) {
@@ -787,10 +788,10 @@ class ContextWindowManagerTest extends TestCase
     public static function modelLimitProvider(): array
     {
         return [
-            'gemini' => ['google/gemini-2.0-flash-exp:free', 1000000, 896600],
-            'qwen' => ['qwen/qwen-2-7b-instruct:free', 32768, 26091],
-            'mistral' => ['mistralai/mistral-7b-instruct:free', 32768, 26091],
-            'llama' => ['meta-llama/llama-3-8b-instruct:free', 8192, 3972],
+            'ernie' => ['baidu/ernie-5.5-flash-preview:free', 1024000, 918200],
+            'lfm3' => ['liquid/lfm-3-1.7b:free', 262144, 232529],
+            'nano_omni' => ['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', 256000, 227000],
+            'lfm2' => ['liquid/lfm-2.5-2.6b:free', 65536, 55582],
         ];
     }
 

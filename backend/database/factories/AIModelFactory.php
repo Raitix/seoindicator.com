@@ -106,7 +106,7 @@ class AIModelFactory extends Factory
     public function llamaFree(): static
     {
         return $this->state(fn (array $attributes) => [
-            'model_id' => 'meta-llama/llama-3-8b-instruct:free',
+            'model_id' => 'liquid/lfm-2.5-2.6b:free',
             'display_name' => 'Llama 3 8B Free',
             'is_free_tier' => true,
             'cost_per_1k_input' => 0,

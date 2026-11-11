@@ -31,7 +31,7 @@ const freeModel = {
   ...mockModel,
   id: 3,
   display_name: 'Llama 3 8B (Free)',
-  model_id: 'meta-llama/llama-3-8b-instruct:free',
+  model_id: 'liquid/lfm-2.5-2.6b:free',
   cost_per_1k_input: 0,
   cost_per_1k_output: 0,
   estimated_cost_per_analysis: 0,

@@ -48,14 +48,14 @@ class SEOAnalysisAITest extends TestCase
             'overall_score' => 75,
             'status' => 'completed',
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
         ]);
 
         $this->assertInstanceOf(SEOAnalysis::class, $analysis);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $analysis->ai_model);
         $this->assertEquals(1500, $analysis->prompt_tokens);
         $this->assertEquals(500, $analysis->response_tokens);
         $this->assertEquals(2000, $analysis->total_tokens);
@@ -65,10 +65,10 @@ class SEOAnalysisAITest extends TestCase
     public function test_mf002_ai_model_is_fillable(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
+            'ai_model' => 'liquid/lfm-2.5-2.6b:free',
         ]);
 
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $analysis->ai_model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $analysis->ai_model);
     }
 
     /** @test MF-003: prompt_tokens is fillable */
@@ -156,7 +156,7 @@ class SEOAnalysisAITest extends TestCase
     public function test_mf010_all_ai_fields_fillable_together(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -166,7 +166,7 @@ class SEOAnalysisAITest extends TestCase
             'ai_request_id' => null,
         ]);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $analysis->ai_model);
         $this->assertEquals(1500, $analysis->prompt_tokens);
         $this->assertEquals(500, $analysis->response_tokens);
         $this->assertEquals(2000, $analysis->total_tokens);
@@ -230,10 +230,10 @@ class SEOAnalysisAITest extends TestCase
     public function test_mf014_partial_ai_fields_can_be_set(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $analysis->ai_model);
         $this->assertNull($analysis->prompt_tokens);
         $this->assertNull($analysis->total_tokens);
     }
@@ -244,7 +244,7 @@ class SEOAnalysisAITest extends TestCase
         $analysis = $this->createAnalysis();
 
         $analysis->update([
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1000,
             'response_tokens' => 300,
             'total_tokens' => 1300,
@@ -252,7 +252,7 @@ class SEOAnalysisAITest extends TestCase
 
         $analysis->refresh();
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $analysis->ai_model);
         $this->assertEquals(1000, $analysis->prompt_tokens);
         $this->assertEquals(300, $analysis->response_tokens);
         $this->assertEquals(1300, $analysis->total_tokens);
@@ -482,7 +482,7 @@ class SEOAnalysisAITest extends TestCase
 
         $aiRequest = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -505,7 +505,7 @@ class SEOAnalysisAITest extends TestCase
 
         $aiRequest = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -520,7 +520,7 @@ class SEOAnalysisAITest extends TestCase
         $analysis = $this->createAnalysis();
 
         $aiRequest = $analysis->aiRequest()->create([
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -535,7 +535,7 @@ class SEOAnalysisAITest extends TestCase
 
         $aiRequest = AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -552,7 +552,7 @@ class SEOAnalysisAITest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -570,19 +570,19 @@ class SEOAnalysisAITest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis1->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis2->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'status' => 'completed',
         ]);
 
         $analyses = SEOAnalysis::with('aiRequest')->get();
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analyses[0]->aiRequest->model);
-        $this->assertEquals('meta-llama/llama-3-8b-instruct:free', $analyses[1]->aiRequest->model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $analyses[0]->aiRequest->model);
+        $this->assertEquals('liquid/lfm-2.5-2.6b:free', $analyses[1]->aiRequest->model);
     }
 
     /** @test RE-010: aiRequest relationship query constraints */
@@ -592,7 +592,7 @@ class SEOAnalysisAITest extends TestCase
 
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
             'latency_ms' => 1500,
         ]);
@@ -620,7 +620,7 @@ class SEOAnalysisAITest extends TestCase
     public function test_ac002_was_unified_analysis_returns_true_when_ai_model_set(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
         $this->assertTrue($analysis->wasUnifiedAnalysis());
@@ -791,44 +791,44 @@ class SEOAnalysisAITest extends TestCase
         $this->assertTrue(method_exists($analysis, 'getAiModelDisplayName'));
     }
 
-    /** @test AC-020: getAiModelDisplayName returns display name for Gemini */
-    public function test_ac020_get_ai_model_display_name_returns_display_name_for_gemini(): void
+    /** @test AC-020: getAiModelDisplayName returns display name for the largest model */
+    public function test_ac020_get_ai_model_display_name_returns_display_name_for_largest_model(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
 
-        $this->assertEquals('Gemini 2.0 Flash', $analysis->getAiModelDisplayName());
+        $this->assertEquals('ERNIE 5.5 Flash', $analysis->getAiModelDisplayName());
     }
 
-    /** @test AC-021: getAiModelDisplayName returns display name for Llama */
-    public function test_ac021_get_ai_model_display_name_returns_display_name_for_llama(): void
+    /** @test AC-021: getAiModelDisplayName returns display name for the smallest model */
+    public function test_ac021_get_ai_model_display_name_returns_display_name_for_smallest_model(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
+            'ai_model' => 'liquid/lfm-2.5-2.6b:free',
         ]);
 
-        $this->assertEquals('Llama 3 8B', $analysis->getAiModelDisplayName());
+        $this->assertEquals('LFM 2.5 2.6B', $analysis->getAiModelDisplayName());
     }
 
-    /** @test AC-022: getAiModelDisplayName returns display name for Mistral */
-    public function test_ac022_get_ai_model_display_name_returns_display_name_for_mistral(): void
+    /** @test AC-022: getAiModelDisplayName returns display name for the third model */
+    public function test_ac022_get_ai_model_display_name_returns_display_name_for_third_model(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'mistralai/mistral-7b-instruct:free',
+            'ai_model' => 'liquid/lfm-3-1.7b:free',
         ]);
 
-        $this->assertEquals('Mistral 7B', $analysis->getAiModelDisplayName());
+        $this->assertEquals('LFM 3 1.7B', $analysis->getAiModelDisplayName());
     }
 
-    /** @test AC-023: getAiModelDisplayName returns display name for Qwen */
-    public function test_ac023_get_ai_model_display_name_returns_display_name_for_qwen(): void
+    /** @test AC-023: getAiModelDisplayName returns display name for the second model */
+    public function test_ac023_get_ai_model_display_name_returns_display_name_for_second_model(): void
     {
         $analysis = $this->createAnalysis([
-            'ai_model' => 'qwen/qwen-2-7b-instruct:free',
+            'ai_model' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
         ]);
 
-        $this->assertEquals('Qwen 2 7B', $analysis->getAiModelDisplayName());
+        $this->assertEquals('Nemotron 3 Nano Omni 30B', $analysis->getAiModelDisplayName());
     }
 
     /** @test AC-024: getAiModelDisplayName returns raw model name for unknown */
@@ -861,7 +861,7 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://with-ai.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'without-ai.com',
@@ -884,7 +884,7 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://with-ai.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'without-ai.com',
@@ -907,17 +907,17 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://gemini.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'llama.com',
             'normalized_url' => 'https://llama.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
+            'ai_model' => 'liquid/lfm-2.5-2.6b:free',
         ]);
 
-        $gemini = SEOAnalysis::where('ai_model', 'google/gemini-2.0-flash-exp:free')->get();
+        $gemini = SEOAnalysis::where('ai_model', 'baidu/ernie-5.5-flash-preview:free')->get();
 
         $this->assertCount(1, $gemini);
         $this->assertEquals('gemini.com', $gemini->first()->domain);
@@ -958,7 +958,7 @@ class SEOAnalysisAITest extends TestCase
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $analysis->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -1021,7 +1021,7 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://complete.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -1035,7 +1035,7 @@ class SEOAnalysisAITest extends TestCase
             ->first();
 
         $this->assertNotNull($complete);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $complete->ai_model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $complete->ai_model);
     }
 
     /** @test SQ-009: Order by token usage */
@@ -1070,21 +1070,21 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://gemini1.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'gemini2.com',
             'normalized_url' => 'https://gemini2.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
         SEOAnalysis::create([
             'domain' => 'llama.com',
             'normalized_url' => 'https://llama.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
+            'ai_model' => 'liquid/lfm-2.5-2.6b:free',
         ]);
 
         $counts = SEOAnalysis::whereNotNull('ai_model')
@@ -1369,7 +1369,7 @@ class SEOAnalysisAITest extends TestCase
 
         // Simulate concurrent update
         $analysis->update([
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'total_tokens' => 1000,
         ]);
 
@@ -1381,7 +1381,7 @@ class SEOAnalysisAITest extends TestCase
 
         $analysis->refresh();
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $analysis->ai_model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $analysis->ai_model);
         $this->assertEquals(1000, $analysis->total_tokens);
         $this->assertEquals(800, $analysis->prompt_tokens);
         $this->assertEquals(200, $analysis->response_tokens);
@@ -1408,7 +1408,7 @@ class SEOAnalysisAITest extends TestCase
 
         // Create AI request
         $aiRequest = $analysis->aiRequest()->create([
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'pending',
         ]);
 
@@ -1416,7 +1416,7 @@ class SEOAnalysisAITest extends TestCase
         $analysis->update([
             'status' => 'completed',
             'overall_score' => 78,
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'prompt_tokens' => 1500,
             'response_tokens' => 500,
             'total_tokens' => 2000,
@@ -1434,7 +1434,7 @@ class SEOAnalysisAITest extends TestCase
         $this->assertEquals('completed', $analysis->status);
         $this->assertEquals(78, $analysis->overall_score);
         $this->assertTrue($analysis->wasUnifiedAnalysis());
-        $this->assertEquals('Gemini 2.0 Flash', $analysis->getAiModelDisplayName());
+        $this->assertEquals('ERNIE 5.5 Flash', $analysis->getAiModelDisplayName());
         $this->assertEquals(85, $analysis->getCategoryScore('technical'));
     }
 
@@ -1462,12 +1462,12 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://gemini.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'total_tokens' => 2000,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $gemini->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'completed',
         ]);
 
@@ -1476,17 +1476,17 @@ class SEOAnalysisAITest extends TestCase
             'normalized_url' => 'https://llama.com/',
             'overall_score' => 0,
             'analysis_data' => [],
-            'ai_model' => 'meta-llama/llama-3-8b-instruct:free',
+            'ai_model' => 'liquid/lfm-2.5-2.6b:free',
             'total_tokens' => 3000,
         ]);
         AIAnalysisRequest::create([
             'analysis_id' => $llama->id,
-            'model' => 'meta-llama/llama-3-8b-instruct:free',
+            'model' => 'liquid/lfm-2.5-2.6b:free',
             'status' => 'completed',
         ]);
 
-        $this->assertEquals('Gemini 2.0 Flash', $gemini->getAiModelDisplayName());
-        $this->assertEquals('Llama 3 8B', $llama->getAiModelDisplayName());
+        $this->assertEquals('ERNIE 5.5 Flash', $gemini->getAiModelDisplayName());
+        $this->assertEquals('LFM 2.5 2.6B', $llama->getAiModelDisplayName());
     }
 
     /** @test IN-004: Token usage aggregation */
@@ -1580,7 +1580,7 @@ class SEOAnalysisAITest extends TestCase
         ]);
 
         $aiRequest = $analysis->aiRequest()->create([
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'status' => 'failed',
             'error_message' => 'API timeout after 30 seconds',
         ]);
@@ -1616,7 +1616,7 @@ class SEOAnalysisAITest extends TestCase
             'overall_score' => 85,
             'analysis_data' => [],
             'status' => 'completed',
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
             'category_scores' => ['technical' => 90, 'content' => 80],
         ]);
 
@@ -1636,7 +1636,7 @@ class SEOAnalysisAITest extends TestCase
                 'normalized_url' => "https://site$i.com/",
                 'overall_score' => 0,
                 'analysis_data' => [],
-                'ai_model' => 'google/gemini-2.0-flash-exp:free',
+                'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
                 'total_tokens' => ($i + 1) * 1000,
             ]);
         }
@@ -1665,7 +1665,7 @@ class SEOAnalysisAITest extends TestCase
                 'normalized_url' => "https://perf$i.com/",
                 'overall_score' => 0,
                 'analysis_data' => [],
-                'ai_model' => 'google/gemini-2.0-flash-exp:free',
+                'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
                 'prompt_tokens' => 1000,
                 'response_tokens' => 500,
                 'total_tokens' => 1500,

@@ -17,10 +17,10 @@ class ContextWindowManager
      * Model context window limits (in tokens).
      */
     private const MODEL_LIMITS = [
-        'google/gemini-2.0-flash-exp:free' => 1000000,
-        'qwen/qwen-2-7b-instruct:free' => 32768,
-        'mistralai/mistral-7b-instruct:free' => 32768,
-        'meta-llama/llama-3-8b-instruct:free' => 8192,
+        'baidu/ernie-5.5-flash-preview:free' => 1024000,
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => 256000,
+        'liquid/lfm-3-1.7b:free' => 262144,
+        'liquid/lfm-2.5-2.6b:free' => 65536,
     ];
 
     /**
@@ -84,7 +84,7 @@ class ContextWindowManager
      * Select the optimal model for the given token count.
      * 
      * Returns the smallest sufficient model to optimize for cost and speed.
-     * Order: Llama → Qwen → Mistral → Gemini
+     * Order: Nemotron Nano Omni → LFM 3 → Nemotron Super VL → ERNIE 5.5 Flash
      * 
      * @param int $estimatedTokens Estimated token count
      * @return string The selected model identifier
@@ -94,10 +94,10 @@ class ContextWindowManager
         // Order from smallest to largest context window
         // This ensures we select the smallest sufficient model
         $models = [
-            'meta-llama/llama-3-8b-instruct:free',
-            'qwen/qwen-2-7b-instruct:free',
-            'mistralai/mistral-7b-instruct:free',
-            'google/gemini-2.0-flash-exp:free',
+            'liquid/lfm-2.5-2.6b:free',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+            'liquid/lfm-3-1.7b:free',
+            'baidu/ernie-5.5-flash-preview:free',
         ];
 
         foreach ($models as $model) {
@@ -107,7 +107,7 @@ class ContextWindowManager
         }
 
         // Fallback: return largest context model (will need truncation)
-        return 'google/gemini-2.0-flash-exp:free';
+        return 'baidu/ernie-5.5-flash-preview:free';
     }
 
     /**

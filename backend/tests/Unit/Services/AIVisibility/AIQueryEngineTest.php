@@ -128,7 +128,7 @@ class AIQueryEngineTest extends TestCase
         $engine = new AIQueryEngine($mockClient);
         $model = $engine->getModelForPlatform('chatgpt');
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     /** @test QE-007: Perplexity model: Gemini 2.0 Flash free */
@@ -140,7 +140,7 @@ class AIQueryEngineTest extends TestCase
         $engine = new AIQueryEngine($mockClient);
         $model = $engine->getModelForPlatform('perplexity');
 
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $model);
     }
 
     /** @test QE-012: Platform validation: valid platform */
@@ -376,7 +376,7 @@ class AIQueryEngineTest extends TestCase
             ->once()
             ->with('test query', Mockery::on(function ($options) {
                 return isset($options['model']) &&
-                    $options['model'] === 'google/gemini-2.0-flash-exp:free';
+                    $options['model'] === 'baidu/ernie-5.5-flash-preview:free';
             }))
             ->andReturn($this->createSuccessfulAIResponse());
 
@@ -474,7 +474,7 @@ class AIQueryEngineTest extends TestCase
         // Create a proper AIQueryResult that Cache::remember should return
         $expectedResult = AIQueryResult::success(
             responseText: 'Cached response',
-            model: 'google/gemini-2.0-flash-exp:free',
+            model: 'baidu/ernie-5.5-flash-preview:free',
             tokensUsed: 100,
             latencyMs: 50,
             platform: 'chatgpt',
@@ -1206,7 +1206,7 @@ class AIQueryEngineTest extends TestCase
             tokensUsed: $tokensUsed,
             latencyMs: $latencyMs,
             errorMessage: null,
-            model: 'google/gemini-2.0-flash-exp:free',
+            model: 'baidu/ernie-5.5-flash-preview:free',
             promptTokens: 50,
             responseTokens: $tokensUsed - 50
         );

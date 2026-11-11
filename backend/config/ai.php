@@ -37,7 +37,7 @@ return [
         'openrouter' => [
             'api_key' => env('OPENROUTER_API_KEY'),
             'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
-            'model' => env('OPENROUTER_MODEL', 'meta-llama/llama-3.1-8b-instruct:free'),
+            'model' => env('OPENROUTER_MODEL', 'baidu/ernie-5.5-flash-preview:free'),
             'timeout' => env('AI_TIMEOUT_SECONDS', 30),
             'max_tokens' => env('AI_MAX_TOKENS', 1000),
         ],

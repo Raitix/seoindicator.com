@@ -72,7 +72,7 @@ class OpenRouterProvider implements AIProviderInterface
         }
 
         $this->apiKey = $config['api_key'];
-        $this->model = $config['model'] ?? 'meta-llama/llama-3.1-8b-instruct:free';
+        $this->model = $config['model'] ?? 'baidu/ernie-5.5-flash-preview:free';
         $this->baseUrl = $this->validateBaseUrl($config['base_url'] ?? 'https://openrouter.ai/api/v1');
         $this->timeout = $this->validateTimeout($config['timeout'] ?? 30);
         $this->maxTokens = $this->validateMaxTokens($config['max_tokens'] ?? 1000);

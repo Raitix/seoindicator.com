@@ -67,7 +67,7 @@ class AnalysisRunnerUnifiedTest extends TestCase
                 'performance' => 75,
             ],
             'indicators' => $this->createMockIndicators(),
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'promptTokens' => 15234,
             'responseTokens' => 2847,
             'latencyMs' => 3500,
@@ -299,7 +299,7 @@ class AnalysisRunnerUnifiedTest extends TestCase
     {
         $url = 'https://example.com';
         $html = '<html><head><title>Test</title></head><body></body></html>';
-        $model = 'google/gemini-2.0-flash-exp:free';
+        $model = 'baidu/ernie-5.5-flash-preview:free';
 
         $this->mockAIAnalysisService
             ->shouldReceive('analyze')
@@ -451,7 +451,7 @@ class AnalysisRunnerUnifiedTest extends TestCase
     {
         $url = 'https://example.com';
         $html = '<html><head><title>Test</title></head><body></body></html>';
-        $options = ['model' => 'meta-llama/llama-3-8b-instruct:free'];
+        $options = ['model' => 'liquid/lfm-2.5-2.6b:free'];
 
         $this->mockAIAnalysisService
             ->shouldReceive('analyze')

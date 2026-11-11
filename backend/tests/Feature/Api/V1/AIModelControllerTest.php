@@ -16,7 +16,7 @@ class AIModelControllerTest extends TestCase
     use RefreshDatabase;
 
     private const API_ENDPOINT = '/api/v1/ai/models';
-    private const DEFAULT_MODEL = 'google/gemini-2.0-flash-exp:free';
+    private const DEFAULT_MODEL = 'baidu/ernie-5.5-flash-preview:free';
 
     protected function setUp(): void
     {
@@ -31,10 +31,10 @@ class AIModelControllerTest extends TestCase
     {
         AIModel::insert([
             [
-                'provider' => 'Google',
-                'model_id' => 'google/gemini-2.0-flash-exp:free',
-                'display_name' => 'Gemini 2.0 Flash',
-                'context_window' => 1000000,
+                'provider' => 'Liquid AI',
+                'model_id' => 'liquid/lfm-2.5-2.6b:free',
+                'display_name' => 'LFM 2.5 2.6B',
+                'context_window' => 65536,
                 'is_free_tier' => true,
                 'is_active' => true,
                 'capabilities' => json_encode(['text', 'json']),
@@ -42,10 +42,10 @@ class AIModelControllerTest extends TestCase
                 'cost_per_1k_output' => 0.0,
             ],
             [
-                'provider' => 'Alibaba',
-                'model_id' => 'qwen/qwen-2-7b-instruct:free',
-                'display_name' => 'Qwen 2 7B',
-                'context_window' => 32768,
+                'provider' => 'NVIDIA',
+                'model_id' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+                'display_name' => 'Nemotron 3 Nano Omni 30B',
+                'context_window' => 256000,
                 'is_free_tier' => true,
                 'is_active' => true,
                 'capabilities' => json_encode(['text', 'json']),
@@ -53,10 +53,10 @@ class AIModelControllerTest extends TestCase
                 'cost_per_1k_output' => 0.0,
             ],
             [
-                'provider' => 'Mistral AI',
-                'model_id' => 'mistralai/mistral-7b-instruct:free',
-                'display_name' => 'Mistral 7B',
-                'context_window' => 32768,
+                'provider' => 'Liquid AI',
+                'model_id' => 'liquid/lfm-3-1.7b:free',
+                'display_name' => 'LFM 3 1.7B',
+                'context_window' => 262144,
                 'is_free_tier' => true,
                 'is_active' => true,
                 'capabilities' => json_encode(['text', 'json']),
@@ -64,10 +64,10 @@ class AIModelControllerTest extends TestCase
                 'cost_per_1k_output' => 0.0,
             ],
             [
-                'provider' => 'Meta',
-                'model_id' => 'meta-llama/llama-3-8b-instruct:free',
-                'display_name' => 'Llama 3 8B',
-                'context_window' => 8192,
+                'provider' => 'Baidu',
+                'model_id' => 'baidu/ernie-5.5-flash-preview:free',
+                'display_name' => 'ERNIE 5.5 Flash',
+                'context_window' => 1024000,
                 'is_free_tier' => true,
                 'is_active' => true,
                 'capabilities' => json_encode(['text', 'json']),
@@ -172,12 +172,12 @@ class AIModelControllerTest extends TestCase
     }
 
     /** @test */
-    public function test_ml_002_gemini_flash_present(): void
+    public function test_ml_002_largest_model_present(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $gemini = $models->firstWhere('id', 'google/gemini-2.0-flash-exp:free');
+        $gemini = $models->firstWhere('id', 'baidu/ernie-5.5-flash-preview:free');
 
         $this->assertNotNull($gemini, 'Gemini 2.0 Flash model not found');
     }
@@ -188,7 +188,7 @@ class AIModelControllerTest extends TestCase
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $qwen = $models->firstWhere('id', 'qwen/qwen-2-7b-instruct:free');
+        $qwen = $models->firstWhere('id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
 
         $this->assertNotNull($qwen, 'Qwen 2 7B model not found');
     }
@@ -199,7 +199,7 @@ class AIModelControllerTest extends TestCase
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $mistral = $models->firstWhere('id', 'mistralai/mistral-7b-instruct:free');
+        $mistral = $models->firstWhere('id', 'liquid/lfm-3-1.7b:free');
 
         $this->assertNotNull($mistral, 'Mistral 7B model not found');
     }
@@ -210,7 +210,7 @@ class AIModelControllerTest extends TestCase
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $llama = $models->firstWhere('id', 'meta-llama/llama-3-8b-instruct:free');
+        $llama = $models->firstWhere('id', 'liquid/lfm-2.5-2.6b:free');
 
         $this->assertNotNull($llama, 'Llama 3 8B model not found');
     }
@@ -304,56 +304,56 @@ class AIModelControllerTest extends TestCase
     // ========================================
 
     /** @test */
-    public function test_gr_001_gemini_context_window(): void
+    public function test_gr_001_largest_model_context_window(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $gemini = $models->firstWhere('id', 'google/gemini-2.0-flash-exp:free');
+        $gemini = $models->firstWhere('id', 'baidu/ernie-5.5-flash-preview:free');
 
-        $this->assertEquals(1000000, $gemini['context_window']);
+        $this->assertEquals(1024000, $gemini['context_window']);
     }
 
     /** @test */
-    public function test_gr_002_gemini_is_recommended(): void
+    public function test_gr_002_largest_model_is_recommended(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $gemini = $models->firstWhere('id', 'google/gemini-2.0-flash-exp:free');
+        $gemini = $models->firstWhere('id', 'baidu/ernie-5.5-flash-preview:free');
 
         $this->assertTrue($gemini['is_recommended']);
     }
 
     /** @test */
-    public function test_gr_003_gemini_best_for_text(): void
+    public function test_gr_003_largest_model_best_for_text(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $gemini = $models->firstWhere('id', 'google/gemini-2.0-flash-exp:free');
+        $gemini = $models->firstWhere('id', 'baidu/ernie-5.5-flash-preview:free');
 
-        $this->assertEquals('Large pages (100K+ characters)', $gemini['best_for']);
+        $this->assertEquals('Very large pages (1M context)', $gemini['best_for']);
     }
 
     /** @test */
-    public function test_gr_004_gemini_capabilities(): void
+    public function test_gr_004_largest_model_capabilities(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $gemini = $models->firstWhere('id', 'google/gemini-2.0-flash-exp:free');
+        $gemini = $models->firstWhere('id', 'baidu/ernie-5.5-flash-preview:free');
 
         $this->assertEquals(['text', 'json'], $gemini['capabilities']);
     }
 
     /** @test */
-    public function test_gr_005_gemini_is_free(): void
+    public function test_gr_005_largest_model_is_free(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $gemini = $models->firstWhere('id', 'google/gemini-2.0-flash-exp:free');
+        $gemini = $models->firstWhere('id', 'baidu/ernie-5.5-flash-preview:free');
 
         $this->assertTrue($gemini['is_free']);
     }
@@ -363,36 +363,36 @@ class AIModelControllerTest extends TestCase
     // ========================================
 
     /** @test */
-    public function test_om_001_qwen_context_window(): void
+    public function test_om_001_second_model_context_window(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $qwen = $models->firstWhere('id', 'qwen/qwen-2-7b-instruct:free');
+        $qwen = $models->firstWhere('id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
 
-        $this->assertEquals(32768, $qwen['context_window']);
+        $this->assertEquals(256000, $qwen['context_window']);
     }
 
     /** @test */
-    public function test_om_002_mistral_context_window(): void
+    public function test_om_002_third_model_context_window(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $mistral = $models->firstWhere('id', 'mistralai/mistral-7b-instruct:free');
+        $mistral = $models->firstWhere('id', 'liquid/lfm-3-1.7b:free');
 
-        $this->assertEquals(32768, $mistral['context_window']);
+        $this->assertEquals(262144, $mistral['context_window']);
     }
 
     /** @test */
-    public function test_om_003_llama_context_window(): void
+    public function test_om_003_smallest_model_context_window(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $llama = $models->firstWhere('id', 'meta-llama/llama-3-8b-instruct:free');
+        $llama = $models->firstWhere('id', 'liquid/lfm-2.5-2.6b:free');
 
-        $this->assertEquals(8192, $llama['context_window']);
+        $this->assertEquals(65536, $llama['context_window']);
     }
 
     /** @test */
@@ -401,9 +401,9 @@ class AIModelControllerTest extends TestCase
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $qwen = $models->firstWhere('id', 'qwen/qwen-2-7b-instruct:free');
-        $mistral = $models->firstWhere('id', 'mistralai/mistral-7b-instruct:free');
-        $llama = $models->firstWhere('id', 'meta-llama/llama-3-8b-instruct:free');
+        $qwen = $models->firstWhere('id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
+        $mistral = $models->firstWhere('id', 'liquid/lfm-3-1.7b:free');
+        $llama = $models->firstWhere('id', 'liquid/lfm-2.5-2.6b:free');
 
         $this->assertFalse($qwen['is_recommended']);
         $this->assertFalse($mistral['is_recommended']);
@@ -411,14 +411,14 @@ class AIModelControllerTest extends TestCase
     }
 
     /** @test */
-    public function test_om_005_llama_best_for_text(): void
+    public function test_om_005_smallest_model_best_for_text(): void
     {
         $response = $this->getJson(self::API_ENDPOINT);
 
         $models = collect($response->json('data.models'));
-        $llama = $models->firstWhere('id', 'meta-llama/llama-3-8b-instruct:free');
+        $llama = $models->firstWhere('id', 'liquid/lfm-2.5-2.6b:free');
 
-        $this->assertEquals('Small pages only', $llama['best_for']);
+        $this->assertEquals('Fast analysis', $llama['best_for']);
     }
 
     /** @test */
@@ -501,7 +501,7 @@ class AIModelControllerTest extends TestCase
     public function test_up_003_authenticated_with_preference(): void
     {
         $user = User::factory()->create();
-        $model = AIModel::where('model_id', 'qwen/qwen-2-7b-instruct:free')->first();
+        $model = AIModel::where('model_id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')->first();
 
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -513,14 +513,14 @@ class AIModelControllerTest extends TestCase
 
         $response = $this->getJson(self::API_ENDPOINT);
 
-        $response->assertJsonPath('data.user_preference', 'qwen/qwen-2-7b-instruct:free');
+        $response->assertJsonPath('data.user_preference', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     }
 
     /** @test */
     public function test_up_004_preference_matches_user(): void
     {
         $user = User::factory()->create();
-        $model = AIModel::where('model_id', 'mistralai/mistral-7b-instruct:free')->first();
+        $model = AIModel::where('model_id', 'liquid/lfm-3-1.7b:free')->first();
 
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -533,7 +533,7 @@ class AIModelControllerTest extends TestCase
         $response = $this->getJson(self::API_ENDPOINT);
 
         $this->assertEquals(
-            'mistralai/mistral-7b-instruct:free',
+            'liquid/lfm-3-1.7b:free',
             $response->json('data.user_preference')
         );
     }
@@ -574,7 +574,7 @@ class AIModelControllerTest extends TestCase
     public function test_up_006_preference_service_integration(): void
     {
         $user = User::factory()->create();
-        $model = AIModel::where('model_id', 'qwen/qwen-2-7b-instruct:free')->first();
+        $model = AIModel::where('model_id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')->first();
 
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -589,7 +589,7 @@ class AIModelControllerTest extends TestCase
         $mockService->shouldReceive('getUserPreference')
             ->once()
             ->with($user)
-            ->andReturn('qwen/qwen-2-7b-instruct:free');
+            ->andReturn('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
         $mockService->shouldReceive('getAvailableModels')->andReturn(collect());
         $mockService->shouldReceive('getDefaultModel')->andReturn(self::DEFAULT_MODEL);
 
@@ -851,10 +851,10 @@ class AIModelControllerTest extends TestCase
         $models = $response->json('data.models');
         $modelIds = array_column($models, 'id');
 
-        $this->assertContains('google/gemini-2.0-flash-exp:free', $modelIds);
-        $this->assertContains('qwen/qwen-2-7b-instruct:free', $modelIds);
-        $this->assertContains('mistralai/mistral-7b-instruct:free', $modelIds);
-        $this->assertContains('meta-llama/llama-3-8b-instruct:free', $modelIds);
+        $this->assertContains('baidu/ernie-5.5-flash-preview:free', $modelIds);
+        $this->assertContains('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', $modelIds);
+        $this->assertContains('liquid/lfm-3-1.7b:free', $modelIds);
+        $this->assertContains('liquid/lfm-2.5-2.6b:free', $modelIds);
     }
 
     /** @test */
@@ -889,7 +889,7 @@ class AIModelControllerTest extends TestCase
 
         // Test authenticated with preference
         $user = User::factory()->create();
-        $model = AIModel::where('model_id', 'qwen/qwen-2-7b-instruct:free')->first();
+        $model = AIModel::where('model_id', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')->first();
 
         UserModelPreference::create([
             'user_id' => $user->id,
@@ -900,7 +900,7 @@ class AIModelControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $response = $this->getJson(self::API_ENDPOINT);
-        $response->assertJsonPath('data.user_preference', 'qwen/qwen-2-7b-instruct:free');
+        $response->assertJsonPath('data.user_preference', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');
     }
 
     /** @test */

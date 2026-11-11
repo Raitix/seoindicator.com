@@ -34,17 +34,17 @@ class AIQueryEngine
     private const PLATFORMS = [
         'chatgpt' => [
             'enabled' => true,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'name' => 'ChatGPT',
         ],
         'perplexity' => [
             'enabled' => true,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'name' => 'Perplexity',
         ],
         'claude' => [
             'enabled' => false,
-            'model' => 'anthropic/claude-3-haiku',
+            'model' => 'anthropic/claude-haiku-4.5',
             'name' => 'Claude',
         ],
     ];

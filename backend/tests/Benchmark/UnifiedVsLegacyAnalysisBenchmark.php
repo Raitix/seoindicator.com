@@ -55,7 +55,7 @@ class UnifiedVsLegacyAnalysisBenchmark extends TestCase
                 'performance' => 65,
             ],
             'indicators' => $this->getDefaultIndicators(),
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'promptTokens' => 15000,
             'responseTokens' => 3000,
             'latencyMs' => 3500,

@@ -376,10 +376,10 @@ class SEOAnalysis extends Model
     public function getAiModelDisplayName(): string
     {
         return match ($this->ai_model) {
-            'google/gemini-2.0-flash-exp:free' => 'Gemini 2.0 Flash',
-            'meta-llama/llama-3-8b-instruct:free' => 'Llama 3 8B',
-            'mistralai/mistral-7b-instruct:free' => 'Mistral 7B',
-            'qwen/qwen-2-7b-instruct:free' => 'Qwen 2 7B',
+            'baidu/ernie-5.5-flash-preview:free' => 'ERNIE 5.5 Flash',
+            'liquid/lfm-2.5-2.6b:free' => 'LFM 2.5 2.6B',
+            'liquid/lfm-3-1.7b:free' => 'LFM 3 1.7B',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => 'Nemotron 3 Nano Omni 30B',
             default => $this->ai_model ?? 'Unknown',
         };
     }

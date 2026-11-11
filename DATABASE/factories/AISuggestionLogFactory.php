@@ -47,9 +47,9 @@ class AISuggestionLogFactory extends Factory
                 'static_fallback',
             ]),
             'model' => $this->faker->randomElement([
-                'meta-llama/llama-3.1-8b-instruct:free',
+                'baidu/ernie-5.5-flash-preview:free',
                 'google/gemma-2-9b-it:free',
-                'qwen/qwen-2-7b-instruct:free',
+                'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
                 'gpt-4o-mini',
             ]),
             'prompt_tokens' => $this->faker->numberBetween(50, 500),

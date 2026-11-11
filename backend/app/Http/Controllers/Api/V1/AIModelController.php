@@ -23,7 +23,7 @@ class AIModelController extends Controller
     /**
      * Default model ID.
      */
-    private const DEFAULT_MODEL = 'google/gemini-2.0-flash-exp:free';
+    private const DEFAULT_MODEL = 'baidu/ernie-5.5-flash-preview:free';
 
     /**
      * Create a new controller instance.
@@ -117,11 +117,11 @@ class AIModelController extends Controller
     protected function getAvgLatency(AIModel $model): int
     {
         return match ($model->model_id) {
-            'google/gemini-2.0-flash-exp:free' => 3000,
-            'qwen/qwen-2-7b-instruct:free' => 2500,
-            'mistralai/mistral-7b-instruct:free' => 2000,
-            'meta-llama/llama-3-8b-instruct:free' => 1500,
-            default => 2000,
+            'liquid/lfm-2.5-2.6b:free' => 4000,
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => 5000,
+            'liquid/lfm-3-1.7b:free' => 6000,
+            'baidu/ernie-5.5-flash-preview:free' => 8000,
+            default => 6000,
         };
     }
 
@@ -134,10 +134,10 @@ class AIModelController extends Controller
     protected function getBestForText(AIModel $model): string
     {
         return match ($model->model_id) {
-            'google/gemini-2.0-flash-exp:free' => 'Large pages (100K+ characters)',
-            'qwen/qwen-2-7b-instruct:free' => 'Medium pages',
-            'mistralai/mistral-7b-instruct:free' => 'Fast analysis',
-            'meta-llama/llama-3-8b-instruct:free' => 'Small pages only',
+            'liquid/lfm-2.5-2.6b:free' => 'Fast analysis',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => 'Medium pages',
+            'liquid/lfm-3-1.7b:free' => 'Large pages (100K+ characters)',
+            'baidu/ernie-5.5-flash-preview:free' => 'Very large pages (1M context)',
             default => 'General use',
         };
     }

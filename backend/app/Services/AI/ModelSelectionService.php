@@ -22,17 +22,17 @@ class ModelSelectionService
     /**
      * Default fallback model (largest context window).
      */
-    private const DEFAULT_MODEL = 'google/gemini-2.0-flash-exp:free';
+    private const DEFAULT_MODEL = 'baidu/ernie-5.5-flash-preview:free';
 
     /**
      * Model selection order (smallest to largest context).
      * This ensures cost optimization by selecting the smallest sufficient model.
      */
     private const MODEL_PRIORITY = [
-        'meta-llama/llama-3-8b-instruct:free',
-        'qwen/qwen-2-7b-instruct:free',
-        'mistralai/mistral-7b-instruct:free',
-        'google/gemini-2.0-flash-exp:free',
+        'liquid/lfm-2.5-2.6b:free',
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        'liquid/lfm-3-1.7b:free',
+        'baidu/ernie-5.5-flash-preview:free',
     ];
 
     /**

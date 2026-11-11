@@ -51,7 +51,7 @@ const freePricingResponse = {
       id: 3,
       display_name: 'Llama 3 8B (Free)',
       provider: 'openrouter',
-      model_id: 'meta-llama/llama-3-8b-instruct:free',
+      model_id: 'liquid/lfm-2.5-2.6b:free',
     },
     pricing: {
       cost_per_1m_input: 0,

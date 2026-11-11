@@ -33,7 +33,7 @@ class OpenRouterClient implements OpenRouterClientInterface
     /**
      * The default model for generation.
      */
-    private const DEFAULT_MODEL = 'google/gemini-2.0-flash-exp:free';
+    private const DEFAULT_MODEL = 'baidu/ernie-5.5-flash-preview:free';
 
     /**
      * The default maximum tokens for generation.
@@ -49,21 +49,21 @@ class OpenRouterClient implements OpenRouterClientInterface
      * Free tier models with their metadata.
      */
     private const FREE_MODELS = [
-        'google/gemini-2.0-flash-exp:free' => [
-            'name' => 'Gemini 2.0 Flash',
-            'context_window' => 1000000,
+        'baidu/ernie-5.5-flash-preview:free' => [
+            'name' => 'ERNIE 5.5 Flash',
+            'context_window' => 1024000,
         ],
-        'qwen/qwen-2-7b-instruct:free' => [
-            'name' => 'Qwen 2 7B',
-            'context_window' => 32768,
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' => [
+            'name' => 'Nemotron 3 Nano Omni 30B',
+            'context_window' => 256000,
         ],
-        'mistralai/mistral-7b-instruct:free' => [
-            'name' => 'Mistral 7B',
-            'context_window' => 32768,
+        'liquid/lfm-3-1.7b:free' => [
+            'name' => 'LFM 3 1.7B',
+            'context_window' => 262144,
         ],
-        'meta-llama/llama-3-8b-instruct:free' => [
-            'name' => 'Llama 3 8B',
-            'context_window' => 8192,
+        'liquid/lfm-2.5-2.6b:free' => [
+            'name' => 'LFM 2.5 2.6B',
+            'context_window' => 65536,
         ],
     ];
 

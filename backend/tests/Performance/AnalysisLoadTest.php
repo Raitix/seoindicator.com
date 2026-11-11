@@ -55,7 +55,7 @@ class AnalysisLoadTest extends TestCase
                 'performance' => 65,
             ],
             'indicators' => $this->getDefaultIndicators(),
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'promptTokens' => 15000,
             'responseTokens' => 2500,
             'latencyMs' => 3000,

@@ -67,7 +67,7 @@ class UnifiedAnalysisIntegrationTest extends TestCase
                 'performance' => 75,
             ],
             'indicators' => $this->getDefaultIndicators(),
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'promptTokens' => 15234,
             'responseTokens' => 2847,
             'latencyMs' => 3500,
@@ -364,7 +364,7 @@ class UnifiedAnalysisIntegrationTest extends TestCase
     {
         $url = 'https://example.com/small';
         $html = $this->loadFixture('small_page.html');
-        $defaultModel = 'google/gemini-2.0-flash-exp:free';
+        $defaultModel = 'baidu/ernie-5.5-flash-preview:free';
 
         $this->mockAIAnalysisService
             ->shouldReceive('analyze')
@@ -384,7 +384,7 @@ class UnifiedAnalysisIntegrationTest extends TestCase
     {
         $url = 'https://example.com/large';
         $html = $this->loadFixture('large_page.html');
-        $largeContextModel = 'google/gemini-2.0-flash-exp:free'; // Would use large context in production
+        $largeContextModel = 'baidu/ernie-5.5-flash-preview:free'; // Would use large context in production
 
         $this->mockAIAnalysisService
             ->shouldReceive('analyze')
@@ -407,7 +407,7 @@ class UnifiedAnalysisIntegrationTest extends TestCase
     {
         $url = 'https://example.com/custom-model';
         $html = $this->loadFixture('small_page.html');
-        $preferredModel = 'meta-llama/llama-3-8b-instruct:free';
+        $preferredModel = 'liquid/lfm-2.5-2.6b:free';
 
         $this->mockAIAnalysisService
             ->shouldReceive('analyze')
@@ -694,7 +694,7 @@ class UnifiedAnalysisIntegrationTest extends TestCase
 
         $this->assertDatabaseHas('ai_analysis_requests', [
             'analysis_id' => $result->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 4200,
         ]);
     }

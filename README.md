@@ -218,12 +218,29 @@ Pick one and set the key. Either edit `backend/.env`:
 ```dotenv
 AI_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-...
-OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324:free
+OPENROUTER_MODEL=baidu/ernie-5.5-flash-preview:free
 ```
+
+Free-tier models currently in use (all verified against the live OpenRouter API):
+
+| Model | Context | Notes |
+|---|---|---|
+| `baidu/ernie-5.5-flash-preview:free` | 1M | default; largest context |
+| `nvidia/nemotron-3.5-super-vl:free` | 1M | large pages |
+| `liquid/lfm-3-1.7b:free` | 256K | medium pages |
+| `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` | 256K | fastest |
+
+The backend picks the smallest model that fits the page, so short pages cost
+less. `php artisan models:sync` refreshes the list from OpenRouter.
 
 …or use the plain-PHP layer, which reads `config.php` instead — copy
 [`config.php.example`](config.php.example) to `config.php` and fill it in.
 Both `config.php` and `db_config.php` are gitignored; never commit them.
+
+The plain-PHP layer (`seo_logic.php`) scores every indicator in a **single**
+provider request via `analyze_all_indicators_single_call()`, and returns one
+`score` / `details` / `suggestion` triple per indicator. Set `AI_PROVIDER` to
+`openrouter` or `vercel` in `config.php` to choose the backend.
 
 ### 4. Frontend
 

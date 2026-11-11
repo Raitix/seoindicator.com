@@ -120,7 +120,7 @@ class AnalysisRunnerUnifiedIntegrationTest extends TestCase
                     'suggestions' => [],
                 ],
             ],
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'promptTokens' => 15234,
             'responseTokens' => 2847,
             'latencyMs' => 3500,
@@ -214,7 +214,7 @@ class AnalysisRunnerUnifiedIntegrationTest extends TestCase
             'domain' => 'example.com',
             'overall_score' => 78,
             'status' => SEOAnalysis::STATUS_COMPLETED,
-            'ai_model' => 'google/gemini-2.0-flash-exp:free',
+            'ai_model' => 'baidu/ernie-5.5-flash-preview:free',
         ]);
     }
 
@@ -310,7 +310,7 @@ class AnalysisRunnerUnifiedIntegrationTest extends TestCase
     {
         $url = 'https://example.com';
         $html = '<html><head><title>Test</title></head><body></body></html>';
-        $model = 'meta-llama/llama-3-8b-instruct:free';
+        $model = 'liquid/lfm-2.5-2.6b:free';
 
         $this->mockAIAnalysisService($this->createTestAnalysisResult(['model' => $model]));
 
@@ -335,7 +335,7 @@ class AnalysisRunnerUnifiedIntegrationTest extends TestCase
 
         $this->assertDatabaseHas('ai_analysis_requests', [
             'analysis_id' => $result->id,
-            'model' => 'google/gemini-2.0-flash-exp:free',
+            'model' => 'baidu/ernie-5.5-flash-preview:free',
             'latency_ms' => 4500,
             'status' => 'completed',
         ]);
@@ -457,7 +457,7 @@ class AnalysisRunnerUnifiedIntegrationTest extends TestCase
 
         $aiRequest = AIAnalysisRequest::where('analysis_id', $result->id)->first();
         $this->assertNotNull($aiRequest);
-        $this->assertEquals('google/gemini-2.0-flash-exp:free', $aiRequest->model);
+        $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $aiRequest->model);
         $this->assertEquals(3200, $aiRequest->latency_ms);
         $this->assertEquals(['remove_scripts', 'collapse_whitespace'], $aiRequest->truncation_strategies);
     }

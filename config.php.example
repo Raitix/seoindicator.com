@@ -39,9 +39,9 @@ define('OPENROUTER_API_KEY', 'your-openrouter-api-key');
 
 /**
  * Model slug passed to OpenRouter.
- * Models ending in ':free' are free to use, e.g. 'deepseek/deepseek-chat-v3-0324:free'
+ * Models ending in ':free' are free to use, e.g. 'baidu/ernie-5.5-flash-preview:free'
  */
-define('OPENROUTER_MODEL', 'deepseek/deepseek-chat-v3-0324:free');
+define('OPENROUTER_MODEL', 'baidu/ernie-5.5-flash-preview:free');
 
 // ---------------------------------------------------------------------------
 // Google
