@@ -12,7 +12,19 @@
  * @see .gitignore
  */
 
-require_once __DIR__ . '/config.php';
+// Load the local configuration when present. The file must stay parseable
+// without it (for example when the endpoint is probed directly), so every
+// provider constant falls back to a safe default.
+if (is_file(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+}
+
+defined('AI_PROVIDER') || define('AI_PROVIDER', 'openrouter');
+defined('VERCEL_AI_GATEWAY_API_KEY') || define('VERCEL_AI_GATEWAY_API_KEY', '');
+defined('VERCEL_AI_MODEL') || define('VERCEL_AI_MODEL', 'openai/gpt-4o-mini');
+defined('OPENROUTER_API_KEY') || define('OPENROUTER_API_KEY', '');
+defined('OPENROUTER_MODEL') || define('OPENROUTER_MODEL', 'baidu/ernie-5.5-flash-preview:free');
+defined('GOOGLE_PAGESPEED_API_KEY') || define('GOOGLE_PAGESPEED_API_KEY', '');
 
 /**
  * Resolve the active provider's credentials and chat-completions endpoint.
@@ -51,61 +63,105 @@ function ai_provider_config(): array
  * @return array Decoded response payload.
  * @throws Exception On transport failure, a non-2xx response, or a provider error.
  */
-function ai_chat_completion(string $prompt, int $maxTokens = 4000, ?float $temperature = null): array
+function ai_chat_completion(string $prompt, int $maxTokens = 16000, ?float $temperature = null): array
 {
     $provider = ai_provider_config();
+    $errors = [];
 
-    $payload = [
-        'model'    => $provider['model'],
-        'messages' => [
-            ['role' => 'user', 'content' => $prompt],
-        ],
-        'max_tokens' => $maxTokens,
-    ];
+    foreach (ai_model_chain($provider['model']) as $model) {
+        $payload = [
+            'model'    => $model,
+            'messages' => [
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            'max_tokens' => $maxTokens,
+        ];
 
-    if ($temperature !== null) {
-        $payload['temperature'] = $temperature;
-    }
+        if ($temperature !== null) {
+            $payload['temperature'] = $temperature;
+        }
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $provider['url']);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $provider['key'],
-        'Content-Type: application/json',
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $provider['url']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $provider['key'],
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 180);
 
-    $response = curl_exec($ch);
+        $response = curl_exec($ch);
 
-    if ($response === false) {
-        $error = curl_error($ch);
+        if ($response === false) {
+            $errors[] = $model . ': ' . curl_error($ch);
+            curl_close($ch);
+            continue;
+        }
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        throw new Exception('AI request failed: ' . $error);
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            $errors[] = $model . ': HTTP ' . $httpCode . ' ' . substr((string) $response, 0, 200);
+            continue;
+        }
+
+        $decoded = json_decode((string) $response, true);
+        if (!is_array($decoded)) {
+            $errors[] = $model . ': response was not valid JSON';
+            continue;
+        }
+
+        if (isset($decoded['error'])) {
+            $message = is_string($decoded['error'])
+                ? $decoded['error']
+                : (string) json_encode($decoded['error']);
+            $errors[] = $model . ': ' . $message;
+            continue;
+        }
+
+        // A shared free-tier endpoint can answer with HTTP 200 and an empty
+        // body. Treat that as a failure and try the next model.
+        if (trim((string) ai_message_content($decoded)) === '') {
+            $errors[] = $model . ': empty response';
+            continue;
+        }
+
+        return $decoded;
     }
 
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    throw new Exception('AI request failed for every model: ' . implode(' | ', $errors));
+}
 
-    if ($httpCode < 200 || $httpCode >= 300) {
-        throw new Exception('AI request failed with HTTP ' . $httpCode . ': ' . substr((string) $response, 0, 500));
+/**
+ * Build the ordered list of models to try.
+ *
+ * The configured model comes first, followed by the shared fallback list.
+ * A model is never tried twice.
+ *
+ * @param string $primary The configured model identifier.
+ * @return string[] Model identifiers in the order they should be tried.
+ */
+function ai_model_chain(string $primary): array
+{
+    $candidates = array_merge([$primary], [
+        'baidu/ernie-5.5-flash-preview:free',
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        'liquid/lfm-2.5-2.6b:free',
+        'liquid/lfm-3-1.7b:free',
+    ]);
+
+    $chain = [];
+
+    foreach ($candidates as $model) {
+        if (is_string($model) && trim($model) !== '' && !in_array($model, $chain, true)) {
+            $chain[] = $model;
+        }
     }
 
-    $decoded = json_decode((string) $response, true);
-    if (!is_array($decoded)) {
-        throw new Exception('AI response was not valid JSON');
-    }
-
-    if (isset($decoded['error'])) {
-        $message = is_string($decoded['error'])
-            ? $decoded['error']
-            : (string) json_encode($decoded['error']);
-        throw new Exception('AI provider error: ' . $message);
-    }
-
-    return $decoded;
+    return $chain;
 }
 
 /**
@@ -223,7 +279,7 @@ function analyze_all_indicators_single_call(string $url, string $pageContent): a
         . 'URL: ' . $url . "\n\n"
         . "PAGE HTML:\n" . $excerpt;
 
-    $response = ai_chat_completion($prompt, 4000, 0.2);
+    $response = ai_chat_completion($prompt, 16000, 0.2);
     $decoded = ai_decode_json_object(ai_message_content($response));
 
     $results = [];

@@ -91,22 +91,92 @@ class OpenRouterProvider implements AIProviderInterface
     {
         $startTime = microtime(true);
 
-        try {
-            $response = $this->makeRequest($prompt, $options);
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+        $lastError = null;
+        $chain = $this->modelChain();
+        $lastModel = end($chain);
 
-            if (!$response->successful()) {
-                return $this->handleErrorResponse($response, $latencyMs);
+        foreach ($chain as $model) {
+            try {
+                $response = $this->makeRequest($prompt, $options, $model);
+                $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+                if (!$response->successful()) {
+                    $lastError = $this->handleErrorResponse($response, $latencyMs);
+
+                    if ($model === $lastModel) {
+                        return $lastError;
+                    }
+
+                    continue;
+                }
+
+                $result = $this->handleSuccessResponse($response, $latencyMs);
+
+                if (!$result->success) {
+                    $lastError = $result;
+
+                    if ($model === $lastModel) {
+                        return $result;
+                    }
+
+                    continue;
+                }
+
+                // A shared free-tier endpoint can answer with HTTP 200 and an
+                // empty body. Try the next model instead of returning nothing.
+                if (trim((string) $result->content) === '') {
+                    if ($model === $lastModel) {
+                        return $result;
+                    }
+
+                    $lastError = AIResponse::error(
+                        "Model {$model} returned an empty response",
+                        $latencyMs
+                    );
+
+                    continue;
+                }
+
+                return $result;
+            } catch (ConnectionException $e) {
+                $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+                $lastError = AIResponse::error('Request timeout', $latencyMs);
+            } catch (\Exception $e) {
+                $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+                $lastError = AIResponse::error($e->getMessage(), $latencyMs);
             }
-
-            return $this->handleSuccessResponse($response, $latencyMs);
-        } catch (ConnectionException $e) {
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
-            return AIResponse::error('Request timeout', $latencyMs);
-        } catch (\Exception $e) {
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
-            return AIResponse::error($e->getMessage(), $latencyMs);
         }
+
+        $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+        return $lastError ?? AIResponse::error('No AI model returned a response', $latencyMs);
+    }
+
+    /**
+     * Get the list of models to try, in order.
+     *
+     * The configured model comes first, followed by the shared fallback list.
+     * Duplicates are removed so a model is never requested twice.
+     *
+     * @return string[]
+     */
+    private function modelChain(): array
+    {
+        $fallbacks = config('openrouter.fallback_models', []);
+
+        if (!is_array($fallbacks)) {
+            $fallbacks = [];
+        }
+
+        $chain = [];
+
+        foreach (array_merge([$this->model], $fallbacks) as $model) {
+            if (is_string($model) && trim($model) !== '' && !in_array($model, $chain, true)) {
+                $chain[] = $model;
+            }
+        }
+
+        return $chain === [] ? [$this->model] : $chain;
     }
 
     /**
@@ -166,12 +236,12 @@ class OpenRouterProvider implements AIProviderInterface
      * @param array<string, mixed> $options Request options
      * @return \Illuminate\Http\Client\Response
      */
-    private function makeRequest(string $prompt, array $options): \Illuminate\Http\Client\Response
+    private function makeRequest(string $prompt, array $options, ?string $model = null): \Illuminate\Http\Client\Response
     {
         $messages = $this->buildMessages($prompt);
 
         $body = [
-            'model' => $this->model,
+            'model' => $model ?? $this->model,
             'messages' => $messages,
             'max_tokens' => $options['max_tokens'] ?? $this->maxTokens,
             'temperature' => $options['temperature'] ?? $this->temperature,

@@ -72,6 +72,101 @@ class OpenRouterProviderTest extends TestCase
         $this->assertEquals('baidu/ernie-5.5-flash-preview:free', $provider->getModel());
     }
 
+    /** @test ORC-005a: Falls back to the next model when the first returns an empty body */
+    public function test_falls_back_to_next_model_when_response_is_empty(): void
+    {
+        config()->set('openrouter.fallback_models', [
+            'test/fallback-model',
+        ]);
+
+        Http::fake([
+            'openrouter.ai/*' => Http::sequence()
+                ->push([
+                    'choices' => [[
+                        'message' => ['role' => 'assistant', 'content' => ''],
+                        'finish_reason' => 'stop',
+                    ]],
+                ], 200)
+                ->push($this->successfulResponse(), 200),
+        ]);
+
+        $provider = new OpenRouterProvider([
+            'api_key' => 'test-key',
+            'model' => 'test/primary-model',
+        ]);
+        $response = $provider->generate('test prompt');
+
+        $this->assertTrue($response->success);
+        $this->assertNotSame('', $response->content);
+
+        Http::assertSentCount(2);
+    }
+
+    /** @test ORC-005b: Falls back to the next model when the first is rate-limited */
+    public function test_falls_back_to_next_model_on_rate_limit(): void
+    {
+        config()->set('openrouter.fallback_models', [
+            'test/fallback-model',
+        ]);
+
+        Http::fake([
+            'openrouter.ai/*' => Http::sequence()
+                ->push(['error' => ['message' => 'rate limited']], 429)
+                ->push($this->successfulResponse(), 200),
+        ]);
+
+        $provider = new OpenRouterProvider([
+            'api_key' => 'test-key',
+            'model' => 'test/primary-model',
+        ]);
+        $response = $provider->generate('test prompt');
+
+        $this->assertTrue($response->success);
+        Http::assertSentCount(2);
+    }
+
+    /** @test ORC-005c: The configured model is requested first */
+    public function test_configured_model_is_requested_first(): void
+    {
+        config()->set('openrouter.fallback_models', [
+            'test/fallback-model',
+        ]);
+
+        Http::fake([
+            'openrouter.ai/*' => Http::response($this->successfulResponse(), 200),
+        ]);
+
+        $provider = new OpenRouterProvider([
+            'api_key' => 'test-key',
+            'model' => 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        ]);
+        $provider->generate('test prompt');
+
+        Http::assertSent(function ($request) {
+            return $request['model'] === 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free';
+        });
+    }
+
+    /** @test ORC-005d: Every model failing returns an error response */
+    public function test_returns_error_when_every_model_fails(): void
+    {
+        config()->set('openrouter.fallback_models', [
+            'test/fallback-model',
+        ]);
+
+        Http::fake([
+            'openrouter.ai/*' => Http::response(['error' => ['message' => 'nope']], 500),
+        ]);
+
+        $provider = new OpenRouterProvider([
+            'api_key' => 'test-key',
+            'model' => 'test/primary-model',
+        ]);
+        $response = $provider->generate('test prompt');
+
+        $this->assertFalse($response->success);
+    }
+
     /** @test ORC-006: Constructor sets default timeout */
     public function test_constructor_sets_default_timeout(): void
     {

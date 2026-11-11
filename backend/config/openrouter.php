@@ -60,7 +60,25 @@ return [
     | allow for more comprehensive responses but may increase latency.
     |
     */
-    'max_tokens' => env('OPENROUTER_MAX_TOKENS', 4000),
+    /*
+     * Reasoning models spend part of the token budget on hidden reasoning
+     * tokens. A limit that is too small truncates the answer before any
+     * JSON is produced, so keep a generous ceiling.
+     */
+    'max_tokens' => env('OPENROUTER_MAX_TOKENS', 16000),
+
+    /*
+     * Free-tier models are shared and intermittently rate-limited or return
+     * an empty completion. The provider walks this list until one of them
+     * produces a usable answer.
+     */
+    'fallback_models' => array_values(array_filter([
+        env('OPENROUTER_MODEL'),
+        'baidu/ernie-5.5-flash-preview:free',
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        'liquid/lfm-2.5-2.6b:free',
+        'liquid/lfm-3-1.7b:free',
+    ])),
 
     /*
     |--------------------------------------------------------------------------

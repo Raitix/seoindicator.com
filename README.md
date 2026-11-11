@@ -233,6 +233,26 @@ Free-tier models currently in use (all verified against the live OpenRouter API)
 The backend picks the smallest model that fits the page, so short pages cost
 less. `php artisan models:sync` refreshes the list from OpenRouter.
 
+### Free-tier reliability
+
+Free OpenRouter endpoints are shared and behave inconsistently: they can be
+rate-limited (HTTP 429), and reasoning models spend part of the token budget
+on hidden reasoning, which can truncate the answer before any JSON is
+produced. Two mechanisms handle this:
+
+- **Token budget** — `OPENROUTER_MAX_TOKENS` defaults to `16000`, leaving room
+  for reasoning tokens on top of the JSON payload.
+- **Fallback chain** — when a model fails or returns an empty body, the
+  request is retried against the next model in
+  `config('openrouter.fallback_models')`. The chain is
+  `OPENROUTER_MODEL` first, then `baidu/ernie-5.5-flash-preview:free`,
+  `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`,
+  `liquid/lfm-2.5-2.6b:free` and `liquid/lfm-3-1.7b:free`.
+
+Both the Laravel backend (`OpenRouterClient`, `OpenRouterProvider`) and the
+plain-PHP layer (`seo_logic.php`) implement the same chain, so a single
+unavailable endpoint does not fail a whole analysis.
+
 …or use the plain-PHP layer, which reads `config.php` instead — copy
 [`config.php.example`](config.php.example) to `config.php` and fill it in.
 Both `config.php` and `db_config.php` are gitignored; never commit them.

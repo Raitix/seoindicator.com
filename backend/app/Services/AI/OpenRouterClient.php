@@ -132,24 +132,95 @@ class OpenRouterClient implements OpenRouterClientInterface
     public function generate(string $prompt, array $options = []): AIResponse
     {
         $startTime = microtime(true);
-        $model = $options['model'] ?? $this->model;
+        $requestedModel = $options['model'] ?? $this->model;
 
-        try {
-            $response = $this->makeRequest($prompt, $options, $model);
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+        $lastError = null;
+        $chain = $this->modelChain($requestedModel);
+        $lastModel = end($chain);
 
-            if (!$response->successful()) {
-                return $this->handleErrorResponse($response, $latencyMs);
+        foreach ($chain as $model) {
+            try {
+                $response = $this->makeRequest($prompt, $options, $model);
+                $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+                if (!$response->successful()) {
+                    $lastError = $this->handleErrorResponse($response, $latencyMs);
+
+                    if ($model === $lastModel) {
+                        return $lastError;
+                    }
+
+                    continue;
+                }
+
+                $result = $this->handleSuccessResponse($response, $latencyMs, $model);
+
+                if (!$result->success) {
+                    $lastError = $result;
+
+                    if ($model === $lastModel) {
+                        return $result;
+                    }
+
+                    continue;
+                }
+
+                // A shared free-tier endpoint can answer with HTTP 200 and an
+                // empty body. Try the next model instead of returning nothing.
+                if (trim((string) $result->content) === '') {
+                    if ($model === $lastModel) {
+                        return $result;
+                    }
+
+                    $lastError = AIResponse::error(
+                        "Model {$model} returned an empty response",
+                        $latencyMs
+                    );
+
+                    continue;
+                }
+
+                return $result;
+            } catch (ConnectionException $e) {
+                $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+                $lastError = AIResponse::error('Request timeout', $latencyMs);
+            } catch (\Exception $e) {
+                $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+                $lastError = AIResponse::error($e->getMessage(), $latencyMs);
             }
-
-            return $this->handleSuccessResponse($response, $latencyMs, $model);
-        } catch (ConnectionException $e) {
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
-            return AIResponse::error('Request timeout', $latencyMs);
-        } catch (\Exception $e) {
-            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
-            return AIResponse::error($e->getMessage(), $latencyMs);
         }
+
+        $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+        return $lastError ?? AIResponse::error('No AI model returned a response', $latencyMs);
+    }
+
+    /**
+     * Get the list of models to try, in order.
+     *
+     * The requested model comes first, followed by the shared fallback list.
+     * Duplicates are removed so a model is never requested twice.
+     *
+     * @param string $requested The model the caller asked for.
+     * @return string[] Model identifiers in the order they should be tried.
+     */
+    private function modelChain(string $requested): array
+    {
+        $fallbacks = config('openrouter.fallback_models', []);
+
+        if (!is_array($fallbacks)) {
+            $fallbacks = [];
+        }
+
+        $chain = [];
+
+        foreach (array_merge([$requested], $fallbacks) as $model) {
+            if (is_string($model) && trim($model) !== '' && !in_array($model, $chain, true)) {
+                $chain[] = $model;
+            }
+        }
+
+        return $chain === [] ? [$this->model] : $chain;
     }
 
     /**
