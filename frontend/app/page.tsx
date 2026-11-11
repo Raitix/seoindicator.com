@@ -6,11 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { IndicatorCatalog, type IndicatorData } from "@/components/indicators";
+import SystemStatusBar from "@/components/SystemStatusBar";
 
 // ============================================================================
 // Indicator Data
 // ============================================================================
 
+/**
+ * Sample values shown on the marketing homepage to illustrate the indicator
+ * set. These are NOT live measurements - they are static placeholders.
+ *
+ * The real, per-site numbers are produced by the analysis pipeline and shown
+ * in the authenticated dashboard, where each value comes from an actual run
+ * against the user's own domain.
+ *
+ * See ROADMAP.md ("Live public metrics endpoint") for the planned work to
+ * replace these placeholders with genuine platform-wide statistics.
+ */
 const homepageIndicators: IndicatorData[] = [
   {
     id: "rankings",
@@ -155,11 +167,14 @@ export default function Home() {
           <IndicatorCatalog
             indicators={homepageIndicators}
             title="SEO Indicators"
-            description="Real-time metrics for your website's SEO performance"
+            description="The indicators we analyse for every site - shown with sample values"
             categories={indicatorCategories}
             selectedCategory="All"
             className="text-left"
           />
+          <p className="mt-3 text-sm text-slate-500 text-center">
+            Sample values for illustration. Run an analysis on your own domain to see real results.
+          </p>
         </div>
         
         {/* CTA */}
@@ -228,14 +243,8 @@ export default function Home() {
       {/* Status Bar */}
       <section className="container mx-auto px-4 py-8">
         <Card className="bg-surface-1/50 border-slate-700">
-          <CardContent className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <div className="h-3 w-3 bg-success rounded-full animate-pulse" aria-hidden="true"></div>
-              <span className="text-slate-300">System Status: Operational</span>
-            </div>
-            <span className="text-slate-500 text-sm">
-              Backend API Ready • Database Connected
-            </span>
+          <CardContent>
+            <SystemStatusBar />
           </CardContent>
         </Card>
       </section>

@@ -11,72 +11,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import {
+  PROTECTED_ROUTES,
+  PUBLIC_ROUTES,
+  isProtectedRoute,
+  isPublicRoute,
+} from '@/lib/routes';
+
 // ==================== Route Configuration ====================
 
 /**
  * Routes that require authentication to access.
  * Users without a valid token will be redirected to /login.
+ *
+ * Defined in `@/lib/routes` so this middleware and the client-side
+ * `AuthContext` can never drift apart - see the note in that module.
  */
-const protectedRoutes = [
-  '/dashboard',
-  '/settings',
-  '/projects',
-  '/competitors',
-  '/comparison',
-  '/notifications',
-  '/sites',
-  '/locations',
-  '/ranking-history',
-  '/guides',
-  '/badges',
-  '/history',
-  '/audit',
-  '/admin',
-];
+const protectedRoutes = PROTECTED_ROUTES;
 
 /**
  * Routes that are publicly accessible without authentication.
  * These routes should never redirect to login.
  */
-const publicRoutes = [
-  '/',
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-  '/tools',
-  '/seo-guides',
-  '/pricing',
-  '/terms',
-  '/how-it-works',
-  '/about',
-  '/docs',
-  '/compare',
-  '/api',
-];
+const publicRoutes = PUBLIC_ROUTES;
 
 // ==================== Helper Functions ====================
-
-/**
- * Check if a pathname matches a protected route.
- * Matches both exact routes and nested routes (e.g., /dashboard/settings).
- */
-function isProtectedRoute(pathname: string): boolean {
-  return protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  );
-}
-
-/**
- * Check if a pathname matches a public route.
- * Matches both exact routes and nested routes.
- */
-function isPublicRoute(pathname: string): boolean {
-  return publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  );
-}
 
 /**
  * Check if the request has a valid authentication token.
