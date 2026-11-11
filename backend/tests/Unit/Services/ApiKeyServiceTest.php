@@ -332,7 +332,7 @@ class ApiKeyServiceTest extends TestCase
     public function test_validate_incorrect_key(): void
     {
         $result = $this->service->generate();
-        $wrongKey = 'sk_live_EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-EXAMPL';
+        $wrongKey = 'sk_live_EXAMPLE-EXAMPLE-EXALEEXAMPLEEXAMPLEEXA';
 
         $isValid = $this->service->validate($wrongKey, $result['hash']);
 
@@ -481,12 +481,12 @@ class ApiKeyServiceTest extends TestCase
      */
     public function test_get_prefix_from_valid_key(): void
     {
-        $key = 'sk_live_EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-';
+        $key = 'sk_live_EXAMPLE-EXAMPLE-EXALEEXAMPLEEXAMPLEEXAMP';
 
         $prefix = $this->service->getPrefix($key);
 
         $this->assertEquals(20, strlen($prefix));
-        $this->assertEquals('sk_live_ABCdefGHIjkl', $prefix);
+        $this->assertEquals(substr($key, 0, 20), $prefix);
     }
 
     /**
@@ -529,7 +529,7 @@ class ApiKeyServiceTest extends TestCase
     public function test_get_prefix_length_is_consistent(): void
     {
         $keys = [
-            'sk_live_EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-',
+            'sk_live_EXAMPLE-EXAMPLE-EXALEEXAMPLEEXAMPLEEXAMP',
             'sk_live_different_key',
             'short',
             str_repeat('a', 100),

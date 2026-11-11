@@ -223,7 +223,7 @@ class ApiKeyService
 
 ```json
 {
-    "key": "sk_live_EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-",
+    "key": "sk_live_EXAMPLE-EXAMPLE-EXALEEXAMPLEEXAMPLEEXAMP",
     "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "prefix": "sk_live_ABCdefGHIj"
 }
@@ -233,7 +233,7 @@ class ApiKeyService
 
 ```php
 // Valid key format
-'sk_live_EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-EXAMPLE-'
+'sk_live_EXAMPLE-EXAMPLE-EXALEEXAMPLEEXAMPLEEXAMP'
 
 // Test key format (if supported)
 'sk_test_ABCdefGHIjklMNOpqrSTUvwxYZ12345678901234'
