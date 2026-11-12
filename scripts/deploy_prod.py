@@ -494,43 +494,68 @@ def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 12, samples_per_ro
     window is small. This step waits it out and reports it, rather than
     letting the smoke tests fail against a stale edge.
 
-    The CDN has several edge nodes, and a single request only proves what
-    *that* node is serving. So each round takes several samples and the
-    round only counts as fresh when every sample agrees - otherwise one lucky
-    hit would end the wait while other nodes still served the old build.
+    Two things make a naive check wrong:
+
+    - The CDN has several edge nodes, and a single request only proves what
+      *that* node is serving. So each round takes several samples and the
+      round only counts as fresh when every sample agrees.
+    - Each URL is cached separately. The homepage can be fresh while
+      /guides/pwa/ still serves the old build. So every URL is checked
+      separately, and the wait ends only when all of them agree.
+
+    The pages checked are the ones the smoke test visits, so the two checks
+    cover the same surface.
     """
     log.start_step('Wait for CDN to serve the new build')
-    url = 'https://seoindicator.com/'
+
+    paths = [
+        '/',
+        '/tools/',
+        '/pricing/',
+        '/compare/',
+        '/about/',
+        '/contact/',
+        '/privacy/',
+        '/terms/',
+        '/guides/pwa/',
+        '/dashboard/',
+        '/login/',
+    ]
 
     for round_number in range(1, rounds + 1):
-        seen = []
-        for _ in range(samples_per_round):
-            try:
-                result = run_local(
-                    ['curl', '-sSI', '--max-time', '20', url],
-                    cwd=PROJECT_ROOT,
-                    timeout=60,
-                )
-                for line in (result.stdout or '').splitlines():
-                    if line.lower().startswith('last-modified:'):
-                        seen.append(line.split(':', 1)[1].strip())
-                        break
-            except Exception as exc:  # noqa: BLE001 - a failed sample is not a verdict
-                log.add_event('warning', f'edge sample failed: {exc}')
+        stale_paths = []
+        for path in paths:
+            seen = []
+            for _ in range(samples_per_round):
+                try:
+                    result = run_local(
+                        ['curl', '-sSI', '--max-time', '20', f'https://seoindicator.com{path}'],
+                        cwd=PROJECT_ROOT,
+                        timeout=60,
+                    )
+                    for line in (result.stdout or '').splitlines():
+                        if line.lower().startswith('last-modified:'):
+                            seen.append(line.split(':', 1)[1].strip())
+                            break
+                except Exception as exc:  # noqa: BLE001 - a failed sample is not a verdict
+                    log.add_event('warning', f'edge sample failed for {path}: {exc}')
 
-        distinct = sorted(set(seen))
-        if seen and len(distinct) == 1:
+            distinct = sorted(set(seen))
+            if not seen or len(distinct) != 1:
+                stale_paths.append(f'{path} ({", ".join(distinct) or "no samples"})')
+
+        if not stale_paths:
             log.finish_step(
                 'Wait for CDN to serve the new build',
                 'success',
-                f'all {len(seen)} edge samples agree on last-modified {distinct[0]}',
+                f'all {len(paths)} paths agree on one build across '
+                f'{samples_per_round} samples each',
             )
             return
 
-        detail = ', '.join(distinct) if distinct else 'no samples'
         log.add_event(
             'info',
-            f'round {round_number}: edge still serving mixed builds ({detail})',
+            f'round {round_number}: still stale - {"; ".join(stale_paths)}',
         )
         if round_number < rounds:
             time.sleep(delay)
