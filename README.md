@@ -171,7 +171,7 @@ exceed the selected model's context window.
 
 - PHP **8.2+** with `pdo_mysql`, `mbstring`, `curl`, `dom`, `zip`
 - **Composer 2**
-- **Node.js 20+** and npm
+- **Node.js 22.19+** (or 24 LTS) and npm
 - **MySQL 8** (or SQLite for a quick local run)
 
 ### 1. Clone
