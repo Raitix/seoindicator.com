@@ -155,8 +155,19 @@ RewriteRule ^seo-guides/(.*)$ /seo-guides/$1/ [L,R=301]
     ExpiresByType text/css "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
     
-    # HTML (shorter cache for content updates)
-    ExpiresByType text/html "access plus 1 hour"
+    # HTML - short TTL on purpose.
+    #
+    # The CDN in front of this site caches HTML for as long as this TTL says,
+    # and a deploy does not invalidate it. With a one hour TTL, visitors kept
+    # being served the previous build (with the previous route policy, so
+    # pages that had just been opened up bounced to the login page) for up to
+    # an hour after every deploy.
+    #
+    # A short TTL makes the edge revalidate against the origin within a
+    # minute, so a deploy is visible almost immediately. The origin answers
+    # with a 304 when nothing changed, so the cost is one conditional request
+    # per minute per URL rather than a full page download.
+    ExpiresByType text/html "access plus 60 seconds"
 </IfModule>
 
 # ============================================================
