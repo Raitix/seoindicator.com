@@ -25,8 +25,10 @@ import type { ProjectBreakdown, AggregateMetrics } from "@/lib/types/projects";
 import { fetchAggregateMetrics } from "@/lib/api/projects";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import GuestSignInPrompt from "@/components/auth/GuestSignInPrompt";
 import { Input } from "@/components/ui/input";
 
 type SortField = "name" | "keywords" | "position" | "visibility" | "change";
@@ -88,7 +90,7 @@ export function AllProjectsView({ onCreateProject, className }: AllProjectsViewP
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   // A guest's request is rejected with a 401, which is expected rather than
   // a failure - the page should still render.
-  const isGuest = !authLoading && !isAuthenticated;
+  const { isGuest } = useGuestMode();
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
@@ -214,6 +216,17 @@ export function AllProjectsView({ onCreateProject, className }: AllProjectsViewP
           </Button>
         </CardContent>
       </Card>
+    );
+  }
+
+  // A guest's request is rejected with a 401. That is the expected answer,
+  // so point at the sign-in page instead of showing a failure.
+  if (error && isGuest) {
+    return (
+      <GuestSignInPrompt
+        feature="your projects"
+        description="Projects belong to an account. Sign in to add a site and track its analyses."
+      />
     );
   }
 

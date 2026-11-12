@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RefreshCw, BarChart3, Clock, TrendingUp, Activity } from "lucide-react";
 
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { clearAuthStorage } from "@/lib/api/auth";
 import GuestPreview from "@/components/auth/GuestPreview";
@@ -83,7 +84,7 @@ export default function DashboardPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   // /dashboard is browsable without an account.
   const isGuestViewable = true;
-  const isGuest = !authLoading && !isAuthenticated;
+  const { isGuest } = useGuestMode();
   const { data: dashboard, isLoading, error, refresh } = useDashboard();
 
   // Track if we've already processed an auth error to prevent re-renders

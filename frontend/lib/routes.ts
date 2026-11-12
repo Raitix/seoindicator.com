@@ -24,14 +24,16 @@
  *
  * These pages show or change data that belongs to a specific account, so
  * there is nothing meaningful to show without a session.
+ *
+ * The badge and history pages live under `/dashboard`, so they inherit the
+ * guest-viewable tier by prefix rather than being listed here. They were
+ * previously listed as `/badges` and `/history`, but no such routes exist.
  */
 export const PROTECTED_ROUTES: readonly string[] = [
   "/settings",
   "/sites",
   "/locations",
   "/guides",
-  "/badges",
-  "/history",
   "/admin",
 ];
 

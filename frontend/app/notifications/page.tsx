@@ -6,7 +6,9 @@ import { useNotifications, markAsRead, markAllAsRead, deleteNotification } from 
 import { NOTIFICATION_TYPE_LABELS } from "@/lib/types/notifications";
 import type { Notification } from "@/lib/types/notifications";
 import GuestPreview from "@/components/auth/GuestPreview";
+import GuestSignInPrompt from "@/components/auth/GuestSignInPrompt";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -15,7 +17,7 @@ export default function NotificationsPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const isGuest = !authLoading && !isAuthenticated;
+  const { isGuest } = useGuestMode();
 
   const {
     notifications,
@@ -121,6 +123,21 @@ export default function NotificationsPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 to-slate-900">
         <div className="text-red-400">Failed to load notifications</div>
+      </div>
+    );
+  }
+
+  if (isError && isGuest) {
+    return (
+      <div className="min-h-screen bg-slate-950">
+        <div className="container mx-auto px-4 py-10">
+          <h1 className="text-2xl font-semibold text-white">Notifications</h1>
+          <GuestSignInPrompt
+            feature="your notifications"
+            description="Notifications belong to an account. Sign in to see alerts, reminders and unread counts."
+            className="mt-4"
+          />
+        </div>
       </div>
     );
   }

@@ -6,8 +6,10 @@ import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { useCompetitors } from "@/lib/api/competitors";
 import type { Competitor } from "@/lib/types/competitors";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import GuestSignInPrompt from "@/components/auth/GuestSignInPrompt";
 import AddCompetitorModal from "@/components/competitors/AddCompetitorModal";
 import CompetitorCard from "@/components/competitors/CompetitorCard";
 import DeleteCompetitorDialog from "@/components/competitors/DeleteCompetitorDialog";
@@ -20,7 +22,7 @@ export default function CompetitorList() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   // A guest's request is rejected with a 401, which is expected rather
   // than a failure - the page should still render.
-  const isGuest = !authLoading && !isAuthenticated;
+  const { isGuest } = useGuestMode();
   const [selectedCompetitor, setSelectedCompetitor] = React.useState<
     Competitor | null
   >(null);
@@ -59,6 +61,15 @@ export default function CompetitorList() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* A guest's request is rejected with a 401, which is the expected
+          answer. Point at the sign-in page instead of showing a failure. */}
+      {!isLoading && error && isGuest && (
+        <GuestSignInPrompt
+          feature="your competitors"
+          description="Competitors belong to an account. Sign in to track who you rank against."
+        />
       )}
 
       {!isLoading && error && !isGuest && (

@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import PublicAuditPage from '@/components/audit/PublicAuditPage';
+import { getApiBaseUrl } from "@/lib/api/base-url";
 import type { PublicAuditData } from '@/components/audit/PublicAuditPage';
 import { generateJsonLdSchema } from '@/lib/audit/json-ld-schema';
 import NotFound from './not-found';
@@ -41,11 +42,11 @@ function ErrorDisplay({ message }: { message: string }) {
  * Client-side function to fetch audit data
  */
 async function fetchAuditData(hash: string): Promise<PublicAuditData | null> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.seoindicator.com';
+  const apiUrl = getApiBaseUrl();
   
   try {
     const res = await fetch(
-      `${apiUrl}/api/v1/public-audit/${hash}`
+      `${apiUrl}/public-audit/${hash}`
     );
 
     if (!res.ok) {

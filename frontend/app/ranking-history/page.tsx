@@ -32,7 +32,7 @@ export default function RankingHistoryPage() {
           </p>
         </div>
         <GuestPreview feature="your own ranking history" className="mb-4" />
-        <RankingHistoryChart keywordName="best seo tools" data={sampleData} initialRange="30d" />
+        <RankingHistoryChart keywordName="example keyword" data={sampleData} initialRange="30d" />
       </div>
     </div>
   );

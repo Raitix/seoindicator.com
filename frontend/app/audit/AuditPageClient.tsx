@@ -10,6 +10,7 @@ import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PublicAuditPage, PublicAuditData } from '@/components/audit/PublicAuditPage';
+import { getApiBaseUrl } from "@/lib/api/base-url";
 import { Loader2, FileQuestion, Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { generateJsonLdSchema } from '@/lib/audit/json-ld-schema';
@@ -36,10 +37,10 @@ function useAuditData(hash: string | null) {
 
     async function fetchData() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.seoindicator.com';
+        const apiUrl = getApiBaseUrl();
 
         const res = await fetch(
-          `${apiUrl}/api/v1/public-audit/${hash}`,
+          `${apiUrl}/public-audit/${hash}`,
           {
             headers: {
               'Accept': 'application/json',

@@ -508,9 +508,9 @@ describe('Protected Route Middleware', () => {
       expect(response.status).toBe(307);
     });
 
-    it('PR-006d: /competitors without auth', () => {
+    it('PR-006d: /sites without auth', () => {
       const request = createMockRequest({
-        pathname: '/badges',
+        pathname: '/sites',
         cookies: [],
       });
 
@@ -519,9 +519,9 @@ describe('Protected Route Middleware', () => {
       expect(response.status).toBe(307);
     });
 
-    it('PR-006e: /comparison without auth', () => {
+    it('PR-006e: /admin without auth', () => {
       const request = createMockRequest({
-        pathname: '/history',
+        pathname: '/admin',
         cookies: [],
       });
 
@@ -808,7 +808,7 @@ describe('Protected Route Middleware', () => {
     });
 
     it('AC2: Unauthenticated users redirected to /login', () => {
-      const routes = ['/settings', '/admin', '/badges', '/history'];
+      const routes = ['/settings', '/admin', '/sites', '/locations'];
 
       routes.forEach((route) => {
         jest.clearAllMocks();

@@ -10,7 +10,6 @@ import {
 } from "@/components/admin";
 import {
   fetchAdminOverview,
-  getMockOverviewData,
   adminKeys,
 } from "@/lib/api/admin-stats";
 import type { AdminOverviewData } from "@/lib/types/admin-stats";
@@ -39,12 +38,14 @@ function useAdminOverview(refreshInterval: number = 30000) {
       const data = await fetchAdminOverview();
       setState({ data, isLoading: false, error: null });
     } catch (error) {
-      // Fall back to mock data in development or on error
-      console.warn("Failed to fetch admin overview, using mock data:", error);
+      // Surface the failure instead of falling back to mock data. Mock
+      // metrics were rendered as if they were real numbers, which is worse
+      // than an empty dashboard for anyone checking the admin area.
+      console.warn("Failed to fetch admin overview:", error);
       setState({
-        data: getMockOverviewData(),
+        data: null,
         isLoading: false,
-        error: null,
+        error: error instanceof Error ? error.message : 'Failed to load overview',
       });
     }
   }, []);

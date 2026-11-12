@@ -11,7 +11,7 @@
 import * as React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, AlertCircle, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, Settings, Lock } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -62,12 +62,12 @@ export function AuditSettingsClient({ className }: AuditSettingsClientProps) {
   const [isUpdating, setIsUpdating] = React.useState(false);
   const [updateError, setUpdateError] = React.useState<string | null>(null);
 
-  // Redirect unauthorized users
-  React.useEffect(() => {
-    if (error?.message === 'Unauthorized') {
-      router.push('/login');
-    }
-  }, [error, router]);
+  // An unauthorized visitor is shown a sign-in prompt rather than being
+  // redirected. This page lives under /dashboard, which is browsable
+  // without an account, so a hard redirect fights the route policy - and
+  // the previous effect fired before the page could render its own
+  // unauthorized state.
+  const isUnauthorized = error?.message === 'Unauthorized';
 
   /**
    * Handle publish action
@@ -138,11 +138,29 @@ export function AuditSettingsClient({ className }: AuditSettingsClientProps) {
   // Error state
   if (error) {
     const isNotFound = error.message === 'Not found';
-    const isUnauthorized = error.message === 'Unauthorized';
 
-    // Don't render for unauthorized (redirecting)
+    // The visitor has no session, or is not the owner of this audit.
     if (isUnauthorized) {
-      return null;
+      return (
+        <div
+          className={cn('min-h-screen bg-slate-950 flex items-center justify-center p-4', className)}
+          data-testid="unauthorized-state"
+        >
+          <div className="text-center space-y-4 max-w-md">
+            <Lock className="h-12 w-12 text-slate-400 mx-auto" aria-hidden="true" />
+            <h1 className="text-xl font-semibold text-white">
+              Sign in to manage this audit
+            </h1>
+            <p className="text-slate-400">
+              Publishing and unpublishing an audit is only available to the
+              account that owns it.
+            </p>
+            <Button onClick={() => router.push('/login')} className="bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90">
+              Sign in
+            </Button>
+          </div>
+        </div>
+      );
     }
 
     return (
