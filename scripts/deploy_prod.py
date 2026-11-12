@@ -654,16 +654,19 @@ def main():
 
         temp_dir = create_temp_worktree(resolved_ref, log)
         frontend_out_dir = build_frontend(temp_dir, log)
-        deploy_remote(frontend_out_dir, env, resolved_ref, log)
 
-        # The moment the new build is on the origin. Anything the edge serves
-        # with an older timestamp is the previous build.
-        deploy_finished_at = time.time()
+        # Taken BEFORE the upload, so every file the deploy writes has an
+        # mtime at or after this instant. Taking it afterwards would compare
+        # the edge against a timestamp later than the files it is serving,
+        # and the check would never pass.
+        deploy_started_at = time.time()
+
+        deploy_remote(frontend_out_dir, env, resolved_ref, log)
 
         # The edge serves the previous build until its cache entry expires.
         # Wait for it before running the smoke tests, otherwise they test the
         # old site and report a failure that is not a failure of this deploy.
-        wait_for_edge_freshness(log, deployed_at=deploy_finished_at)
+        wait_for_edge_freshness(log, deployed_at=deploy_started_at)
 
         if not args.skip_playwright:
             run_playwright(log)
