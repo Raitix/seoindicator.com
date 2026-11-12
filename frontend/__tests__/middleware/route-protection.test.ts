@@ -41,6 +41,14 @@ jest.mock('next/server', () => {
 
 // Import after mock
 import { NextResponse } from 'next/server';
+import {
+  PROTECTED_ROUTES as protectedRoutes,
+  GUEST_VIEWABLE_ROUTES as guestViewableRoutes,
+  PUBLIC_ROUTES as publicRoutes,
+  isProtectedRoute,
+  isGuestViewableRoute,
+  isPublicRoute,
+} from '@/lib/routes';
 import { middleware, config } from '@/middleware';
 
 // ==================== Types ====================
@@ -89,61 +97,15 @@ function createMockRequest(options: MockRequestOptions): NextRequest {
 
 // ==================== Route Configuration ====================
 
-const protectedRoutes = [
-  '/settings',
-  '/sites',
-  '/locations',
-  '/guides',
-  '/badges',
-  '/history',
-  '/admin',
-];
-
 /**
- * Routes an anonymous visitor may open. They render in guest preview mode
- * instead of redirecting to the login screen.
+ * The route lists live in `@/lib/routes`, which is the single source the
+ * middleware and the client-side auth guard both read. This file used to
+ * keep its own copies, which drifted: `/guides` was still listed as
+ * protected after it became guest-viewable, and `/contact` and `/privacy`
+ * were missing entirely, so a signed-out visitor clicking "Privacy Policy"
+ * in the footer was bounced to the login screen.
  */
-const guestViewableRoutes = [
-  '/dashboard',
-  '/projects',
-  '/competitors',
-  '/comparison',
-  '/notifications',
-  '/ranking-history',
-  '/audit',
-];
-
-const publicRoutes = [
-  '/',
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-  '/tools',
-  '/seo-guides',
-  '/pricing',
-  '/terms',
-  '/how-it-works',
-];
-
-function isProtectedRoute(pathname: string): boolean {
-  return protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  );
-}
-
-function isGuestViewableRoute(pathname: string): boolean {
-  return guestViewableRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  );
-}
-
-function isPublicRoute(pathname: string): boolean {
-  return publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + '/')
-  );
-}
+// The imported lists and helpers are used directly below.
 
 // ==================== Helper to extract redirect URL ====================
 
@@ -931,6 +893,64 @@ describe('Route Configuration', () => {
     it('identifies protected routes as not public', () => {
       expect(isPublicRoute('/dashboard')).toBe(false);
       expect(isPublicRoute('/settings')).toBe(false);
+    });
+  });
+
+  // ==================== Guest preview & public legal pages ====================
+
+  describe('Guest-viewable and public legal routes', () => {
+    it('does not redirect an anonymous visitor away from /guides', () => {
+      const request = createMockRequest({
+        pathname: '/guides/pwa',
+        cookies: [],
+      });
+
+      const response = middleware(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('does not redirect an anonymous visitor away from /contact', () => {
+      const request = createMockRequest({
+        pathname: '/contact',
+        cookies: [],
+      });
+
+      const response = middleware(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('does not redirect an anonymous visitor away from /privacy', () => {
+      const request = createMockRequest({
+        pathname: '/privacy',
+        cookies: [],
+      });
+
+      const response = middleware(request);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('redirects an anonymous visitor away from /ai-visibility', () => {
+      const request = createMockRequest({
+        pathname: '/ai-visibility',
+        cookies: [],
+      });
+
+      const response = middleware(request);
+
+      expect(response.status).toBe(307);
+      expect(getRedirectUrl(response)?.pathname).toBe('/login');
+    });
+
+    it('keeps the route policy in sync with lib/routes', () => {
+      // The whole point of importing the lists above: a tier change in
+      // lib/routes is picked up here without editing this file.
+      expect(isGuestViewableRoute('/guides')).toBe(true);
+      expect(isPublicRoute('/contact')).toBe(true);
+      expect(isPublicRoute('/privacy')).toBe(true);
+      expect(isProtectedRoute('/ai-visibility')).toBe(true);
     });
   });
 });

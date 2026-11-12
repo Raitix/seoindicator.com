@@ -113,23 +113,6 @@ const homepageIndicators: IndicatorData[] = [
 const indicatorCategories = ["All", "Rankings", "Traffic", "Technical"];
 
 // ============================================================================
-// Navigation
-// ============================================================================
-
-/**
- * Primary navigation shown to an anonymous visitor. Every entry points at a
- * page that renders without an account, so none of them bounce the visitor
- * to the login screen.
- */
-const navLinks = [
-  { label: "Tools", href: "/tools" },
-  { label: "Guides", href: "/seo-guides" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Compare", href: "/compare" },
-  { label: "About", href: "/about" },
-];
-
-// ============================================================================
 // Homepage Component
 // ============================================================================
 
@@ -143,49 +126,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-1 to-surface-2 brand-gradient">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-surface-0/80 backdrop-blur-md" role="banner">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold">
-              SI
-            </div>
-            <span className="text-xl font-semibold text-white">SEOIndicator</span>
-          </Link>
-
-          <nav
-            className="hidden md:flex items-center gap-1"
-            role="navigation"
-            aria-label="Main navigation"
-          >
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              asChild
-              variant="ghost"
-              className="text-slate-300 hover:text-white"
-            >
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button
-              asChild
-              className="bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90 font-medium"
-            >
-              <Link href="/register">Get Started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
+      
       {/* Hero Section */}
       <section
         className="container mx-auto px-4 pt-14 pb-10 md:pt-20 md:pb-14 text-center animate-fade-in"

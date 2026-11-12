@@ -138,25 +138,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-white">
-            SEOIndicator
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-slate-300 hover:text-white transition-colors">
-              Dashboard
-            </Link>
-            <Link href="/seo-guides/" className="text-slate-300 hover:text-white transition-colors">
-              Guides
-            </Link>
-            <Link href="/tools" className="text-slate-300 hover:text-white transition-colors">
-              Tools
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+      
       <main className="container mx-auto px-4 py-16">
         {/* Page Title */}
         <div className="text-center mb-12">

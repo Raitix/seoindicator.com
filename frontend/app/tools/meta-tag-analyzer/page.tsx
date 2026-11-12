@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ToolWidget } from "@/components/tools/ToolWidget";
-import { Button } from "@/components/ui/button";
 import {
   generateToolMetadata,
   generateToolPageSchemas,
@@ -29,6 +28,19 @@ const schemas = generateToolPageSchemas(tool);
 export default function MetaTagAnalyzerPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+      {/* The top bar is global now; this keeps the "back to all tools"
+          affordance the old per-page header carried. */}
+      <div className="border-b border-slate-800 bg-slate-900/40">
+        <div className="container mx-auto px-4 py-3">
+          <Link
+            href="/tools"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-300 transition-colors hover:text-emerald-400"
+          >
+            <span aria-hidden="true">&larr;</span> All Tools
+          </Link>
+        </div>
+      </div>
+
       {/* JSON-LD Schemas */}
       <script
         type="application/ld+json"
@@ -46,28 +58,7 @@ export default function MetaTagAnalyzerPage() {
       )}
 
       {/* Header */}
-      <header className="border-b border-slate-700">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
-              SI
-            </div>
-            <span className="text-xl font-semibold text-white">SEOIndicator</span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/tools">
-              <Button variant="ghost" className="bg-transparent text-slate-300 hover:text-white">
-                ← All Tools
-              </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" className="border-emerald-500 bg-transparent text-emerald-400">
-                Dashboard
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">

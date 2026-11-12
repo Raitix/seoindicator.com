@@ -100,34 +100,7 @@ export default function ToolsPage() {
       />
 
       {/* Header */}
-      <header className="border-b border-slate-700">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
-              SI
-            </div>
-            <span className="text-xl font-semibold text-white">SEOIndicator</span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" className="bg-transparent text-slate-300 hover:text-white">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/projects">
-              <Button variant="ghost" className="bg-transparent text-slate-300 hover:text-white">
-                Projects
-              </Button>
-            </Link>
-            <Link href="/tools">
-              <Button variant="outline" className="border-emerald-500 bg-transparent text-emerald-400">
-                Tools
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+      
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-4xl font-bold text-white mb-4">

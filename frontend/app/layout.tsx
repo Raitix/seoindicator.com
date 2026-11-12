@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import { Providers } from "./providers";
 import { SkipLink, SkipToMain } from "@/components/layout/SkipLink";
-import { CookieConsent, Footer } from "@/components/layout";
+import { CookieConsent, Footer, SiteHeader } from "@/components/layout";
 import GuestPreview from "@/components/auth/GuestPreview";
 import { ConsentProvider } from "@/lib/contexts/ConsentContext";
 import "./globals.css";
@@ -65,6 +65,11 @@ export default function RootLayout({
         <Providers>
           <ConsentProvider>
             <div className="flex flex-col min-h-screen">
+              {/* The persistent top bar. It lives in the root layout so every
+                  route gets the same navigation - the per-page headers that
+                  used to duplicate it drifted apart and several pages had no
+                  mobile menu at all. */}
+              <SiteHeader />
               {/* The strip needs its own dark surface. The page body is
                   white by default, so a translucent emerald tint over it
                   rendered as a pale box with barely readable text. */}

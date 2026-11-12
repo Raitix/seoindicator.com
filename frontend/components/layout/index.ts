@@ -1,5 +1,7 @@
 // Layout Components
 export { default as Header } from "./Header";
+export { SiteHeader } from "./SiteHeader";
+export type { SiteHeaderProps } from "./SiteHeader";
 export { MobileNav } from "./MobileNav";
 export type {
   MobileNavProps,

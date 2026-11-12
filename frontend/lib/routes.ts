@@ -33,8 +33,11 @@ export const PROTECTED_ROUTES: readonly string[] = [
   "/settings",
   "/sites",
   "/locations",
-  "/guides",
   "/admin",
+  // The AI Visibility project list is account data. It was not listed
+  // anywhere, so it fell through to the default-deny behaviour by accident
+  // rather than by decision.
+  "/ai-visibility",
 ];
 
 /**
@@ -57,6 +60,10 @@ export const GUEST_VIEWABLE_ROUTES: readonly string[] = [
   "/notifications",
   "/ranking-history",
   "/audit",
+  // The PWA guide is documentation. Its content comes from the public
+  // endpoint GET /api/v1/pwa/guide, so there is nothing account-specific
+  // to hide.
+  "/guides",
 ];
 
 /**
@@ -78,6 +85,11 @@ export const PUBLIC_ROUTES: readonly string[] = [
   "/about",
   "/docs",
   "/compare",
+  // Linked from the footer. They are static legal pages, but because they
+  // were missing here a signed-out visitor clicking "Privacy Policy" was
+  // bounced to the login screen.
+  "/contact",
+  "/privacy",
   "/api",
 ];
 
