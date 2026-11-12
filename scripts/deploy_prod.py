@@ -473,6 +473,70 @@ chmod -R 755 "$DEPLOY_PATH/backend/bootstrap/cache" || true
         ssh.close()
 
 
+def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 12, samples_per_round: int = 4,
+                             delay: int = 10):
+    """Wait until every CDN edge node serves the new build.
+
+    The site sits behind Hostinger's CDN (hcdn). It caches HTML for as long
+    as the origin's TTL allows, and a deploy does not invalidate it, so for a
+    while after a deploy the edge keeps handing out the *previous* HTML - and
+    with it the previous JavaScript, so the new build's behaviour (for
+    example, a route that has just been opened up to guests) is not live yet.
+
+    There is no purge API available to us: PURGE is refused with 405 and the
+    hPanel API rejects it. The origin TTL is short (60s) specifically so this
+    window is small. This step waits it out and reports it, rather than
+    letting the smoke tests fail against a stale edge.
+
+    The CDN has several edge nodes, and a single request only proves what
+    *that* node is serving. So each round takes several samples and the
+    round only counts as fresh when every sample agrees - otherwise one lucky
+    hit would end the wait while other nodes still served the old build.
+    """
+    log.start_step('Wait for CDN to serve the new build')
+    url = 'https://seoindicator.com/'
+
+    for round_number in range(1, rounds + 1):
+        seen = []
+        for _ in range(samples_per_round):
+            try:
+                result = run_local(
+                    ['curl', '-sSI', '--max-time', '20', url],
+                    cwd=PROJECT_ROOT,
+                    timeout=60,
+                )
+                for line in (result.stdout or '').splitlines():
+                    if line.lower().startswith('last-modified:'):
+                        seen.append(line.split(':', 1)[1].strip())
+                        break
+            except Exception as exc:  # noqa: BLE001 - a failed sample is not a verdict
+                log.add_event('warning', f'edge sample failed: {exc}')
+
+        distinct = sorted(set(seen))
+        if seen and len(distinct) == 1:
+            log.finish_step(
+                'Wait for CDN to serve the new build',
+                'success',
+                f'all {len(seen)} edge samples agree on last-modified {distinct[0]}',
+            )
+            return
+
+        detail = ', '.join(distinct) if distinct else 'no samples'
+        log.add_event(
+            'info',
+            f'round {round_number}: edge still serving mixed builds ({detail})',
+        )
+        if round_number < rounds:
+            time.sleep(delay)
+
+    log.finish_step(
+        'Wait for CDN to serve the new build',
+        'success',
+        f'gave up waiting after {rounds} rounds; the edge may still be serving '
+        'the previous build for a short while',
+    )
+
+
 def run_playwright(log: DeploymentLog):
     log.start_step('Run production Playwright smoke tests')
     env = {
@@ -533,6 +597,11 @@ def main():
         temp_dir = create_temp_worktree(resolved_ref, log)
         frontend_out_dir = build_frontend(temp_dir, log)
         deploy_remote(frontend_out_dir, env, resolved_ref, log)
+
+        # The edge serves the previous build until its cache entry expires.
+        # Wait for it before running the smoke tests, otherwise they test the
+        # old site and report a failure that is not a failure of this deploy.
+        wait_for_edge_freshness(log)
 
         if not args.skip_playwright:
             run_playwright(log)

@@ -54,6 +54,33 @@ async function checkPages(browser) {
   }
   console.log('✓ Guest-viewable pages reachable without an account');
 
+  // The documentation pages are open to everyone too. /guides used to be
+  // listed as protected, so a guest was bounced to the login screen.
+  for (const path of ['/guides/pwa/', '/seo-guides/']) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
+    assert(
+      !/^\/login\//.test(new URL(page.url()).pathname),
+      `${path} redirected an anonymous visitor to the login page`
+    );
+  }
+  console.log('✓ Documentation pages reachable without an account');
+
+  // The top bar is rendered by the root layout, so it must be on every page.
+  // It used to be duplicated per page and several copies had drifted apart.
+  for (const path of ['/', '/tools/', '/pricing/', '/compare/', '/about/']) {
+    await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
+    const bar = page.locator('header[role="banner"] nav[aria-label="Main navigation"]');
+    assert(await bar.count() > 0, `${path} is missing the main navigation bar`);
+    const links = await bar.locator('a').allInnerTexts();
+    for (const expected of ['Tools', 'Guides', 'Pricing', 'Compare', 'About']) {
+      assert(
+        links.map((l) => l.trim()).includes(expected),
+        `${path} navigation bar is missing the "${expected}" link`
+      );
+    }
+  }
+  console.log('✓ Persistent top navigation present on every page');
+
   // The footer links must resolve - these 404'd before.
   for (const path of ['/privacy/', '/contact/', '/terms/']) {
     const response = await page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
