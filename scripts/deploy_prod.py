@@ -479,9 +479,9 @@ chmod -R 755 "$DEPLOY_PATH/backend/bootstrap/cache" || true
         ssh.close()
 
 
-def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 12, samples_per_round: int = 4,
-                             delay: int = 10):
-    """Wait until every CDN edge node serves the new build.
+def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 30, samples_per_round: int = 5,
+                             delay: int = 15, deployed_at: Optional[float] = None):
+    """Wait until every CDN edge node serves the build we just deployed.
 
     The site sits behind Hostinger's CDN (hcdn). It caches HTML for as long
     as the origin's TTL allows, and a deploy does not invalidate it, so for a
@@ -494,19 +494,25 @@ def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 12, samples_per_ro
     window is small. This step waits it out and reports it, rather than
     letting the smoke tests fail against a stale edge.
 
-    Two things make a naive check wrong:
+    Three things make a naive check wrong:
 
     - The CDN has several edge nodes, and a single request only proves what
-      *that* node is serving. So each round takes several samples and the
-      round only counts as fresh when every sample agrees.
+      *that* node is serving. So each round takes several samples.
     - Each URL is cached separately. The homepage can be fresh while
       /guides/pwa/ still serves the old build. So every URL is checked
       separately, and the wait ends only when all of them agree.
+    - "All samples agree" is not enough: they can agree on the *old* build.
+      So every sample is also compared against the time the deploy finished.
+      A cached copy whose last-modified predates the deploy is stale, full
+      stop.
 
     The pages checked are the ones the smoke test visits, so the two checks
     cover the same surface.
     """
     log.start_step('Wait for CDN to serve the new build')
+
+    if deployed_at is None:
+        deployed_at = time.time()
 
     paths = [
         '/',
@@ -521,6 +527,13 @@ def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 12, samples_per_ro
         '/dashboard/',
         '/login/',
     ]
+
+    def parse_http_date(value: str) -> Optional[float]:
+        try:
+            from email.utils import parsedate_to_datetime
+            return parsedate_to_datetime(value).timestamp()
+        except Exception:  # noqa: BLE001 - an unparseable date is not usable
+            return None
 
     for round_number in range(1, rounds + 1):
         stale_paths = []
@@ -541,15 +554,29 @@ def wait_for_edge_freshness(log: DeploymentLog, rounds: int = 12, samples_per_ro
                     log.add_event('warning', f'edge sample failed for {path}: {exc}')
 
             distinct = sorted(set(seen))
-            if not seen or len(distinct) != 1:
-                stale_paths.append(f'{path} ({", ".join(distinct) or "no samples"})')
+            reasons = []
+            if not seen:
+                reasons.append('no samples')
+            elif len(distinct) != 1:
+                reasons.append(f'mixed: {", ".join(distinct)}')
+            else:
+                stamp = parse_http_date(distinct[0])
+                if stamp is None:
+                    reasons.append(f'unparseable date {distinct[0]}')
+                elif stamp < deployed_at - 1:
+                    # The edge is still serving a copy that predates this
+                    # deploy, so it is the previous build.
+                    reasons.append(f'older than this deploy ({distinct[0]})')
+
+            if reasons:
+                stale_paths.append(f'{path} ({", ".join(reasons)})')
 
         if not stale_paths:
             log.finish_step(
                 'Wait for CDN to serve the new build',
                 'success',
-                f'all {len(paths)} paths agree on one build across '
-                f'{samples_per_round} samples each',
+                f'all {len(paths)} paths serve the build deployed at this run, '
+                f'confirmed by {samples_per_round} samples each',
             )
             return
 
@@ -629,10 +656,14 @@ def main():
         frontend_out_dir = build_frontend(temp_dir, log)
         deploy_remote(frontend_out_dir, env, resolved_ref, log)
 
+        # The moment the new build is on the origin. Anything the edge serves
+        # with an older timestamp is the previous build.
+        deploy_finished_at = time.time()
+
         # The edge serves the previous build until its cache entry expires.
         # Wait for it before running the smoke tests, otherwise they test the
         # old site and report a failure that is not a failure of this deploy.
-        wait_for_edge_freshness(log)
+        wait_for_edge_freshness(log, deployed_at=deploy_finished_at)
 
         if not args.skip_playwright:
             run_playwright(log)
