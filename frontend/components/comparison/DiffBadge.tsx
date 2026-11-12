@@ -5,7 +5,7 @@ interface DiffBadgeProps {
 export default function DiffBadge({ value }: DiffBadgeProps) {
   if (value === null) {
     return (
-      <span className="text-xs text-slate-500" data-testid="diff-badge">
+      <span className="text-xs text-slate-400" data-testid="diff-badge" aria-hidden="true">
         —
       </span>
     );

@@ -254,7 +254,7 @@ export default function AboutContent({ className = '' }: AboutContentProps) {
           <div className="grid md:grid-cols-3 gap-6 text-center">
             <div className="p-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">💡</span>
+                <span className="text-2xl text-white">💡</span>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Innovation</h3>
               <p className="text-slate-400 text-sm">
@@ -263,7 +263,7 @@ export default function AboutContent({ className = '' }: AboutContentProps) {
             </div>
             <div className="p-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🎯</span>
+                <span className="text-2xl text-white">🎯</span>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Accuracy</h3>
               <p className="text-slate-400 text-sm">
@@ -272,7 +272,7 @@ export default function AboutContent({ className = '' }: AboutContentProps) {
             </div>
             <div className="p-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🔒</span>
+                <span className="text-2xl text-white">🔒</span>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Privacy</h3>
               <p className="text-slate-400 text-sm">

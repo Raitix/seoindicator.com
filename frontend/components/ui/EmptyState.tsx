@@ -145,7 +145,7 @@ export function EmptyState({
         <Button
           data-testid="cta-button"
           onClick={onCtaClick}
-          className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+          className="bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground"
         >
           <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           {displayCtaText}

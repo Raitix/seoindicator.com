@@ -4,6 +4,7 @@ import GoogleAnalytics from "./components/GoogleAnalytics";
 import { Providers } from "./providers";
 import { SkipLink, SkipToMain } from "@/components/layout/SkipLink";
 import { CookieConsent, Footer } from "@/components/layout";
+import GuestPreview from "@/components/auth/GuestPreview";
 import { ConsentProvider } from "@/lib/contexts/ConsentContext";
 import "./globals.css";
 
@@ -64,6 +65,14 @@ export default function RootLayout({
         <Providers>
           <ConsentProvider>
             <div className="flex flex-col min-h-screen">
+              {/* The strip needs its own dark surface. The page body is
+                  white by default, so a translucent emerald tint over it
+                  rendered as a pale box with barely readable text. */}
+              <div className="border-b border-emerald-500/20 bg-slate-950">
+                <div className="container mx-auto px-4 py-3">
+                  <GuestPreview feature="your saved data" />
+                </div>
+              </div>
               <div className="flex-1">
                 <SkipToMain>{children}</SkipToMain>
               </div>

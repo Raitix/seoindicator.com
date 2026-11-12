@@ -7,6 +7,7 @@ import { RefreshCw, BarChart3, Clock, TrendingUp, Activity } from "lucide-react"
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { clearAuthStorage } from "@/lib/api/auth";
+import GuestPreview from "@/components/auth/GuestPreview";
 import { Button } from "@/components/ui/button";
 import {
   StatsCard,
@@ -80,21 +81,26 @@ function isAuthError(error: unknown): boolean {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  // /dashboard is browsable without an account.
+  const isGuestViewable = true;
+  const isGuest = !authLoading && !isAuthenticated;
   const { data: dashboard, isLoading, error, refresh } = useDashboard();
 
   // Track if we've already processed an auth error to prevent re-renders
   const hasProcessedAuthError = React.useRef(false);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated. /dashboard is guest-viewable, so
+  // an anonymous visitor is NOT redirected - the page renders in preview mode
+  // with a prompt to sign in.
   React.useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated && !isGuestViewable) {
       router.push("/login");
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, isGuestViewable, router]);
 
   // Handle row click for analysis details
   const handleAnalysisRowClick = (analysis: { id: number }) => {
-    router.push(`/analyses/${analysis.id}`);
+    router.push(`/dashboard/history`);
   };
 
   // Show auth loading state
@@ -106,11 +112,35 @@ export default function DashboardPage() {
     );
   }
 
-  // Don't render if not authenticated (will redirect)
+  // Guest preview: the visitor is not signed in, so there is no dashboard
+  // data to show. Render the page structure with a sign-in prompt instead of
+  // a spinner that would never resolve.
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950" data-testid="auth-loading">
-        <AuthLoadingState />
+      <div className="min-h-screen bg-slate-950" data-testid="dashboard-guest">
+        <div className="container mx-auto px-4 py-10">
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
+            <p className="text-sm text-slate-300">
+              Your analyses, keyword positions and usage, all in one place.
+            </p>
+          </div>
+
+          <GuestPreview feature="your dashboard summary, recent analyses and cost breakdown" />
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {["Total analyses", "This month", "This week", "Today"].map((label) => (
+              <div
+                key={label}
+                className="rounded-lg border border-slate-800 bg-slate-900/60 p-5"
+              >
+                <p className="text-sm text-slate-400">{label}</p>
+                <p className="mt-2 text-3xl font-bold text-slate-600">&mdash;</p>
+                <p className="mt-1 text-xs text-slate-500">Sign in to see the real figure</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -126,8 +156,15 @@ export default function DashboardPage() {
     );
   }
 
-  // Handle 401 auth errors - clear storage and redirect to login
-  if (error && isAuthError(error) && !hasProcessedAuthError.current) {
+  // Handle 401 auth errors - clear storage and redirect to login.
+  // A guest gets a 401 too, but there is no session to clear, so the page
+  // renders in preview mode instead of bouncing to the login screen.
+  if (
+    error &&
+    isAuthError(error) &&
+    !hasProcessedAuthError.current &&
+    !isGuest
+  ) {
     // Mark as processed to prevent re-renders from triggering multiple redirects
     hasProcessedAuthError.current = true;
     // Clear auth storage and redirect to login

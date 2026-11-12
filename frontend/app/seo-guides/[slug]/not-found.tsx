@@ -21,7 +21,7 @@ export default function GuideNotFound() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/seo-guides/"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 font-medium text-white hover:bg-emerald-600 transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-6 py-3 font-medium text-white hover:bg-emerald-800 transition-colors"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

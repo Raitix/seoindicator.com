@@ -132,10 +132,10 @@ export default function Footer({ onShowCookieSettings }: FooterProps) {
               </li>
               <li>
                 <Link
-                  href="/blog/"
+                  href="/seo-guides/meta-title/"
                   className="text-sm text-slate-400 hover:text-white transition-colors"
                 >
-                  Blog
+                  SEO Guides: Titles
                 </Link>
               </li>
               <li>
@@ -202,21 +202,21 @@ export default function Footer({ onShowCookieSettings }: FooterProps) {
             <div className="flex items-center gap-4">
               <Link
                 href="/terms/"
-                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-xs text-slate-400 hover:text-slate-400 transition-colors"
               >
                 Terms
               </Link>
-              <span className="text-slate-700">|</span>
+              <span className="text-slate-400" aria-hidden="true">|</span>
               <Link
                 href="/privacy/"
-                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-xs text-slate-400 hover:text-slate-400 transition-colors"
               >
                 Privacy
               </Link>
-              <span className="text-slate-700">|</span>
+              <span className="text-slate-400" aria-hidden="true">|</span>
               <button
                 onClick={handleCookieSettingsClick}
-                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-xs text-slate-400 hover:text-slate-400 transition-colors"
                 aria-label="Open cookie settings"
               >
                 Cookies

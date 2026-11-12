@@ -220,11 +220,11 @@ function DashboardContent({ data, projectId, onRunQuery, isRunningQuery }: Dashb
   const router = useRouter();
 
   const handleMentionClick = (mention: { id: string }) => {
-    router.push(`/ai-visibility/${projectId}/queries/${mention.id}`);
+    router.push(`/ai-visibility/${projectId}`);
   };
 
   const handleCompetitorClick = (item: { name: string }) => {
-    router.push(`/ai-visibility/${projectId}/competitors?filter=${encodeURIComponent(item.name)}`);
+    router.push(`/ai-visibility/${projectId}/comparison`);
   };
 
   return (

@@ -258,7 +258,7 @@ export function PaymentConfirmation({
 
           {/* View Credits Link */}
           <a
-            href="/credits"
+            href="/pricing"
             className="block text-blue-400 hover:underline text-sm"
           >
             View credits
@@ -384,7 +384,7 @@ export function PaymentConfirmation({
 
           {/* Support Link */}
           <a
-            href="/support"
+            href="/contact"
             className="inline-flex items-center gap-1 text-blue-400 hover:underline text-sm"
           >
             Contact support

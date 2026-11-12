@@ -1,10 +1,10 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { IndicatorCatalog, type IndicatorData } from "@/components/indicators";
 import SystemStatusBar from "@/components/SystemStatusBar";
 
@@ -31,7 +31,7 @@ const homepageIndicators: IndicatorData[] = [
     value: "42",
     description: "Track SERP positions",
     status: "good",
-    href: "/dashboard",
+    href: "/ranking-history",
     category: "Rankings",
   },
   {
@@ -51,7 +51,7 @@ const homepageIndicators: IndicatorData[] = [
     value: "95",
     description: "Site audit score",
     status: "good",
-    href: "/tools",
+    href: "/audit",
     category: "Technical",
   },
   {
@@ -91,7 +91,7 @@ const homepageIndicators: IndicatorData[] = [
     value: "89",
     description: "Performance metrics",
     status: "warning",
-    href: "/tools",
+    href: "/tools/mobile-friendly",
     category: "Technical",
   },
   {
@@ -113,89 +113,165 @@ const homepageIndicators: IndicatorData[] = [
 const indicatorCategories = ["All", "Rankings", "Traffic", "Technical"];
 
 // ============================================================================
+// Navigation
+// ============================================================================
+
+/**
+ * Primary navigation shown to an anonymous visitor. Every entry points at a
+ * page that renders without an account, so none of them bounce the visitor
+ * to the login screen.
+ */
+const navLinks = [
+  { label: "Tools", href: "/tools" },
+  { label: "Guides", href: "/seo-guides" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Compare", href: "/compare" },
+  { label: "About", href: "/about" },
+];
+
+// ============================================================================
 // Homepage Component
 // ============================================================================
 
 export default function Home() {
+  // The catalogue owns its own category state. Passing `selectedCategory`
+  // without an `onCategoryChange` made it a controlled component whose value
+  // never changed - which is why the All / Rankings / Traffic / Technical
+  // tabs did nothing when clicked.
+  const [category, setCategory] = React.useState("All");
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-surface-0 via-surface-1 to-surface-2 brand-gradient">
       {/* Header */}
-      <header className="border-b border-slate-700" role="banner">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-40 border-b border-slate-800 bg-surface-0/80 backdrop-blur-md" role="banner">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <div className="h-8 w-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold">
               SI
             </div>
             <span className="text-xl font-semibold text-white">SEOIndicator</span>
-          </div>
-          <nav className="flex items-center gap-4" role="navigation" aria-label="Main navigation">
-            <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-slate-300 hover:text-white cursor-pointer">
-              <Link href="/dashboard">Indicators</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
-              <Link href="/competitors">Competitors</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-slate-300 hover:text-white">
-              <Link href="/comparison">Comparison</Link>
-            </Button>
-            <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white">
-              Sign In
-            </Button>
+          </Link>
+
+          <nav
+            className="hidden md:flex items-center gap-1"
+            role="navigation"
+            aria-label="Main navigation"
+          >
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              asChild
+              variant="ghost"
+              className="text-slate-300 hover:text-white"
+            >
+              <Link href="/login">Sign In</Link>
+            </Button>
+            <Button
+              asChild
+              className="bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90 font-medium"
+            >
+              <Link href="/register">Get Started</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section 
-        className="container mx-auto px-4 py-12 md:py-16 lg:py-20 text-center animate-fade-in"
+      <section
+        className="container mx-auto px-4 pt-14 pb-10 md:pt-20 md:pb-14 text-center animate-fade-in"
         role="region"
         aria-label="Hero"
       >
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 transition-all duration-500">
-          Track Your SEO Performance
-        </h1>
-        <p className="text-lg md:text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
-          Monitor keyword rankings, analyze competitors, and get actionable insights
-          to improve your search engine visibility.
+        <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-sm font-medium text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+          17 SEO indicators, one consolidated AI report
         </p>
-        
-        {/* Indicator Catalog */}
-        <div className="mb-8 transition-all duration-500">
+
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6 max-w-4xl mx-auto text-balance">
+          Find out what is holding your{" "}
+          <span className="text-brand-primary">search rankings</span> back
+        </h1>
+
+        <p className="text-lg md:text-xl text-slate-400 mb-9 max-w-2xl mx-auto text-pretty">
+          Enter any domain and get a scored audit of every technical, on-page and
+          ranking factor that matters - plus the specific fixes to make next.
+        </p>
+
+        {/* Primary CTAs */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center max-w-xl mx-auto">
+          <Button
+            asChild
+            size="lg"
+            className="h-12 bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90 font-semibold px-8"
+          >
+            <Link href="/tools/meta-tag-analyzer">Analyse a website free</Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-12 border-slate-700 bg-transparent text-slate-200 hover:border-brand-primary/60 hover:bg-slate-800/60 hover:text-white px-8"
+          >
+            <Link href="/how-it-works">See how it works</Link>
+          </Button>
+        </div>
+
+        <p className="mt-4 text-sm text-slate-400">
+          No account needed for a free analysis.
+        </p>
+      </section>
+
+      {/* Indicator Catalog */}
+      <section className="container mx-auto px-4 pb-16" aria-label="SEO indicators">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              What we check
+            </h2>
+            <p className="text-slate-400 max-w-2xl mx-auto text-pretty">
+              Every analysis scores all 17 indicators. Pick a category to see
+              what is included.
+            </p>
+          </div>
+
           <IndicatorCatalog
             indicators={homepageIndicators}
             title="SEO Indicators"
             description="The indicators we analyse for every site - shown with sample values"
             categories={indicatorCategories}
-            selectedCategory="All"
+            selectedCategory={category}
+            onCategoryChange={setCategory}
             className="text-left"
           />
-          <p className="mt-3 text-sm text-slate-500 text-center">
-            Sample values for illustration. Run an analysis on your own domain to see real results.
+
+          <p className="mt-3 text-sm text-slate-400 text-center">
+            Sample values for illustration. Run an analysis on your own domain
+            to see real results.
           </p>
-        </div>
-        
-        {/* CTA */}
-        <div className="flex gap-4 justify-center flex-wrap">
-          <Input 
-            type="email" 
-            placeholder="Enter your email" 
-            className="max-w-xs bg-surface-2 border-slate-600 text-white placeholder:text-slate-500"
-          />
-          <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white px-8">
-            <Link href="/dashboard">Get Started</Link>
-          </Button>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-white text-center mb-12">
-          Key Features
+      <section className="container mx-auto px-4 pb-16" aria-label="Key features">
+        <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-3">
+          Built for real SEO work
         </h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <p className="text-slate-400 text-center max-w-2xl mx-auto mb-10 text-pretty">
+          Everything below works on a free account, so you can try the whole
+          product before you pay for anything.
+        </p>
+
+        <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
           <Card className="bg-surface-2 border-slate-700 hover:border-brand-primary/50 transition-colors duration-300">
             <CardHeader>
               <CardTitle className="text-white">Keyword Tracking</CardTitle>
@@ -204,9 +280,17 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-500">
-                Track daily ranking changes and identify optimization opportunities.
+              <p className="text-slate-400">
+                Track daily ranking changes and identify optimization
+                opportunities.
               </p>
+              <Link
+                href="/ranking-history"
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:underline"
+              >
+                See ranking history
+                <span aria-hidden="true">&rarr;</span>
+              </Link>
             </CardContent>
           </Card>
 
@@ -218,30 +302,45 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-500">
+              <p className="text-slate-400">
                 Compare your performance against competitors and discover gaps.
               </p>
+              <Link
+                href="/comparison"
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:underline"
+              >
+                Compare your site
+                <span aria-hidden="true">&rarr;</span>
+              </Link>
             </CardContent>
           </Card>
 
           <Card className="bg-surface-2 border-slate-700 hover:border-brand-primary/50 transition-colors duration-300">
             <CardHeader>
-              <CardTitle className="text-white">Custom Indicators</CardTitle>
+              <CardTitle className="text-white">Free Analysis Tools</CardTitle>
               <CardDescription className="text-slate-400">
-                Create your own SEO metrics and KPIs
+                No sign-up required for any of them
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-500">
-                Build personalized indicators tailored to your business goals.
+              <p className="text-slate-400">
+                Meta tags, keyword density, social previews and mobile
+                usability - each runs in the browser.
               </p>
+              <Link
+                href="/tools"
+                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:underline"
+              >
+                Browse all tools
+                <span aria-hidden="true">&rarr;</span>
+              </Link>
             </CardContent>
           </Card>
         </div>
       </section>
 
       {/* Status Bar */}
-      <section className="container mx-auto px-4 py-8">
+      <section className="container mx-auto px-4 pb-12">
         <Card className="bg-surface-1/50 border-slate-700">
           <CardContent>
             <SystemStatusBar />
@@ -251,51 +350,61 @@ export default function Home() {
 
       {/* How We Compare Section */}
       <section
-        className="container mx-auto px-4 py-16"
+        className="container mx-auto px-4 pb-16"
         aria-label="How We Compare"
         data-testid="how-we-compare-section"
       >
-        <h2 className="text-3xl font-bold text-white text-center mb-12">
-          How We Compare
+        <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-3">
+          How we compare
         </h2>
+        <p className="text-slate-400 text-center max-w-2xl mx-auto mb-10 text-pretty">
+          See how SEOIndicator stacks up against the tools you already pay for.
+        </p>
         <div
-          className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto"
+          className="grid md:grid-cols-4 gap-5 max-w-4xl mx-auto"
           data-testid="comparison-links"
         >
-          <Link
-            href="/compare/seoindicator-vs-ahrefs"
-            className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center"
-            data-testid="compare-ahrefs"
-          >
-            <span className="text-white font-semibold">vs Ahrefs</span>
-          </Link>
-          <Link
-            href="/compare/seoindicator-vs-semrush"
-            className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center"
-            data-testid="compare-semrush"
-          >
-            <span className="text-white font-semibold">vs SEMrush</span>
-          </Link>
-          <Link
-            href="/compare/seoindicator-vs-moz"
-            className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center"
-            data-testid="compare-moz"
-          >
-            <span className="text-white font-semibold">vs Moz</span>
-          </Link>
+          {[
+            {
+              href: "/compare/seoindicator-vs-ahrefs",
+              label: "vs Ahrefs",
+              testid: "compare-ahrefs",
+            },
+            {
+              href: "/compare/seoindicator-vs-semrush",
+              label: "vs SEMrush",
+              testid: "compare-semrush",
+            },
+            {
+              href: "/compare/seoindicator-vs-moz",
+              label: "vs Moz",
+              testid: "compare-moz",
+            },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="p-6 bg-surface-2 border border-slate-700 rounded-lg hover:border-brand-primary/50 transition-colors text-center hover:bg-surface-3"
+              data-testid={item.testid}
+            >
+              <span className="text-white font-semibold">{item.label}</span>
+            </Link>
+          ))}
           <Link
             href="/compare"
             className="p-6 bg-brand-primary/10 border border-brand-primary/30 rounded-lg hover:bg-brand-primary/20 transition-colors text-center"
             data-testid="view-all-comparisons"
           >
-            <span className="text-brand-primary font-semibold">View all comparisons</span>
+            <span className="text-brand-primary font-semibold">
+              View all comparisons
+            </span>
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-700 mt-20" role="contentinfo">
-        <div className="container mx-auto px-4 py-8 text-center text-slate-500">
+      <footer className="border-t border-slate-700 mt-8" role="contentinfo">
+        <div className="container mx-auto px-4 py-8 text-center text-slate-400">
           <p>© 2026 SEOIndicator. All rights reserved.</p>
           <p className="text-sm mt-2">
             Built with Next.js, Tailwind CSS, and Shadcn/UI

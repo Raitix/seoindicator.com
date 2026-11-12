@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { RefreshCw, History, AlertCircle } from "lucide-react";
 
 import { useAuth } from "@/lib/contexts/AuthContext";
+import GuestPreview from "@/components/auth/GuestPreview";
 import { useAnalysisHistory, useAnalysisDelete, useAnalysisDetail } from "@/lib/hooks/useAnalysisHistory";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,9 @@ import type { AnalysisRecord } from "@/lib/types/analysis";
 function HistoryContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // This page lives under /dashboard, which an anonymous visitor may browse
+  // in preview mode, so a guest is not sent to the login screen.
+  const isGuestViewable = true;
 
   // Analysis history hook (uses useSearchParams internally)
   const {
@@ -58,12 +62,14 @@ function HistoryContent() {
     refresh();
   });
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated. Nested pages under a
+  // guest-viewable prefix are browsable without an account, so they show a
+  // sign-in prompt instead of bouncing the visitor away.
   React.useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated && !isGuestViewable) {
       router.push("/login");
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, isGuestViewable, router]);
 
   // Handle row click - view details
   const handleRowClick = React.useCallback(
@@ -125,10 +131,16 @@ function HistoryContent() {
 
   // Not authenticated (will redirect)
   if (!isAuthenticated) {
+    // Guest preview: the history belongs to an account. Show the page
+    // structure and a prompt instead of a skeleton that never resolves.
     return (
-      <div className="min-h-screen bg-slate-950" data-testid="auth-loading">
+      <div className="min-h-screen bg-slate-950" data-testid="history-guest">
         <div className="container mx-auto px-4 py-10">
-          <HistorySkeleton />
+          <h1 className="text-2xl font-semibold text-white">Analysis History</h1>
+          <p className="text-sm text-slate-300 mb-4">
+            Every analysis you have run, with the score it produced.
+          </p>
+          <GuestPreview feature="your analysis history" />
         </div>
       </div>
     );

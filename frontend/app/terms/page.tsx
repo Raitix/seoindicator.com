@@ -85,7 +85,7 @@ export default function TermsPage() {
                 Home
               </Link>
             </li>
-            <li className="text-slate-600" aria-hidden="true">/</li>
+            <li className="text-slate-400" aria-hidden="true">/</li>
             <li className="text-white" aria-current="page">
               Terms & Privacy
             </li>

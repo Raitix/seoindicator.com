@@ -110,17 +110,17 @@ export default function ToolsPage() {
           </Link>
           <nav className="flex items-center gap-4">
             <Link href="/dashboard">
-              <Button variant="ghost" className="text-slate-300 hover:text-white">
+              <Button variant="ghost" className="bg-transparent text-slate-300 hover:text-white">
                 Dashboard
               </Button>
             </Link>
             <Link href="/projects">
-              <Button variant="ghost" className="text-slate-300 hover:text-white">
+              <Button variant="ghost" className="bg-transparent text-slate-300 hover:text-white">
                 Projects
               </Button>
             </Link>
             <Link href="/tools">
-              <Button variant="outline" className="border-emerald-500 text-emerald-500">
+              <Button variant="outline" className="border-emerald-500 bg-transparent text-emerald-400">
                 Tools
               </Button>
             </Link>
@@ -153,7 +153,7 @@ export default function ToolsPage() {
             >
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{tool.icon}</span>
+                  <span className="text-3xl text-white">{tool.icon}</span>
                   <div>
                     <CardTitle className="text-white flex items-center gap-2">
                       {tool.name}
@@ -180,12 +180,12 @@ export default function ToolsPage() {
                 </ul>
                 {tool.status === 'available' ? (
                   <Link href={tool.path}>
-                    <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
+                    <Button className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
                       Use Tool
                     </Button>
                   </Link>
                 ) : (
-                  <Button disabled className="w-full bg-slate-700 text-slate-400">
+                  <Button disabled className="w-full bg-slate-700 text-slate-300">
                     Coming Soon
                   </Button>
                 )}
@@ -203,21 +203,21 @@ export default function ToolsPage() {
           </h2>
           <div className="grid md:grid-cols-3 gap-6 mt-8">
             <div className="p-4">
-              <div className="text-3xl mb-2">⚡</div>
+              <div className="text-3xl mb-2 text-white">⚡</div>
               <h3 className="text-lg font-semibold text-white mb-2">Instant Results</h3>
               <p className="text-slate-400 text-sm">
                 Get analysis in seconds, no waiting for reports or processes.
               </p>
             </div>
             <div className="p-4">
-              <div className="text-3xl mb-2">🔒</div>
+              <div className="text-3xl mb-2 text-white">🔒</div>
               <h3 className="text-lg font-semibold text-white mb-2">No Data Storage</h3>
               <p className="text-slate-400 text-sm">
                 Your URLs are analyzed in real-time and not stored on our servers.
               </p>
             </div>
             <div className="p-4">
-              <div className="text-3xl mb-2">🎯</div>
+              <div className="text-3xl mb-2 text-white">🎯</div>
               <h3 className="text-lg font-semibold text-white mb-2">Actionable Insights</h3>
               <p className="text-slate-400 text-sm">
                 Get specific recommendations you can implement right away.
@@ -233,7 +233,7 @@ export default function ToolsPage() {
           <CardContent className="py-4 text-center text-slate-400 text-sm">
             <p>
               Free tools have a usage limit of 3 analyses per day per IP address.
-              <Link href="/signup" className="text-emerald-400 hover:text-emerald-300 ml-1">
+              <Link href="/register" className="text-emerald-400 hover:text-emerald-300 ml-1">
                 Create a free account
               </Link>
               {" "}for unlimited access and additional features.
@@ -300,7 +300,7 @@ export default function ToolsPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-700 mt-8">
-        <div className="container mx-auto px-4 py-8 text-center text-slate-500">
+        <div className="container mx-auto px-4 py-8 text-center text-slate-400">
           <p>© 2026 SEOIndicator. All rights reserved.</p>
           <p className="text-sm mt-2">
             Built with Next.js, Tailwind CSS, and Shadcn/UI

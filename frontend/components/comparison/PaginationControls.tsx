@@ -25,7 +25,7 @@ export default function PaginationControls({
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
-          className="border-slate-700 text-slate-200"
+          className="border-slate-700 bg-transparent text-slate-200"
           onClick={onPrevious}
           disabled={!canPrevious}
         >
@@ -33,7 +33,7 @@ export default function PaginationControls({
         </Button>
         <Button
           variant="outline"
-          className="border-slate-700 text-slate-200"
+          className="border-slate-700 bg-transparent text-slate-200"
           onClick={onNext}
           disabled={!canNext}
         >

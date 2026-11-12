@@ -127,7 +127,7 @@ function SiteOverviewContent({ siteId }: { siteId: string }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/sites/${siteId}/settings`)}
+              onClick={() => router.push(`/sites/${siteId}/content-decay/settings`)}
               className="border-slate-700 text-slate-300"
             >
               <Settings className="h-4 w-4 mr-2" />

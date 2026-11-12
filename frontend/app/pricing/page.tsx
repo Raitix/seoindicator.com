@@ -210,7 +210,7 @@ export default function PricingPage() {
                       )}
                       <span
                         className={
-                          feature.included ? 'text-slate-300' : 'text-slate-500'
+                          feature.included ? 'text-slate-300' : 'text-slate-400'
                         }
                       >
                         {feature.text}
@@ -224,7 +224,7 @@ export default function PricingPage() {
                   asChild
                   className={`w-full ${
                     tier.highlighted
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
                       : 'bg-slate-800 hover:bg-slate-700 text-white'
                   }`}
                 >
@@ -264,7 +264,7 @@ export default function PricingPage() {
                   {preview.title}
                 </h3>
                 <p className="text-sm text-emerald-400">{preview.highlight}</p>
-                <span className="text-sm text-slate-500 mt-2 block">
+                <span className="text-sm text-slate-400 mt-2 block">
                   View comparison →
                 </span>
               </Link>
@@ -273,7 +273,7 @@ export default function PricingPage() {
 
           {/* View All Link */}
           <div className="text-center">
-            <Button asChild variant="outline" className="border-slate-700 text-slate-300 hover:text-white hover:border-emerald-500">
+            <Button asChild variant="outline" className="border-slate-700 bg-transparent text-slate-300 hover:text-white hover:border-emerald-500">
               <Link href="/compare" data-testid="view-all-pricing-comparisons">
                 View all comparisons
               </Link>
@@ -316,7 +316,7 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-16">
-        <div className="container mx-auto px-4 py-8 text-center text-slate-500">
+        <div className="container mx-auto px-4 py-8 text-center text-slate-400">
           <p>© {new Date().getFullYear()} SEOIndicator. All rights reserved.</p>
         </div>
       </footer>

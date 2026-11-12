@@ -58,7 +58,7 @@ export function PaymentSuccess({
   const handleMouseLeave = () => setIsPaused(false);
 
   const handleViewHistory = () => {
-    router.push("/payments/history");
+    router.push("/dashboard");
   };
 
   const handleDone = () => {

@@ -11,6 +11,10 @@
  */
 
 import { AUTH_STORAGE_KEYS, AuthError, AuthErrorCode, shouldClearToken } from "@/lib/types/auth";
+import {
+  isPublicRoute as isPublicRoutePath,
+  isGuestViewableRoute as isGuestViewableRoutePath,
+} from "@/lib/routes";
 
 // ==================== Constants ====================
 
@@ -29,18 +33,17 @@ export const SESSION_EXPIRED_MESSAGES = {
 } as const;
 
 /**
- * Public routes that should not trigger redirect
+ * Routes that should not trigger a redirect.
+ *
+ * This used to be a hand-maintained copy of the public route list, which
+ * drifted away from `@/lib/routes` and no longer matched the middleware or
+ * the auth provider. The shared list is imported instead so the three can
+ * never disagree.
+ *
+ * Guest-viewable routes are included: an anonymous visitor browsing those
+ * pages gets a 401 from the API, and that must NOT bounce them to the login
+ * screen - they are meant to keep browsing.
  */
-const PUBLIC_ROUTES = [
-  "/",
-  "/login",
-  "/register",
-  "/forgot-password",
-  "/reset-password",
-  "/verify-email",
-  "/tools",
-  "/seo-guides",
-] as const;
 
 /**
  * Debounce timeout for preventing multiple redirects (in ms)
@@ -66,11 +69,16 @@ function isBrowser(): boolean {
 }
 
 /**
- * Check if current path is a public route
+ * Check if current path should never trigger a redirect.
+ *
+ * True for public pages AND for guest-viewable pages: an anonymous visitor
+ * on those pages is browsing in preview mode, and the 401s their requests
+ * produce are expected, not a session that expired.
  */
 export function isPublicRoute(path: string): boolean {
-  return PUBLIC_ROUTES.some(
-    (route) => path === route || path.startsWith(route + "/")
+  return (
+    isPublicRoutePath(path) ||
+    isGuestViewableRoutePath(path)
   );
 }
 

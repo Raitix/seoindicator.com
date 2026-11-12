@@ -104,7 +104,7 @@ export default function SystemStatusBar() {
           {state.kind === "unknown" && "System Status: Unreachable"}
         </span>
       </div>
-      <span className="text-slate-500 text-sm" data-testid="system-status-detail">
+      <span className="text-slate-400 text-sm" data-testid="system-status-detail">
         {state.kind === "ok" &&
           `${state.app} API Ready • Database ${state.database}`}
         {state.kind === "loading" && "Checking backend..."}

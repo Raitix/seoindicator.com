@@ -1,4 +1,5 @@
 import RankingHistoryChart, { RankingHistoryPoint } from "@/components/charts/RankingHistoryChart";
+import GuestPreview from "@/components/auth/GuestPreview";
 
 const sampleData: RankingHistoryPoint[] = [
   { date: "2026-01-25", position: 18 },
@@ -27,9 +28,10 @@ export default function RankingHistoryPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-white">Ranking History</h1>
           <p className="text-sm text-slate-300">
-            Demo view for validating the Ranking History chart component in production.
+            Sample data shown for illustration. Sign in to see how your own keywords move over time.
           </p>
         </div>
+        <GuestPreview feature="your own ranking history" className="mb-4" />
         <RankingHistoryChart keywordName="best seo tools" data={sampleData} initialRange="30d" />
       </div>
     </div>

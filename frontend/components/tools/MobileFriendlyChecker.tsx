@@ -96,7 +96,7 @@ export function MobileFriendlyChecker({
           {state !== "success" ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="mobile-url-input" className="text-slate-300">
+                <Label htmlFor="mobile-url-input">
                   URL to analyze
                 </Label>
                 <Input

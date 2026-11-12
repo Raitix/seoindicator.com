@@ -93,7 +93,7 @@ export function ComparisonCTA({
           data-testid="cta-link"
           data-variant={variant}
           data-ab-test-group={finalAbGroup}
-          className="block w-full bg-brand-primary text-white text-center py-3 rounded-lg font-semibold hover:bg-brand-primary/90"
+          className="block w-full bg-brand-primary text-brand-primary-foreground text-center py-3 rounded-lg font-semibold hover:bg-brand-primary/90"
         >
           {finalText}
           <ArrowRight className="inline-block ml-2 w-4 h-4" aria-hidden="true" data-testid="arrow-icon" />
@@ -141,13 +141,13 @@ export function ComparisonCTA({
             data-testid="cta-primary-button"
             data-variant={variant}
             data-ab-test-group={finalAbGroup}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-primary text-white rounded-lg font-semibold hover:bg-brand-primary/90"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-primary text-brand-primary-foreground rounded-lg font-semibold hover:bg-brand-primary/90"
           >
             {finalText}
             <ArrowRight className="w-4 h-4" aria-hidden="true" data-testid="arrow-icon" />
           </a>
           <a
-            href="/features"
+            href="/pricing"
             data-testid="cta-secondary-button"
             className="inline-flex items-center justify-center px-6 py-3 border border-slate-600 text-slate-300 hover:text-white rounded-lg"
           >

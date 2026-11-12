@@ -238,6 +238,22 @@ export const TOOLS: ToolInfo[] = [
     status: 'available',
   },
   {
+    slug: 'mobile-friendly',
+    name: 'Mobile Friendly Test',
+    description: 'Check how mobile-friendly your website is. Free responsive design and mobile usability test.',
+    features: [
+      'Viewport configuration',
+      'Responsive image check',
+      'Tap target sizing',
+      'Text readability',
+      'Horizontal overflow detection',
+    ],
+    relatedGuides: ['mobile-friendly', 'image-optimization'],
+    image: 'https://seoindicator.com/images/tools/mobile-friendly.png',
+    rating: { value: 4.4, count: 640 },
+    status: 'available',
+  },
+  {
     slug: 'social-preview',
     name: 'Social Media Preview',
     description: 'Preview how your pages appear on Facebook, Twitter, and LinkedIn. Free social card preview tool.',

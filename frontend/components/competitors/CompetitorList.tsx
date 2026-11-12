@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCcw } from "lucide-react";
 
 import { useCompetitors } from "@/lib/api/competitors";
 import type { Competitor } from "@/lib/types/competitors";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import AddCompetitorModal from "@/components/competitors/AddCompetitorModal";
@@ -16,6 +17,10 @@ const FALLBACK_LIMIT = 3;
 
 export default function CompetitorList() {
   const { competitors, meta, isLoading, error, mutate } = useCompetitors();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // A guest's request is rejected with a 401, which is expected rather
+  // than a failure - the page should still render.
+  const isGuest = !authLoading && !isAuthenticated;
   const [selectedCompetitor, setSelectedCompetitor] = React.useState<
     Competitor | null
   >(null);
@@ -56,7 +61,7 @@ export default function CompetitorList() {
         </div>
       )}
 
-      {!isLoading && error && (
+      {!isLoading && error && !isGuest && (
         <Card className="border-rose-500/40 bg-rose-500/10">
           <CardContent className="flex flex-col gap-3 p-6 text-rose-200">
             <div className="flex items-center gap-2">

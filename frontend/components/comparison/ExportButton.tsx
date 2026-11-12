@@ -6,7 +6,7 @@ interface ExportButtonProps {
 
 export default function ExportButton({ onExport }: ExportButtonProps) {
   return (
-    <Button onClick={onExport} className="bg-emerald-500 text-white hover:bg-emerald-600">
+    <Button onClick={onExport} className="bg-emerald-700 text-white hover:bg-emerald-800">
       Export CSV
     </Button>
   );

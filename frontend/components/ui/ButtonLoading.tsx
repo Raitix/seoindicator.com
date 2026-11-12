@@ -74,7 +74,7 @@ export function ButtonLoading({
 
   // Variant styles
   const variantStyles: Record<string, string> = {
-    default: "bg-brand-primary hover:bg-brand-primary/90 text-white",
+    default: "bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground",
     outline: "border border-slate-700 text-slate-200 hover:bg-slate-800",
     ghost: "text-slate-200 hover:bg-slate-800",
     link: "text-brand-primary hover:underline",

@@ -39,7 +39,7 @@ const getChangeBadge = (keyword: Keyword) => {
         </span>
       );
     }
-    return <span className="text-slate-500">—</span>;
+    return <span className="text-slate-400" aria-hidden="true">—</span>;
   }
 
   if (keyword.positionChange === 0) {

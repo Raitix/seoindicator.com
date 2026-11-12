@@ -56,12 +56,12 @@ export default function MetaTagAnalyzerPage() {
           </Link>
           <nav className="flex items-center gap-4">
             <Link href="/tools">
-              <Button variant="ghost" className="text-slate-300 hover:text-white">
+              <Button variant="ghost" className="bg-transparent text-slate-300 hover:text-white">
                 ← All Tools
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button variant="outline" className="border-emerald-500 text-emerald-500">
+              <Button variant="outline" className="border-emerald-500 bg-transparent text-emerald-400">
                 Dashboard
               </Button>
             </Link>
@@ -244,7 +244,7 @@ export default function MetaTagAnalyzerPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-700 mt-12">
-        <div className="container mx-auto px-4 py-8 text-center text-slate-500">
+        <div className="container mx-auto px-4 py-8 text-center text-slate-400">
           <p>© 2026 SEOIndicator. All rights reserved.</p>
         </div>
       </footer>

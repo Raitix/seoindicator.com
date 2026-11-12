@@ -598,7 +598,7 @@ export function ToolWidget({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* URL Input */}
               <div className="space-y-2">
-                <Label htmlFor="url-input" className="text-slate-300">
+                <Label htmlFor="url-input">
                   URL to analyze
                 </Label>
                 <Input
@@ -618,7 +618,7 @@ export function ToolWidget({
               {/* Keyword Input (if required) */}
               {config.requiresKeyword && (
                 <div className="space-y-2">
-                  <Label htmlFor="keyword-input" className="text-slate-300">
+                  <Label htmlFor="keyword-input">
                     Target keyword
                   </Label>
                   <Input

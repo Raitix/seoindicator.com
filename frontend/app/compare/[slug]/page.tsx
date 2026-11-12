@@ -283,7 +283,7 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                 Home
               </Link>
             </li>
-            <li className="text-slate-600" aria-hidden="true">
+            <li className="text-slate-400" aria-hidden="true">
               /
             </li>
             <li>
@@ -294,7 +294,7 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                 Compare
               </Link>
             </li>
-            <li className="text-slate-600" aria-hidden="true">
+            <li className="text-slate-400" aria-hidden="true">
               /
             </li>
             <li className="text-white" aria-current="page">

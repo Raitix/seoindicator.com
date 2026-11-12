@@ -14,8 +14,10 @@ import type { NextRequest } from 'next/server';
 import {
   PROTECTED_ROUTES,
   PUBLIC_ROUTES,
+  GUEST_VIEWABLE_ROUTES,
   isProtectedRoute,
   isPublicRoute,
+  isGuestViewableRoute,
 } from '@/lib/routes';
 
 // ==================== Route Configuration ====================
@@ -55,9 +57,17 @@ export function middleware(request: NextRequest): NextResponse {
 
   // ==================== Protected Route Check ====================
 
-  // If user is not authenticated and tries to access a protected route,
-  // redirect to login with the intended destination stored in the redirect param
-  if (!isAuthenticated && isProtectedRoute(pathname)) {
+  // If user is not authenticated and tries to access a route that needs a
+  // session, redirect to login with the intended destination stored in the
+  // redirect param.
+  //
+  // Guest-viewable routes are skipped on purpose - they render in guest
+  // preview mode instead of bouncing the visitor to the login screen.
+  if (
+    !isAuthenticated &&
+    isProtectedRoute(pathname) &&
+    !isGuestViewableRoute(pathname)
+  ) {
     const loginUrl = new URL('/login', request.url);
     
     // Store the full path (including query params) for post-login redirect

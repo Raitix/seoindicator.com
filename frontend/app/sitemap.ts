@@ -70,6 +70,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.7,
     },
+    // The privacy policy and the contact form are linked from the footer.
+    // They were missing from the sitemap, which left them invisible to
+    // search engines even though the footer pointed at them.
+    {
+      url: `${BASE_URL}/privacy/`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/contact/`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
   ];
 
   // Tools pages
@@ -88,6 +103,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/tools/social-preview/`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${BASE_URL}/tools/mobile-friendly/`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.6,

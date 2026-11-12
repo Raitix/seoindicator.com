@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 import { useNotifications, markAsRead, markAllAsRead, deleteNotification } from "@/lib/api/notifications";
 import { NOTIFICATION_TYPE_LABELS } from "@/lib/types/notifications";
 import type { Notification } from "@/lib/types/notifications";
+import GuestPreview from "@/components/auth/GuestPreview";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function NotificationsPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const isGuest = !authLoading && !isAuthenticated;
 
   const {
     notifications,
@@ -70,7 +75,7 @@ export default function NotificationsPage() {
 
     // Navigate to keyword detail if available
     if (notification.keyword_id) {
-      router.push(`/keywords/${notification.keyword_id}`);
+      router.push(`/dashboard`);
     }
   };
 
@@ -110,7 +115,9 @@ export default function NotificationsPage() {
     return "";
   };
 
-  if (isError) {
+  // A guest gets a 401 from the API. That is expected, not a failure, so
+  // show the page with a sign-in prompt rather than a red error.
+  if (isError && !isGuest) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 to-slate-900">
         <div className="text-red-400">Failed to load notifications</div>
@@ -153,6 +160,9 @@ export default function NotificationsPage() {
             )}
           </div>
         </div>
+
+        {/* Guest preview notice */}
+        <GuestPreview feature="your notifications" className="mb-4" />
 
         {/* Notifications List */}
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">

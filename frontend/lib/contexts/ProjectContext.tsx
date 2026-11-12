@@ -72,7 +72,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     storeProjectId(projectId);
 
     // Navigate to the project dashboard
-    router.push(`/projects/${projectId}/dashboard`);
+    router.push(`/dashboard`);
   }, [projects, router]);
 
   // Create a new project
@@ -85,7 +85,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Set as current project and navigate
     setCurrentProjectId(newProject.id);
     storeProjectId(newProject.id);
-    router.push(`/projects/${newProject.id}/dashboard`);
+    router.push(`/dashboard`);
     
     return newProject;
   }, [mutate, router]);

@@ -24,6 +24,7 @@ import {
 import type { ProjectBreakdown, AggregateMetrics } from "@/lib/types/projects";
 import { fetchAggregateMetrics } from "@/lib/api/projects";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,10 @@ export function AllProjectsView({ onCreateProject, className }: AllProjectsViewP
   const [sortField, setSortField] = React.useState<SortField>("visibility");
   const [sortOrder, setSortOrder] = React.useState<SortOrder>("desc");
   const [showArchived, setShowArchived] = React.useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // A guest's request is rejected with a 401, which is expected rather than
+  // a failure - the page should still render.
+  const isGuest = !authLoading && !isAuthenticated;
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
@@ -188,8 +193,9 @@ export function AllProjectsView({ onCreateProject, className }: AllProjectsViewP
     );
   }
 
-  // Error state
-  if (error) {
+  // Error state. A guest's request is rejected with a 401, which is
+  // expected - show a sign-in prompt rather than a red error.
+  if (error && !isGuest) {
     return (
       <Card className={cn("border-rose-500/40 bg-rose-500/10", className)}>
         <CardContent className="flex flex-col gap-3 p-6 text-rose-200">
@@ -446,7 +452,7 @@ export function AllProjectsView({ onCreateProject, className }: AllProjectsViewP
                 <tr
                   key={project.id}
                   className="group cursor-pointer bg-slate-900/40 transition-colors hover:bg-slate-800/50"
-                  onClick={() => window.location.href = `/projects/${project.id}/dashboard`}
+                  onClick={() => window.location.href = `/dashboard`}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -500,7 +506,7 @@ export function AllProjectsView({ onCreateProject, className }: AllProjectsViewP
                         )}
                       </div>
                     ) : (
-                      <span className="text-slate-500">—</span>
+                      <span className="text-slate-400" aria-hidden="true">—</span>
                     )}
                   </td>
                 </tr>

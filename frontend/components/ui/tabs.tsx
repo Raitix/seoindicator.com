@@ -32,6 +32,10 @@ const tabsListVariants = cva(
       variant: {
         default: "bg-muted",
         line: "gap-1 bg-transparent",
+        // A pill-style segmented control for dark surfaces. The site renders
+        // on a dark background, where the default `bg-muted` list looks like
+        // a light box pasted onto the page.
+        dark: "gap-1 bg-slate-800/80 border border-slate-700 rounded-full p-1",
       },
     },
     defaultVariants: {
@@ -68,6 +72,10 @@ function TabsTrigger({
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent",
         "data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-foreground",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100",
+        // Dark segmented control: the active pill uses the brand colour so the
+        // current filter is obvious at a glance, and the labels stay legible
+        // against the slate background.
+        "group-data-[variant=dark]/tabs-list:h-auto group-data-[variant=dark]/tabs-list:rounded-full group-data-[variant=dark]/tabs-list:px-4 group-data-[variant=dark]/tabs-list:py-2 group-data-[variant=dark]/tabs-list:text-sm group-data-[variant=dark]/tabs-list:font-medium group-data-[variant=dark]/tabs-list:text-slate-300 group-data-[variant=dark]/tabs-list:transition-colors group-data-[variant=dark]/tabs-list:hover:bg-slate-700/70 group-data-[variant=dark]/tabs-list:hover:text-white group-data-[variant=dark]/tabs-list:data-[state=active]:bg-emerald-500 group-data-[variant=dark]/tabs-list:data-[state=active]:text-slate-950 group-data-[variant=dark]/tabs-list:data-[state=active]:shadow-none group-data-[variant=dark]/tabs-list:data-[state=active]:hover:bg-emerald-400 group-data-[variant=dark]/tabs-list:focus-visible:ring-2 group-data-[variant=dark]/tabs-list:focus-visible:ring-emerald-400 group-data-[variant=dark]/tabs-list:focus-visible:ring-offset-0 group-data-[variant=dark]/tabs-list:after:hidden",
         className
       )}
       {...props}

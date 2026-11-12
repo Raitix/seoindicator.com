@@ -1699,10 +1699,10 @@ Place internal links within relevant paragraphs where the surrounding text suppo
           {
             language: 'html',
             code: `<!-- Good: Descriptive anchor text -->
-<p>Learn how to <a href="/guides/meta-title/">optimize your meta titles</a> for better click-through rates.</p>
+<p>Learn how to <a href="/seo-guides/meta-title/">optimize your meta titles</a> for better click-through rates.</p>
 
 <!-- Bad: Generic anchor text -->
-<p>Learn how to optimize your meta titles <a href="/guides/meta-title/">here</a>.</p>`,
+<p>Learn how to optimize your meta titles <a href="/seo-guides/meta-title/">here</a>.</p>`,
             description: 'Good vs bad anchor text examples',
           },
         ],
@@ -1765,7 +1765,7 @@ The example below shows both HTML and JSON-LD implementation for maximum SEO ben
   <ol class="breadcrumb">
     <li><a href="/">Home</a></li>
     <li><a href="/guides/">Guides</a></li>
-    <li><a href="/guides/internal-links/" aria-current="page">Internal Links</a></li>
+    <li><a href="/seo-guides/internal-links/" aria-current="page">Internal Links</a></li>
   </ol>
 </nav>`,
             description: 'Breadcrumb navigation HTML with accessibility attributes',
@@ -1792,7 +1792,7 @@ The example below shows both HTML and JSON-LD implementation for maximum SEO ben
       "@type": "ListItem",
       "position": 3,
       "name": "Internal Links",
-      "item": "https://example.com/guides/internal-links/"
+      "item": "https://seoindicator.com/seo-guides/internal-links/"
     }
   ]
 }`,
@@ -4969,7 +4969,7 @@ The priority value is **relative to other pages on your site**, not an absolute 
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://example.com/blog/</loc>
+    <loc>https://seoindicator.com/seo-guides/</loc>
     <lastmod>2024-01-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>

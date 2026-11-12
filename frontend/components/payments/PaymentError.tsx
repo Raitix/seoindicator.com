@@ -200,7 +200,7 @@ export function PaymentError({
       {showContactSupport && (
         <div className="mt-4 pt-4 border-t border-slate-700">
           <a
-            href="/support"
+            href="/contact"
             className="inline-flex items-center gap-1 text-blue-400 hover:underline text-sm"
           >
             <HelpCircle className="w-4 h-4" />

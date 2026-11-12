@@ -30,7 +30,7 @@ export function AIVisibilityPageClient() {
   };
 
   const handleEditProject = (projectId: number) => {
-    router.push(`/ai-visibility/${projectId}/edit`);
+    router.push(`/ai-visibility/${projectId}`);
   };
 
   return (

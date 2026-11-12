@@ -62,7 +62,7 @@ const getStatusBadge = (suggestion: KeywordSuggestion) => {
 // Opportunity score badge
 const getOpportunityBadge = (score: number | null) => {
   if (score === null) {
-    return <span className="text-slate-500">—</span>;
+    return <span className="text-slate-400" aria-hidden="true">—</span>;
   }
 
   let colorClass = "text-slate-300";

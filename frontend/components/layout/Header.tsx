@@ -284,7 +284,7 @@ export default function Header({
                     {/* Profile Link */}
                     <DropdownMenuItem
                       className="text-slate-300 focus:text-white cursor-pointer"
-                      onClick={() => router.push("/profile")}
+                      onClick={() => router.push("/dashboard")}
                     >
                       <User className="w-4 h-4 mr-2" aria-hidden="true" />
                       Profile

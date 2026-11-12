@@ -334,7 +334,7 @@ export const IndicatorCatalog = React.forwardRef<HTMLElement, IndicatorCatalogPr
                 <h2
                   id={titleId}
                   data-testid="catalog-title"
-                  className="text-xl font-semibold tracking-tight sm:text-2xl"
+                  className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
                 >
                   {title}
                 </h2>
@@ -342,7 +342,7 @@ export const IndicatorCatalog = React.forwardRef<HTMLElement, IndicatorCatalogPr
               {description && (
                 <p
                   data-testid="catalog-description"
-                  className="text-sm text-muted-foreground"
+                  className="text-sm text-slate-400"
                 >
                   {description}
                 </p>
@@ -377,7 +377,11 @@ export const IndicatorCatalog = React.forwardRef<HTMLElement, IndicatorCatalogPr
               onValueChange={handleCategoryChange}
               aria-label="Filter by category"
             >
-              <TabsList role="tablist" className="w-full justify-start overflow-x-auto">
+              <TabsList
+                role="tablist"
+                variant="dark"
+                className="w-full justify-start overflow-x-auto"
+              >
                 {categories.map((category) => (
                   <TabsTrigger
                     key={category}
@@ -393,7 +397,7 @@ export const IndicatorCatalog = React.forwardRef<HTMLElement, IndicatorCatalogPr
                 {/* Content rendered below tabs */}
               </TabsContent>
             </Tabs>
-            <Separator className="my-2" />
+            <Separator className="my-2 bg-slate-800" />
           </>
         )}
 

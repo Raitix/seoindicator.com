@@ -35,7 +35,10 @@ import {
   hasSessionExpiredMessage,
   clearSessionExpiredMessage,
 } from "@/lib/api/token-expiry-handler";
-import { isPublicRoute as isPublicRoutePath } from "@/lib/routes";
+import {
+  isPublicRoute as isPublicRoutePath,
+  isGuestViewableRoute as isGuestViewableRoutePath,
+} from "@/lib/routes";
 
 // ==================== Redirect Utilities ====================
 
@@ -111,6 +114,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // not run, so this check is what actually protects routes in production.
   const isPublicRoute = React.useCallback(
     (path: string) => isPublicRoutePath(path),
+    []
+  );
+
+  /**
+   * True when the route may be viewed by a signed-out visitor.
+   */
+  const isGuestViewable = React.useCallback(
+    (path: string) => isGuestViewableRoutePath(path),
     []
   );
 
@@ -203,12 +214,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
 
-    // Redirect unauthenticated users to login for protected routes
-    if (!isAuthenticated && !isPublicRoute(pathname)) {
+    // Redirect unauthenticated users to login for routes that need a session.
+    //
+    // Routes listed in GUEST_VIEWABLE_ROUTES are deliberately NOT redirected:
+    // they render in guest preview mode instead, so the whole site stays
+    // explorable without an account.
+    //
+    // `replace` (not `push`) is deliberate: the protected URL is replaced by
+    // /login instead of stacking a new history entry on top of it. With
+    // `push`, pressing BACK returned to the protected page, whose effect
+    // fired again and pushed /login straight back - the visitor could never
+    // leave the login screen.
+    if (
+      !isAuthenticated &&
+      !isPublicRoute(pathname) &&
+      !isGuestViewable(pathname)
+    ) {
       storeRedirectUrl(pathname);
-      router.push("/login");
+      router.replace("/login");
     }
-  }, [user, isLoading, isInitialized, pathname, router, isPublicRoute]);
+  }, [user, isLoading, isInitialized, pathname, router, isPublicRoute, isGuestViewable]);
 
   // ==================== Listen for Multi-Tab Sync ====================
 

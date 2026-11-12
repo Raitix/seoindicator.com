@@ -21,22 +21,40 @@
 /**
  * Routes that require authentication. A visitor without a valid session is
  * redirected to `/login` with their intended destination preserved.
+ *
+ * These pages show or change data that belongs to a specific account, so
+ * there is nothing meaningful to show without a session.
  */
 export const PROTECTED_ROUTES: readonly string[] = [
-  "/dashboard",
   "/settings",
+  "/sites",
+  "/locations",
+  "/guides",
+  "/badges",
+  "/history",
+  "/admin",
+];
+
+/**
+ * Routes that an anonymous visitor may view.
+ *
+ * These pages render for a signed-out visitor in "guest preview" mode: the
+ * layout, the explanatory copy and the structure are all visible, and any
+ * personal data is replaced by a prompt to sign in. That keeps the whole
+ * site explorable - which matters for a product demo - without pretending
+ * the visitor has an account.
+ *
+ * A route belongs here when the page still makes sense without any of the
+ * visitor's own data.
+ */
+export const GUEST_VIEWABLE_ROUTES: readonly string[] = [
+  "/dashboard",
   "/projects",
   "/competitors",
   "/comparison",
   "/notifications",
-  "/sites",
-  "/locations",
   "/ranking-history",
-  "/guides",
-  "/badges",
-  "/history",
   "/audit",
-  "/admin",
 ];
 
 /**
@@ -67,6 +85,15 @@ export const PUBLIC_ROUTES: readonly string[] = [
  */
 export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + "/")
+  );
+}
+
+/**
+ * True when the path is one an anonymous visitor may view in preview mode.
+ */
+export function isGuestViewableRoute(pathname: string): boolean {
+  return GUEST_VIEWABLE_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
 }
