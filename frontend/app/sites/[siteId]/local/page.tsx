@@ -5,7 +5,7 @@ export const dynamicParams = false;
 
 // Required for static export with dynamic routes
 export function generateStaticParams() {
-  return [];
+  return [{ siteId: '1' }];
 }
 
 import { LocationManagementPage } from "@/components/local/LocationManagementPage";

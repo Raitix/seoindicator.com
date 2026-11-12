@@ -9,10 +9,13 @@
 
 import AIVisibilityDashboardPage from './AIVisibilityDashboardPage';
 
-// Required for static export with dynamic routes
-// Returns empty array since this is a client-rendered page
+// Required for static export with dynamic routes.
+// Next.js refuses to export a dynamic route whose generateStaticParams
+// returns an empty array, so a single placeholder param is emitted - the
+// same value the sibling [projectId] route uses. The client recovers the
+// real id from the browser URL during hydration.
 export function generateStaticParams() {
-  return [];
+  return [{ projectId: 'placeholder' }];
 }
 
 export default function Page() {
