@@ -199,6 +199,107 @@ def upload_directory(sftp: paramiko.SFTPClient, local_dir: Path, remote_dir: str
             sftp.put(str(local_file), remote_file)
 
 
+# Top-level directories the frontend export owns. Everything else in the
+# deploy path (backend/, api/, TASKS/, ...) is part of the repository and
+# must never be touched by the prune step.
+FRONTEND_ROUTE_ROOTS = (
+    'about', 'admin', 'ai-visibility', 'audit', 'badges', 'compare',
+    'comparison', 'competitors', 'contact', 'dashboard', 'docs', 'forgot-password',
+    'guides', 'history', 'how-it-works', 'legal', 'local-seo', 'locations',
+    'login', 'logout', 'newsletter', 'notifications', 'paypal', 'pricing',
+    'privacy', 'projects', 'ranking-history', 'register', 'reset-password',
+    'search', 'seo-guides', 'settings', 'sites', 'terms', 'tools',
+    'verify-email',
+)
+
+
+def prune_remote_stale(ssh, remote_dir: str, local_dir: Path, log: DeploymentLog):
+    """Remove exported directories the current build no longer produces.
+
+    The static export is uploaded additively, so a route that was dropped
+    (or a dynamic slug that was removed from the registry) would keep
+    serving its old content indefinitely. Only directories under a known
+    frontend route root are considered, and only ones that exist locally in
+    an equivalent shape are kept.
+    """
+    # The set of relative directories the current build produces.
+    local_dirs = set()
+    for root, dirs, files in os.walk(local_dir):
+        rel = Path(root).relative_to(local_dir)
+        if str(rel) == '.':
+            continue
+        parts = rel.parts
+        if any(p.startswith('__next') for p in parts):
+            continue
+        local_dirs.add(rel.as_posix())
+
+    log.start_step('Prune stale directories')
+
+    sftp = ssh.open_sftp()
+    removed = []
+    try:
+        # Paramiko's SFTP client has no walk(), so the tree is walked here.
+        # Deepest directories are handled first so a parent that only holds
+        # stale children is removed once they are gone.
+        candidates = []
+        stack = [remote_dir]
+        while stack:
+            current = stack.pop()
+            try:
+                entries = sftp.listdir_attr(current)
+            except IOError:
+                continue
+            for entry in entries:
+                if entry.st_mode is None or not (entry.st_mode & 0o40000):
+                    continue  # not a directory
+                child = posixpath.join(current, entry.filename)
+                candidates.append(child)
+                stack.append(child)
+
+        for root in sorted(candidates, key=lambda p: p.count('/'), reverse=True):
+            rel = posixpath.relpath(root, remote_dir)
+            parts = rel.split('/')
+            # Next.js writes its payload files into "__next.*" directories
+            # inside each route folder. Those are part of the export and
+            # are uploaded like any other file, so they must never be
+            # treated as stale.
+            if any(part.startswith('__next') for part in parts):
+                continue
+            top = parts[0]
+            if top not in FRONTEND_ROUTE_ROOTS:
+                continue
+            if rel in local_dirs:
+                continue
+            # Only remove a directory when the local build produces no
+            # directory at this path or beneath it. A parent of a live
+            # route (e.g. "sites" when "sites/1" exists) must stay.
+            prefix = rel + '/'
+            if any(d.startswith(prefix) for d in local_dirs):
+                continue
+            for entry in sftp.listdir_attr(root):
+                try:
+                    sftp.remove(posixpath.join(root, entry.filename))
+                except IOError:
+                    pass
+            try:
+                sftp.rmdir(root)
+            except IOError:
+                continue
+            removed.append(rel)
+    finally:
+        sftp.close()
+
+    if removed:
+        log.finish_step(
+            'Prune stale directories',
+            'success',
+            f'Pruned {len(removed)} stale directory(ies): '
+            f'{", ".join(sorted(removed)[:20])}',
+        )
+    else:
+        log.finish_step('Prune stale directories', 'success', 'No stale directories to prune')
+
+
 def quote_single(value: str) -> str:
     return value.replace("'", "'\"'\"'")
 
@@ -364,6 +465,8 @@ chmod -R 755 "$DEPLOY_PATH/backend/bootstrap/cache" || true
             upload_directory(sftp, frontend_out_dir, env['SSH_DEPLOY_PATH'])
         finally:
             sftp.close()
+
+        prune_remote_stale(ssh, env['SSH_DEPLOY_PATH'], frontend_out_dir, log)
 
         log.finish_step('Deploy to production', 'success', remote_output or f'Deployed commit {git_ref}')
     finally:

@@ -85,3 +85,7 @@ TASKS/.locks/
 # Composer
 composer.phar
 composer.lock
+
+# Python bytecode caches
+__pycache__/
+*.py[cod]
