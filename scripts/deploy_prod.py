@@ -371,6 +371,12 @@ def build_frontend(temp_dir: Path, log: DeploymentLog):
     commands = [
         ['node', 'scripts/generate-og-images.mjs'],
         ['node', 'scripts/generate-audit-og-images.mjs'],
+        # The canonical .htaccess lives at the repository root, but Next.js
+        # exports frontend/public/ over the site root on deploy. Without this
+        # step the deployed .htaccess is a stale copy that silently reverts
+        # every change made to the canonical one.
+        ['node', 'scripts/sync-htaccess.mjs'],
+        ['node', 'scripts/verify-htaccess.mjs'],
         ['node', 'node_modules/next/dist/bin/next', 'build'],
     ]
 
