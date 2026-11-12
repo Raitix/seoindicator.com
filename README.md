@@ -30,6 +30,28 @@ Live production site: **https://seoindicator.com**
 
 ---
 
+## Browsing the site
+
+The site is fully navigable without an account. A single top navigation bar is
+rendered by the root layout, so every page carries the same links, highlights
+the section you are in, and stays sticky while you scroll. On a phone the bar
+collapses into a menu button.
+
+Pages that show an account's own data - the dashboard, projects, competitors,
+comparison, notifications, ranking history and audit reports - render in
+**guest preview** mode for a signed-out visitor, with a banner explaining what
+signing in would add. The documentation pages are open to everyone. Creating an
+account and saving an analysis still requires signing in.
+
+Route access is decided in one place, [`frontend/lib/routes.ts`](frontend/lib/routes.ts),
+which the server middleware and the client-side guard both read:
+
+| Tier | Routes |
+|---|---|
+| Public | `/`, `/login`, `/register`, `/tools`, `/seo-guides`, `/pricing`, `/terms`, `/privacy`, `/contact`, `/about`, `/compare`, `/how-it-works`, `/docs` |
+| Guest preview | `/dashboard`, `/projects`, `/competitors`, `/comparison`, `/notifications`, `/ranking-history`, `/audit`, `/guides` |
+| Account required | `/settings`, `/sites`, `/locations`, `/ai-visibility`, `/admin` |
+
 ## What it does
 
 You type a domain. SEOIndicator crawls it, parses it, and tells you what is wrong with it.
