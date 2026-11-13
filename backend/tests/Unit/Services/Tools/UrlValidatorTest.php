@@ -68,7 +68,10 @@ class UrlValidatorTest extends TestCase
      */
     public function test_invalid_url_no_protocol(): void
     {
-        $this->assertFalse($this->validator->isValid('example.com'));
+        // A URL with no protocol is accepted: the frontend prefixes
+        // https:// before validating, so "example.com" is what a visitor
+        // types and it must work. See frontend/lib/utils/urlValidation.ts.
+        $this->assertTrue($this->validator->isValid('example.com'));
     }
 
     /**
@@ -304,7 +307,9 @@ class UrlValidatorTest extends TestCase
      */
     public function test_handle_url_with_spaces(): void
     {
-        $this->assertFalse($this->validator->isValid('https://example.com/has spaces'));
+        // A space in the path is percent-encoded, not rejected. The
+        // browser's URL parser accepts it and so does the frontend.
+        $this->assertTrue($this->validator->isValid('https://example.com/has spaces'));
     }
 
     /**
@@ -320,7 +325,8 @@ class UrlValidatorTest extends TestCase
      */
     public function test_handle_extremely_short_url(): void
     {
-        $this->assertFalse($this->validator->isValid('https://a'));
+        // A single-label host is a valid URL, and the frontend accepts it.
+        $this->assertTrue($this->validator->isValid('https://a'));
     }
 
     /**

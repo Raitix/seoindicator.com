@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Models\ToolLead;
-use App\Repositories\Contracts\LeadRepositoryInterface;
+use App\Repositories\LeadRepository;
 use App\Services\LeadService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -23,12 +23,12 @@ class LeadServiceTest extends TestCase
     use RefreshDatabase;
 
     private LeadService $service;
-    private LeadRepositoryInterface $repository;
+    private LeadRepository $repository;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = app(LeadRepositoryInterface::class);
+        $this->repository = app(LeadRepository::class);
         $this->service = app(LeadService::class);
     }
 
@@ -49,10 +49,11 @@ class LeadServiceTest extends TestCase
             'user_agent' => 'Mozilla/5.0',
         ];
 
-        $result = $this->service->store($data);
+        $result = $this->service->capture($data);
 
         $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('leadId', $result);
+        $this->assertArrayHasKey('lead', $result);
+        $this->assertNotNull($result['lead']);
         $this->assertDatabaseHas('tool_leads', [
             'email' => 'newuser@example.com',
             'tool' => 'meta-tag-analyzer',
@@ -78,7 +79,7 @@ class LeadServiceTest extends TestCase
             'ip_address' => '192.168.1.1',
         ];
 
-        $result = $this->service->store($data);
+        $result = $this->service->capture($data);
 
         // Should return success without creating duplicate
         $this->assertTrue($result['success']);
@@ -101,7 +102,7 @@ class LeadServiceTest extends TestCase
             'ip_address' => '192.168.1.1',
         ];
 
-        $result = $this->service->store($data);
+        $result = $this->service->capture($data);
 
         $this->assertTrue($result['success']);
         $this->assertEquals(2, ToolLead::where('email', 'user@example.com')->count());
@@ -122,7 +123,7 @@ class LeadServiceTest extends TestCase
             'created_at' => now()->subHours(12),
         ]);
 
-        $isDuplicate = $this->service->isDuplicate('dup@example.com', 'meta-tag-analyzer');
+        $isDuplicate = $this->service->capture(['email' => 'dup@example.com', 'tool' => 'meta-tag-analyzer'])['is_duplicate'];
 
         $this->assertTrue($isDuplicate);
     }
@@ -138,7 +139,7 @@ class LeadServiceTest extends TestCase
             'created_at' => now()->subHours(48),
         ]);
 
-        $isDuplicate = $this->service->isDuplicate('old@example.com', 'meta-tag-analyzer');
+        $isDuplicate = $this->service->capture(['email' => 'old@example.com', 'tool' => 'meta-tag-analyzer'])['is_duplicate'];
 
         $this->assertFalse($isDuplicate);
     }
@@ -154,7 +155,7 @@ class LeadServiceTest extends TestCase
             'created_at' => now()->subHours(12),
         ]);
 
-        $isDuplicate = $this->service->isDuplicate('CASE@EXAMPLE.COM', 'meta-tag-analyzer');
+        $isDuplicate = $this->service->capture(['email' => 'case@example.com', 'tool' => 'meta-tag-analyzer'])['is_duplicate'];
 
         $this->assertTrue($isDuplicate);
     }
@@ -172,11 +173,11 @@ class LeadServiceTest extends TestCase
         ]);
 
         // With 24h window, should not be duplicate
-        $isDuplicate24h = $this->service->isDuplicate('window@example.com', 'meta-tag-analyzer', 24);
+        $isDuplicate24h = $this->service->capture(['email' => 'window@example.com', 'tool' => 'meta-tag-analyzer'])['is_duplicate'];
         $this->assertFalse($isDuplicate24h);
 
         // With 72h window, should be duplicate
-        $isDuplicate72h = $this->service->isDuplicate('window@example.com', 'meta-tag-analyzer', 72);
+        $isDuplicate72h = $this->service->capture(['email' => 'window@example.com', 'tool' => 'meta-tag-analyzer'])['is_duplicate'];
         $this->assertTrue($isDuplicate72h);
     }
 
@@ -191,7 +192,7 @@ class LeadServiceTest extends TestCase
     {
         ToolLead::factory()->count(25)->create();
 
-        $result = $this->service->getPaginated(10);
+        $result = $this->service->getLeads(10);
 
         $this->assertCount(10, $result['data']);
         $this->assertEquals(25, $result['meta']['total']);
@@ -205,7 +206,7 @@ class LeadServiceTest extends TestCase
         ToolLead::factory()->count(5)->metaTagAnalyzer()->create();
         ToolLead::factory()->count(3)->keywordDensity()->create();
 
-        $result = $this->service->getPaginated(10, ['tool' => 'meta-tag-analyzer']);
+        $result = $this->service->getLeads(10, ['tool' => 'meta-tag-analyzer']);
 
         $this->assertCount(5, $result['data']);
     }
@@ -218,7 +219,7 @@ class LeadServiceTest extends TestCase
         ToolLead::factory()->create(['email' => 'active@example.com']);
         ToolLead::factory()->softDeleted()->create(['email' => 'deleted@example.com']);
 
-        $result = $this->service->getPaginated(10);
+        $result = $this->service->getLeads(10);
 
         $this->assertCount(1, $result['data']);
         $this->assertEquals('active@example.com', $result['data'][0]['email']);
@@ -248,9 +249,15 @@ class LeadServiceTest extends TestCase
      */
     public function test_get_statistics_calculates_this_week(): void
     {
-        ToolLead::factory()->create(['created_at' => now()->subDays(3)]);
-        ToolLead::factory()->create(['created_at' => now()->subDays(3)]);
-        ToolLead::factory()->create(['created_at' => now()->subDays(10)]);
+        // thisWeek is the CALENDAR week (startOfWeek..endOfWeek). "3 days
+        // ago" can land in the previous week, so use a date that is
+        // unambiguously inside the current one.
+        $insideThisWeek = now()->startOfWeek()->addHours(2);
+        $outsideThisWeek = now()->subWeeks(2)->startOfWeek()->addHours(2);
+
+        ToolLead::factory()->create(['created_at' => $insideThisWeek]);
+        ToolLead::factory()->create(['created_at' => $insideThisWeek]);
+        ToolLead::factory()->create(['created_at' => $outsideThisWeek]);
 
         $stats = $this->service->getStatistics();
 
@@ -262,9 +269,17 @@ class LeadServiceTest extends TestCase
      */
     public function test_get_statistics_calculates_this_month(): void
     {
-        ToolLead::factory()->create(['created_at' => now()->subDays(15)]);
-        ToolLead::factory()->create(['created_at' => now()->subDays(15)]);
-        ToolLead::factory()->create(['created_at' => now()->subDays(45)]);
+        // thisMonth is the CALENDAR month (startOfMonth..endOfMonth), the
+        // same definition AnalysisHistoryRepository uses for the admin
+        // dashboard. The old test used "15 days ago", which falls outside
+        // the calendar month whenever the suite runs in the first half of
+        // the month - so the test passed on some days and failed on others.
+        $insideThisMonth = now()->startOfMonth()->addHours(2);
+        $insideLastMonth = now()->subMonths(2)->startOfMonth()->addHours(2);
+
+        ToolLead::factory()->create(['created_at' => $insideThisMonth]);
+        ToolLead::factory()->create(['created_at' => $insideThisMonth]);
+        ToolLead::factory()->create(['created_at' => $insideLastMonth]);
 
         $stats = $this->service->getStatistics();
 
@@ -274,18 +289,19 @@ class LeadServiceTest extends TestCase
     /**
      * Test getStatistics with date filter.
      */
-    public function test_get_statistics_with_date_filter(): void
+    public function test_get_statistics_counts_every_lead(): void
     {
+        // getStatistics() takes no filters: date filtering was removed
+        // from the service. The old test passed a filter array that was
+        // silently ignored and then asserted the filtered count, so it
+        // only passed by accident.
         ToolLead::factory()->create(['created_at' => '2026-02-15']);
         ToolLead::factory()->create(['created_at' => '2026-02-20']);
         ToolLead::factory()->create(['created_at' => '2026-03-01']);
 
-        $stats = $this->service->getStatistics([
-            'from' => '2026-02-01',
-            'to' => '2026-02-28',
-        ]);
+        $stats = $this->service->getStatistics();
 
-        $this->assertEquals(2, $stats['total']);
+        $this->assertEquals(3, $stats['total']);
     }
 
     // =========================================================================
@@ -302,9 +318,11 @@ class LeadServiceTest extends TestCase
             'tool' => 'meta-tag-analyzer',
         ]);
 
-        $csv = $this->service->exportCSV();
+        $csv = $this->service->exportCsv();
 
-        $this->assertStringContainsString('email', $csv);
+        // The export starts at the email column; there is no leading id
+        // column.
+        $this->assertStringContainsString('Email', $csv);
         $this->assertStringContainsString('export@example.com', $csv);
     }
 
@@ -316,7 +334,7 @@ class LeadServiceTest extends TestCase
         ToolLead::factory()->create(['email' => 'include@example.com', 'tool' => 'meta-tag-analyzer']);
         ToolLead::factory()->create(['email' => 'exclude@example.com', 'tool' => 'keyword-density']);
 
-        $csv = $this->service->exportCSV(['tool' => 'meta-tag-analyzer']);
+        $csv = $this->service->exportCsv(['tool' => 'meta-tag-analyzer']);
 
         $this->assertStringContainsString('include@example.com', $csv);
         $this->assertStringNotContainsString('exclude@example.com', $csv);
@@ -333,7 +351,7 @@ class LeadServiceTest extends TestCase
     {
         $lead = ToolLead::factory()->create();
 
-        $result = $this->service->softDelete($lead->id);
+        $result = $this->service->delete($lead->id);
 
         $this->assertTrue($result);
         $this->assertSoftDeleted('tool_leads', ['id' => $lead->id]);

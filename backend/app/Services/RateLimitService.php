@@ -12,20 +12,40 @@ use Illuminate\Support\Facades\Log;
  * Implements rate limiting with sliding window algorithm.
  * Uses Redis for distributed rate limiting with fallback to file cache.
  * 
- * Rate limit: 3 requests per IP per 24 hours.
+ * Rate limit: configurable, default 20 requests per IP per hour.
  * CAPTCHA required after limit is reached.
  */
 class RateLimitService
 {
     /**
      * Maximum requests per IP per window.
+     *
+     * Configurable: the server fetches an arbitrary URL on the visitor's
+     * behalf, so this is the protection against abuse - but the right
+     * number depends on the deployment. See config/tools.php.
      */
-    private const MAX_REQUESTS = 3;
+    private const MAX_REQUESTS_FALLBACK = 20;
 
     /**
-     * Window duration in seconds (24 hours).
+     * Window duration in seconds.
      */
-    private const WINDOW_SECONDS = 86400;
+    private const WINDOW_SECONDS_FALLBACK = 3600;
+
+    /**
+     * Maximum requests per IP per window.
+     */
+    private function maxRequests(): int
+    {
+        return (int) config('tools.analysis_rate_limit', self::MAX_REQUESTS_FALLBACK);
+    }
+
+    /**
+     * Window duration in seconds.
+     */
+    private function windowSeconds(): int
+    {
+        return (int) config('tools.analysis_rate_window', self::WINDOW_SECONDS_FALLBACK);
+    }
 
     /**
      * Cache key prefix.
@@ -47,9 +67,9 @@ class RateLimitService
     {
         $key = $this->getCacheKey($ip);
         $currentCount = $this->getCount($key);
-        $remaining = max(0, self::MAX_REQUESTS - $currentCount);
+        $remaining = max(0, $this->maxRequests() - $currentCount);
 
-        if ($currentCount >= self::MAX_REQUESTS) {
+        if ($currentCount >= $this->maxRequests()) {
             return [
                 'allowed' => false,
                 'remaining' => 0,
@@ -81,7 +101,7 @@ class RateLimitService
             if ($this->isRedisAvailable()) {
                 $count = Redis::incr($key);
                 if ($count === 1) {
-                    Redis::expire($key, self::WINDOW_SECONDS);
+                    Redis::expire($key, $this->windowSeconds());
                 }
                 return $count;
             }
@@ -91,7 +111,7 @@ class RateLimitService
 
         // Fallback to Cache
         $count = Cache::get($key, 0) + 1;
-        Cache::put($key, $count, self::WINDOW_SECONDS);
+        Cache::put($key, $count, $this->windowSeconds());
         
         return $count;
     }
@@ -117,7 +137,7 @@ class RateLimitService
 
         return [
             'valid' => true,
-            'remaining' => self::MAX_REQUESTS,
+            'remaining' => $this->maxRequests(),
         ];
     }
 
@@ -131,6 +151,17 @@ class RateLimitService
     {
         $bypassKey = $this->getCaptchaBypassKey($ip);
         return Cache::has($bypassKey);
+    }
+
+    /**
+     * The timestamp at which the given IP's window resets.
+     *
+     * Public so the API can tell a rate-limited visitor when they may try
+     * again, instead of leaving them to guess.
+     */
+    public function getResetTimestamp(string $ip): int
+    {
+        return $this->getResetTime($this->getCacheKey($ip));
     }
 
     /**
@@ -176,11 +207,11 @@ class RateLimitService
     {
         $key = $this->getCacheKey($ip);
         $count = $this->getCount($key);
-        $remaining = max(0, self::MAX_REQUESTS - $count);
+        $remaining = max(0, $this->maxRequests() - $count);
         $resetTime = $this->getResetTime($key);
 
         return [
-            'X-RateLimit-Limit' => (string) self::MAX_REQUESTS,
+            'X-RateLimit-Limit' => (string) $this->maxRequests(),
             'X-RateLimit-Remaining' => (string) $remaining,
             'X-RateLimit-Reset' => (string) $resetTime,
         ];
@@ -342,7 +373,7 @@ class RateLimitService
      */
     public function getMaxRequests(): int
     {
-        return self::MAX_REQUESTS;
+        return $this->maxRequests();
     }
 
     /**
@@ -352,6 +383,6 @@ class RateLimitService
      */
     public function getWindowSeconds(): int
     {
-        return self::WINDOW_SECONDS;
+        return $this->windowSeconds();
     }
 }

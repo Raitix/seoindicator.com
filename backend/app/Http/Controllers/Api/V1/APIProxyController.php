@@ -188,15 +188,24 @@ class APIProxyController extends Controller
                     'ip' => $clientIp,
                 ]);
                 
+                // Only advertise a CAPTCHA when one is actually configured
+                // and the frontend can render it. Promising a challenge
+                // with a null site key locks the visitor out with no way
+                // to continue.
+                $captchaConfigured = $this->captcha->isConfigured();
+
                 return response()->json([
                     'success' => false,
                     'request_id' => $requestId,
                     'error' => [
                         'code' => 'RATE_LIMITED',
-                        'message' => 'You have exceeded the rate limit. Please wait before trying again.',
-                        'captchaRequired' => true,
-                        'captchaSiteKey' => $this->captcha->getSiteKey(),
+                        'message' => $captchaConfigured
+                            ? 'You have exceeded the rate limit. Please wait before trying again.'
+                            : 'You have reached the free usage limit for this hour. Please try again later.',
+                        'captchaRequired' => $captchaConfigured,
+                        'captchaSiteKey' => $captchaConfigured ? $this->captcha->getSiteKey() : null,
                         'captchaDriver' => $this->captcha->getDriverName(),
+                        'resetAt' => $this->rateLimiter->getResetTimestamp($clientIp),
                     ],
                 ], 429)->withHeaders(array_merge(
                     $this->rateLimiter->getHeaders($clientIp),
@@ -411,7 +420,8 @@ class APIProxyController extends Controller
             'data' => [
                 'driver' => $this->captcha->getDriverName(),
                 'siteKey' => $this->captcha->getSiteKey(),
-                'isRequired' => true,
+                // Only require a CAPTCHA when one is actually configured.
+                'isRequired' => $this->captcha->isConfigured(),
             ],
         ]);
     }
