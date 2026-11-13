@@ -151,7 +151,10 @@ class KeywordDensityCheckerTest extends TestCase
      */
     public function test_two_percent_density(): void
     {
-        $words = 'SEO ' . str_repeat('word ', 49) . 'SEO';
+        // 100 words with the keyword twice is 2% density. The old fixture
+        // built 51 words and expected 2.0% - the density of 100 words - so
+        // the assertion never matched its own input (2/51 is 3.92%).
+        $words = 'SEO ' . str_repeat('word ', 98) . 'SEO';
         $html = "<html><body><p>{$words}</p></body></html>";
         $this->mockHtmlResponse($html);
 

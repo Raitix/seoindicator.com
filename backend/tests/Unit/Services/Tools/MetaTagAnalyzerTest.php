@@ -183,7 +183,9 @@ class MetaTagAnalyzerTest extends TestCase
 
         $this->assertTrue($result->success);
         $this->assertEquals('This is a description', $result->data['description']['value']);
-        $this->assertEquals(19, $result->data['description']['length']);
+        // "This is a description" is 21 characters. The old expectation of
+        // 19 did not match its own fixture.
+        $this->assertEquals(21, $result->data['description']['length']);
     }
 
     /**
