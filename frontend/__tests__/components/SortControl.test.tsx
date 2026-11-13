@@ -5,32 +5,32 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("SortControl", () => {
   it("shows sort options", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getByText("Sort by Keyword")).toBeInTheDocument();
     expect(screen.getByText("Sort by My Position")).toBeInTheDocument();
     expect(screen.getByText("Sort by Competitor Position")).toBeInTheDocument();
     expect(screen.getByText("Sort by Diff")).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("changes sort selection", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     const sortSelect = screen.getByLabelText("Sort");
     fireEvent.change(sortSelect, { target: { value: "My Position" } });
 
     expect(sortSelect).toHaveValue("My Position");
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

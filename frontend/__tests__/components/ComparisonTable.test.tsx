@@ -5,11 +5,11 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("ComparisonTable", () => {
   it("renders keyword rows and columns", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getByText("Keyword")).toBeInTheDocument();
@@ -19,47 +19,47 @@ describe("ComparisonTable", () => {
     expect(screen.getByTestId("column-VistaSEO")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
     expect(screen.getByText("seo dashboard")).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("shows diff colors and labels", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     const diffBadges = screen.getAllByTestId("diff-badge").map((badge) => badge.textContent ?? "");
     expect(diffBadges.some((text) => text.includes("-"))).toBe(true);
     expect(diffBadges.some((text) => text.includes("+"))).toBe(true);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("shows status badges", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getAllByText("I’m Winning").length).toBeGreaterThan(0);
     expect(screen.getAllByText("They’re Winning").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Keyword Gap/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Both Rank").length).toBeGreaterThan(0);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("handles null positions", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getAllByTestId("position-null").length).toBeGreaterThan(0);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

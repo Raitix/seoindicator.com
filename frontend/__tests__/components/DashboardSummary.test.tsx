@@ -4,7 +4,7 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import DashboardSummary from "@/components/dashboard/DashboardSummary";
 
 // Mock Next.js Link
-jest.mock("next/link", () => {
+vi.mock("next/link", () => {
   return ({ children, href }: { children: React.ReactNode; href: string }) => {
     return <a href={href}>{children}</a>;
   };
@@ -12,11 +12,11 @@ jest.mock("next/link", () => {
 
 describe("DashboardSummary", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   // ============================================
@@ -26,7 +26,7 @@ describe("DashboardSummary", () => {
     it("CARD-001: displays Total Keywords card", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Total Keywords")).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe("DashboardSummary", () => {
     it("CARD-002: displays Average Position card", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Average Position")).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("DashboardSummary", () => {
     it("CARD-003: displays Ranked Keywords card", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Ranked")).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("DashboardSummary", () => {
     it("CARD-004: displays Not Ranked card", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Not Ranked")).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe("DashboardSummary", () => {
     it("CHG-001: displays Improved count with green styling", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Improved")).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe("DashboardSummary", () => {
     it("CHG-002: displays Declined count with red styling", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Declined")).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("DashboardSummary", () => {
     it("CHG-003: displays Unchanged count with gray styling", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Unchanged")).toBeInTheDocument();
@@ -104,7 +104,7 @@ describe("DashboardSummary", () => {
     it("CHG-004: displays New count with blue styling", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("New")).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe("DashboardSummary", () => {
     it("TOP-001: displays top 5 keywords in table", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("seo indicator")).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe("DashboardSummary", () => {
     it("TOP-002: displays position for each keyword", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("#2")).toBeInTheDocument(); // seo indicator
@@ -144,7 +144,7 @@ describe("DashboardSummary", () => {
     it("TOP-003: displays change indicator for each keyword", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       // Positive change (green)
@@ -161,7 +161,7 @@ describe("DashboardSummary", () => {
     it("TOP-004: keyword links to detail page", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const viewAllLink = screen.getByText("View full keyword list");
@@ -176,7 +176,7 @@ describe("DashboardSummary", () => {
     it("ALT-001: displays dropped alert with red indicator", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("content audit")).toBeInTheDocument();
@@ -187,7 +187,7 @@ describe("DashboardSummary", () => {
     it("ALT-002: displays position change details", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("backlink checker")).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe("DashboardSummary", () => {
       // For now, we verify the alerts section exists
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Alerts")).toBeInTheDocument();
@@ -215,7 +215,7 @@ describe("DashboardSummary", () => {
     it("ACT-001: Add Keyword button links to add form", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const addButton = screen.getByText("Add keyword");
@@ -226,7 +226,7 @@ describe("DashboardSummary", () => {
     it("ACT-002: Refresh all button triggers refresh", async () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const refreshButton = screen.getByText("Refresh all");
@@ -243,7 +243,7 @@ describe("DashboardSummary", () => {
     it("ACT-003: View all keywords link navigates to keyword list", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const viewAllLink = screen.getByText("View full keyword list");
@@ -259,7 +259,7 @@ describe("DashboardSummary", () => {
     it("REF-001: auto-refresh checkbox toggles setting", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const checkbox = screen.getByRole("checkbox", { name: /auto-refresh/i });
@@ -272,7 +272,7 @@ describe("DashboardSummary", () => {
     it("REF-002: auto-refresh is disabled by default", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const checkbox = screen.getByRole("checkbox", { name: /auto-refresh/i });
@@ -282,7 +282,7 @@ describe("DashboardSummary", () => {
     it("REF-003: auto-refresh label shows 5 minute interval", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText(/Auto-refresh \(5m\)/)).toBeInTheDocument();
@@ -307,7 +307,7 @@ describe("DashboardSummary", () => {
     it("LOAD-002: shows loading indicator during refresh", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const refreshButton = screen.getByText("Refresh all");
@@ -319,7 +319,7 @@ describe("DashboardSummary", () => {
     it("LOAD-003: content appears after loading completes", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Total Keywords")).toBeInTheDocument();
@@ -334,7 +334,7 @@ describe("DashboardSummary", () => {
     it("RESP-001: summary cards use grid layout", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       // The summary cards grid has 4 cards
@@ -350,7 +350,7 @@ describe("DashboardSummary", () => {
     it("RESP-002: position changes grid is responsive", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       // Position changes section has sm:grid-cols-4
@@ -361,7 +361,7 @@ describe("DashboardSummary", () => {
     it("RESP-003: main layout is responsive", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       // Dashboard summary container
@@ -377,7 +377,7 @@ describe("DashboardSummary", () => {
     it("accepts custom siteId prop", () => {
       render(<DashboardSummary siteId="custom-site-123" />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       const viewAllLink = screen.getByText("View full keyword list");
@@ -387,7 +387,7 @@ describe("DashboardSummary", () => {
     it("displays last updated time after load", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText(/Updated/)).toBeInTheDocument();
@@ -396,7 +396,7 @@ describe("DashboardSummary", () => {
     it("shows table headers for top keywords", () => {
       render(<DashboardSummary />);
       act(() => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(screen.getByText("Keyword")).toBeInTheDocument();

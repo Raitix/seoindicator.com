@@ -12,7 +12,7 @@ import '@testing-library/jest-dom';
 expect.extend(toHaveNoViolations);
 
 // Mock Next.js Image
-jest.mock('next/image', () => ({
+vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
     // eslint-disable-next-line @next/next/no-img-element
@@ -21,7 +21,7 @@ jest.mock('next/image', () => ({
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => ({
+vi.mock('next/link', () => ({
   __esModule: true,
   default: ({ children, href, ...props }: any) => (
     <a href={href} {...props}>{children}</a>

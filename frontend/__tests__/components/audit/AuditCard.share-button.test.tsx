@@ -16,7 +16,7 @@ import '@testing-library/jest-dom';
 import { AuditCard } from '@/components/audit/AuditCard';
 
 // Mock ShareAuditModal component
-jest.mock('@/components/audit/ShareAuditModal', () => ({
+vi.mock('@/components/audit/ShareAuditModal', () => ({
   ShareAuditModal: ({ isOpen, onClose, auditHash, auditUrl, score, isPublic, onPublish, onUnpublish }: {
     isOpen: boolean;
     onClose: () => void;
@@ -41,7 +41,7 @@ jest.mock('@/components/audit/ShareAuditModal', () => ({
 }));
 
 // Mock clipboard API
-const mockClipboardWrite = jest.fn().mockResolvedValue(undefined);
+const mockClipboardWrite = vi.fn().mockResolvedValue(undefined);
 Object.assign(navigator, {
   clipboard: {
     writeText: mockClipboardWrite,
@@ -60,12 +60,12 @@ describe('AuditCard Share Button Integration', () => {
     score: 85,
     isPublic: false,
     isOwner: true,
-    onPublish: jest.fn().mockResolvedValue(undefined),
-    onUnpublish: jest.fn().mockResolvedValue(undefined),
+    onPublish: vi.fn().mockResolvedValue(undefined),
+    onUnpublish: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -319,7 +319,7 @@ describe('AuditCard Share Button Integration', () => {
   describe('Card Interaction', () => {
     it('card is clickable when onClick provided', async () => {
       const user = userEvent.setup();
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       render(<AuditCard {...defaultProps} onClick={onClick} />);
       
       // Click on the card but not on the share button
@@ -331,7 +331,7 @@ describe('AuditCard Share Button Integration', () => {
 
     it('share button click does not trigger card onClick', async () => {
       const user = userEvent.setup();
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       render(<AuditCard {...defaultProps} onClick={onClick} />);
       
       await user.click(screen.getByTestId('share-button'));

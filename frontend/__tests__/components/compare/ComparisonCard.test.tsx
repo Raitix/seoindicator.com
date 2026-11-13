@@ -36,7 +36,7 @@ const MockLink = ({
   </a>
 );
 
-jest.mock('next/link', () => MockLink);
+vi.mock('next/link', () => MockLink);
 
 // ============================================================================
 // Mock Component (TDD - This will be replaced by actual implementation)

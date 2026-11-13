@@ -36,7 +36,7 @@ const mockCompetitors: Record<string, { name: string; slug: string }> = {
 };
 
 // Mock the registry module
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: [
     'seoindicator-vs-ahrefs',
     'seoindicator-vs-semrush',
@@ -59,8 +59,7 @@ jest.mock('@/lib/compare/registry', () => ({
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  const MockLink = ({ 
+vi.mock('next/link', () => ({ default: const MockLink = ({ 
     children, 
     href, 
     className = '',
@@ -75,8 +74,7 @@ jest.mock('next/link', () => {
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink;
-});
+  return MockLink }));
 
 // Import the component after mocks
 import CompareIndexPage, { metadata } from '@/app/compare/page';

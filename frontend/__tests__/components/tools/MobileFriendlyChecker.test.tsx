@@ -9,15 +9,15 @@ import { MobileFriendlyChecker } from '@/components/tools/MobileFriendlyChecker'
 import { useToolAnalysis } from '@/hooks/useToolAnalysis';
 
 // Mock the useToolAnalysis hook
-jest.mock('@/hooks/useToolAnalysis', () => ({
-  useToolAnalysis: jest.fn(),
+vi.mock('@/hooks/useToolAnalysis', () => ({
+  useToolAnalysis: vi.fn(),
 }));
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch as jest.Mock;
 
-const mockUseToolAnalysis = useToolAnalysis as jest.MockedFunction<typeof useToolAnalysis>;
+const mockUseToolAnalysis = useToolAnalysis as MockedFunction<typeof useToolAnalysis>;
 
 describe('MobileFriendlyChecker Component', () => {
   const defaultMockReturn = {
@@ -26,13 +26,13 @@ describe('MobileFriendlyChecker Component', () => {
     error: null,
     validationError: null,
     isLoading: false,
-    analyze: jest.fn(),
-    reset: jest.fn(),
-    retry: jest.fn(),
+    analyze: vi.fn(),
+    reset: vi.fn(),
+    retry: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseToolAnalysis.mockReturnValue(defaultMockReturn as any);
   });
 
@@ -229,7 +229,7 @@ describe('MobileFriendlyChecker Component', () => {
    * FE-009: Retry button on error
    */
   it('shows retry button on error', () => {
-    const mockRetry = jest.fn();
+    const mockRetry = vi.fn();
     mockUseToolAnalysis.mockReturnValue({
       ...defaultMockReturn,
       state: 'error',
@@ -254,7 +254,7 @@ describe('MobileFriendlyChecker Component', () => {
    * FE-010: Reset button to analyze another URL
    */
   it('shows reset button after successful analysis', async () => {
-    const mockReset = jest.fn();
+    const mockReset = vi.fn();
     mockUseToolAnalysis.mockReturnValue({
       ...defaultMockReturn,
       state: 'success',
@@ -338,7 +338,7 @@ describe('MobileFriendlyChecker Component', () => {
    * Calls analyze on form submit
    */
   it('calls analyze function on form submit', async () => {
-    const mockAnalyze = jest.fn();
+    const mockAnalyze = vi.fn();
     mockUseToolAnalysis.mockReturnValue({
       ...defaultMockReturn,
       analyze: mockAnalyze,

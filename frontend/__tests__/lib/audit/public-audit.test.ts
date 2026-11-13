@@ -66,7 +66,7 @@ Object.defineProperty(window, 'sessionStorage', {
 });
 
 // Mock crypto.subtle for hashing
-const mockDigest = jest.fn();
+const mockDigest = vi.fn();
 Object.defineProperty(global, 'crypto', {
   value: {
     subtle: {
@@ -86,10 +86,10 @@ describe('Public Audit Utilities', () => {
     Object.keys(mockCookieStore).forEach(k => delete mockCookieStore[k]);
     mockDocumentCookie = '';
     Object.keys(mockSessionStorage).forEach(k => delete mockSessionStorage[k]);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Reset Date.now mock
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   // ============================================
@@ -136,7 +136,7 @@ describe('Public Audit Utilities', () => {
       it('COOKIE-005: handles errors gracefully', () => {
         // Mock btoa to throw
         const originalBtoa = global.btoa;
-        global.btoa = jest.fn(() => { throw new Error('btoa error'); });
+        global.btoa = vi.fn(() => { throw new Error('btoa error'); });
         
         const result = setUnlockedAudit('abc123', 'test@example.com');
         expect(result).toBe(false);
@@ -392,7 +392,7 @@ describe('Public Audit Utilities', () => {
     describe('Error Handling', () => {
       it('DEDUP-010: checkEmailCaptured handles sessionStorage error', () => {
         const originalGetItem = window.sessionStorage.getItem;
-        window.sessionStorage.getItem = jest.fn(() => { throw new Error('Storage error'); });
+        window.sessionStorage.getItem = vi.fn(() => { throw new Error('Storage error'); });
         
         expect(checkEmailCaptured('test@example.com')).toBe(false);
         
@@ -401,7 +401,7 @@ describe('Public Audit Utilities', () => {
 
       it('DEDUP-011: storeEmailCaptured handles sessionStorage error', () => {
         const originalSetItem = window.sessionStorage.setItem;
-        window.sessionStorage.setItem = jest.fn(() => { throw new Error('Storage error'); });
+        window.sessionStorage.setItem = vi.fn(() => { throw new Error('Storage error'); });
         
         expect(() => storeEmailCaptured('test@example.com')).not.toThrow();
         
@@ -410,7 +410,7 @@ describe('Public Audit Utilities', () => {
 
       it('DEDUP-012: clearEmailCaptured handles sessionStorage error', () => {
         const originalRemoveItem = window.sessionStorage.removeItem;
-        window.sessionStorage.removeItem = jest.fn(() => { throw new Error('Storage error'); });
+        window.sessionStorage.removeItem = vi.fn(() => { throw new Error('Storage error'); });
         
         expect(() => clearEmailCaptured('test@example.com')).not.toThrow();
         
@@ -637,7 +637,7 @@ describe('Public Audit Utilities', () => {
       // Simulate quota exceeded
       const error = new Error('QuotaExceededError');
       error.name = 'QuotaExceededError';
-      window.sessionStorage.setItem = jest.fn(() => { throw error; });
+      window.sessionStorage.setItem = vi.fn(() => { throw error; });
       
       expect(() => storeEmailCaptured('test@example.com')).not.toThrow();
       

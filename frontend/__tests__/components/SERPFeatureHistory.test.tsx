@@ -12,23 +12,23 @@ import {
 } from "@/lib/api/serp-features";
 
 // Mock the API hook
-jest.mock("@/lib/api/serp-features", () => ({
-  useSerpFeatureHistory: jest.fn(),
-  getFeatureMeta: jest.fn((type) => ({
+vi.mock("@/lib/api/serp-features", () => ({
+  useSerpFeatureHistory: vi.fn(),
+  getFeatureMeta: vi.fn((type) => ({
     name: type.replace(/_/g, " "),
     icon: "📊",
     description: "SERP feature",
     ctrImpact: "Unknown",
   })),
-  formatFeatureDate: jest.fn((date) => {
+  formatFeatureDate: vi.fn((date) => {
     const d = new Date(date);
     return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   }),
-  getRelativeTime: jest.fn((date) => "2 days ago"),
-  isWithinDays: jest.fn(() => true),
+  getRelativeTime: vi.fn((date) => "2 days ago"),
+  isWithinDays: vi.fn(() => true),
 }));
 
-const mockUseSerpFeatureHistory = useSerpFeatureHistory as jest.MockedFunction<typeof useSerpFeatureHistory>;
+const mockUseSerpFeatureHistory = useSerpFeatureHistory as MockedFunction<typeof useSerpFeatureHistory>;
 
 // Mock data
 const mockKeywordData = {
@@ -72,7 +72,7 @@ const mockKeywordData = {
 
 describe("SERPFeatureHistory", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("CR-001: Renders without error", () => {
@@ -81,7 +81,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -97,7 +97,7 @@ describe("SERPFeatureHistory", () => {
         data: null,
         isLoading: true,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -114,7 +114,7 @@ describe("SERPFeatureHistory", () => {
         data: null,
         isLoading: false,
         error: new Error("Failed to load"),
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -124,7 +124,7 @@ describe("SERPFeatureHistory", () => {
     });
 
     it("calls mutate on retry click", async () => {
-      const mockMutate = jest.fn();
+      const mockMutate = vi.fn();
       mockUseSerpFeatureHistory.mockReturnValue({
         data: null,
         isLoading: false,
@@ -150,7 +150,7 @@ describe("SERPFeatureHistory", () => {
         },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -176,7 +176,7 @@ describe("SERPFeatureHistory", () => {
         },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -202,7 +202,7 @@ describe("SERPFeatureHistory", () => {
         },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -217,7 +217,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -237,7 +237,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -252,7 +252,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} showRecentWidget={true} />);
@@ -265,7 +265,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} showRecentWidget={false} />);
@@ -276,7 +276,7 @@ describe("SERPFeatureHistory", () => {
 
   describe("RC-002: No recent changes", () => {
     it("shows empty state when no recent changes", () => {
-      (isWithinDays as jest.Mock).mockReturnValue(false);
+      vi.mocked(isWithinDays).mockReturnValue(false);
       
       mockUseSerpFeatureHistory.mockReturnValue({
         data: {
@@ -293,7 +293,7 @@ describe("SERPFeatureHistory", () => {
         },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -308,7 +308,7 @@ describe("SERPFeatureHistory", () => {
         data: null,
         isLoading: true,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={42} />);
@@ -323,7 +323,7 @@ describe("SERPFeatureHistory", () => {
         data: null,
         isLoading: true,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} days={60} />);
@@ -338,7 +338,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -377,7 +377,7 @@ describe("SERPFeatureHistory", () => {
         },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} maxItems={10} />);
@@ -401,7 +401,7 @@ describe("SERPFeatureHistory", () => {
         },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} maxItems={10} />);
@@ -426,7 +426,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);
@@ -441,7 +441,7 @@ describe("SERPFeatureHistory", () => {
         data: mockKeywordData,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<SERPFeatureHistory keywordId={1} />);

@@ -13,28 +13,34 @@ import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Next.js navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-const mockBack = jest.fn();
-const mockRefresh = jest.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+const mockBack = vi.fn();
+const mockRefresh = vi.fn();
 
-jest.mock('next/navigation', () => ({
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
     back: mockBack,
-    forward: jest.fn(),
+    forward: vi.fn(),
     refresh: mockRefresh,
-    prefetch: jest.fn(),
+    prefetch: vi.fn(),
   }),
   useParams: () => ({ siteId: '1', locationId: '123' }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
   usePathname: () => '/sites/1/local/123',
-  notFound: jest.fn(),
+  notFound: vi.fn(),
 }));
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
   TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
   Minus: () => <span data-testid="minus-icon">−</span>,
@@ -62,7 +68,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock Recharts for sparklines
-jest.mock('recharts', () => ({
+vi.mock('recharts', () => ({
   LineChart: ({ children, data }: any) => (
     <div data-testid="sparkline-chart" data-points={JSON.stringify(data?.length || 0)}>
       {children}
@@ -85,7 +91,7 @@ jest.mock('recharts', () => ({
 }));
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch as any;
 
 // ============================================
@@ -979,7 +985,7 @@ describe('SYNC: Sync Status', () => {
   });
 
   test('SYNC-002: Manual refresh button available', async () => {
-    const handleRefresh = jest.fn();
+    const handleRefresh = vi.fn();
 
     renderWithProviders(
       <button 
@@ -1133,7 +1139,7 @@ describe('ERR: Error Boundaries', () => {
   });
 
   test('ERR-004: Retry button triggers refresh', async () => {
-    const handleRetry = jest.fn();
+    const handleRetry = vi.fn();
 
     renderWithProviders(
       <button data-testid="retry-button" onClick={handleRetry}>
@@ -1618,7 +1624,7 @@ describe('INT: Integration Tests', () => {
         json: async () => ({ ...mockDashboardData, quickStats: { ...mockDashboardData.quickStats, views: { value: 13000, change: 15, trend: 'up' } } }),
       });
 
-    const handleRefresh = jest.fn();
+    const handleRefresh = vi.fn();
 
     renderWithProviders(
       <button data-testid="refresh-button" onClick={handleRefresh}>

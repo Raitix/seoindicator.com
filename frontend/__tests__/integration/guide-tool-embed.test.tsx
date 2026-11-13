@@ -12,24 +12,30 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock Next.js navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
   usePathname: () => '/seo-guides/meta-title/',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
 }));
 
 // Mock guide registry
-jest.mock('@/lib/guides/registry', () => ({
-  getGuideBySlug: jest.fn((slug: string) => {
+vi.mock('@/lib/guides/registry', () => ({
+  getGuideBySlug: vi.fn((slug: string) => {
     const guides: Record<string, Record<string, unknown>> = {
       'meta-title': {
         slug: 'meta-title',
@@ -79,18 +85,18 @@ jest.mock('@/lib/guides/registry', () => ({
 
     return guides[slug] || null;
   }),
-  getAllGuides: jest.fn(() => [
+  getAllGuides: vi.fn(() => [
     { slug: 'meta-title', title: 'Meta Title', toolSlug: 'meta-tag-analyzer' },
     { slug: 'meta-description', title: 'Meta Description', toolSlug: 'meta-tag-analyzer' },
     { slug: 'page-speed', title: 'Page Speed' },
   ]),
-  getRelatedGuides: jest.fn(() => []),
+  getRelatedGuides: vi.fn(() => []),
   GUIDE_SLUGS: ['meta-title', 'meta-description', 'page-speed'],
 }));
 
 // Mock ToolEmbed component
-jest.mock('@/components/guides/ToolEmbed', () => ({
-  ToolEmbed: jest.fn(({ toolSlug, title, showCta }) => (
+vi.mock('@/components/guides/ToolEmbed', () => ({
+  ToolEmbed: vi.fn(({ toolSlug, title, showCta }) => (
     <div
       data-testid="tool-embed"
       data-tool-slug={toolSlug}
@@ -107,14 +113,14 @@ jest.mock('@/components/guides/ToolEmbed', () => ({
 }));
 
 // Mock GuideSection component
-jest.mock('@/components/guides', () => ({
-  GuideSection: jest.fn(({ section, index }) => (
+vi.mock('@/components/guides', () => ({
+  GuideSection: vi.fn(({ section, index }) => (
     <section data-testid={`guide-section-${index}`}>
       <h2>{section.title}</h2>
       <div>{section.content}</div>
     </section>
   )),
-  GuideChecklist: jest.fn(({ items }) => (
+  GuideChecklist: vi.fn(({ items }) => (
     <ul data-testid="guide-checklist">
       {items.map((item: { text: string }, index: number) => (
         <li key={index}>{item.text}</li>
@@ -126,12 +132,12 @@ jest.mock('@/components/guides', () => ({
 import { getGuideBySlug } from '@/lib/guides/registry';
 import { ToolEmbed } from '@/components/guides/ToolEmbed';
 
-const mockGetGuideBySlug = getGuideBySlug as jest.MockedFunction<typeof getGuideBySlug>;
-const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
+const mockGetGuideBySlug = getGuideBySlug as MockedFunction<typeof getGuideBySlug>;
+const mockToolEmbed = ToolEmbed as MockedFunction<typeof ToolEmbed>;
 
 describe('Guide Tool Embed Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // GT-001: Tool Embed Rendering in Guides

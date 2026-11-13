@@ -13,21 +13,21 @@ import userEvent from '@testing-library/user-event';
 import { EmailCaptureModal } from '@/components/tools/EmailCaptureModal';
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
   };
@@ -37,8 +37,8 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 describe('EmailCaptureModal', () => {
   const defaultProps = {
     isOpen: false,
-    onClose: jest.fn(),
-    onSubmit: jest.fn(),
+    onClose: vi.fn(),
+    onSubmit: vi.fn(),
     tool: 'meta-tag-analyzer',
     url: 'https://example.com',
     basicResults: [
@@ -49,7 +49,7 @@ describe('EmailCaptureModal', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
     mockFetch.mockReset();
   });
@@ -71,7 +71,7 @@ describe('EmailCaptureModal', () => {
     });
 
     test('MODAL-003: Closes on X button click', async () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onClose={onClose} />);
 
       // Radix Dialog's Close button triggers onClose
@@ -85,7 +85,7 @@ describe('EmailCaptureModal', () => {
     });
 
     test('MODAL-004: Closes on backdrop click', async () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onClose={onClose} />);
 
       // Radix Dialog handles backdrop clicks via onOpenChange
@@ -103,7 +103,7 @@ describe('EmailCaptureModal', () => {
     });
 
     test('MODAL-005: Closes on Escape key press', async () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onClose={onClose} />);
 
       // Radix Dialog handles Escape key internally
@@ -182,7 +182,7 @@ describe('EmailCaptureModal', () => {
         json: () => Promise.resolve({ success: true, leadId: 123 }),
       });
 
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onSubmit={onSubmit} />);
 
       const emailInput = screen.getByLabelText(/email/i);
@@ -202,7 +202,7 @@ describe('EmailCaptureModal', () => {
       // Simulate returning user
       localStorageMock.setItem('seoindicator_tools_captured', 'true');
 
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onSubmit={onSubmit} />);
 
       // Modal should auto-submit for returning users
@@ -379,7 +379,7 @@ describe('EmailCaptureModal', () => {
         json: () => Promise.resolve({ success: true, leadId: 123 }),
       });
 
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onSubmit={onSubmit} />);
 
       const emailInput = screen.getByLabelText(/email/i);
@@ -451,8 +451,8 @@ describe('EmailCaptureModal', () => {
     test('SESS-007: Session storage fallback works', () => {
       // Test that sessionStorage can be used as fallback
       const sessionStorageMock = {
-        setItem: jest.fn(),
-        getItem: jest.fn(() => null),
+        setItem: vi.fn(),
+        getItem: vi.fn(() => null),
       };
 
       // If localStorage fails, sessionStorage should work
@@ -463,9 +463,9 @@ describe('EmailCaptureModal', () => {
       // Test that capture status syncs across tabs
       // This would use BroadcastChannel API if available
       const mockBroadcastChannel = {
-        postMessage: jest.fn(),
-        addEventListener: jest.fn(),
-        close: jest.fn(),
+        postMessage: vi.fn(),
+        addEventListener: vi.fn(),
+        close: vi.fn(),
       };
 
       // Implementation would sync via BroadcastChannel
@@ -516,7 +516,7 @@ describe('EmailCaptureModal', () => {
         json: () => Promise.resolve({ success: true }),
       });
 
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onSubmit={onSubmit} />);
 
       // Use a valid email format with special chars that could be problematic
@@ -553,7 +553,7 @@ describe('EmailCaptureModal', () => {
         json: () => Promise.resolve({ success: true }),
       });
 
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onSubmit={onSubmit} />);
 
       const emailInput = screen.getByLabelText(/email/i);

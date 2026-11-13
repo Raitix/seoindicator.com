@@ -10,9 +10,9 @@ import userEvent from '@testing-library/user-event';
 import { useRouter } from 'next/navigation';
 
 // Mock next/navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
@@ -20,7 +20,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Check: () => <span data-testid="check-icon">✓</span>,
   ChevronDown: () => <span data-testid="chevron-icon">▼</span>,
   ArrowRight: () => <span data-testid="arrow-icon">→</span>,
@@ -31,28 +31,28 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock API hooks
-const mockRefetchPackages = jest.fn();
-const mockRefetchModels = jest.fn();
+const mockRefetchPackages = vi.fn();
+const mockRefetchModels = vi.fn();
 
-jest.mock('@/lib/api/pricing', () => ({
-  usePackages: jest.fn(() => ({
+vi.mock('@/lib/api/pricing', () => ({
+  usePackages: vi.fn(() => ({
     packages: mockPackages,
     isLoading: false,
     error: null,
     refetch: mockRefetchPackages,
   })),
-  useModels: jest.fn(() => ({
+  useModels: vi.fn(() => ({
     models: mockModels,
     isLoading: false,
     error: null,
     refetch: mockRefetchModels,
   })),
-  usePricingPage: jest.fn(() => ({
+  usePricingPage: vi.fn(() => ({
     packages: mockPackages,
     models: mockModels,
     isLoading: false,
     error: null,
-    refetch: jest.fn(),
+    refetch: vi.fn(),
   })),
 }));
 
@@ -295,7 +295,7 @@ const MockPricingPage = ({
 
 describe('PricingPage', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // PP-001 to PP-005: Page Rendering

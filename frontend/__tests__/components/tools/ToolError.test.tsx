@@ -21,8 +21,8 @@ describe('ToolError', () => {
      * FE-001: Render error with all props
      */
     it('renders error with all props', () => {
-        const onRetry = jest.fn();
-        const onDismiss = jest.fn();
+        const onRetry = vi.fn();
+        const onDismiss = vi.fn();
 
         render(
             <ToolError
@@ -72,7 +72,7 @@ describe('ToolError', () => {
      * FE-005: Render retry button
      */
     it('renders retry button when showRetry is true', () => {
-        render(<ToolError {...defaultProps} showRetry={true} onRetry={jest.fn()} />);
+        render(<ToolError {...defaultProps} showRetry={true} onRetry={vi.fn()} />);
 
         expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
     });
@@ -90,7 +90,7 @@ describe('ToolError', () => {
      * FE-007: Retry callback
      */
     it('calls onRetry when retry button is clicked', () => {
-        const onRetry = jest.fn();
+        const onRetry = vi.fn();
         render(<ToolError {...defaultProps} onRetry={onRetry} />);
 
         fireEvent.click(screen.getByRole('button', { name: /try again/i }));
@@ -102,7 +102,7 @@ describe('ToolError', () => {
      * FE-008: Loading state on retry
      */
     it('shows loading state when isLoading is true', () => {
-        render(<ToolError {...defaultProps} isLoading={true} onRetry={jest.fn()} />);
+        render(<ToolError {...defaultProps} isLoading={true} onRetry={vi.fn()} />);
 
         // Check for loading spinner (SVG with animate-spin class)
         const spinner = document.querySelector('.animate-spin');
@@ -116,7 +116,7 @@ describe('ToolError', () => {
      * FE-009: Dismiss callback
      */
     it('calls onDismiss when dismiss button is clicked', () => {
-        const onDismiss = jest.fn();
+        const onDismiss = vi.fn();
         render(<ToolError {...defaultProps} onDismiss={onDismiss} />);
 
         fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));

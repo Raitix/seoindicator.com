@@ -13,7 +13,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock the registry module
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: [
     'seoindicator-vs-ahrefs',
     'seoindicator-vs-semrush',
@@ -33,12 +33,12 @@ jest.mock('@/lib/compare/registry', () => ({
     moz: { id: 'moz', name: 'Moz', slug: 'moz' },
     ubersuggest: { id: 'ubersuggest', name: 'Ubersuggest', slug: 'ubersuggest' },
   },
-  parseSlug: jest.fn((slug: string) => {
+  parseSlug: vi.fn((slug: string) => {
     const parts = slug.split('-vs-');
     if (parts.length !== 2) return null;
     return [parts[0], parts[1]];
   }),
-  getCompetitorById: jest.fn((id: string) => {
+  getCompetitorById: vi.fn((id: string) => {
     const registry: Record<string, { id: string; name: string; slug: string }> = {
       seoindicator: { id: 'seoindicator', name: 'SEOIndicator', slug: 'seoindicator' },
       ahrefs: { id: 'ahrefs', name: 'Ahrefs', slug: 'ahrefs' },

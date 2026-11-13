@@ -13,10 +13,10 @@ import '@testing-library/jest-dom';
 import { GuideSearch } from '@/components/guides/GuideSearch';
 
 describe('GuideSearch Component', () => {
-  const mockOnChange = jest.fn();
+  const mockOnChange = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {
@@ -89,9 +89,9 @@ describe('GuideSearch Component', () => {
 
   describe('Interaction', () => {
     it('calls onChange when input changes (after debounce)', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       
-      const localOnChange = jest.fn();
+      const localOnChange = vi.fn();
       
       function TestWrapper() {
         return <GuideSearch value="" onChange={localOnChange} />;
@@ -106,10 +106,10 @@ describe('GuideSearch Component', () => {
       expect(localOnChange).not.toHaveBeenCalled();
       
       // After debounce timer
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
       expect(localOnChange).toHaveBeenCalledWith('t');
       
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('clears input when clear button clicked', async () => {
@@ -270,9 +270,9 @@ describe('GuideSearch Component', () => {
 
   describe('Debouncing', () => {
     it('should debounce search input for performance', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       
-      const debouncedOnChange = jest.fn();
+      const debouncedOnChange = vi.fn();
       
       // Simple wrapper without state update in onChange
       function TestWrapper() {
@@ -288,10 +288,10 @@ describe('GuideSearch Component', () => {
       expect(debouncedOnChange).not.toHaveBeenCalled();
       
       // After debounce timer
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
       expect(debouncedOnChange).toHaveBeenCalledWith('test');
       
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 

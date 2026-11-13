@@ -9,7 +9,7 @@ import { generateStaticParams } from '@/app/compare/[slug]/page';
 import { COMPARISON_SLUGS } from '@/lib/compare/registry';
 
 // Mock the registry
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: [
     'seoindicator-vs-ahrefs',
     'seoindicator-vs-semrush',

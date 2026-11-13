@@ -18,7 +18,7 @@ import {
 } from '@/lib/compare/types';
 
 // Mock the seoindicator data module
-jest.mock('@/lib/compare/competitors/seoindicator', () => ({
+vi.mock('@/lib/compare/competitors/seoindicator', () => ({
   seoindicator: {
     id: 'seoindicator',
     name: 'SEOIndicator',

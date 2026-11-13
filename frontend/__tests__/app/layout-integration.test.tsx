@@ -10,14 +10,14 @@ import '@testing-library/jest-dom';
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
   };
@@ -26,7 +26,7 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 // Mock CookieConsent component
-jest.mock('@/components/layout/CookieConsent', () => ({
+vi.mock('@/components/layout/CookieConsent', () => ({
   CookieConsent: ({ onAccept, onDecline, className }: {
     onAccept?: () => void;
     onDecline?: () => void;
@@ -46,11 +46,11 @@ jest.mock('@/components/layout/CookieConsent', () => ({
 }));
 
 // Mock cookieConsent utility
-jest.mock('@/lib/utils/cookieConsent', () => ({
-  getCookieConsent: jest.fn(),
-  setCookieConsent: jest.fn(),
-  hasCookieConsent: jest.fn(() => false),
-  clearCookieConsent: jest.fn(),
+vi.mock('@/lib/utils/cookieConsent', () => ({
+  getCookieConsent: vi.fn(),
+  setCookieConsent: vi.fn(),
+  hasCookieConsent: vi.fn(() => false),
+  clearCookieConsent: vi.fn(),
 }));
 
 // Import after mocks
@@ -94,12 +94,12 @@ const MockLayout = ({ children }: { children: React.ReactNode }) => {
 
 describe('Layout Integration - Component Rendering', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
   it('LR-001: CookieConsent rendered in layout', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -111,7 +111,7 @@ describe('Layout Integration - Component Rendering', () => {
   });
 
   it('LR-002: Component at root level (not deeply nested)', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -125,7 +125,7 @@ describe('Layout Integration - Component Rendering', () => {
   });
 
   it('LR-003: Renders after children (z-index ensures visual overlay)', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -144,7 +144,7 @@ describe('Layout Integration - Component Rendering', () => {
   });
 
   it('LR-004: Present on dashboard route simulation', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -157,7 +157,7 @@ describe('Layout Integration - Component Rendering', () => {
   });
 
   it('LR-005: Present on tools route simulation', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -170,7 +170,7 @@ describe('Layout Integration - Component Rendering', () => {
   });
 
   it('LR-006: Present on admin route simulation', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -189,12 +189,12 @@ describe('Layout Integration - Component Rendering', () => {
 
 describe('Layout Integration - No Layout Shift', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
   it('LS-001: Banner uses fixed positioning (no content shift)', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -207,7 +207,7 @@ describe('Layout Integration - No Layout Shift', () => {
   });
 
   it('LS-002: Fixed positioning applied', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -223,7 +223,7 @@ describe('Layout Integration - No Layout Shift', () => {
   });
 
   it('LS-003: Bottom positioning applied', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -236,7 +236,7 @@ describe('Layout Integration - No Layout Shift', () => {
   });
 
   it('LS-004: High z-index for overlay', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -255,12 +255,12 @@ describe('Layout Integration - No Layout Shift', () => {
 
 describe('Layout Integration - Provider Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
   it('PI-001: Works within Providers context', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     // Should not throw any context errors
     expect(() => {
@@ -275,7 +275,7 @@ describe('Layout Integration - Provider Integration', () => {
   });
 
   it('PI-002: Banner respects theme context (dark mode classes)', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -289,7 +289,7 @@ describe('Layout Integration - Provider Integration', () => {
   });
 
   it('PI-003: No hydration mismatch (SSR compatible)', async () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     // Render should complete without hydration errors
     const { container } = render(
@@ -309,12 +309,12 @@ describe('Layout Integration - Provider Integration', () => {
 
 describe('Layout Integration - Conditional Rendering', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
   it('CR-001: Hidden when consent exists', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(true);
+    vi.mocked(hasCookieConsent).mockReturnValue(true);
     
     render(
       <MockLayout>
@@ -326,7 +326,7 @@ describe('Layout Integration - Conditional Rendering', () => {
   });
 
   it('CR-002: Visible when no consent', () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     render(
       <MockLayout>
@@ -339,7 +339,7 @@ describe('Layout Integration - Conditional Rendering', () => {
 
   it('CR-003: Visible when consent cleared', () => {
     // First render with consent
-    (hasCookieConsent as jest.Mock).mockReturnValue(true);
+    vi.mocked(hasCookieConsent).mockReturnValue(true);
     
     const { rerender } = render(
       <MockLayout>
@@ -350,7 +350,7 @@ describe('Layout Integration - Conditional Rendering', () => {
     expect(screen.queryByTestId('cookie-consent')).not.toBeInTheDocument();
     
     // Clear consent
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     rerender(
       <MockLayout>
@@ -362,7 +362,7 @@ describe('Layout Integration - Conditional Rendering', () => {
   });
 
   it('CR-004: Re-renders on consent change (accept)', async () => {
-    (hasCookieConsent as jest.Mock).mockReturnValue(false);
+    vi.mocked(hasCookieConsent).mockReturnValue(false);
     
     const { rerender } = render(
       <MockLayout>
@@ -373,7 +373,7 @@ describe('Layout Integration - Conditional Rendering', () => {
     expect(screen.getByTestId('cookie-consent')).toBeInTheDocument();
     
     // Simulate accepting consent
-    (hasCookieConsent as jest.Mock).mockReturnValue(true);
+    vi.mocked(hasCookieConsent).mockReturnValue(true);
     
     rerender(
       <MockLayout>

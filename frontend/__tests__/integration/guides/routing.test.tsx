@@ -20,26 +20,31 @@ import '@testing-library/jest-dom';
 // Mocks - Define data INSIDE mock factory to avoid hoisting issues
 // ============================================================================
 
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
 
-jest.mock('next/navigation', () => ({
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
   useParams: () => ({ slug: 'meta-title' }),
   usePathname: () => '/seo-guides/meta-title/',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return function MockLink({
+vi.mock('next/link', () => ({ default: function MockLink({
     children,
     href,
     ...props
@@ -53,12 +58,10 @@ jest.mock('next/link', () => {
         {children}
       </a>
     );
-  };
-});
+  } }));
 
 // Full guide data defined INSIDE the mock factory
-jest.mock('@/lib/guides/registry', () => {
-  const MOCK_GUIDES = [
+vi.mock('@/lib/guides/registry', () => ({ default: const MOCK_GUIDES = [
     { slug: 'meta-title', title: 'Meta Title Optimization', summary: 'Learn how to craft compelling page titles.', category: 'on-page', toolSlug: 'meta-tag-analyzer', icon: '📝', readTime: 5, relatedGuides: ['meta-description', 'h1-headings'] },
     { slug: 'meta-description', title: 'Meta Description Best Practices', summary: 'Write descriptions that entice clicks.', category: 'on-page', toolSlug: 'meta-tag-analyzer', icon: '📋', readTime: 4, relatedGuides: ['meta-title'] },
     { slug: 'h1-headings', title: 'H1 Heading Structure', summary: 'Use H1 tags effectively for SEO.', category: 'on-page', icon: '🔤', readTime: 4, relatedGuides: ['heading-hierarchy'] },
@@ -79,10 +82,10 @@ jest.mock('@/lib/guides/registry', () => {
   ];
 
   return {
-    getAllGuides: jest.fn(() => MOCK_GUIDES),
-    getGuideBySlug: jest.fn((slug: string) => MOCK_GUIDES.find(g => g.slug === slug) || null),
-    getGuidesByCategory: jest.fn((category: string) => MOCK_GUIDES.filter(g => g.category === category)),
-    getRelatedGuides: jest.fn((slug: string) => {
+    getAllGuides: vi.fn(() => MOCK_GUIDES),
+    getGuideBySlug: vi.fn((slug: string) => MOCK_GUIDES.find(g => g.slug === slug) || null),
+    getGuidesByCategory: vi.fn((category: string) => MOCK_GUIDES.filter(g => g.category === category)),
+    getRelatedGuides: vi.fn((slug: string) => {
       const guide = MOCK_GUIDES.find(g => g.slug === slug);
       if (!guide?.relatedGuides) return [];
       return guide.relatedGuides
@@ -91,11 +94,10 @@ jest.mock('@/lib/guides/registry', () => {
         .slice(0, 3);
     }),
     GUIDE_SLUGS: MOCK_GUIDES.map(g => g.slug),
-  };
-});
+  } }));
 
 // Mock UI components
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div className={className} data-testid="card">{children}</div>
   ),
@@ -104,7 +106,7 @@ jest.mock('@/components/ui/card', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/input', () => ({
+vi.mock('@/components/ui/input', () => ({
   Input: ({ value, onChange, onKeyDown, placeholder, 'aria-label': ariaLabel, 'data-testid': testId, className }: {
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -134,9 +136,9 @@ jest.mock('@/components/ui/input', () => ({
 import { GuidesIndexClient } from '@/app/seo-guides/GuidesIndexClient';
 import { getAllGuides, getGuideBySlug, getRelatedGuides } from '@/lib/guides/registry';
 
-const mockGetAllGuides = getAllGuides as jest.MockedFunction<typeof getAllGuides>;
-const mockGetGuideBySlug = getGuideBySlug as jest.MockedFunction<typeof getGuideBySlug>;
-const mockGetRelatedGuides = getRelatedGuides as jest.MockedFunction<typeof getRelatedGuides>;
+const mockGetAllGuides = getAllGuides as MockedFunction<typeof getAllGuides>;
+const mockGetGuideBySlug = getGuideBySlug as MockedFunction<typeof getGuideBySlug>;
+const mockGetRelatedGuides = getRelatedGuides as MockedFunction<typeof getRelatedGuides>;
 
 // ============================================================================
 // Test Utilities
@@ -224,7 +226,7 @@ function MockGuidePage({ slug }: { slug: string }) {
 
 describe('Integration Tests for SEO Guide Routing', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ========================================================================

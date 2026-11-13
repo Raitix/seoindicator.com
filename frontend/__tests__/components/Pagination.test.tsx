@@ -5,11 +5,11 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("Pagination", () => {
   it("navigates pages", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getByText(/Page 1 of/)).toBeInTheDocument();
@@ -17,6 +17,6 @@ describe("Pagination", () => {
     fireEvent.click(screen.getByText("Next"));
 
     expect(screen.getByText(/Page 2 of/)).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

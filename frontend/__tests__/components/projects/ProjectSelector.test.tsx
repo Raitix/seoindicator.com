@@ -4,7 +4,7 @@ import { ProjectSelector } from "@/components/projects/ProjectSelector";
 import type { Project } from "@/lib/types/projects";
 
 // Mock scrollIntoView for jsdom
-Element.prototype.scrollIntoView = jest.fn();
+Element.prototype.scrollIntoView = vi.fn();
 
 // Mock projects data
 const mockProjects: Project[] = [
@@ -44,12 +44,12 @@ const mockProjects: Project[] = [
 ];
 
 describe("ProjectSelector", () => {
-  const mockOnSelect = jest.fn();
-  const mockOnCreateNew = jest.fn();
-  const mockOnRetry = jest.fn();
+  const mockOnSelect = vi.fn();
+  const mockOnCreateNew = vi.fn();
+  const mockOnRetry = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // UC-001: Renders with projects list

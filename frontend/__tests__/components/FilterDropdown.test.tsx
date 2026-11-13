@@ -5,11 +5,11 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("FilterDropdown", () => {
   it("shows filter options", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getByRole("option", { name: "All" })).toBeInTheDocument();
@@ -17,21 +17,21 @@ describe("FilterDropdown", () => {
     expect(screen.getByRole("option", { name: "They’re Winning" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Keyword Gaps" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Both Rank" })).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("filters results", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     const filterSelect = screen.getByLabelText("Filter");
     fireEvent.change(filterSelect, { target: { value: "I’m Winning" } });
 
     expect(screen.getAllByText("I’m Winning").length).toBeGreaterThan(0);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

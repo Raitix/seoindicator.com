@@ -595,7 +595,7 @@ describe('Focus Indicator Tests', () => {
 
   describe('Focus Trap in Modals (FI-016)', () => {
     test('FI-016: Focus trap in modals', async () => {
-      const handleClose = jest.fn();
+      const handleClose = vi.fn();
       render(<Modal isOpen={true} onClose={handleClose} />);
 
       const modalContent = screen.getByTestId('modal-content');

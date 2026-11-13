@@ -15,16 +15,16 @@ import { PaymentFlow } from '@/components/payments/PaymentFlow';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Stripe
-const mockConfirmPayment = jest.fn();
-jest.mock('@stripe/react-stripe-js', () => ({
+const mockConfirmPayment = vi.fn();
+vi.mock('@stripe/react-stripe-js', () => ({
   Elements: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   PaymentElement: () => <div data-testid="payment-element" />,
   useStripe: () => ({ confirmPayment: mockConfirmPayment }),
-  useElements: () => ({ submit: jest.fn() }),
+  useElements: () => ({ submit: vi.fn() }),
 }));
 
-jest.mock('@stripe/stripe-js', () => ({
-  loadStripe: jest.fn(() => Promise.resolve({ confirmPayment: mockConfirmPayment })),
+vi.mock('@stripe/stripe-js', () => ({
+  loadStripe: vi.fn(() => Promise.resolve({ confirmPayment: mockConfirmPayment })),
 }));
 
 // MSW Server for API mocking
@@ -62,7 +62,7 @@ const server = setupServer(
 beforeAll(() => server.listen());
 afterEach(() => {
   server.resetHandlers();
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 afterAll(() => server.close());
 
@@ -177,7 +177,7 @@ describe('Payment Flow Integration', () => {
     });
 
     it('refreshes balance after success', async () => {
-      const balanceSpy = jest.fn();
+      const balanceSpy = vi.fn();
       server.use(
         rest.get('/api/v1/credits/balance', (req, res, ctx) => {
           balanceSpy();

@@ -6,18 +6,18 @@ import CompetitorList from "@/components/competitors/CompetitorList";
 import * as competitorsApi from "@/lib/api/competitors";
 
 // Mock the API hooks
-jest.mock("@/lib/api/competitors", () => ({
-  useCompetitors: jest.fn(),
+vi.mock("@/lib/api/competitors", () => ({
+  useCompetitors: vi.fn(),
 }));
 
 // Mock child components that have complex dependencies
-jest.mock("@/components/competitors/AddCompetitorModal", () => {
+vi.mock("@/components/competitors/AddCompetitorModal", () => {
   return function MockAddCompetitorModal() {
     return <button data-testid="add-competitor-btn">Add Competitor</button>;
   };
 });
 
-jest.mock("@/components/competitors/EditCompetitorModal", () => {
+vi.mock("@/components/competitors/EditCompetitorModal", () => {
   return function MockEditCompetitorModal({
     competitor,
     open,
@@ -29,7 +29,7 @@ jest.mock("@/components/competitors/EditCompetitorModal", () => {
   };
 });
 
-jest.mock("@/components/competitors/DeleteCompetitorDialog", () => {
+vi.mock("@/components/competitors/DeleteCompetitorDialog", () => {
   return function MockDeleteCompetitorDialog({
     competitor,
     open,
@@ -62,17 +62,17 @@ const mockCompetitors = [
 
 describe("CompetitorList", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("Test 1: Renders competitor list", () => {
     it("displays all competitors when data is loaded", async () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: mockCompetitors,
         meta: { limit: 3, used: 2 },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -86,12 +86,12 @@ describe("CompetitorList", () => {
 
   describe("Test 2: Shows empty state", () => {
     it("displays empty state message when no competitors", () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: [],
         meta: { limit: 3, used: 0 },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -105,12 +105,12 @@ describe("CompetitorList", () => {
 
   describe("Test 3: Shows competitor limit indicator", () => {
     it("displays limit indicator with correct count", () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: mockCompetitors,
         meta: { limit: 3, used: 2 },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -119,12 +119,12 @@ describe("CompetitorList", () => {
     });
 
     it("shows fallback limit when meta is missing", () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: [mockCompetitors[0]],
         meta: undefined,
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -136,12 +136,12 @@ describe("CompetitorList", () => {
 
   describe("Test 4: Shows competitor stats", () => {
     it("displays tracked keywords count for each competitor", () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: mockCompetitors,
         meta: { limit: 3, used: 2 },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -154,12 +154,12 @@ describe("CompetitorList", () => {
 
   describe("Loading state", () => {
     it("shows loading skeletons while loading", () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: [],
         meta: undefined,
         isLoading: true,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -172,12 +172,12 @@ describe("CompetitorList", () => {
 
   describe("Error state", () => {
     it("shows error message when API fails", () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: [],
         meta: undefined,
         isLoading: false,
         error: { message: "Network error" },
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -187,8 +187,8 @@ describe("CompetitorList", () => {
     });
 
     it("shows retry button on error", () => {
-      const mockMutate = jest.fn();
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      const mockMutate = vi.fn();
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: [],
         meta: undefined,
         isLoading: false,
@@ -208,12 +208,12 @@ describe("CompetitorList", () => {
 
   describe("Edit and Delete interactions", () => {
     it("opens edit modal when edit button clicked", async () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: mockCompetitors,
         meta: { limit: 3, used: 2 },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);
@@ -226,12 +226,12 @@ describe("CompetitorList", () => {
     });
 
     it("opens delete dialog when delete button clicked", async () => {
-      (competitorsApi.useCompetitors as jest.Mock).mockReturnValue({
+      vi.mocked(competitorsApi.useCompetitors).mockReturnValue({
         competitors: mockCompetitors,
         meta: { limit: 3, used: 2 },
         isLoading: false,
         error: null,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       });
 
       render(<CompetitorList />);

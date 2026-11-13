@@ -14,14 +14,14 @@ import { AlertBell } from '@/components/ai-visibility/AlertBell';
 import type { Alert } from '@/lib/ai-visibility/types';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Bell: () => <span data-testid="bell-icon">🔔</span>,
   X: () => <span data-testid="x-icon">✗</span>,
   ChevronRight: () => <span data-testid="chevron-icon">›</span>,
 }));
 
 // Mock AlertNotification component
-jest.mock('@/components/ai-visibility/AlertNotification', () => ({
+vi.mock('@/components/ai-visibility/AlertNotification', () => ({
   AlertNotification: ({ alert, onClick }: any) => (
     <div
       data-testid={`dropdown-alert-${alert.id}`}
@@ -51,10 +51,10 @@ const createMockAlerts = (count: number): Alert[] =>
   }));
 
 describe('AlertBell', () => {
-  const mockOnViewAll = jest.fn();
-  const mockOnAlertClick = jest.fn();
-  const mockOnMarkRead = jest.fn();
-  const mockOnRefetch = jest.fn();
+  const mockOnViewAll = vi.fn();
+  const mockOnAlertClick = vi.fn();
+  const mockOnMarkRead = vi.fn();
+  const mockOnRefetch = vi.fn();
 
   const defaultProps = {
     alerts: createMockAlerts(3),
@@ -67,7 +67,7 @@ describe('AlertBell', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================================
@@ -235,15 +235,15 @@ describe('AlertBell', () => {
 
   describe('Polling', () => {
     it('AB-015: polling triggers refetch', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       render(<AlertBell {...defaultProps} pollingInterval={60000} />);
 
-      jest.advanceTimersByTime(60000);
+      vi.advanceTimersByTime(60000);
 
       expect(mockOnRefetch).toHaveBeenCalled();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('AB-016: new alert shows toast', async () => {
@@ -387,7 +387,7 @@ describe('AlertBell', () => {
 
   describe('Notifications', () => {
     it('AB-025: sound notification on new alert', async () => {
-      const mockPlay = jest.fn();
+      const mockPlay = vi.fn();
       HTMLAudioElement.prototype.play = mockPlay;
 
       const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} soundEnabled />);
@@ -401,8 +401,8 @@ describe('AlertBell', () => {
     });
 
     it('AB-026: desktop notification on new alert', async () => {
-      const mockNotification = jest.fn();
-      (global as any).Notification = jest.fn(() => ({ close: jest.fn() }));
+      const mockNotification = vi.fn();
+      (global as any).Notification = vi.fn(() => ({ close: vi.fn() }));
       (global as any).Notification.permission = 'granted';
 
       const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} desktopNotificationsEnabled />);

@@ -12,12 +12,12 @@ import '@testing-library/jest-dom';
 import { ToolWidget } from '@/components/tools/ToolWidget';
 
 // Mock the useToolAnalysis hook
-const mockAnalyze = jest.fn();
-const mockReset = jest.fn();
-const mockRetry = jest.fn();
+const mockAnalyze = vi.fn();
+const mockReset = vi.fn();
+const mockRetry = vi.fn();
 
-jest.mock('@/hooks/useToolAnalysis', () => ({
-  useToolAnalysis: jest.fn(() => ({
+vi.mock('@/hooks/useToolAnalysis', () => ({
+  useToolAnalysis: vi.fn(() => ({
     state: 'idle',
     result: null,
     error: null,
@@ -38,8 +38,8 @@ jest.mock('@/hooks/useToolAnalysis', () => ({
 }));
 
 // Mock validateUrl
-jest.mock('@/lib/utils/urlValidation', () => ({
-  validateUrl: jest.fn((url: string) => {
+vi.mock('@/lib/utils/urlValidation', () => ({
+  validateUrl: vi.fn((url: string) => {
     if (!url || !url.trim()) {
       return { valid: false, error: 'Please enter a URL' };
     }
@@ -57,11 +57,11 @@ jest.mock('@/lib/utils/urlValidation', () => ({
 
 import { useToolAnalysis } from '@/hooks/useToolAnalysis';
 
-const mockUseToolAnalysis = useToolAnalysis as jest.MockedFunction<typeof useToolAnalysis>;
+const mockUseToolAnalysis = useToolAnalysis as MockedFunction<typeof useToolAnalysis>;
 
 describe('ToolWidget', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseToolAnalysis.mockReturnValue({
       state: 'idle',
       result: null,
@@ -857,7 +857,7 @@ describe('ToolWidget', () => {
   // Callbacks
   describe('Callbacks', () => {
     it('should call onAnalysisComplete on success', async () => {
-      const mockOnComplete = jest.fn();
+      const mockOnComplete = vi.fn();
 
       mockUseToolAnalysis.mockReturnValue({
         state: 'success',

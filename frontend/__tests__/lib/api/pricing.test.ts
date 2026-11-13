@@ -8,7 +8,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { usePackages, useModels, usePricingPage } from '@/lib/api/pricing';
 
 // Mock global fetch
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock data
@@ -100,7 +100,7 @@ const mockModelsResponse = {
 
 describe('Pricing API Hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // API-001 to API-015: usePackages Hook

@@ -12,7 +12,7 @@ import userEvent from "@testing-library/user-event";
 import AnalysisDetailsModal from "@/components/history/AnalysisDetailsModal";
 
 // Mock dependencies
-const mockOnClose = jest.fn();
+const mockOnClose = vi.fn();
 
 const defaultAnalysis = {
   id: 127,
@@ -47,7 +47,7 @@ const defaultProps = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== ADM-001: Modal Structure ====================

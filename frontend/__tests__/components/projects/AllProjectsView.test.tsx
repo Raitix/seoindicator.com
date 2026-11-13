@@ -4,8 +4,8 @@ import { AllProjectsView } from "@/components/projects/AllProjectsView";
 import type { ProjectBreakdown, AggregateMetrics } from "@/lib/types/projects";
 
 // Mock fetchAggregateMetrics
-const mockFetchAggregateMetrics = jest.fn();
-jest.mock("@/lib/api/projects", () => ({
+const mockFetchAggregateMetrics = vi.fn();
+vi.mock("@/lib/api/projects", () => ({
   fetchAggregateMetrics: () => mockFetchAggregateMetrics(),
 }));
 
@@ -73,7 +73,7 @@ const mockProjects: ProjectBreakdown[] = [
 
 describe("AllProjectsView", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetchAggregateMetrics.mockResolvedValue({
       aggregate: mockAggregate,
       projects: mockProjects,
@@ -231,7 +231,7 @@ describe("AllProjectsView", () => {
 
   // onCreateProject callback
   it("calls onCreateProject callback when provided", async () => {
-    const mockOnCreate = jest.fn();
+    const mockOnCreate = vi.fn();
 
     mockFetchAggregateMetrics.mockResolvedValueOnce({
       aggregate: { ...mockAggregate, totalProjects: 0 },

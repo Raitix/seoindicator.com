@@ -16,11 +16,11 @@ import userEvent from '@testing-library/user-event';
 import { VisibilitySettings, VisibilitySettingsProps } from '@/components/audit/VisibilitySettings';
 
 // Mock dependencies
-jest.mock('@/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
 }));
 
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Globe: () => <span data-testid="globe-icon">Globe</span>,
   Lock: () => <span data-testid="lock-icon">Lock</span>,
   Copy: () => <span data-testid="copy-icon">Copy</span>,
@@ -30,7 +30,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock clipboard API
-const mockClipboardWrite = jest.fn();
+const mockClipboardWrite = vi.fn();
 Object.assign(navigator, {
   clipboard: {
     writeText: mockClipboardWrite,
@@ -43,10 +43,10 @@ delete (window as any).location;
 window.location = { origin: 'https://seoindicator.com' } as Location;
 
 // Mock toast
-jest.mock('sonner', () => ({
+vi.mock('sonner', () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -62,8 +62,8 @@ function createDefaultProps(overrides: Partial<VisibilitySettingsProps> = {}): V
     auditId: 1,
     auditHash: 'abc123def4567890123456789012',
     isPublic: false,
-    onPublish: jest.fn().mockResolvedValue(undefined),
-    onUnpublish: jest.fn().mockResolvedValue(undefined),
+    onPublish: vi.fn().mockResolvedValue(undefined),
+    onUnpublish: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -82,7 +82,7 @@ function renderComponent(props: Partial<VisibilitySettingsProps> = {}) {
 describe('VisibilitySettings Component', () => {
   // Reset mocks before each test
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockClipboardWrite.mockResolvedValue(undefined);
   });
 
@@ -156,7 +156,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('calls onPublish when toggled from private to public', async () => {
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -187,7 +187,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('toggles on Space key press', async () => {
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -198,7 +198,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('toggles on Enter key press', async () => {
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -375,7 +375,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('closes dialog without action on Cancel', async () => {
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: true, onUnpublish });
 
       const toggle = screen.getByRole('switch');
@@ -389,7 +389,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('calls onUnpublish on Confirm', async () => {
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: true, onUnpublish });
 
       const toggle = screen.getByRole('switch');
@@ -403,7 +403,7 @@ describe('VisibilitySettings Component', () => {
 
     it('shows loading state on confirm button during operation', async () => {
       let resolveUnpublish: () => void;
-      const onUnpublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onUnpublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolveUnpublish = resolve;
       }));
       renderComponent({ isPublic: true, onUnpublish });
@@ -418,7 +418,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('displays error in dialog on failure', async () => {
-      const onUnpublish = jest.fn().mockRejectedValue(new Error('Network error'));
+      const onUnpublish = vi.fn().mockRejectedValue(new Error('Network error'));
       renderComponent({ isPublic: true, onUnpublish });
 
       const toggle = screen.getByRole('switch');
@@ -454,7 +454,7 @@ describe('VisibilitySettings Component', () => {
   describe('Toast Notifications', () => {
     it('shows success toast on publish', async () => {
       const { toast } = require('sonner');
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -467,7 +467,7 @@ describe('VisibilitySettings Component', () => {
 
     it('shows success toast on unpublish', async () => {
       const { toast } = require('sonner');
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: true, onUnpublish });
 
       const toggle = screen.getByRole('switch');
@@ -483,7 +483,7 @@ describe('VisibilitySettings Component', () => {
 
     it('shows error toast on publish failure', async () => {
       const { toast } = require('sonner');
-      const onPublish = jest.fn().mockRejectedValue(new Error('Server error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Server error'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -496,7 +496,7 @@ describe('VisibilitySettings Component', () => {
 
     it('shows error toast on unpublish failure', async () => {
       const { toast } = require('sonner');
-      const onUnpublish = jest.fn().mockRejectedValue(new Error('Network error'));
+      const onUnpublish = vi.fn().mockRejectedValue(new Error('Network error'));
       renderComponent({ isPublic: true, onUnpublish });
 
       const toggle = screen.getByRole('switch');
@@ -511,7 +511,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('error has role="alert" for screen readers', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Server error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Server error'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -530,7 +530,7 @@ describe('VisibilitySettings Component', () => {
   describe('Loading States', () => {
     it('shows spinner during publish', async () => {
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onPublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolvePublish = resolve;
       }));
       renderComponent({ isPublic: false, onPublish });
@@ -543,7 +543,7 @@ describe('VisibilitySettings Component', () => {
 
     it('shows spinner during unpublish', async () => {
       let resolveUnpublish: () => void;
-      const onUnpublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onUnpublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolveUnpublish = resolve;
       }));
       renderComponent({ isPublic: true, onUnpublish });
@@ -559,7 +559,7 @@ describe('VisibilitySettings Component', () => {
 
     it('disables toggle during loading', async () => {
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onPublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolvePublish = resolve;
       }));
       renderComponent({ isPublic: false, onPublish });
@@ -572,7 +572,7 @@ describe('VisibilitySettings Component', () => {
 
     it('disables buttons during loading', async () => {
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onPublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolvePublish = resolve;
       }));
       renderComponent({ isPublic: false, onPublish });
@@ -586,7 +586,7 @@ describe('VisibilitySettings Component', () => {
 
     it('shows "Updating..." text during load', async () => {
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onPublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolvePublish = resolve;
       }));
       renderComponent({ isPublic: false, onPublish });
@@ -604,7 +604,7 @@ describe('VisibilitySettings Component', () => {
 
   describe('Error Handling', () => {
     it('handles network error gracefully', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Network error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Network error'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -616,7 +616,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('handles server error (500)', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Internal server error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Internal server error'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -628,7 +628,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('handles unauthorized (401) error', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Unauthorized'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Unauthorized'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -640,7 +640,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('handles forbidden (403) error', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Forbidden'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Forbidden'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -652,7 +652,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('handles not found (404) error', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Not found'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Not found'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -664,7 +664,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('handles rate limit (429) error', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Too many requests'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Too many requests'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -676,7 +676,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('shows retry button on error', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Server error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Server error'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -688,7 +688,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('retries action when retry button clicked', async () => {
-      const onPublish = jest.fn()
+      const onPublish = vi.fn()
         .mockRejectedValueOnce(new Error('Server error'))
         .mockResolvedValueOnce(undefined);
       renderComponent({ isPublic: false, onPublish });
@@ -741,7 +741,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('error has role="alert"', async () => {
-      const onPublish = jest.fn().mockRejectedValue(new Error('Error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Error'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -834,7 +834,7 @@ describe('VisibilitySettings Component', () => {
 
     it('prevents rapid toggle clicks (debouncing)', async () => {
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onPublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolvePublish = resolve;
       }));
       renderComponent({ isPublic: false, onPublish });
@@ -850,7 +850,7 @@ describe('VisibilitySettings Component', () => {
 
     it('handles component unmount during loading', async () => {
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => new Promise<void>(resolve => {
+      const onPublish = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
         resolvePublish = resolve;
       }));
       const { unmount } = renderComponent({ isPublic: false, onPublish });
@@ -877,7 +877,7 @@ describe('VisibilitySettings Component', () => {
       // Mock offline state
       Object.defineProperty(navigator, 'onLine', { value: false });
 
-      const onPublish = jest.fn().mockRejectedValue(new Error('Network offline'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Network offline'));
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -951,7 +951,7 @@ describe('VisibilitySettings Component', () => {
 
     it('AC-006: Success toast on save', async () => {
       const { toast } = require('sonner');
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');
@@ -963,7 +963,7 @@ describe('VisibilitySettings Component', () => {
     });
 
     it('AC-007: Settings respects permissions (toggle works for owner)', async () => {
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       renderComponent({ isPublic: false, onPublish });
 
       const toggle = screen.getByRole('switch');

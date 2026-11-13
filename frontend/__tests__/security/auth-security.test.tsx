@@ -15,38 +15,38 @@ import * as authApi from "@/lib/api/auth";
 
 // ==================== Mocks ====================
 
-const mockPush = jest.fn();
-const mockPathname = jest.fn(() => "/");
+const mockPush = vi.fn();
+const mockPathname = vi.fn(() => "/");
 
-jest.mock("next/navigation", () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => mockPathname(),
 }));
 
-const mockFetchUser = jest.fn();
-const mockLogin = jest.fn();
-const mockRegister = jest.fn();
-const mockLogout = jest.fn();
-const mockInitiateGoogleOAuth = jest.fn();
+const mockFetchUser = vi.fn();
+const mockLogin = vi.fn();
+const mockRegister = vi.fn();
+const mockLogout = vi.fn();
+const mockInitiateGoogleOAuth = vi.fn();
 
-jest.mock("@/lib/api/auth", () => ({
+vi.mock("@/lib/api/auth", () => ({
   fetchUser: () => mockFetchUser(),
   login: (...args: any[]) => mockLogin(...args),
   register: (...args: any[]) => mockRegister(...args),
   logout: () => mockLogout(),
   initiateGoogleOAuth: () => mockInitiateGoogleOAuth(),
-  handleGoogleCallback: jest.fn(),
-  forgotPassword: jest.fn(),
-  resetPassword: jest.fn(),
-  resendVerificationEmail: jest.fn(),
-  storeUserData: jest.fn(),
-  getStoredUserData: jest.fn(() => null),
-  getStoredAuthToken: jest.fn(() => null),
-  storeRedirectUrl: jest.fn(),
-  getStoredRedirectUrl: jest.fn(() => null),
-  clearStoredRedirectUrl: jest.fn(),
-  clearAuthStorage: jest.fn(),
-  broadcastAuthChange: jest.fn(),
+  handleGoogleCallback: vi.fn(),
+  forgotPassword: vi.fn(),
+  resetPassword: vi.fn(),
+  resendVerificationEmail: vi.fn(),
+  storeUserData: vi.fn(),
+  getStoredUserData: vi.fn(() => null),
+  getStoredAuthToken: vi.fn(() => null),
+  storeRedirectUrl: vi.fn(),
+  getStoredRedirectUrl: vi.fn(() => null),
+  clearStoredRedirectUrl: vi.fn(),
+  clearAuthStorage: vi.fn(),
+  broadcastAuthChange: vi.fn(),
 }));
 
 // Test component
@@ -66,7 +66,7 @@ function TestComponent() {
 
 describe("Auth Security Tests", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetchUser.mockResolvedValue(null);
     mockPathname.mockReturnValue("/");
   });
@@ -146,7 +146,7 @@ describe("Auth Security Tests", () => {
       mockPathname.mockReturnValue("/auth/callback?code=test&token=secret123");
 
       // The token should not be stored or displayed
-      const consoleSpy = jest.spyOn(console, "log");
+      const consoleSpy = vi.spyOn(console, "log");
 
       render(
         <AuthProvider>
@@ -168,7 +168,7 @@ describe("Auth Security Tests", () => {
       // The actual encryption is handled by the API layer
 
       // Check that sensitive data is not stored in plain text
-      const setItemSpy = jest.spyOn(Storage.prototype, "setItem");
+      const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
       const mockUser: User = {
         id: 1,
@@ -211,7 +211,7 @@ describe("Auth Security Tests", () => {
       // The API layer should fetch CSRF token before login
       // This is verified by checking the implementation
 
-      const getCsrfSpy = jest.spyOn(authApi, "fetchUser" as any);
+      const getCsrfSpy = vi.spyOn(authApi, "fetchUser" as any);
 
       mockLogin.mockResolvedValue({
         id: 1,
@@ -275,7 +275,7 @@ describe("Auth Security Tests", () => {
 
   describe("Sensitive Data Logging", () => {
     it("does not log tokens (SEC-008)", async () => {
-      const consoleSpy = jest.spyOn(console, "log");
+      const consoleSpy = vi.spyOn(console, "log");
 
       const mockUser: User = {
         id: 1,

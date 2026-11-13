@@ -11,7 +11,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Eye: () => <span data-testid="eye-icon">👁</span>,
   Search: () => <span data-testid="search-icon">🔍</span>,
   MousePointer: () => <span data-testid="click-icon">👆</span>,
@@ -168,7 +168,7 @@ describe('QuickStatsCards', () => {
   });
 
   test('calls onViewDetails when card clicked', () => {
-    const onViewDetails = jest.fn();
+    const onViewDetails = vi.fn();
     render(<QuickStatsCards stats={mockStats} onViewDetails={onViewDetails} />);
     
     fireEvent.click(screen.getByTestId('stat-views'));

@@ -9,7 +9,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   ChevronDown: () => <span data-testid="chevron-icon">▼</span>,
   Search: () => <span data-testid="search-icon">🔍</span>,
   X: () => <span data-testid="x-icon">✕</span>,
@@ -178,7 +178,7 @@ const MockPricingFAQ = ({
 
 describe('PricingFAQ', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // FAQ-001 to FAQ-010: Basic Rendering

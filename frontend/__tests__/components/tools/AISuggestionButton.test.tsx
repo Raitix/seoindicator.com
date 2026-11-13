@@ -357,7 +357,7 @@ describe('AISuggestionButton', () => {
   // ========================================
   describe('Click Handler', () => {
     it('should call onClick when clicked', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -373,7 +373,7 @@ describe('AISuggestionButton', () => {
     });
 
     it('should not call onClick when disabled', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -390,7 +390,7 @@ describe('AISuggestionButton', () => {
     });
 
     it('should not call onClick when loading', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -407,7 +407,7 @@ describe('AISuggestionButton', () => {
     });
 
     it('should not call onClick when rate limited', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -540,7 +540,7 @@ describe('AISuggestionButton', () => {
     });
 
     it('should be keyboard accessible', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -559,7 +559,7 @@ describe('AISuggestionButton', () => {
     });
 
     it('should respond to Space key', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -730,7 +730,7 @@ describe('AISuggestionButton', () => {
   // ========================================
   describe('Integration', () => {
     it('should show complete loading flow', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       const { rerender } = render(

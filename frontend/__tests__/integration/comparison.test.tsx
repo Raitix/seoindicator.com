@@ -5,11 +5,11 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("Comparison integration", () => {
   it("filters and keeps table responsive", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     const filterSelect = screen.getByLabelText("Filter");
@@ -17,6 +17,6 @@ describe("Comparison integration", () => {
 
     expect(screen.getAllByText("Keyword Gaps").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Keyword Gap/).length).toBeGreaterThan(0);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

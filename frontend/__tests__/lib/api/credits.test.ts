@@ -11,13 +11,13 @@
 import { fetchBalance, useBalance, invalidateBalance } from "@/lib/api/credits";
 
 // Mock fetch globally
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock SWR
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
 import useSWR from "swr";
@@ -47,7 +47,7 @@ const lowBalanceResponse = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== API-001: fetchBalance ====================
@@ -156,8 +156,8 @@ describe("API-001: fetchBalance", () => {
 
 describe("API-002: useBalance Hook", () => {
   it("API-002-01: returns balance data", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -171,8 +171,8 @@ describe("API-002: useBalance Hook", () => {
   });
 
   it("API-002-02: returns loading state", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: true,
       error: null,
@@ -186,8 +186,8 @@ describe("API-002: useBalance Hook", () => {
 
   it("API-002-03: returns error state", () => {
     const mockError = new Error("Failed to fetch");
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: false,
       error: mockError,
@@ -200,8 +200,8 @@ describe("API-002: useBalance Hook", () => {
   });
 
   it("API-002-04: returns mutate function", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -214,8 +214,8 @@ describe("API-002: useBalance Hook", () => {
   });
 
   it("API-002-05: caches balance", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -234,8 +234,8 @@ describe("API-002: useBalance Hook", () => {
   });
 
   it("API-002-06: refetches on focus", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -244,13 +244,13 @@ describe("API-002: useBalance Hook", () => {
 
     useBalance();
 
-    const swrOptions = (useSWR as jest.Mock).mock.calls[0][2];
+    const swrOptions = vi.mocked(useSWR).mock.calls[0][2];
     expect(swrOptions.revalidateOnFocus).toBe(true);
   });
 
   it("API-002-07: dedupes requests", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -269,8 +269,8 @@ describe("API-002: useBalance Hook", () => {
   });
 
   it("API-002-08: stale-while-revalidate", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -290,8 +290,8 @@ describe("API-002: useBalance Hook", () => {
 
 describe("API-003: invalidateBalance", () => {
   it("API-003-01: invalidates cache", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -304,8 +304,8 @@ describe("API-003: invalidateBalance", () => {
   });
 
   it("API-003-02: triggers refetch", async () => {
-    const mockMutate = jest.fn().mockResolvedValue(mockBalanceResponse);
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn().mockResolvedValue(mockBalanceResponse);
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -318,12 +318,12 @@ describe("API-003: invalidateBalance", () => {
   });
 
   it("API-003-03: updates after purchase", async () => {
-    const mockMutate = jest.fn().mockResolvedValue({
+    const mockMutate = vi.fn().mockResolvedValue({
       ...mockBalanceResponse,
       balance: 50.0,
     });
 
-    (useSWR as jest.Mock).mockReturnValue({
+    vi.mocked(useSWR).mockReturnValue({
       data: mockBalanceResponse,
       isLoading: false,
       error: null,
@@ -336,7 +336,7 @@ describe("API-003: invalidateBalance", () => {
   });
 
   it("API-003-04: optimistic update", async () => {
-    const mockMutate = jest.fn().mockResolvedValue({
+    const mockMutate = vi.fn().mockResolvedValue({
       ...mockBalanceResponse,
       balance: 30.0,
     });
@@ -352,14 +352,14 @@ describe("API-003: invalidateBalance", () => {
   });
 
   it("API-003-05: rollback on failure", async () => {
-    const mockMutate = jest.fn().mockRejectedValue(new Error("Failed"));
+    const mockMutate = vi.fn().mockRejectedValue(new Error("Failed"));
 
     // Should handle failure gracefully
     await expect(invalidateBalance(mockMutate)).resolves.not.toThrow();
   });
 
   it("API-003-06: batch invalidation", async () => {
-    const mockMutate = jest.fn().mockResolvedValue(mockBalanceResponse);
+    const mockMutate = vi.fn().mockResolvedValue(mockBalanceResponse);
 
     // Multiple invalidations should result in single update
     await Promise.all([
@@ -478,7 +478,7 @@ describe("API-005: Error Handling", () => {
 
   it("API-005-05: masks balance in logs", () => {
     // Logging should mask sensitive balance data
-    const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
     // This would be tested in actual implementation
     expect(consoleSpy).not.toHaveBeenCalled();

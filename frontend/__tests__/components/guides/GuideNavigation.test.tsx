@@ -10,11 +10,9 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return function MockLink({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
+vi.mock('next/link', () => ({ default: function MockLink({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
     return <a href={href} className={className}>{children}</a>;
-  };
-});
+  } }));
 
 // All guide slugs in order
 const ALL_GUIDE_SLUGS = [

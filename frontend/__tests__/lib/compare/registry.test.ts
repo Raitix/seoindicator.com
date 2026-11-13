@@ -22,23 +22,23 @@ import {
 } from '@/lib/compare/types';
 
 // Mock the competitor data modules
-jest.mock('@/lib/compare/competitors/seoindicator', () => ({
+vi.mock('@/lib/compare/competitors/seoindicator', () => ({
   seoindicator: createMockCompetitorData('seoindicator', 'SEOIndicator'),
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/ahrefs', () => ({
+vi.mock('@/lib/compare/competitors/ahrefs', () => ({
   ahrefs: createMockCompetitorData('ahrefs', 'Ahrefs'),
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/semrush', () => ({
+vi.mock('@/lib/compare/competitors/semrush', () => ({
   semrush: createMockCompetitorData('semrush', 'SEMrush'),
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/moz', () => ({
+vi.mock('@/lib/compare/competitors/moz', () => ({
   moz: createMockCompetitorData('moz', 'Moz'),
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/ubersuggest', () => ({
+vi.mock('@/lib/compare/competitors/ubersuggest', () => ({
   ubersuggest: createMockCompetitorData('ubersuggest', 'Ubersuggest'),
 }), { virtual: true });
 
@@ -120,23 +120,23 @@ describe('Registry Module', () => {
     jest.resetModules();
     
     // Set up mocks again after reset
-    jest.mock('@/lib/compare/competitors/seoindicator', () => ({
+    vi.mock('@/lib/compare/competitors/seoindicator', () => ({
       seoindicator: createMockCompetitorData('seoindicator', 'SEOIndicator'),
     }), { virtual: true });
     
-    jest.mock('@/lib/compare/competitors/ahrefs', () => ({
+    vi.mock('@/lib/compare/competitors/ahrefs', () => ({
       ahrefs: createMockCompetitorData('ahrefs', 'Ahrefs'),
     }), { virtual: true });
     
-    jest.mock('@/lib/compare/competitors/semrush', () => ({
+    vi.mock('@/lib/compare/competitors/semrush', () => ({
       semrush: createMockCompetitorData('semrush', 'SEMrush'),
     }), { virtual: true });
     
-    jest.mock('@/lib/compare/competitors/moz', () => ({
+    vi.mock('@/lib/compare/competitors/moz', () => ({
       moz: createMockCompetitorData('moz', 'Moz'),
     }), { virtual: true });
     
-    jest.mock('@/lib/compare/competitors/ubersuggest', () => ({
+    vi.mock('@/lib/compare/competitors/ubersuggest', () => ({
       ubersuggest: createMockCompetitorData('ubersuggest', 'Ubersuggest'),
     }), { virtual: true });
   });

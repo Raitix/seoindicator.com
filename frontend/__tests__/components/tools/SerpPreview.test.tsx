@@ -164,7 +164,7 @@ describe('SerpPreview', () => {
 
   // UT-019: Mobile preview toggle
   it('should toggle to mobile preview when button clicked', () => {
-    const mockToggle = jest.fn();
+    const mockToggle = vi.fn();
     render(<SerpPreview {...defaultProps} onToggleMobile={mockToggle} />);
 
     const toggleButton = screen.getByRole('button', { name: /mobile/i });

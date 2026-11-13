@@ -20,21 +20,21 @@ expect.extend(toHaveNoViolations);
 // ============================================================================
 
 // Mock cookie consent utilities
-jest.mock('@/lib/utils/cookieConsent', () => ({
-  getCookieConsent: jest.fn(() => null),
-  setCookieConsent: jest.fn(),
-  hasCookieConsent: jest.fn(() => false),
+vi.mock('@/lib/utils/cookieConsent', () => ({
+  getCookieConsent: vi.fn(() => null),
+  setCookieConsent: vi.fn(),
+  hasCookieConsent: vi.fn(() => false),
 }));
 
 // Mock ConsentContext
-jest.mock('@/lib/contexts/ConsentContext', () => ({
-  useConsentContext: jest.fn(() => {
+vi.mock('@/lib/contexts/ConsentContext', () => ({
+  useConsentContext: vi.fn(() => {
     throw new Error('Context not available');
   }),
 }));
 
 // Mock cn utility
-jest.mock('@/lib/utils', () => ({
+vi.mock('@/lib/utils', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
 }));
 
@@ -44,10 +44,10 @@ jest.mock('@/lib/utils', () => ({
 
 describe('CookieConsent Accessibility', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Reset localStorage mock
-    Storage.prototype.getItem = jest.fn(() => null);
-    Storage.prototype.setItem = jest.fn();
+    Storage.prototype.getItem = vi.fn(() => null);
+    Storage.prototype.setItem = vi.fn();
   });
 
   describe('Automated A11y Tests (jest-axe)', () => {
@@ -108,7 +108,7 @@ describe('CookieConsent Accessibility', () => {
     });
 
     it('should trigger Accept All with Enter key', async () => {
-      const onAccept = jest.fn();
+      const onAccept = vi.fn();
       render(<CookieConsent visible={true} onAccept={onAccept} />);
       const user = userEvent.setup();
       
@@ -122,7 +122,7 @@ describe('CookieConsent Accessibility', () => {
     });
 
     it('should trigger Necessary Only with Enter key', async () => {
-      const onDecline = jest.fn();
+      const onDecline = vi.fn();
       render(<CookieConsent visible={true} onDecline={onDecline} />);
       const user = userEvent.setup();
       
@@ -136,8 +136,8 @@ describe('CookieConsent Accessibility', () => {
     });
 
     it('should NOT close banner with Escape key (GDPR requirement)', async () => {
-      const onAccept = jest.fn();
-      const onDecline = jest.fn();
+      const onAccept = vi.fn();
+      const onDecline = vi.fn();
       render(<CookieConsent visible={true} onAccept={onAccept} onDecline={onDecline} />);
       const user = userEvent.setup();
       
@@ -517,8 +517,8 @@ describe('CookieConsent Accessibility', () => {
     });
 
     it('should save preferences when Save button clicked', async () => {
-      const onAccept = jest.fn();
-      const onDecline = jest.fn();
+      const onAccept = vi.fn();
+      const onDecline = vi.fn();
       render(
         <CookieConsent
           visible={true}
@@ -569,7 +569,7 @@ describe('CookieConsent Accessibility', () => {
     });
 
     it('AC-3: Enter triggers button actions', async () => {
-      const onAccept = jest.fn();
+      const onAccept = vi.fn();
       render(<CookieConsent visible={true} onAccept={onAccept} />);
       const user = userEvent.setup();
       
@@ -586,8 +586,8 @@ describe('CookieConsent Accessibility', () => {
     });
 
     it('AC-4: Escape does NOT close banner (GDPR)', async () => {
-      const onAccept = jest.fn();
-      const onDecline = jest.fn();
+      const onAccept = vi.fn();
+      const onDecline = vi.fn();
       render(<CookieConsent visible={true} onAccept={onAccept} onDecline={onDecline} />);
       const user = userEvent.setup();
       

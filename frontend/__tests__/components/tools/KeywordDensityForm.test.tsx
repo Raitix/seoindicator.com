@@ -12,7 +12,7 @@ import '@testing-library/jest-dom';
 import { KeywordDensityForm } from '@/components/tools/KeywordDensityForm';
 
 describe('KeywordDensityForm', () => {
-  const mockOnAnalyze = jest.fn();
+  const mockOnAnalyze = vi.fn();
 
   beforeEach(() => {
     mockOnAnalyze.mockClear();

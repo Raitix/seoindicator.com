@@ -19,19 +19,19 @@ import '@testing-library/jest-dom';
 import type { ComparisonCTAProps } from '@/lib/compare/types';
 
 // Mock analytics tracking
-const mockTrackEvent = jest.fn();
-jest.mock('@/lib/analytics', () => ({
+const mockTrackEvent = vi.fn();
+vi.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   ArrowRight: () => <span data-testid="arrow-icon" aria-hidden>→</span>,
   ExternalLink: () => <span data-testid="external-icon" aria-hidden>↗</span>,
 }));
 
 // Mock usePathname for tracking
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   usePathname: () => '/compare/seoindicator-vs-ahrefs',
 }));
 
@@ -86,11 +86,11 @@ const MockLink = ({
   </a>
 );
 
-jest.mock('@/components/ui/button', () => ({
+vi.mock('@/components/ui/button', () => ({
   Button: MockButton,
 }));
 
-jest.mock('next/link', () => MockLink);
+vi.mock('next/link', () => MockLink);
 
 // ============================================================================
 // Component Implementation (TDD Mock - will be replaced)
@@ -480,7 +480,7 @@ describe('ComparisonCTA', () => {
     });
 
     it('CTA-STK-008: cleanup removes scroll listener on unmount', () => {
-      const removeEventListenerSpy = jest.spyOn(window, 'removeEventListener');
+      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
       
       const { unmount } = render(<ComparisonCTA variant="sticky" />);
       unmount();

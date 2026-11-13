@@ -9,7 +9,7 @@ import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   ArrowUpDown: () => <span data-testid="sort-icon">↕</span>,
   ArrowUp: () => <span data-testid="sort-asc-icon">↑</span>,
   ArrowDown: () => <span data-testid="sort-desc-icon">↓</span>,
@@ -78,8 +78,8 @@ const MockModelPricingTable = ({
   models = mockModels,
   isLoading = false,
   error = null,
-  onModelClick = jest.fn(),
-  onRefresh = jest.fn(),
+  onModelClick = vi.fn(),
+  onRefresh = vi.fn(),
   className = '',
 }: ModelPricingTableProps) => {
   const [sortField, setSortField] = useState<string>('cost');
@@ -369,11 +369,11 @@ const MockModelPricingTable = ({
 };
 
 describe('ModelPricingTable', () => {
-  const mockOnModelClick = jest.fn();
-  const mockOnRefresh = jest.fn();
+  const mockOnModelClick = vi.fn();
+  const mockOnRefresh = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // MPT-001 to MPT-010: Basic Rendering

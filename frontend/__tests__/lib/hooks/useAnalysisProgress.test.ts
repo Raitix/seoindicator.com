@@ -11,11 +11,11 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAnalysisProgress } from '@/lib/hooks/useAnalysisProgress';
 
 // Mock API functions
-const mockGetJobProgress = jest.fn();
-const mockCancelAnalysisJob = jest.fn();
-const mockCreateEventSource = jest.fn();
+const mockGetJobProgress = vi.fn();
+const mockCancelAnalysisJob = vi.fn();
+const mockCreateEventSource = vi.fn();
 
-jest.mock('@/lib/api/analysis-job', () => ({
+vi.mock('@/lib/api/analysis-job', () => ({
   getJobProgress: (...args: unknown[]) => mockGetJobProgress(...args),
   cancelAnalysisJob: (...args: unknown[]) => mockCancelAnalysisJob(...args),
   createEventSource: (...args: unknown[]) => mockCreateEventSource(...args),
@@ -100,7 +100,7 @@ describe('useAnalysisProgress', () => {
   let mockEventSource: MockEventSource | null = null;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockEventSource = null;
     mockGetJobProgress.mockResolvedValue(createMockJobProgress());
     mockCancelAnalysisJob.mockResolvedValue({

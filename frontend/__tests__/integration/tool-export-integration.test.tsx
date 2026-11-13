@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock ExportResultsButton component
-jest.mock('@/components/tools/ExportResultsButton', () => ({
+vi.mock('@/components/tools/ExportResultsButton', () => ({
   ExportResultsButton: ({ toolName, url, data, className, isGenerating }: any) => {
     const hasResults = data && Object.keys(data).length > 0;
     const isDisabled = !hasResults || isGenerating;
@@ -38,7 +38,7 @@ jest.mock('@/components/tools/ExportResultsButton', () => ({
 }));
 
 // Mock ExportModal component
-jest.mock('@/components/tools/ExportModal', () => ({
+vi.mock('@/components/tools/ExportModal', () => ({
   ExportModal: ({ isOpen, toolName, url, data }: any) => {
     if (!isOpen) return null;
     return (

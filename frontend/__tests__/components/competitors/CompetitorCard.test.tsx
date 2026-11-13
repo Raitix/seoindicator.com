@@ -27,8 +27,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -39,8 +39,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -51,8 +51,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitorWithoutDisplayName}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -65,8 +65,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -78,8 +78,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -90,8 +90,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitorWithoutDisplayName}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -101,13 +101,13 @@ describe("CompetitorCard", () => {
 
   describe("Edit action", () => {
     it("calls onEdit with competitor when edit button clicked", () => {
-      const mockOnEdit = jest.fn();
+      const mockOnEdit = vi.fn();
 
       render(
         <CompetitorCard
           competitor={mockCompetitor}
           onEdit={mockOnEdit}
-          onDelete={jest.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -122,8 +122,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -133,12 +133,12 @@ describe("CompetitorCard", () => {
 
   describe("Delete action", () => {
     it("calls onDelete with competitor when delete button clicked", () => {
-      const mockOnDelete = jest.fn();
+      const mockOnDelete = vi.fn();
 
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
+          onEdit={vi.fn()}
           onDelete={mockOnDelete}
         />
       );
@@ -154,8 +154,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -168,8 +168,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 
@@ -181,8 +181,8 @@ describe("CompetitorCard", () => {
       render(
         <CompetitorCard
           competitor={mockCompetitor}
-          onEdit={jest.fn()}
-          onDelete={jest.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
         />
       );
 

@@ -9,17 +9,15 @@ import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock next/navigation
-const mockUsePathname = jest.fn(() => '/terms');
-jest.mock('next/navigation', () => ({
+const mockUsePathname = vi.fn(() => '/terms');
+vi.mock('next/navigation', () => ({
   usePathname: mockUsePathname,
 }));
 
 // Mock next/head
-jest.mock('next/head', () => {
-  return function MockHead({ children }: { children: React.ReactNode }) {
+vi.mock('next/head', () => ({ default: function MockHead({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
-  };
-});
+  } }));
 
 // Expected sections for Terms & Privacy content
 const EXPECTED_SECTIONS = [
@@ -68,7 +66,7 @@ describe('Terms & Privacy Page - Page Component', () => {
     let TermsPage: React.ComponentType;
     
     beforeEach(async () => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       const module = await import('@/app/terms/page');
       TermsPage = module.default;
     });
@@ -411,7 +409,7 @@ describe('Terms & Privacy Page - Page Component', () => {
 
     it('should not have unnecessary re-renders', () => {
       const { rerender } = render(<TermsPage />);
-      const renderCount = jest.fn();
+      const renderCount = vi.fn();
       
       rerender(<TermsPage />);
       

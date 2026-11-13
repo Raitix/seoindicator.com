@@ -10,14 +10,14 @@ import '@testing-library/jest-dom';
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
   };
@@ -26,12 +26,12 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 // Mock useConsent hook
-const mockSetShowBanner = jest.fn();
-const mockHasConsent = jest.fn(() => false);
-const mockUpdateConsent = jest.fn();
-const mockClearConsent = jest.fn();
+const mockSetShowBanner = vi.fn();
+const mockHasConsent = vi.fn(() => false);
+const mockUpdateConsent = vi.fn();
+const mockClearConsent = vi.fn();
 
-jest.mock('@/lib/hooks/useConsent', () => ({
+vi.mock('@/lib/hooks/useConsent', () => ({
   useConsent: () => ({
     consent: null,
     hasConsent: mockHasConsent,
@@ -152,7 +152,7 @@ import { useConsent } from '@/lib/hooks/useConsent';
 
 describe('Footer Component - Basic Rendering', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -197,7 +197,7 @@ describe('Footer Component - Basic Rendering', () => {
 
 describe('Footer Component - Cookie Settings Link', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -294,7 +294,7 @@ describe('Footer Component - Cookie Settings Link', () => {
 
 describe('Footer Component - Structure', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -346,7 +346,7 @@ describe('Footer Component - Structure', () => {
 
 describe('Footer Component - Accessibility', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -386,7 +386,7 @@ describe('Footer Component - Accessibility', () => {
 
 describe('Footer Component - Custom Props', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 

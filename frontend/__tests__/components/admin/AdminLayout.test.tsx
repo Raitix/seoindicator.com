@@ -11,24 +11,24 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 // Mock next/navigation
-const mockPush = jest.fn();
-const mockBack = jest.fn();
-const mockReplace = jest.fn();
+const mockPush = vi.fn();
+const mockBack = vi.fn();
+const mockReplace = vi.fn();
 
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     back: mockBack,
     replace: mockReplace,
   }),
-  usePathname: jest.fn(() => '/admin/overview'),
-  useSearchParams: jest.fn(() => ({
-    get: jest.fn(() => null),
+  usePathname: vi.fn(() => '/admin/overview'),
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn(() => null),
   })),
 }));
 
 // Mock AdminNav component
-jest.mock('@/components/admin/AdminNav', () => ({
+vi.mock('@/components/admin/AdminNav', () => ({
   AdminNav: ({ activePath }: { activePath: string }) => (
     <nav data-testid="admin-nav" data-active={activePath}>
       <a href="/admin/overview" data-testid="nav-overview">Overview</a>
@@ -41,7 +41,7 @@ jest.mock('@/components/admin/AdminNav', () => ({
 }));
 
 // Mock AdminGuard component
-jest.mock('@/components/admin/AdminGuard', () => ({
+vi.mock('@/components/admin/AdminGuard', () => ({
   AdminGuard: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="admin-guard">{children}</div>
   ),
@@ -173,7 +173,7 @@ function MockAdminError({ message, onRetry }: { message: string; onRetry?: () =>
 
 describe('AdminLayout Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ==================== AL-001: Basic Rendering ====================
@@ -635,7 +635,7 @@ describe('AdminError Component', () => {
   });
 
   it('renders retry button when onRetry provided', () => {
-    const onRetry = jest.fn();
+    const onRetry = vi.fn();
     render(<MockAdminError message="Error" onRetry={onRetry} />);
     expect(screen.getByTestId('retry-button')).toBeInTheDocument();
   });
@@ -647,7 +647,7 @@ describe('AdminError Component', () => {
 
   it('calls onRetry when retry button clicked', async () => {
     const user = userEvent.setup();
-    const onRetry = jest.fn();
+    const onRetry = vi.fn();
     render(<MockAdminError message="Error" onRetry={onRetry} />);
     
     await user.click(screen.getByTestId('retry-button'));

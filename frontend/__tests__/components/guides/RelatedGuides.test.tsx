@@ -10,14 +10,12 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+vi.mock('next/link', () => ({ default: function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
     return <a href={href}>{children}</a>;
-  };
-});
+  } }));
 
 // Mock getRelatedGuides
-jest.mock('@/lib/guides/registry', () => ({
+vi.mock('@/lib/guides/registry', () => ({
   getRelatedGuides: (slug: string) => {
     const related: Record<string, typeof mockGuides> = {
       'meta-title': [

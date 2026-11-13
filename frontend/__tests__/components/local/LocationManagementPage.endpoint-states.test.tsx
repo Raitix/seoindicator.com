@@ -24,10 +24,16 @@ const hookState = vi.hoisted(() => ({
   error: null as Error | null,
 }));
 
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => "/sites/1/local",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
 }));
 
 vi.mock("next/link", () => ({

@@ -528,7 +528,7 @@ describe('AISuggestionPanel', () => {
     });
 
     it('should show retry button when onRetry is provided', () => {
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       render(
         <AISuggestionPanel
           suggestions={[]}
@@ -544,7 +544,7 @@ describe('AISuggestionPanel', () => {
     });
 
     it('should call onRetry when retry button is clicked', async () => {
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       const user = userEvent.setup();
       
       render(

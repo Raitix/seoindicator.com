@@ -12,7 +12,7 @@ import type { CodeExample } from '@/lib/guides/types';
 
 // Mock clipboard API
 const mockClipboard = {
-  writeText: jest.fn().mockImplementation(() => Promise.resolve()),
+  writeText: vi.fn().mockImplementation(() => Promise.resolve()),
 };
 Object.assign(navigator, {
   clipboard: mockClipboard,
@@ -187,7 +187,7 @@ const unknownLanguageExample: CodeExample = {
 
 describe('GuideCodeBlock Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('CE-001: Renders code block structure', () => {

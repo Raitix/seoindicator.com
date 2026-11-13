@@ -407,7 +407,7 @@ describe('IndicatorList', () => {
     });
 
     it('RD-003.6: expands details when indicator is clicked', () => {
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(
         <IndicatorList
           indicators={mockIndicators}
@@ -488,7 +488,7 @@ describe('IndicatorList', () => {
   // -------------------------------------------------------------------------
   describe('RD-005: Expandable Indicator Details', () => {
     it('RD-005.1: toggles expansion on click', () => {
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(
         <IndicatorList
           indicators={mockIndicators}
@@ -568,7 +568,7 @@ describe('IndicatorList', () => {
     });
 
     it('RD-005.8: supports keyboard navigation', () => {
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(
         <IndicatorList
           indicators={mockIndicators}

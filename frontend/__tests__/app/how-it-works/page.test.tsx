@@ -9,7 +9,7 @@ import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 
 // Mock the HowItWorksContent component
-jest.mock('@/components/pages/HowItWorksContent', () => ({
+vi.mock('@/components/pages/HowItWorksContent', () => ({
   HowItWorksContent: () => (
     <div data-testid="how-it-works-content">
       <h1>How It Works</h1>

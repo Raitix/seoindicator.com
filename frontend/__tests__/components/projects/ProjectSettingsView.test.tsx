@@ -4,8 +4,8 @@ import { ProjectSettingsView } from "@/components/projects/ProjectSettingsView";
 import type { Project } from "@/lib/types/projects";
 
 // Mock next/navigation
-const mockPush = jest.fn();
-jest.mock("next/navigation", () => ({
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
@@ -21,15 +21,15 @@ const mockProject: Project = {
   updatedAt: "2026-01-01",
 };
 
-const mockOnSave = jest.fn();
-const mockOnDelete = jest.fn();
-const mockOnArchive = jest.fn();
-const mockOnRestore = jest.fn();
-const mockOnCancel = jest.fn();
+const mockOnSave = vi.fn();
+const mockOnDelete = vi.fn();
+const mockOnArchive = vi.fn();
+const mockOnRestore = vi.fn();
+const mockOnCancel = vi.fn();
 
 describe("ProjectSettingsView", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // UC-025: Renders project settings form

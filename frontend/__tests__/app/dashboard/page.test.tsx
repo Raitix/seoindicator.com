@@ -198,7 +198,7 @@ describe("Welcome Card", () => {
   });
 
   it("shows last login timestamp when available (DP-012)", () => {
-    (useAuth as jest.Mock).mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: { ...mockUser, lastLoginAt: "2026-03-01T08:00:00Z" },
     });
@@ -448,7 +448,7 @@ describe("Quick Actions Section", () => {
 
 describe("Loading Skeleton States", () => {
   it("shows skeleton for stats cards while loading (DP-070)", () => {
-    (useAuth as jest.Mock).mockReturnValue(mockAuthContext);
+    vi.mocked(useAuth).mockReturnValue(mockAuthContext);
     mockUseSWR(null, true);
 
     render(<DashboardPage />);
@@ -480,7 +480,7 @@ describe("Error States", () => {
   });
 
   it("retries data fetch when retry button clicked (DP-082)", async () => {
-    const mockMutate = jest.fn();
+    const mockMutate = vi.fn();
     mockUseSWR(null, false, new Error("Failed to fetch dashboard data"), mockMutate);
 
     const user = userEvent.setup();
@@ -642,7 +642,7 @@ describe("Accessibility", () => {
 
 describe("Data Freshness", () => {
   it("provides refresh button to reload data (DP-121)", () => {
-    const mockMutate = jest.fn();
+    const mockMutate = vi.fn();
     mockUseSWR(mockDashboardData, false, null, mockMutate);
 
     render(<DashboardPage />);
@@ -652,7 +652,7 @@ describe("Data Freshness", () => {
   });
 
   it("refreshes data when refresh button clicked (DP-122)", async () => {
-    const mockMutate = jest.fn();
+    const mockMutate = vi.fn();
     mockUseSWR(mockDashboardData, false, null, mockMutate);
 
     const user = userEvent.setup();
@@ -695,7 +695,7 @@ describe("Performance", () => {
 
 describe("Security", () => {
   it("sanitizes user name in welcome message (DP-140)", () => {
-    (useAuth as jest.Mock).mockReturnValue({
+    vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: {
         ...mockUser,

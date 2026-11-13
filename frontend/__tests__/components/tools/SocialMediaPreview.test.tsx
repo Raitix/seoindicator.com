@@ -34,7 +34,7 @@ describe('SocialMediaPreview Component', () => {
   // ===========================================================================
 
   describe('Form Component', () => {
-    const mockOnAnalyze = jest.fn();
+    const mockOnAnalyze = vi.fn();
 
     beforeEach(() => {
       mockOnAnalyze.mockClear();
@@ -163,7 +163,7 @@ describe('SocialMediaPreview Component', () => {
   // ===========================================================================
 
   describe('Platform Tabs Component', () => {
-    const mockOnTabChange = jest.fn();
+    const mockOnTabChange = vi.fn();
 
     beforeEach(() => {
       mockOnTabChange.mockClear();
@@ -606,7 +606,7 @@ describe('SocialMediaPreview Component', () => {
      * EC-001: Very long URL
      */
     it('should handle very long URLs', async () => {
-      const mockOnAnalyze = jest.fn();
+      const mockOnAnalyze = vi.fn();
       render(<SocialMediaPreviewForm onAnalyze={mockOnAnalyze} />);
 
       const longUrl = 'https://example.com/' + 'a'.repeat(2000);

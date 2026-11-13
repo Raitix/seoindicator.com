@@ -268,7 +268,7 @@ describe('MetaTagResults', () => {
 
   // Additional: Export button
   it('should call onExport when export button clicked', () => {
-    const mockExport = jest.fn();
+    const mockExport = vi.fn();
     render(<MetaTagResults result={defaultResult} onExport={mockExport} />);
 
     const exportButton = screen.getByRole('button', { name: /export/i });

@@ -9,7 +9,7 @@
 import '@testing-library/jest-dom';
 
 // Mock competitor data modules with realistic data
-jest.mock('@/lib/compare/competitors/seoindicator', () => ({
+vi.mock('@/lib/compare/competitors/seoindicator', () => ({
   seoindicator: {
     id: 'seoindicator',
     name: 'SEOIndicator',
@@ -51,7 +51,7 @@ jest.mock('@/lib/compare/competitors/seoindicator', () => ({
   },
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/ahrefs', () => ({
+vi.mock('@/lib/compare/competitors/ahrefs', () => ({
   ahrefs: {
     id: 'ahrefs',
     name: 'Ahrefs',
@@ -75,7 +75,7 @@ jest.mock('@/lib/compare/competitors/ahrefs', () => ({
   },
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/semrush', () => ({
+vi.mock('@/lib/compare/competitors/semrush', () => ({
   semrush: {
     id: 'semrush',
     name: 'SEMrush',
@@ -96,7 +96,7 @@ jest.mock('@/lib/compare/competitors/semrush', () => ({
   },
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/moz', () => ({
+vi.mock('@/lib/compare/competitors/moz', () => ({
   moz: {
     id: 'moz',
     name: 'Moz',
@@ -115,7 +115,7 @@ jest.mock('@/lib/compare/competitors/moz', () => ({
   },
 }), { virtual: true });
 
-jest.mock('@/lib/compare/competitors/ubersuggest', () => ({
+vi.mock('@/lib/compare/competitors/ubersuggest', () => ({
   ubersuggest: {
     id: 'ubersuggest',
     name: 'Ubersuggest',

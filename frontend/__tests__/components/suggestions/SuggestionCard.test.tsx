@@ -27,11 +27,11 @@ describe('SuggestionCard', () => {
     discoveredAt: '2026-02-27T10:00:00Z',
   };
 
-  const mockOnTrack = jest.fn();
-  const mockOnDismiss = jest.fn();
+  const mockOnTrack = vi.fn();
+  const mockOnDismiss = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================

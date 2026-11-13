@@ -4,32 +4,32 @@ import { ProjectProvider, useProjectContext, useCurrentProject, useProjectAction
 import type { Project } from "@/lib/types/projects";
 
 // Mock next/navigation
-const mockPush = jest.fn();
+const mockPush = vi.fn();
 const mockRouter = {
   push: mockPush,
 };
 
-jest.mock("next/navigation", () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => mockRouter,
 }));
 
 // Mock the projects API
-const mockMutate = jest.fn();
-jest.mock("@/lib/api/projects", () => ({
-  useProjects: jest.fn(() => ({
+const mockMutate = vi.fn();
+vi.mock("@/lib/api/projects", () => ({
+  useProjects: vi.fn(() => ({
     projects: mockProjectsData,
     isLoading: false,
     error: null,
     mutate: mockMutate,
   })),
-  createProject: jest.fn(),
-  updateProject: jest.fn(),
-  deleteProject: jest.fn(),
-  archiveProject: jest.fn(),
-  restoreProject: jest.fn(),
-  getStoredProjectId: jest.fn(() => null),
-  storeProjectId: jest.fn(),
-  clearStoredProjectId: jest.fn(),
+  createProject: vi.fn(),
+  updateProject: vi.fn(),
+  deleteProject: vi.fn(),
+  archiveProject: vi.fn(),
+  restoreProject: vi.fn(),
+  getStoredProjectId: vi.fn(() => null),
+  storeProjectId: vi.fn(),
+  clearStoredProjectId: vi.fn(),
 }));
 
 import {
@@ -97,14 +97,14 @@ function TestComponent() {
 
 describe("ProjectContext", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useProjects as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    vi.mocked(useProjects).mockReturnValue({
       projects: mockProjectsData,
       isLoading: false,
       error: null,
       mutate: mockMutate,
     });
-    (getStoredProjectId as jest.Mock).mockReturnValue(null);
+    vi.mocked(getStoredProjectId).mockReturnValue(null);
   });
 
   // UC-034: Provides projects list
@@ -167,7 +167,7 @@ describe("ProjectContext", () => {
       createdAt: "2026-01-03",
       updatedAt: "2026-01-03",
     };
-    (createProject as jest.Mock).mockResolvedValue(newProject);
+    vi.mocked(createProject).mockResolvedValue(newProject);
 
     render(
       <ProjectProvider>
@@ -186,7 +186,7 @@ describe("ProjectContext", () => {
   // UC-038: updateProject method
   it("updates project correctly", async () => {
     const updatedProject = { ...mockProjectsData[0], name: "Updated" };
-    (updateProject as jest.Mock).mockResolvedValue(updatedProject);
+    vi.mocked(updateProject).mockResolvedValue(updatedProject);
 
     render(
       <ProjectProvider>
@@ -204,7 +204,7 @@ describe("ProjectContext", () => {
 
   // UC-039: deleteProject method
   it("deletes project and switches to another", async () => {
-    (deleteProject as jest.Mock).mockResolvedValue(undefined);
+    vi.mocked(deleteProject).mockResolvedValue(undefined);
 
     render(
       <ProjectProvider>
@@ -264,11 +264,11 @@ describe("ProjectContext", () => {
       );
     }
 
-    (createProject as jest.Mock).mockResolvedValue({ id: 3, name: "Test" });
-    (updateProject as jest.Mock).mockResolvedValue({ id: 1, name: "Updated" });
-    (deleteProject as jest.Mock).mockResolvedValue(undefined);
-    (archiveProject as jest.Mock).mockResolvedValue({ id: 1 });
-    (restoreProject as jest.Mock).mockResolvedValue({ id: 1 });
+    vi.mocked(createProject).mockResolvedValue({ id: 3, name: "Test" });
+    vi.mocked(updateProject).mockResolvedValue({ id: 1, name: "Updated" });
+    vi.mocked(deleteProject).mockResolvedValue(undefined);
+    vi.mocked(archiveProject).mockResolvedValue({ id: 1 });
+    vi.mocked(restoreProject).mockResolvedValue({ id: 1 });
 
     render(
       <ProjectProvider>
@@ -304,7 +304,7 @@ describe("ProjectContext", () => {
 
   // Test error when used outside provider
   it("throws error when used outside provider", () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     function ErrorComponent() {
       useProjectContext();

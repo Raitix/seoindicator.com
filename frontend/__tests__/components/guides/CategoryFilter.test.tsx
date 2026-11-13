@@ -49,10 +49,10 @@ function MockCategoryFilter({
 }
 
 describe('CategoryFilter Component', () => {
-  const mockOnCategoryChange = jest.fn();
+  const mockOnCategoryChange = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {

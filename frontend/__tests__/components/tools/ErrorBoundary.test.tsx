@@ -20,7 +20,7 @@ const ThrowError: React.FC<{ shouldThrow: boolean }> = ({ shouldThrow }) => {
 // Suppress console.error for cleaner test output
 const originalError = console.error;
 beforeAll(() => {
-    console.error = jest.fn();
+    console.error = vi.fn();
 });
 afterAll(() => {
     console.error = originalError;
@@ -136,7 +136,7 @@ describe('ErrorBoundary', () => {
      * EB-008: Error reporting via onError callback
      */
     it('calls onError callback when error occurs', () => {
-        const onError = jest.fn();
+        const onError = vi.fn();
 
         render(
             <ErrorBoundary onError={onError}>
@@ -272,7 +272,7 @@ describe('ErrorBoundary', () => {
      * EB-015: Async error handling (requires special handling)
      */
     it('handles async errors with error reporting', async () => {
-        const onError = jest.fn();
+        const onError = vi.fn();
 
         // Note: React Error Boundaries don't catch async errors by default
         // This test verifies the onError callback is called if manually triggered
@@ -293,7 +293,7 @@ describe('ErrorBoundary', () => {
  */
 describe('ErrorBoundary with reset callback', () => {
     it('calls onReset when reset button is clicked', () => {
-        const onReset = jest.fn();
+        const onReset = vi.fn();
 
         render(
             <ErrorBoundary onReset={onReset}>

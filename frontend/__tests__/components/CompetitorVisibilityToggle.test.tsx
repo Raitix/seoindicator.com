@@ -5,11 +5,11 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("CompetitorVisibilityToggle", () => {
   it("toggles competitor visibility", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getByTestId("column-Searchly")).toBeInTheDocument();
@@ -17,15 +17,15 @@ describe("CompetitorVisibilityToggle", () => {
     fireEvent.click(screen.getByLabelText("Toggle Searchly"));
 
     expect(screen.queryByTestId("column-Searchly")).not.toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("keeps at least one competitor visible", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     fireEvent.click(screen.getByLabelText("Toggle Searchly"));
@@ -37,6 +37,6 @@ describe("CompetitorVisibilityToggle", () => {
     );
 
     expect(remaining.length).toBeGreaterThanOrEqual(1);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

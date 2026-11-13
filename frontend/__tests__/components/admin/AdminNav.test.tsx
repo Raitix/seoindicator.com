@@ -11,20 +11,19 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 // Mock next/navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
 
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
   }),
-  usePathname: jest.fn(() => '/admin/overview'),
+  usePathname: vi.fn(() => '/admin/overview'),
 }));
 
 // Mock next/link
-jest.mock('next/link', () => {
-  return function MockLink({
+vi.mock('next/link', () => ({ default: function MockLink({
     children,
     href,
     className,
@@ -48,8 +47,7 @@ jest.mock('next/link', () => {
         {children}
       </a>
     );
-  };
-});
+  } }));
 
 // Navigation item type
 interface NavItem {
@@ -150,7 +148,7 @@ const MockIcons = {
 
 describe('AdminNav Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ==================== AN-001: Basic Rendering ====================
@@ -351,7 +349,7 @@ describe('AdminNav Component', () => {
 
   describe('AN-006: Collapsed State', () => {
     it('renders toggle button when onToggle provided', () => {
-      render(<MockAdminNav activePath="/admin/overview" onToggle={jest.fn()} />);
+      render(<MockAdminNav activePath="/admin/overview" onToggle={vi.fn()} />);
       expect(screen.getByTestId('nav-toggle')).toBeInTheDocument();
     });
 
@@ -362,35 +360,35 @@ describe('AdminNav Component', () => {
 
     it('shows expand icon when collapsed', () => {
       render(
-        <MockAdminNav activePath="/admin/overview" collapsed={true} onToggle={jest.fn()} />
+        <MockAdminNav activePath="/admin/overview" collapsed={true} onToggle={vi.fn()} />
       );
       expect(screen.getByTestId('nav-toggle')).toHaveTextContent('→');
     });
 
     it('shows collapse icon when expanded', () => {
       render(
-        <MockAdminNav activePath="/admin/overview" collapsed={false} onToggle={jest.fn()} />
+        <MockAdminNav activePath="/admin/overview" collapsed={false} onToggle={vi.fn()} />
       );
       expect(screen.getByTestId('nav-toggle')).toHaveTextContent('←');
     });
 
     it('toggle button has correct aria-expanded when collapsed', () => {
       render(
-        <MockAdminNav activePath="/admin/overview" collapsed={true} onToggle={jest.fn()} />
+        <MockAdminNav activePath="/admin/overview" collapsed={true} onToggle={vi.fn()} />
       );
       expect(screen.getByTestId('nav-toggle')).toHaveAttribute('aria-expanded', 'false');
     });
 
     it('toggle button has correct aria-expanded when expanded', () => {
       render(
-        <MockAdminNav activePath="/admin/overview" collapsed={false} onToggle={jest.fn()} />
+        <MockAdminNav activePath="/admin/overview" collapsed={false} onToggle={vi.fn()} />
       );
       expect(screen.getByTestId('nav-toggle')).toHaveAttribute('aria-expanded', 'true');
     });
 
     it('calls onToggle when toggle button clicked', async () => {
       const user = userEvent.setup();
-      const onToggle = jest.fn();
+      const onToggle = vi.fn();
       render(<MockAdminNav activePath="/admin/overview" onToggle={onToggle} />);
       
       await user.click(screen.getByTestId('nav-toggle'));
@@ -496,7 +494,7 @@ describe('AdminNav Component', () => {
 
     it('has descriptive aria-label for toggle button when collapsed', () => {
       render(
-        <MockAdminNav activePath="/admin/overview" collapsed={true} onToggle={jest.fn()} />
+        <MockAdminNav activePath="/admin/overview" collapsed={true} onToggle={vi.fn()} />
       );
       expect(screen.getByTestId('nav-toggle')).toHaveAttribute(
         'aria-label',
@@ -506,7 +504,7 @@ describe('AdminNav Component', () => {
 
     it('has descriptive aria-label for toggle button when expanded', () => {
       render(
-        <MockAdminNav activePath="/admin/overview" collapsed={false} onToggle={jest.fn()} />
+        <MockAdminNav activePath="/admin/overview" collapsed={false} onToggle={vi.fn()} />
       );
       expect(screen.getByTestId('nav-toggle')).toHaveAttribute(
         'aria-label',

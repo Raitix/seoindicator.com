@@ -12,13 +12,12 @@ import { NextRequest } from 'next/server';
 // ==================== Mock NextResponse ====================
 
 // Mock NextResponse before importing middleware
-jest.mock('next/server', () => {
-  const originalModule = jest.requireActual('next/server');
+vi.mock('next/server', () => ({ default: const originalModule = vi.importActual('next/server');
   
   return {
     ...originalModule,
     NextResponse: {
-      redirect: jest.fn((url: URL) => {
+      redirect: vi.fn((url: URL) => {
         const headers = new Map<string, string>();
         headers.set('location', url.toString());
         return {
@@ -29,15 +28,14 @@ jest.mock('next/server', () => {
           },
         };
       }),
-      next: jest.fn(() => ({
+      next: vi.fn(() => ({
         status: 200,
         headers: {
           get: () => null,
         },
       })),
     },
-  };
-});
+  } }));
 
 // Import after mock
 import { NextResponse } from 'next/server';
@@ -89,8 +87,8 @@ function createMockRequest(options: MockRequestOptions): NextRequest {
       get: (name: string) => cookies.get(name) ?? undefined,
       getAll: () => Array.from(cookies.values()),
       has: (name: string) => cookies.has(name),
-      delete: jest.fn(),
-      set: jest.fn(),
+      delete: vi.fn(),
+      set: vi.fn(),
     },
   } as unknown as NextRequest;
 }
@@ -123,7 +121,7 @@ function getRedirectUrl(response: { status: number; headers: { get: (name: strin
 
 describe('Protected Route Middleware', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ==================== PR-001: Route Protection - Basic ====================
@@ -773,7 +771,7 @@ describe('Protected Route Middleware', () => {
       const routes = ['/settings', '/admin', '/sites', '/locations'];
 
       routes.forEach((route) => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         
         const request = createMockRequest({
           pathname: route,

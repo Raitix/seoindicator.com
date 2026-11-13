@@ -12,8 +12,8 @@ import userEvent from "@testing-library/user-event";
 import HistoryFilters from "@/components/history/HistoryFilters";
 
 // Mock dependencies
-const mockOnFilterChange = jest.fn();
-const mockOnClear = jest.fn();
+const mockOnFilterChange = vi.fn();
+const mockOnClear = vi.fn();
 
 const defaultProps = {
   filters: {
@@ -40,7 +40,7 @@ const defaultProps = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== HF-001: Tool Filter ====================

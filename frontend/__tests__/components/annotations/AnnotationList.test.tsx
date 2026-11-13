@@ -19,8 +19,8 @@ import type { Annotation, AnnotationCategory } from '@/lib/types/annotations';
 // Mock Date-FNS
 // ============================================
 
-jest.mock('date-fns', () => ({
-  format: jest.fn((date: Date, formatStr: string) => {
+vi.mock('date-fns', () => ({
+  format: vi.fn((date: Date, formatStr: string) => {
     // Simple mock implementation
     const d = new Date(date);
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -83,8 +83,8 @@ const renderAnnotationList = (props: Partial<React.ComponentProps<typeof Annotat
   const defaultProps: React.ComponentProps<typeof AnnotationList> = {
     keywordId: 42,
     annotations: mockAnnotations,
-    onEdit: jest.fn(),
-    onDelete: jest.fn(),
+    onEdit: vi.fn(),
+    onDelete: vi.fn(),
     ...props,
   };
 
@@ -103,9 +103,9 @@ describe('AnnotationList Component', () => {
   let mockOnDelete: jest.Mock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockOnEdit = jest.fn();
-    mockOnDelete = jest.fn();
+    vi.clearAllMocks();
+    mockOnEdit = vi.fn();
+    mockOnDelete = vi.fn();
   });
 
   // ========================================
@@ -462,7 +462,7 @@ describe('AnnotationList Component', () => {
     /** @test INTERACT-003: Delete button shows confirmation dialog */
     it('shows confirmation dialog when delete is clicked', async () => {
       const user = userEvent.setup();
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
       renderAnnotationList({ onDelete: mockOnDelete });
 
@@ -477,7 +477,7 @@ describe('AnnotationList Component', () => {
     /** @test INTERACT-004: Delete fires callback only on confirm */
     it('fires onDelete callback only when confirmed', async () => {
       const user = userEvent.setup();
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       renderAnnotationList({ onDelete: mockOnDelete });
 
@@ -493,7 +493,7 @@ describe('AnnotationList Component', () => {
     /** @test INTERACT-005: Delete does not fire callback on cancel */
     it('does not fire onDelete callback when cancelled', async () => {
       const user = userEvent.setup();
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
       renderAnnotationList({ onDelete: mockOnDelete });
 
@@ -508,7 +508,7 @@ describe('AnnotationList Component', () => {
     /** @test INTERACT-006: Delete passes correct annotation ID */
     it('delete passes correct annotation ID to callback', async () => {
       const user = userEvent.setup();
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       renderAnnotationList({ onDelete: mockOnDelete });
 
@@ -819,7 +819,7 @@ describe('AnnotationList Component', () => {
     /** @test AC-003: Delete actions are wired to backend requests */
     it('AC-003: Delete action is wired to onDelete callback', async () => {
       const user = userEvent.setup();
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       renderAnnotationList({ onDelete: mockOnDelete });
 
@@ -866,7 +866,7 @@ describe('AnnotationList Component', () => {
     /** @test INT-002: Full delete workflow with confirmation */
     it('completes full delete workflow with confirmation', async () => {
       const user = userEvent.setup();
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       renderAnnotationList({ onDelete: mockOnDelete });
 

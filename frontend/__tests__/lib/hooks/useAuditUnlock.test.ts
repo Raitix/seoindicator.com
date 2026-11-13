@@ -22,17 +22,17 @@ const mockCookieStorage: Record<string, string> = {};
  * Mock cookie functions
  */
 const mockCookies = {
-  get: jest.fn((name: string) => {
+  get: vi.fn((name: string) => {
     try {
       return mockCookieStorage[name] || null;
     } catch {
       return null;
     }
   }),
-  set: jest.fn((name: string, value: string, options?: Record<string, unknown>) => {
+  set: vi.fn((name: string, value: string, options?: Record<string, unknown>) => {
     mockCookieStorage[name] = value;
   }),
-  remove: jest.fn((name: string) => {
+  remove: vi.fn((name: string) => {
     delete mockCookieStorage[name];
   }),
 };
@@ -43,14 +43,14 @@ const mockCookies = {
 const mockLocalStorage: Record<string, string> = {};
 
 const mockLocalStorageApi = {
-  getItem: jest.fn((key: string) => mockLocalStorage[key] || null),
-  setItem: jest.fn((key: string, value: string) => {
+  getItem: vi.fn((key: string) => mockLocalStorage[key] || null),
+  setItem: vi.fn((key: string, value: string) => {
     mockLocalStorage[key] = value;
   }),
-  removeItem: jest.fn((key: string) => {
+  removeItem: vi.fn((key: string) => {
     delete mockLocalStorage[key];
   }),
-  clear: jest.fn(() => {
+  clear: vi.fn(() => {
     Object.keys(mockLocalStorage).forEach(key => delete mockLocalStorage[key]);
   }),
 };
@@ -60,7 +60,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // ============================================
@@ -173,7 +173,7 @@ describe('useAuditUnlock Hook', () => {
   const defaultHash = 'abc123def456';
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
     // Clear storage
     Object.keys(mockCookieStorage).forEach(key => delete mockCookieStorage[key]);

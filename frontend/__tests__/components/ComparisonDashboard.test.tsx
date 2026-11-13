@@ -5,41 +5,41 @@ import ComparisonDashboard from "@/components/comparison/ComparisonDashboard";
 
 describe("ComparisonDashboard", () => {
   it("renders summary cards", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     expect(screen.getByText("Total Keywords")).toBeInTheDocument();
     expect(screen.getAllByText("I’m Winning").length).toBeGreaterThan(0);
     expect(screen.getAllByText("They’re Winning").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Keyword Gaps").length).toBeGreaterThan(0);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("shows loading skeleton", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     expect(screen.queryByText("Comparison Dashboard")).not.toBeInTheDocument();
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("handles empty state", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<ComparisonDashboard />);
 
     act(() => {
-      jest.runAllTimers();
+      vi.runAllTimers();
     });
 
     const search = screen.getByLabelText("Search keyword");
     fireEvent.change(search, { target: { value: "not-a-keyword" } });
 
     expect(screen.getByText("No keywords to compare.")).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

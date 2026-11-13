@@ -7,18 +7,18 @@ import * as competitorsApi from "@/lib/api/competitors";
 import type { Competitor } from "@/lib/types/competitors";
 
 // Mock the API hooks
-jest.mock("@/lib/api/competitors", () => ({
-  useDeleteCompetitor: jest.fn(),
+vi.mock("@/lib/api/competitors", () => ({
+  useDeleteCompetitor: vi.fn(),
 }));
 
 // Mock SWR mutate
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
-  mutate: jest.fn(),
+  default: vi.fn(),
+  mutate: vi.fn(),
 }));
 
-const mockDeleteCompetitor = jest.fn();
+const mockDeleteCompetitor = vi.fn();
 
 const mockCompetitor: Competitor = {
   id: 1,
@@ -30,8 +30,8 @@ const mockCompetitor: Competitor = {
 
 describe("DeleteCompetitorDialog", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (competitorsApi.useDeleteCompetitor as jest.Mock).mockReturnValue(
+    vi.clearAllMocks();
+    vi.mocked(competitorsApi.useDeleteCompetitor).mockReturnValue(
       mockDeleteCompetitor
     );
   });
@@ -42,7 +42,7 @@ describe("DeleteCompetitorDialog", () => {
         <DeleteCompetitorDialog
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -56,7 +56,7 @@ describe("DeleteCompetitorDialog", () => {
         <DeleteCompetitorDialog
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -70,7 +70,7 @@ describe("DeleteCompetitorDialog", () => {
         <DeleteCompetitorDialog
           competitor={mockCompetitor}
           open={false}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -80,7 +80,7 @@ describe("DeleteCompetitorDialog", () => {
 
   describe("Test 15: Cancel closes dialog", () => {
     it("closes dialog without deletion when Cancel is clicked", () => {
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
 
       render(
         <DeleteCompetitorDialog
@@ -101,7 +101,7 @@ describe("DeleteCompetitorDialog", () => {
   describe("Test 16: Confirm deletes competitor", () => {
     it("calls DELETE API when confirm is clicked", async () => {
       mockDeleteCompetitor.mockResolvedValueOnce({ success: true });
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
 
       render(
         <DeleteCompetitorDialog
@@ -132,7 +132,7 @@ describe("DeleteCompetitorDialog", () => {
         <DeleteCompetitorDialog
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -151,7 +151,7 @@ describe("DeleteCompetitorDialog", () => {
 
     it("shows error message on API failure", async () => {
       mockDeleteCompetitor.mockRejectedValueOnce(new Error("Cannot delete"));
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
 
       render(
         <DeleteCompetitorDialog
@@ -184,7 +184,7 @@ describe("DeleteCompetitorDialog", () => {
         <DeleteCompetitorDialog
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -208,7 +208,7 @@ describe("DeleteCompetitorDialog", () => {
         <DeleteCompetitorDialog
           competitor={null}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 

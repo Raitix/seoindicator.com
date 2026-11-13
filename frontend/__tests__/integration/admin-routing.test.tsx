@@ -11,17 +11,17 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 // Mock next/navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-const mockBack = jest.fn();
-const mockForward = jest.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+const mockBack = vi.fn();
+const mockForward = vi.fn();
 
-const mockUsePathname = jest.fn(() => '/admin/overview');
-const mockUseSearchParams = jest.fn(() => ({
-  get: jest.fn(() => null),
+const mockUsePathname = vi.fn(() => '/admin/overview');
+const mockUseSearchParams = vi.fn(() => ({
+  get: vi.fn(() => null),
 }));
 
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
@@ -31,17 +31,16 @@ jest.mock('next/navigation', () => ({
   usePathname: () => mockUsePathname(),
   useSearchParams: () => mockUseSearchParams(),
   useParams: () => ({}),
-  notFound: jest.fn(() => {
+  notFound: vi.fn(() => {
     throw new Error('NOT_FOUND');
   }),
-  redirect: jest.fn((url: string) => {
+  redirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
   }),
 }));
 
 // Mock next/link
-jest.mock('next/link', () => {
-  return function MockLink({
+vi.mock('next/link', () => ({ default: function MockLink({
     children,
     href,
     ...props
@@ -62,8 +61,7 @@ jest.mock('next/link', () => {
         {children}
       </a>
     );
-  };
-});
+  } }));
 
 // Mock AuthContext
 const mockAdminUser = {
@@ -80,15 +78,15 @@ const mockRegularUser = {
   is_admin: false,
 };
 
-const mockUseAuth = jest.fn();
+const mockUseAuth = vi.fn();
 
-jest.mock('@/lib/contexts/AuthContext', () => ({
+vi.mock('@/lib/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 // Mock AdminGuard
-jest.mock('@/components/admin/AdminGuard', () => ({
+vi.mock('@/components/admin/AdminGuard', () => ({
   AdminGuard: ({ children }: { children: React.ReactNode }) => {
     const auth = mockUseAuth();
     if (auth.isLoading) return <div data-testid="loading">Loading...</div>;
@@ -99,7 +97,7 @@ jest.mock('@/components/admin/AdminGuard', () => ({
 }));
 
 // Mock AdminLayout
-jest.mock('@/components/admin/AdminLayout', () => ({
+vi.mock('@/components/admin/AdminLayout', () => ({
   AdminLayout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="admin-layout">
       <nav data-testid="admin-nav">
@@ -200,7 +198,7 @@ function MockAdminRouter({ path }: { path: string }) {
 
 describe('Admin Routing Integration Tests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseAuth.mockReturnValue({
       user: mockAdminUser,
       isAuthenticated: true,
@@ -407,7 +405,7 @@ describe('Admin Routing Integration Tests', () => {
   describe('AR-007: URL Parameters', () => {
     it('handles query parameters gracefully', () => {
       mockUseSearchParams.mockReturnValue({
-        get: jest.fn((key: string) => {
+        get: vi.fn((key: string) => {
           if (key === 'page') return '2';
           return null;
         }),
@@ -419,7 +417,7 @@ describe('Admin Routing Integration Tests', () => {
 
     it('handles redirect parameter after login', () => {
       mockUseSearchParams.mockReturnValue({
-        get: jest.fn((key: string) => {
+        get: vi.fn((key: string) => {
           if (key === 'redirect') return '/admin/health';
           return null;
         }),

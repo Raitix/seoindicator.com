@@ -36,15 +36,15 @@ const lowBalanceData = {
 };
 
 const mockHandlers = {
-  onAddCredits: jest.fn(),
-  onViewHistory: jest.fn(),
-  onRetry: jest.fn(),
+  onAddCredits: vi.fn(),
+  onViewHistory: vi.fn(),
+  onRetry: vi.fn(),
 };
 
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== CB-001: Component Rendering ====================
@@ -784,7 +784,7 @@ describe("CB-006: Add Credits Action", () => {
 
   it("CB-006-07: tracks add credits click event", async () => {
     const user = userEvent.setup();
-    const mockTrackEvent = jest.fn();
+    const mockTrackEvent = vi.fn();
 
     render(
       <CreditBalance
@@ -1060,7 +1060,7 @@ describe("CB-009: Real-time Updates", () => {
   });
 
   it("CB-009-02: invalidates cache after purchase", () => {
-    const mockMutate = jest.fn();
+    const mockMutate = vi.fn();
 
     render(
       <CreditBalance
@@ -1240,12 +1240,12 @@ describe("CB-010: Accessibility", () => {
 
   it("CB-010-04: high contrast mode support", () => {
     // Mock high contrast preference
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === "(prefers-contrast: more)",
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     }));
 
     render(

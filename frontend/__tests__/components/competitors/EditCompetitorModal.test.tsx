@@ -7,18 +7,18 @@ import * as competitorsApi from "@/lib/api/competitors";
 import type { Competitor } from "@/lib/types/competitors";
 
 // Mock the API hooks
-jest.mock("@/lib/api/competitors", () => ({
-  useUpdateCompetitor: jest.fn(),
+vi.mock("@/lib/api/competitors", () => ({
+  useUpdateCompetitor: vi.fn(),
 }));
 
 // Mock SWR mutate
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
-  mutate: jest.fn(),
+  default: vi.fn(),
+  mutate: vi.fn(),
 }));
 
-const mockUpdateCompetitor = jest.fn();
+const mockUpdateCompetitor = vi.fn();
 
 const mockCompetitor: Competitor = {
   id: 1,
@@ -30,8 +30,8 @@ const mockCompetitor: Competitor = {
 
 describe("EditCompetitorModal", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (competitorsApi.useUpdateCompetitor as jest.Mock).mockReturnValue(
+    vi.clearAllMocks();
+    vi.mocked(competitorsApi.useUpdateCompetitor).mockReturnValue(
       mockUpdateCompetitor
     );
   });
@@ -42,7 +42,7 @@ describe("EditCompetitorModal", () => {
         <EditCompetitorModal
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -57,7 +57,7 @@ describe("EditCompetitorModal", () => {
         <EditCompetitorModal
           competitor={mockCompetitor}
           open={false}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -71,7 +71,7 @@ describe("EditCompetitorModal", () => {
         <EditCompetitorModal
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -84,7 +84,7 @@ describe("EditCompetitorModal", () => {
         <EditCompetitorModal
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -97,7 +97,7 @@ describe("EditCompetitorModal", () => {
   describe("Test 13: Submit updates competitor", () => {
     it("calls API with PUT method and correct data", async () => {
       mockUpdateCompetitor.mockResolvedValueOnce({ success: true });
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
 
       render(
         <EditCompetitorModal
@@ -137,7 +137,7 @@ describe("EditCompetitorModal", () => {
         <EditCompetitorModal
           competitor={mockCompetitor}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 
@@ -155,7 +155,7 @@ describe("EditCompetitorModal", () => {
 
     it("shows error message on API failure", async () => {
       mockUpdateCompetitor.mockRejectedValueOnce(new Error("Update failed"));
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
 
       render(
         <EditCompetitorModal
@@ -179,7 +179,7 @@ describe("EditCompetitorModal", () => {
 
   describe("Close behavior", () => {
     it("calls onClose when dialog is closed", () => {
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
 
       render(
         <EditCompetitorModal
@@ -204,7 +204,7 @@ describe("EditCompetitorModal", () => {
         <EditCompetitorModal
           competitor={null}
           open={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
         />
       );
 

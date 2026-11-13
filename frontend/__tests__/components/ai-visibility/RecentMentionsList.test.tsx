@@ -11,7 +11,7 @@ import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   ChevronRight: () => <span data-testid="chevron-icon">›</span>,
   ChevronDown: () => <span data-testid="chevron-down-icon">⌄</span>,
   ExternalLink: () => <span data-testid="external-link-icon">↗</span>,
@@ -505,7 +505,7 @@ describe('ES: Empty State', () => {
 // ============================================
 describe('CH: Click Handlers', () => {
   test('CH-001: onMentionClick called when view button clicked', async () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
 
     render(
       <RecentMentionsList mentions={mockMentions} onMentionClick={handleClick} />

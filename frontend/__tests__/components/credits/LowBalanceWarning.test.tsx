@@ -16,8 +16,8 @@ import { LowBalanceWarning } from "@/components/credits/LowBalanceWarning";
 // ==================== Mock Data ====================
 
 const mockHandlers = {
-  onAddCredits: jest.fn(),
-  onDismiss: jest.fn(),
+  onAddCredits: vi.fn(),
+  onDismiss: vi.fn(),
 };
 
 const defaultProps = {
@@ -30,14 +30,14 @@ const defaultProps = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   localStorage.clear();
   // Spy on localStorage.setItem
-  jest.spyOn(Storage.prototype, 'setItem');
+  vi.spyOn(Storage.prototype, 'setItem');
 });
 
 afterEach(() => {
-  jest.restoreAllMocks();
+  vi.restoreAllMocks();
 });
 
 // ==================== LBW-001: Rendering ====================
@@ -154,7 +154,7 @@ describe("LBW-003: Actions", () => {
 
   it("LBW-003-04: dismiss is temporary", () => {
     // First render with dismissed state
-    localStorage.getItem = jest.fn().mockReturnValue(null);
+    localStorage.getItem = vi.fn().mockReturnValue(null);
 
     render(<LowBalanceWarning {...defaultProps} />);
 
@@ -186,19 +186,19 @@ describe("LBW-004: Toast Notification", () => {
   });
 
   it("LBW-004-02: toast auto-dismisses", async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     render(<LowBalanceWarning {...defaultProps} showToast={true} autoDismissMs={5000} />);
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
 
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
 
     await waitFor(() => {
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("LBW-004-03: toast has action button", () => {
@@ -272,12 +272,12 @@ describe("LBW-005: Accessibility", () => {
   });
 
   it("LBW-005-04: high contrast support", () => {
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === "(prefers-contrast: more)",
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     }));
 
     render(<LowBalanceWarning {...defaultProps} />);
@@ -287,12 +287,12 @@ describe("LBW-005: Accessibility", () => {
   });
 
   it("LBW-005-05: reduced motion support", () => {
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === "(prefers-reduced-motion: reduce)",
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     }));
 
     render(<LowBalanceWarning {...defaultProps} />);

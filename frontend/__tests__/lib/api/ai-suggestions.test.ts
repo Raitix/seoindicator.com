@@ -16,12 +16,12 @@ import {
 import type { SuggestionResult, DebugSuggestionResult } from '@/lib/types/ai-suggestions';
 
 // Mock fetch globally
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 describe('AI Suggestions API', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================

@@ -9,7 +9,7 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Lucide icons - accept and spread props for proper testing
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Activity: (props: any) => <svg data-testid="lucide-activity" viewBox="0 0 24 24" {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>,
   AlertCircle: (props: any) => <svg data-testid="lucide-alert-circle" viewBox="0 0 24 24" {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>,
   AlertTriangle: (props: any) => <svg data-testid="lucide-alert-triangle" viewBox="0 0 24 24" {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
@@ -33,7 +33,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock cn utility
-jest.mock('@/lib/utils', () => ({
+vi.mock('@/lib/utils', () => ({
   cn: (...args: string[]) => args.filter(Boolean).join(' '),
 }));
 

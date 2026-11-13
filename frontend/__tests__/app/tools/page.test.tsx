@@ -12,16 +12,14 @@ import '@testing-library/jest-dom';
 import ToolsPage from '@/app/tools/page';
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => {
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => {
     return <a href={href} {...props}>{children}</a>;
   };
   MockLink.displayName = 'MockLink';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock Button component
-jest.mock('@/components/ui/button', () => ({
+vi.mock('@/components/ui/button', () => ({
   Button: ({ children, className, disabled, ...props }: { children: React.ReactNode; className?: string; disabled?: boolean }) => (
     <button className={className} disabled={disabled} {...props}>
       {children}
@@ -30,7 +28,7 @@ jest.mock('@/components/ui/button', () => ({
 }));
 
 // Mock Card components
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div className={className} data-testid="card">{children}</div>
   ),

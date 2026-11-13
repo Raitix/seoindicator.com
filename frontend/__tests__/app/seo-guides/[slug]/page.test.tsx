@@ -11,14 +11,12 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Next.js modules
-jest.mock('next/link', () => {
-  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+vi.mock('next/link', () => ({ default: function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
     return <a href={href}>{children}</a>;
-  };
-});
+  } }));
 
-jest.mock('next/navigation', () => ({
-  notFound: jest.fn(() => {
+vi.mock('next/navigation', () => ({
+  notFound: vi.fn(() => {
     throw new Error('NOT_FOUND');
   }),
 }));
@@ -83,7 +81,7 @@ const mockGuideWithEmptyContent = {
 };
 
 // Mock registry functions
-jest.mock('@/lib/guides/registry', () => ({
+vi.mock('@/lib/guides/registry', () => ({
   getGuideBySlug: (slug: string) => {
     const guides: Record<string, object> = {
       'image-optimization': mockGuideWithFullContent,

@@ -14,13 +14,13 @@ import {
 } from "@/lib/api/packages";
 
 // Mock fetch globally
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock SWR
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
 import useSWR from "swr";
@@ -71,7 +71,7 @@ const mockPackagesResponse = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== API-001: fetchPackages ====================
@@ -150,8 +150,8 @@ describe("fetchPackages", () => {
 
 describe("usePackages", () => {
   it("calls useSWR with correct key", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockPackagesResponse.data,
       isLoading: false,
       error: null,
@@ -164,8 +164,8 @@ describe("usePackages", () => {
   });
 
   it("returns packages data from SWR", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: mockPackagesResponse.data,
       isLoading: false,
       error: null,
@@ -178,8 +178,8 @@ describe("usePackages", () => {
   });
 
   it("returns loading state from SWR", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: true,
       error: null,
@@ -193,8 +193,8 @@ describe("usePackages", () => {
 
   it("returns error state from SWR", () => {
     const mockError = new Error("Failed to fetch");
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: false,
       error: mockError,
@@ -207,8 +207,8 @@ describe("usePackages", () => {
   });
 
   it("returns mutate function from SWR", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: false,
       error: null,
@@ -221,8 +221,8 @@ describe("usePackages", () => {
   });
 
   it("returns empty array when data is null", () => {
-    const mockMutate = jest.fn();
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn();
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: false,
       error: null,
@@ -360,11 +360,11 @@ describe("Edge Cases", () => {
 
 describe("Caching", () => {
   it("uses SWR caching mechanism", () => {
-    (useSWR as jest.Mock).mockReturnValue({
+    vi.mocked(useSWR).mockReturnValue({
       data: null,
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     usePackages();
@@ -377,8 +377,8 @@ describe("Caching", () => {
   });
 
   it("mutate function can refresh data", async () => {
-    const mockMutate = jest.fn().mockResolvedValue(mockPackagesResponse.data);
-    (useSWR as jest.Mock).mockReturnValue({
+    const mockMutate = vi.fn().mockResolvedValue(mockPackagesResponse.data);
+    vi.mocked(useSWR).mockReturnValue({
       data: mockPackagesResponse.data,
       isLoading: false,
       error: null,

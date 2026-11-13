@@ -21,7 +21,7 @@ import {
 } from '@/lib/api/paypal';
 
 // Mock fetch
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock window.location and sessionStorage
@@ -35,18 +35,18 @@ const mockLocation = {
   hostname: 'example.com',
   port: '',
   protocol: 'https:',
-  assign: jest.fn(),
-  reload: jest.fn(),
-  replace: jest.fn(),
+  assign: vi.fn(),
+  reload: vi.fn(),
+  replace: vi.fn(),
 };
 
 const mockSessionStorage = {
   store: {} as Record<string, string>,
-  getItem: jest.fn((key: string) => mockSessionStorage.store[key] || null),
-  setItem: jest.fn((key: string, value: string) => {
+  getItem: vi.fn((key: string) => mockSessionStorage.store[key] || null),
+  setItem: vi.fn((key: string, value: string) => {
     mockSessionStorage.store[key] = value;
   }),
-  removeItem: jest.fn((key: string) => {
+  removeItem: vi.fn((key: string) => {
     delete mockSessionStorage.store[key];
   }),
 };
@@ -86,7 +86,7 @@ process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID = 'test_client_id_123';
 
 describe('PayPal API Helpers', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockClear();
     mockSessionStorage.store = {};
     mockLocation.search = '';
@@ -264,12 +264,12 @@ describe('PayPal API Helpers', () => {
     });
 
     it('isPayPalSDKLoaded returns true when loaded', () => {
-      (window as any).paypal = { Buttons: jest.fn() };
+      (window as any).paypal = { Buttons: vi.fn() };
       expect(isPayPalSDKLoaded()).toBe(true);
     });
 
     it('loadPayPalSDK resolves when already loaded', async () => {
-      (window as any).paypal = { Buttons: jest.fn() };
+      (window as any).paypal = { Buttons: vi.fn() };
       await expect(loadPayPalSDK('test_id')).resolves.toBeUndefined();
     });
   });

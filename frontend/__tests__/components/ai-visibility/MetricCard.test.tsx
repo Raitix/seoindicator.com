@@ -11,7 +11,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
   TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
   Minus: () => <span data-testid="minus-icon">−</span>,

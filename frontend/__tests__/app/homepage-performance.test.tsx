@@ -13,15 +13,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock next/link
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock components
 const PerformanceHomepage = ({ 

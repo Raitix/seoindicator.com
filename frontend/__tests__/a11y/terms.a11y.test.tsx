@@ -20,8 +20,7 @@ expect.extend(toHaveNoViolations);
 // ============================================================================
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  const MockLink = ({
+vi.mock('next/link', () => ({ default: const MockLink = ({
     children,
     href,
     className,
@@ -36,12 +35,11 @@ jest.mock('next/link', () => {
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock Next.js metadata generation
-jest.mock('next', () => ({
-  ...jest.requireActual('next'),
+vi.mock('next', () => ({
+  ...vi.importActual('next'),
   Metadata: {},
 }));
 

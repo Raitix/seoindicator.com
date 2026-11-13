@@ -9,7 +9,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Check: () => <span data-testid="check-icon">✓</span>,
   Star: () => <span data-testid="star-icon">★</span>,
   ArrowRight: () => <span data-testid="arrow-icon">→</span>,
@@ -73,7 +73,7 @@ const MockCreditPackages = ({
   packages = mockPackages,
   isLoading = false,
   error = null,
-  onBuyClick = jest.fn(),
+  onBuyClick = vi.fn(),
   className = '',
 }: CreditPackagesProps) => {
   if (isLoading) {
@@ -211,10 +211,10 @@ const MockCreditPackages = ({
 };
 
 describe('CreditPackages', () => {
-  const mockOnBuyClick = jest.fn();
+  const mockOnBuyClick = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // CP-001 to CP-010: Basic Rendering

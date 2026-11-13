@@ -16,8 +16,8 @@ import '@testing-library/jest-dom';
 // This will be implemented by Developer after TASK-20-22 is complete
 
 // Mock ToolWidget component
-jest.mock('@/components/tools/ToolWidget', () => ({
-  ToolWidget: jest.fn(({ tool, title, description, className, onAnalysisComplete }) => (
+vi.mock('@/components/tools/ToolWidget', () => ({
+  ToolWidget: vi.fn(({ tool, title, description, className, onAnalysisComplete }) => (
     <div
       data-testid="tool-widget"
       data-tool={tool}
@@ -45,8 +45,8 @@ jest.mock('@/components/tools/ToolWidget', () => ({
 }));
 
 // Mock ToolEmbed component (will be implemented in TASK-20-22)
-jest.mock('@/components/guides/ToolEmbed', () => ({
-  ToolEmbed: jest.fn(({ toolSlug, title, description, showCta, ctaText }) => {
+vi.mock('@/components/guides/ToolEmbed', () => ({
+  ToolEmbed: vi.fn(({ toolSlug, title, description, showCta, ctaText }) => {
     // Valid tool slugs including mobile-friendly-checker
     const VALID_SLUGS = [
       'meta-tag-analyzer',
@@ -95,8 +95,8 @@ jest.mock('@/components/guides/ToolEmbed', () => ({
 }));
 
 // Mock guide registry
-jest.mock('@/lib/guides/registry', () => ({
-  getGuideBySlug: jest.fn((slug: string) => {
+vi.mock('@/lib/guides/registry', () => ({
+  getGuideBySlug: vi.fn((slug: string) => {
     if (slug === 'mobile-friendly') {
       return {
         slug: 'mobile-friendly',
@@ -125,8 +125,7 @@ jest.mock('@/lib/guides/registry', () => ({
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return function MockLink({
+vi.mock('next/link', () => ({ default: function MockLink({
     children,
     href,
     target,
@@ -142,8 +141,7 @@ jest.mock('next/link', () => {
         {children}
       </a>
     );
-  };
-});
+  } }));
 
 // Mock Mobile-Friendly Guide Page Component
 // This simulates what the actual guide page will look like
@@ -211,7 +209,7 @@ const MockMobileFriendlyGuidePage: React.FC = () => {
 
 describe('Mobile-Friendly Guide Tool Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // MFG-001: ToolEmbed Integration in Mobile-Friendly Guide

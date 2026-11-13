@@ -16,23 +16,29 @@ import '@testing-library/jest-dom';
 // =============================================================================
 
 // Mock Next.js navigation
-const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
-    replace: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
   usePathname: () => '/seo-guides/twitter-cards/',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
 }));
 
 // Mock guide registry
-jest.mock('@/lib/guides/registry', () => ({
-  getGuideBySlug: jest.fn((slug: string) => {
+vi.mock('@/lib/guides/registry', () => ({
+  getGuideBySlug: vi.fn((slug: string) => {
     if (slug === 'twitter-cards') {
       return {
         slug: 'twitter-cards',
@@ -71,16 +77,15 @@ jest.mock('@/lib/guides/registry', () => ({
     }
     return null;
   }),
-  getAllGuides: jest.fn(() => []),
-  getRelatedGuides: jest.fn(() => []),
+  getAllGuides: vi.fn(() => []),
+  getRelatedGuides: vi.fn(() => []),
   GUIDE_SLUGS: ['open-graph', 'twitter-cards'],
 }));
 
 // Mock ToolEmbed component with tab switching support
-jest.mock('@/components/guides/ToolEmbed', () => {
-  const React = require('react');
+vi.mock('@/components/guides/ToolEmbed', () => ({ default: const React = require('react');
   return {
-    ToolEmbed: jest.fn(({ toolSlug, defaultToolTab, title, showCta, ctaText, stateKey, onAnalysisComplete }) => {
+    ToolEmbed: vi.fn(({ toolSlug, defaultToolTab, title, showCta, ctaText, stateKey, onAnalysisComplete }) => {
       const [activeTab, setActiveTab] = React.useState(defaultToolTab || 'twitter');
       return (
         <div
@@ -140,18 +145,17 @@ jest.mock('@/components/guides/ToolEmbed', () => {
         </div>
       );
     }),
-  };
-});
+  } }));
 
 // Mock GuideSection component
-jest.mock('@/components/guides', () => ({
-  GuideSection: jest.fn(({ section, index }) => (
+vi.mock('@/components/guides', () => ({
+  GuideSection: vi.fn(({ section, index }) => (
     <section data-testid={`guide-section-${index}`}>
       <h2>{section.title}</h2>
       <div>{section.content}</div>
     </section>
   )),
-  GuideChecklist: jest.fn(({ items }) => (
+  GuideChecklist: vi.fn(({ items }) => (
     <ul data-testid="guide-checklist">
       {items.map((item: { text: string; priority: string }, index: number) => (
         <li key={index} data-priority={item.priority}>
@@ -160,7 +164,7 @@ jest.mock('@/components/guides', () => ({
       ))}
     </ul>
   )),
-  RelatedGuides: jest.fn(({ guides }) => (
+  RelatedGuides: vi.fn(({ guides }) => (
     <nav data-testid="related-guides">
       {guides.map((guide: string) => (
         <a key={guide} href={`/seo-guides/${guide}/`}>
@@ -174,8 +178,8 @@ jest.mock('@/components/guides', () => ({
 import { getGuideBySlug } from '@/lib/guides/registry';
 import { ToolEmbed } from '@/components/guides/ToolEmbed';
 
-const mockGetGuideBySlug = getGuideBySlug as jest.MockedFunction<typeof getGuideBySlug>;
-const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
+const mockGetGuideBySlug = getGuideBySlug as MockedFunction<typeof getGuideBySlug>;
+const mockToolEmbed = ToolEmbed as MockedFunction<typeof ToolEmbed>;
 
 // =============================================================================
 // TEST SUITE
@@ -183,7 +187,7 @@ const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
 
 describe('Twitter Cards Guide + Social Media Preview Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ===========================================================================
@@ -736,7 +740,7 @@ describe('Twitter Cards Guide + Social Media Preview Integration', () => {
      * Test: onAnalysisComplete callback
      */
     it('should call onAnalysisComplete callback', () => {
-      const mockOnComplete = jest.fn();
+      const mockOnComplete = vi.fn();
 
       render(
         <ToolEmbed

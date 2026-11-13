@@ -15,21 +15,21 @@ import {
 } from "@/lib/api/projects";
 
 // Mock fetch globally
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] ?? null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
   };
@@ -37,31 +37,31 @@ const localStorageMock = (() => {
 Object.defineProperty(window, "localStorage", { value: localStorageMock });
 
 // Mock SWR
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn((key, fetcher) => {
+  default: vi.fn((key, fetcher) => {
     if (key && fetcher) {
       // Return a simple implementation for testing
       return {
         data: null,
         error: null,
         isLoading: true,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
       };
     }
     return {
       data: null,
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     };
   }),
-  mutate: jest.fn(),
+  mutate: vi.fn(),
 }));
 
 describe("Projects API", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 

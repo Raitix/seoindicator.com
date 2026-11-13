@@ -10,7 +10,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Eye: () => <span data-testid="eye-icon">👁</span>,
   Search: () => <span data-testid="search-icon">🔍</span>,
   MousePointer: () => <span data-testid="click-icon">👆</span>,
@@ -18,7 +18,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock Recharts
-jest.mock('recharts', () => ({
+vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => (
     <div data-testid="sparkline-container">{children}</div>
   ),
@@ -192,7 +192,7 @@ describe('InsightsSection', () => {
   });
 
   test('calls onViewDetails when link clicked', () => {
-    const onViewDetails = jest.fn();
+    const onViewDetails = vi.fn();
     render(<InsightsSection insights={mockInsights} onViewDetails={onViewDetails} />);
     
     fireEvent.click(screen.getByTestId('view-insights-link'));

@@ -17,7 +17,7 @@ import type { ProsConsCardProps } from '@/lib/compare/types';
 // Mock Lucide Icons
 // ============================================================================
 
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Check: ({ className, 'aria-hidden': ariaHidden }: { className?: string; 'aria-hidden'?: boolean }) => (
     <span data-testid="check-icon" className={className} aria-hidden={ariaHidden}>✓</span>
   ),
@@ -40,7 +40,7 @@ jest.mock('lucide-react', () => ({
 // Mock shadcn/ui Card Components
 // ============================================================================
 
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div data-testid="card" className={className}>
       {children}

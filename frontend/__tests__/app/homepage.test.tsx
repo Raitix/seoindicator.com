@@ -16,29 +16,33 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock next/link
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
   }),
   usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
 }));
 
 // Mock IndicatorCatalog component
-jest.mock('@/components/indicators/IndicatorCatalog', () => ({
+vi.mock('@/components/indicators/IndicatorCatalog', () => ({
   IndicatorCatalog: ({ 
     title, 
     description, 
@@ -131,7 +135,7 @@ jest.mock('@/components/indicators/IndicatorCatalog', () => ({
 }));
 
 // Mock shadcn/ui components
-jest.mock('@/components/ui/button', () => ({
+vi.mock('@/components/ui/button', () => ({
   Button: ({ children, className, variant, asChild, ...props }: { children: React.ReactNode; className?: string; variant?: string; asChild?: boolean }) => (
     <button className={className} data-variant={variant} {...props}>
       {children}
@@ -139,7 +143,7 @@ jest.mock('@/components/ui/button', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div className={className} data-testid="card">{children}</div>
   ),
@@ -157,7 +161,7 @@ jest.mock('@/components/ui/card', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/input', () => ({
+vi.mock('@/components/ui/input', () => ({
   Input: ({ className, ...props }: { className?: string }) => (
     <input className={className} data-testid="email-input" {...props} />
   ),
@@ -252,8 +256,8 @@ const defaultCatalogProps = {
   description: 'Your key SEO metrics at a glance',
   categories: ['All', 'Performance', 'Technical', 'Content', 'Off-Page', 'SERP', 'Competitive'],
   selectedCategory: 'All',
-  onCategoryChange: jest.fn(),
-  onRefresh: jest.fn(),
+  onCategoryChange: vi.fn(),
+  onRefresh: vi.fn(),
   isLoading: false,
   error: null,
   indicators: mockIndicators,
@@ -635,7 +639,7 @@ describe('HI-004: IndicatorCatalog Integration', () => {
 
   test('HI-004-07: Category tabs functional', async () => {
     const user = userEvent.setup();
-    const onCategoryChange = jest.fn();
+    const onCategoryChange = vi.fn();
     const Home = createHomeComponent({ 
       ...defaultCatalogProps, 
       onCategoryChange 
@@ -650,7 +654,7 @@ describe('HI-004: IndicatorCatalog Integration', () => {
 
   test('HI-004-08: Refresh button works', async () => {
     const user = userEvent.setup();
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     const Home = createHomeComponent({ 
       ...defaultCatalogProps, 
       onRefresh 
@@ -1462,7 +1466,7 @@ describe('HI-012: Integration Scenarios', () => {
 
   test('HI-012-05: Error to retry to success', async () => {
     const user = userEvent.setup();
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     
     const HomeError = createHomeComponent({ 
       ...defaultCatalogProps, 
@@ -1476,7 +1480,7 @@ describe('HI-012: Integration Scenarios', () => {
 
   test('HI-012-06: Category filter flow', async () => {
     const user = userEvent.setup();
-    const onCategoryChange = jest.fn();
+    const onCategoryChange = vi.fn();
     
     const Home = createHomeComponent({ 
       ...defaultCatalogProps,

@@ -10,7 +10,7 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock the base Skeleton component from shadcn/ui
-jest.mock('@/components/ui/skeleton', () => ({
+vi.mock('@/components/ui/skeleton', () => ({
   Skeleton: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
     ({ className, ...props }, ref) => (
       <div

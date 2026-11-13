@@ -9,7 +9,7 @@
 import '@testing-library/jest-dom';
 
 // Mock Next.js build functions
-const mockGenerateStaticParams = jest.fn(() => [
+const mockGenerateStaticParams = vi.fn(() => [
   { slug: 'seoindicator-vs-ahrefs' },
   { slug: 'seoindicator-vs-semrush' },
   { slug: 'seoindicator-vs-moz' },
@@ -23,7 +23,7 @@ const mockGenerateStaticParams = jest.fn(() => [
 ]);
 
 // Mock registry
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: [
     'seoindicator-vs-ahrefs',
     'seoindicator-vs-semrush',
@@ -43,8 +43,8 @@ jest.mock('@/lib/compare/registry', () => ({
     moz: { id: 'moz', name: 'Moz' },
     ubersuggest: { id: 'ubersuggest', name: 'Ubersuggest' },
   },
-  getComparisonBySlug: jest.fn((slug: string) => ({ slug, title: `${slug} title` })),
-  parseSlug: jest.fn((slug: string) => {
+  getComparisonBySlug: vi.fn((slug: string) => ({ slug, title: `${slug} title` })),
+  parseSlug: vi.fn((slug: string) => {
     if (!slug.includes('-vs-')) return null;
     const parts = slug.split('-vs-');
     return parts.length === 2 ? [parts[0], parts[1]] as [string, string] : null;

@@ -12,30 +12,34 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock the registry functions
-jest.mock('@/lib/guides/registry', () => ({
-  getAllGuides: jest.fn(),
-  getGuidesByCategory: jest.fn(),
-  getGuidesWithTools: jest.fn(),
+vi.mock('@/lib/guides/registry', () => ({
+  getAllGuides: vi.fn(),
+  getGuidesByCategory: vi.fn(),
+  getGuidesWithTools: vi.fn(),
 }));
 
 // Mock Next.js navigation
-const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
-    replace: jest.fn(),
-    back: jest.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
   }),
   usePathname: () => '/seo-guides',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string }) {
+vi.mock('next/link', () => ({ default: function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string }) {
     return <a href={href} {...props}>{children}</a>;
-  };
-});
+  } }));
 
 // Import after mocks
 import { getAllGuides, getGuidesByCategory, getGuidesWithTools } from '@/lib/guides/registry';
@@ -72,15 +76,15 @@ const mockContentGuides = mockGuides.filter(g => g.category === 'content');
 
 describe('Guide Index Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (getAllGuides as jest.Mock).mockReturnValue(mockGuides);
-    (getGuidesByCategory as jest.Mock).mockImplementation((category) => {
+    vi.clearAllMocks();
+    vi.mocked(getAllGuides).mockReturnValue(mockGuides);
+    vi.mocked(getGuidesByCategory).mockImplementation((category) => {
       if (category === 'on-page') return mockOnPageGuides;
       if (category === 'technical') return mockTechnicalGuides;
       if (category === 'content') return mockContentGuides;
       return mockGuides;
     });
-    (getGuidesWithTools as jest.Mock).mockReturnValue(mockGuidesWithTools);
+    vi.mocked(getGuidesWithTools).mockReturnValue(mockGuidesWithTools);
   });
 
   // ============================================================
@@ -433,8 +437,8 @@ describe('Guide Index Page', () => {
   // ============================================================
   describe('Edge Cases', () => {
     it('E1: Empty guide list handled', () => {
-      (getAllGuides as jest.Mock).mockReturnValue([]);
-      (getGuidesByCategory as jest.Mock).mockReturnValue([]);
+      vi.mocked(getAllGuides).mockReturnValue([]);
+      vi.mocked(getGuidesByCategory).mockReturnValue([]);
       
       render(<GuidesIndexPage />);
       

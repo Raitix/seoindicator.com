@@ -9,7 +9,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Check: () => <span data-testid="check-icon">✓</span>,
   Star: () => <span data-testid="star-icon">★</span>,
   ArrowRight: () => <span data-testid="arrow-icon">→</span>,
@@ -59,7 +59,7 @@ const MockPackageCard = ({
   is_popular = false,
   description,
   features = [],
-  onBuyClick = jest.fn(),
+  onBuyClick = vi.fn(),
   isLoading = false,
   disabled = false,
   buttonText = 'Buy Now',
@@ -164,10 +164,10 @@ const MockPackageCard = ({
 };
 
 describe('PackageCard', () => {
-  const mockOnBuyClick = jest.fn();
+  const mockOnBuyClick = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // PC-001 to PC-010: Basic Rendering

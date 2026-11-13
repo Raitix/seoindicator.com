@@ -7,11 +7,11 @@
 import { Metadata } from 'next';
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock AbortSignal.timeout
-global.AbortSignal.timeout = jest.fn((ms: number) => {
+global.AbortSignal.timeout = vi.fn((ms: number) => {
   const controller = new AbortController();
   return controller.signal;
 });
@@ -148,7 +148,7 @@ async function testGenerateMetadata(hash: string, auditData: PublicAuditData | n
 
 describe('Metadata Generation - generateMetadata', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     process.env = { ...originalEnv, NEXT_PUBLIC_SITE_URL: 'https://seoindicator.com' };
   });
 

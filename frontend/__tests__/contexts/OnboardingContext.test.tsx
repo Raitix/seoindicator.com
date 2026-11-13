@@ -9,20 +9,20 @@ import {
 import type { UserOnboarding } from "@/lib/types/onboarding";
 
 // Mock SWR
-const mockMutate = jest.fn();
-jest.mock("swr", () => ({
+const mockMutate = vi.fn();
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
-  mutate: jest.fn(),
+  default: vi.fn(),
+  mutate: vi.fn(),
 }));
 
 // Mock the onboarding API
-jest.mock("@/lib/api/onboarding", () => ({
-  useOnboarding: jest.fn(),
-  startOnboarding: jest.fn(),
-  updateOnboardingStep: jest.fn(),
-  completeOnboarding: jest.fn(),
-  skipOnboarding: jest.fn(),
+vi.mock("@/lib/api/onboarding", () => ({
+  useOnboarding: vi.fn(),
+  startOnboarding: vi.fn(),
+  updateOnboardingStep: vi.fn(),
+  completeOnboarding: vi.fn(),
+  skipOnboarding: vi.fn(),
 }));
 
 import { useOnboarding, startOnboarding, updateOnboardingStep, completeOnboarding, skipOnboarding } from "@/lib/api/onboarding";
@@ -66,8 +66,8 @@ function TestComponent() {
 
 describe("OnboardingContext", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useOnboarding as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    vi.mocked(useOnboarding).mockReturnValue({
       onboarding: null,
       isLoading: false,
       error: null,
@@ -88,7 +88,7 @@ describe("OnboardingContext", () => {
     });
 
     it("provides loading state", () => {
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: null,
         isLoading: true,
         error: null,
@@ -105,7 +105,7 @@ describe("OnboardingContext", () => {
     });
 
     it("provides error state", () => {
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: null,
         isLoading: false,
         error: "Failed to fetch",
@@ -124,7 +124,7 @@ describe("OnboardingContext", () => {
 
   describe("isActive calculation", () => {
     it("is active when onboarding exists but not completed", () => {
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: mockOnboardingData,
         isLoading: false,
         error: null,
@@ -141,7 +141,7 @@ describe("OnboardingContext", () => {
     });
 
     it("is not active when onboarding is completed", () => {
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: { ...mockOnboardingData, completedAt: "2024-01-01T00:00:00Z" },
         isLoading: false,
         error: null,
@@ -160,7 +160,7 @@ describe("OnboardingContext", () => {
 
   describe("actions", () => {
     it("calls startOnboarding and mutates state", async () => {
-      (startOnboarding as jest.Mock).mockResolvedValue(mockOnboardingData);
+      vi.mocked(startOnboarding).mockResolvedValue(mockOnboardingData);
 
       render(
         <OnboardingProvider>
@@ -178,8 +178,8 @@ describe("OnboardingContext", () => {
 
     it("calls updateStep with correct parameters", async () => {
       const updatedData = { ...mockOnboardingData, currentStep: 2, completedSteps: [1] };
-      (updateOnboardingStep as jest.Mock).mockResolvedValue(updatedData);
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(updateOnboardingStep).mockResolvedValue(updatedData);
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: mockOnboardingData,
         isLoading: false,
         error: null,
@@ -200,11 +200,11 @@ describe("OnboardingContext", () => {
     });
 
     it("calls completeOnboarding and updates state", async () => {
-      (completeOnboarding as jest.Mock).mockResolvedValue({
+      vi.mocked(completeOnboarding).mockResolvedValue({
         completedAt: "2024-01-01T00:00:00Z",
         keywordId: 1,
       });
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: mockOnboardingData,
         isLoading: false,
         error: null,
@@ -225,8 +225,8 @@ describe("OnboardingContext", () => {
     });
 
     it("calls skipOnboarding and updates state", async () => {
-      (skipOnboarding as jest.Mock).mockResolvedValue("2024-01-01T00:00:00Z");
-      (useOnboarding as jest.Mock).mockReturnValue({
+      vi.mocked(skipOnboarding).mockResolvedValue("2024-01-01T00:00:00Z");
+      vi.mocked(useOnboarding).mockReturnValue({
         onboarding: mockOnboardingData,
         isLoading: false,
         error: null,
@@ -249,7 +249,7 @@ describe("OnboardingContext", () => {
 
   describe("error handling", () => {
     it("sets error when startOnboarding fails", async () => {
-      (startOnboarding as jest.Mock).mockRejectedValue(new Error("Network error"));
+      vi.mocked(startOnboarding).mockRejectedValue(new Error("Network error"));
 
       render(
         <OnboardingProvider>
@@ -271,7 +271,7 @@ describe("OnboardingContext", () => {
 
 describe("useOnboardingStep hook", () => {
   it("returns current step information", () => {
-    (useOnboarding as jest.Mock).mockReturnValue({
+    vi.mocked(useOnboarding).mockReturnValue({
       onboarding: mockOnboardingData,
       isLoading: false,
       error: null,
@@ -301,7 +301,7 @@ describe("useOnboardingStep hook", () => {
 
 describe("useOnboardingStatus hook", () => {
   it("returns completion status", () => {
-    (useOnboarding as jest.Mock).mockReturnValue({
+    vi.mocked(useOnboarding).mockReturnValue({
       onboarding: { ...mockOnboardingData, completedAt: "2024-01-01T00:00:00Z" },
       isLoading: false,
       error: null,

@@ -20,7 +20,7 @@ import {
 } from '@/lib/compare/performance-targets';
 
 // Mock implementation for TDD - will be replaced by actual implementation
-jest.mock('@/lib/compare/performance-targets', () => ({
+vi.mock('@/lib/compare/performance-targets', () => ({
   TARGETS: {
     LCP: 2500,      // 2.5s in milliseconds
     FID: 100,       // 100ms
@@ -37,7 +37,7 @@ jest.mock('@/lib/compare/performance-targets', () => ({
     BUNDLE: { good: 51200, needsImprovement: 102400, poor: 102400 },
     LIGHTHOUSE: { good: 90, needsImprovement: 50, poor: 50 },
   },
-  isWithinTarget: jest.fn((metric: string, value: number): boolean => {
+  isWithinTarget: vi.fn((metric: string, value: number): boolean => {
     const targets: Record<string, number> = {
       LCP: 2500,
       FID: 100,
@@ -48,7 +48,7 @@ jest.mock('@/lib/compare/performance-targets', () => ({
     };
     return value <= targets[metric];
   }),
-  getPerformanceScore: jest.fn((metrics: Partial<PerformanceMetrics>): number => {
+  getPerformanceScore: vi.fn((metrics: Partial<PerformanceMetrics>): number => {
     const weights = { LCP: 0.25, FID: 0.25, CLS: 0.25, TTI: 0.15, BUNDLE: 0.05, LIGHTHOUSE: 0.05 };
     let score = 0;
     for (const [key, weight] of Object.entries(weights)) {
@@ -60,14 +60,14 @@ jest.mock('@/lib/compare/performance-targets', () => ({
     }
     return Math.round(score);
   }),
-  getPerformanceGrade: jest.fn((score: number): string => {
+  getPerformanceGrade: vi.fn((score: number): string => {
     if (score >= 90) return 'A';
     if (score >= 80) return 'B';
     if (score >= 70) return 'C';
     if (score >= 60) return 'D';
     return 'F';
   }),
-  validatePerformanceMetrics: jest.fn((metrics: Partial<PerformanceMetrics>): { valid: boolean; errors: string[] } => {
+  validatePerformanceMetrics: vi.fn((metrics: Partial<PerformanceMetrics>): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
     const required = ['LCP', 'FID', 'CLS', 'TTI', 'BUNDLE', 'LIGHTHOUSE'];
     for (const field of required) {
@@ -77,14 +77,14 @@ jest.mock('@/lib/compare/performance-targets', () => ({
     }
     return { valid: errors.length === 0, errors };
   }),
-  formatMetricValue: jest.fn((metric: string, value: number): string => {
+  formatMetricValue: vi.fn((metric: string, value: number): string => {
     if (metric === 'LCP' || metric === 'TTI') return `${(value / 1000).toFixed(2)}s`;
     if (metric === 'FID') return `${value}ms`;
     if (metric === 'CLS') return value.toFixed(2);
     if (metric === 'BUNDLE') return `${(value / 1024).toFixed(1)}KB`;
     return String(value);
   }),
-  getMetricStatus: jest.fn((metric: string, value: number): 'good' | 'needs-improvement' | 'poor' => {
+  getMetricStatus: vi.fn((metric: string, value: number): 'good' | 'needs-improvement' | 'poor' => {
     const thresholds = {
       LCP: { good: 2500, poor: 4000 },
       FID: { good: 100, poor: 300 },
@@ -104,7 +104,7 @@ jest.mock('@/lib/compare/performance-targets', () => ({
     if (value <= t.poor) return 'needs-improvement';
     return 'poor';
   }),
-  compareMetrics: jest.fn((baseline: PerformanceMetrics, current: PerformanceMetrics): Record<string, { delta: number; percentage: number }> => {
+  compareMetrics: vi.fn((baseline: PerformanceMetrics, current: PerformanceMetrics): Record<string, { delta: number; percentage: number }> => {
     const result: Record<string, { delta: number; percentage: number }> = {};
     for (const key of Object.keys(baseline)) {
       const baseVal = baseline[key as keyof PerformanceMetrics] as number;
@@ -116,7 +116,7 @@ jest.mock('@/lib/compare/performance-targets', () => ({
     }
     return result;
   }),
-  calculateLighthouseScore: jest.fn((metrics: Partial<PerformanceMetrics>): number => {
+  calculateLighthouseScore: vi.fn((metrics: Partial<PerformanceMetrics>): number => {
     // Simplified estimation based on Core Web Vitals
     let score = 100;
     if (metrics.LCP && metrics.LCP > 2500) score -= Math.min(30, (metrics.LCP - 2500) / 50);

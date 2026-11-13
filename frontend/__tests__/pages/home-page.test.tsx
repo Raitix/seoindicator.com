@@ -11,8 +11,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock next/link
-jest.mock('next/link', () => {
-  interface LinkProps {
+vi.mock('next/link', () => ({ default: interface LinkProps {
     children: React.ReactNode;
     href: string;
     className?: string;
@@ -23,11 +22,10 @@ jest.mock('next/link', () => {
         {children}
       </a>
     );
-  };
-});
+  } }));
 
 // Mock IndicatorCatalog component (TASK-28-7)
-jest.mock('@/components/indicators/IndicatorCatalog', () => ({
+vi.mock('@/components/indicators/IndicatorCatalog', () => ({
   IndicatorCatalog: ({ 
     title, 
     description, 
@@ -71,7 +69,7 @@ jest.mock('@/components/indicators/IndicatorCatalog', () => ({
 }));
 
 // Mock Button component
-jest.mock('@/components/ui/button', () => ({
+vi.mock('@/components/ui/button', () => ({
   Button: ({ 
     children, 
     onClick, 
@@ -99,7 +97,7 @@ jest.mock('@/components/ui/button', () => ({
 }));
 
 // Mock Input component
-jest.mock('@/components/ui/input', () => ({
+vi.mock('@/components/ui/input', () => ({
   Input: ({ 
     placeholder, 
     className, 
@@ -124,7 +122,7 @@ jest.mock('@/components/ui/input', () => ({
 }));
 
 // Mock Card components
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div className={className} data-testid="card">{children}</div>
   ),
@@ -193,7 +191,7 @@ describe('TASK-28-8: Homepage Integration', () => {
     });
 
     test('HI-001.05: No console errors on render', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       render(<Home />);
       expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -405,12 +403,12 @@ describe('TASK-28-8: Homepage Integration', () => {
 
     test('HI-006.03: Animations respect prefers-reduced-motion', () => {
       // Mock prefers-reduced-motion
-      const mockMatchMedia = jest.fn().mockImplementation(query => ({
+      const mockMatchMedia = vi.fn().mockImplementation(query => ({
         matches: query === '(prefers-reduced-motion: reduce)',
         media: query,
         onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
       }));
       Object.defineProperty(window, 'matchMedia', { value: mockMatchMedia });
       
@@ -453,7 +451,7 @@ describe('TASK-28-8: Homepage Integration', () => {
     test('HI-007.03: No hydration mismatches', () => {
       // This test documents expected behavior
       // Hydration mismatches would show as console warnings
-      const consoleWarn = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation();
       render(<Home />);
       expect(consoleWarn).not.toHaveBeenCalledWith(
         expect.stringContaining('hydration')

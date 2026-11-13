@@ -11,17 +11,17 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 expect.extend(toHaveNoViolations);
 
 // Mock Next.js modules
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   usePathname: () => '/about',
   useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
   }),
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => ({
+vi.mock('next/link', () => ({
   __esModule: true,
   default: ({ children, href, ...props }: any) => (
     <a href={href} {...props}>{children}</a>
@@ -29,7 +29,7 @@ jest.mock('next/link', () => ({
 }));
 
 // Mock the AboutContent component
-jest.mock('@/components/pages/AboutContent', () => ({
+vi.mock('@/components/pages/AboutContent', () => ({
   __esModule: true,
   default: () => (
     <div data-testid="about-content">
@@ -325,7 +325,7 @@ describe('About Page', () => {
   // ============================================
   describe('Performance', () => {
     it('PC-034: No console errors during render', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       
       render(<AboutPage />);
       

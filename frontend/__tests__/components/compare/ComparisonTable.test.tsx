@@ -16,7 +16,7 @@ import type { FeatureCategory, ComparisonTableProps } from '@/lib/compare/types'
 import { ComparisonTable } from '@/components/compare/ComparisonTable';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Check: () => <span data-testid="check-icon">✓</span>,
   X: () => <span data-testid="x-icon">✗</span>,
   HelpCircle: () => <span data-testid="help-icon">?</span>,

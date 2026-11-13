@@ -12,26 +12,26 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock next/navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
   }),
   useSearchParams: () => ({
-    get: jest.fn().mockReturnValue(null),
+    get: vi.fn().mockReturnValue(null),
   }),
 }));
 
 // Mock the API hooks
-const mockMutate = jest.fn();
-const mockUseSuggestions = jest.fn();
-const mockTrackSuggestion = jest.fn();
-const mockBulkTrackSuggestions = jest.fn();
-const mockDismissSuggestion = jest.fn();
+const mockMutate = vi.fn();
+const mockUseSuggestions = vi.fn();
+const mockTrackSuggestion = vi.fn();
+const mockBulkTrackSuggestions = vi.fn();
+const mockDismissSuggestion = vi.fn();
 
-jest.mock('@/lib/api/suggestions', () => ({
+vi.mock('@/lib/api/suggestions', () => ({
   useSuggestions: (siteId: string, params: any) => mockUseSuggestions(siteId, params),
   trackSuggestion: (...args: any[]) => mockTrackSuggestion(...args),
   bulkTrackSuggestions: (...args: any[]) => mockBulkTrackSuggestions(...args),
@@ -44,11 +44,9 @@ jest.mock('@/lib/api/suggestions', () => ({
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+vi.mock('next/link', () => ({ default: function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
     return <a href={href}>{children}</a>;
-  };
-});
+  } }));
 
 import SuggestionsPage from '@/app/sites/[siteId]/suggestions/page';
 
@@ -121,7 +119,7 @@ const defaultUseSuggestionsReturn = {
 
 describe('SuggestionsPage', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockPathname('/sites/1/suggestions');
     mockUseSuggestions.mockReturnValue(defaultUseSuggestionsReturn);
     mockTrackSuggestion.mockResolvedValue({});

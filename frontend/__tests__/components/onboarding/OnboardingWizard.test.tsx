@@ -3,32 +3,32 @@ import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { useOnboardingContext } from '@/lib/contexts/OnboardingContext';
 
 // Mock the onboarding hook
-jest.mock('@/lib/contexts/OnboardingContext', () => ({
-  useOnboardingContext: jest.fn(),
+vi.mock('@/lib/contexts/OnboardingContext', () => ({
+  useOnboardingContext: vi.fn(),
 }));
 
 // Mock step components
-jest.mock('@/components/onboarding/steps/Step1_Website', () => ({
+vi.mock('@/components/onboarding/steps/Step1_Website', () => ({
   Step1_Website: () => <div data-testid="step-1">Step 1: Website</div>,
 }));
 
-jest.mock('@/components/onboarding/steps/Step2_Keyword', () => ({
+vi.mock('@/components/onboarding/steps/Step2_Keyword', () => ({
   Step2_Keyword: () => <div data-testid="step-2">Step 2: Keyword</div>,
 }));
 
-jest.mock('@/components/onboarding/steps/Step3_Preview', () => ({
+vi.mock('@/components/onboarding/steps/Step3_Preview', () => ({
   Step3_Preview: () => <div data-testid="step-3">Step 3: Preview</div>,
 }));
 
-jest.mock('@/components/onboarding/steps/Step4_Alerts', () => ({
+vi.mock('@/components/onboarding/steps/Step4_Alerts', () => ({
   Step4_Alerts: () => <div data-testid="step-4">Step 4: Alerts</div>,
 }));
 
-jest.mock('@/components/onboarding/steps/Step5_Complete', () => ({
+vi.mock('@/components/onboarding/steps/Step5_Complete', () => ({
   Step5_Complete: () => <div data-testid="step-5">Step 5: Complete</div>,
 }));
 
-const mockedUseOnboardingContext = useOnboardingContext as jest.MockedFunction<typeof useOnboardingContext>;
+const mockedUseOnboardingContext = useOnboardingContext as MockedFunction<typeof useOnboardingContext>;
 
 describe('OnboardingWizard', () => {
   const defaultOnboarding = {
@@ -48,15 +48,15 @@ describe('OnboardingWizard', () => {
     isLoading: false,
     error: null,
     isActive: true,
-    startOnboarding: jest.fn().mockResolvedValue(undefined),
-    updateStep: jest.fn().mockResolvedValue(undefined),
-    skipOnboarding: jest.fn().mockResolvedValue(undefined),
-    completeOnboarding: jest.fn().mockResolvedValue(undefined),
-    refreshOnboarding: jest.fn().mockResolvedValue(undefined),
+    startOnboarding: vi.fn().mockResolvedValue(undefined),
+    updateStep: vi.fn().mockResolvedValue(undefined),
+    skipOnboarding: vi.fn().mockResolvedValue(undefined),
+    completeOnboarding: vi.fn().mockResolvedValue(undefined),
+    refreshOnboarding: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockedUseOnboardingContext.mockReturnValue(mockHandlers);
   });
 

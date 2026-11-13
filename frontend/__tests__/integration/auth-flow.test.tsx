@@ -3,24 +3,24 @@ import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 
 // Mock next/navigation
-const mockPush = jest.fn();
+const mockPush = vi.fn();
 
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
-  useSearchParams: jest.fn(() => ({
-    get: jest.fn(() => null),
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(),
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn(() => null),
   })),
 }));
 
 // Mock AuthContext
-const mockLogin = jest.fn();
-const mockRegister = jest.fn();
-const mockLoginWithGoogle = jest.fn();
-const mockResetPassword = jest.fn();
-const mockResendVerification = jest.fn();
+const mockLogin = vi.fn();
+const mockRegister = vi.fn();
+const mockLoginWithGoogle = vi.fn();
+const mockResetPassword = vi.fn();
+const mockResendVerification = vi.fn();
 
-jest.mock("@/lib/contexts/AuthContext", () => ({
-  useAuth: jest.fn(),
+vi.mock("@/lib/contexts/AuthContext", () => ({
+  useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -33,7 +33,7 @@ const mockAuthContext = {
   error: null,
   login: mockLogin,
   loginWithGoogle: mockLoginWithGoogle,
-  logout: jest.fn(),
+  logout: vi.fn(),
   register: mockRegister,
   resetPassword: mockResetPassword,
   resendVerification: mockResendVerification,
@@ -41,11 +41,11 @@ const mockAuthContext = {
 
 describe("Auth Flow Integration Tests", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    vi.mocked(useRouter).mockReturnValue({
       push: mockPush,
     });
-    (useAuth as jest.Mock).mockReturnValue(mockAuthContext);
+    vi.mocked(useAuth).mockReturnValue(mockAuthContext);
   });
 
   // ==================== IF-001: Full registration flow ====================
@@ -172,8 +172,8 @@ describe("Auth Flow Integration Tests", () => {
 
   describe("logout flow", () => {
     it("completes logout and redirects (IF-009)", async () => {
-      const mockLogout = jest.fn().mockResolvedValueOnce(undefined);
-      (useAuth as jest.Mock).mockReturnValue({
+      const mockLogout = vi.fn().mockResolvedValueOnce(undefined);
+      vi.mocked(useAuth).mockReturnValue({
         ...mockAuthContext,
         logout: mockLogout,
         user: { id: 1, email: "test@example.com" },
@@ -194,7 +194,7 @@ describe("Auth Flow Integration Tests", () => {
   describe("session persistence", () => {
     it("restores session on page refresh (IF-010)", async () => {
       // Simulate session restoration
-      (useAuth as jest.Mock).mockReturnValue({
+      vi.mocked(useAuth).mockReturnValue({
         ...mockAuthContext,
         user: { id: 1, email: "test@example.com", email_verified: true },
         isAuthenticated: true,
@@ -212,7 +212,7 @@ describe("Auth Flow Integration Tests", () => {
 
   describe("protected routes", () => {
     it("redirects unauthenticated users to login (IF-011)", () => {
-      (useAuth as jest.Mock).mockReturnValue({
+      vi.mocked(useAuth).mockReturnValue({
         ...mockAuthContext,
         isAuthenticated: false,
         isLoading: false,
@@ -225,7 +225,7 @@ describe("Auth Flow Integration Tests", () => {
     });
 
     it("allows authenticated users to access protected routes (IF-012)", () => {
-      (useAuth as jest.Mock).mockReturnValue({
+      vi.mocked(useAuth).mockReturnValue({
         ...mockAuthContext,
         user: { id: 1, email: "test@example.com" },
         isAuthenticated: true,
@@ -241,7 +241,7 @@ describe("Auth Flow Integration Tests", () => {
 
   describe("cross-page navigation", () => {
     it("maintains auth state across navigation (IF-013)", () => {
-      (useAuth as jest.Mock).mockReturnValue({
+      vi.mocked(useAuth).mockReturnValue({
         ...mockAuthContext,
         user: { id: 1, email: "test@example.com", name: "Test User" },
         isAuthenticated: true,

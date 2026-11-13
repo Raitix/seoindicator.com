@@ -24,7 +24,7 @@ import '@testing-library/jest-dom';
 import { ShareAuditModal } from '@/components/audit/ShareAuditModal';
 
 // Mock clipboard API
-const mockClipboardWrite = jest.fn().mockResolvedValue(undefined);
+const mockClipboardWrite = vi.fn().mockResolvedValue(undefined);
 
 // Store original clipboard
 const originalClipboard = navigator.clipboard;
@@ -48,8 +48,8 @@ afterAll(() => {
 });
 
 // Mock analytics
-const mockTrackEvent = jest.fn();
-jest.mock('@/lib/analytics', () => ({
+const mockTrackEvent = vi.fn();
+vi.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
@@ -60,18 +60,18 @@ jest.mock('@/lib/analytics', () => ({
 describe('ShareAuditModal Component', () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     auditId: 1,
     auditHash: 'abc123def4567890123456789012',
     auditUrl: 'example.com',
     score: 85,
     isPublic: false,
-    onPublish: jest.fn().mockResolvedValue(undefined),
-    onUnpublish: jest.fn().mockResolvedValue(undefined),
+    onPublish: vi.fn().mockResolvedValue(undefined),
+    onUnpublish: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockClipboardWrite.mockClear();
   });
 
@@ -152,7 +152,7 @@ describe('ShareAuditModal Component', () => {
 
     it('TOGGLE-003: toggle click triggers publish when private', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -176,7 +176,7 @@ describe('ShareAuditModal Component', () => {
     it('TOGGLE-005: toggle disabled during loading', async () => {
       const user = userEvent.setup();
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => 
+      const onPublish = vi.fn().mockImplementation(() => 
         new Promise<void>(resolve => { resolvePublish = resolve; })
       );
       
@@ -197,7 +197,7 @@ describe('ShareAuditModal Component', () => {
   describe('Publish Flow', () => {
     it('PUB-001: calls onPublish when toggling from private to public', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -211,7 +211,7 @@ describe('ShareAuditModal Component', () => {
     it('PUB-002: shows loading state during publish', async () => {
       const user = userEvent.setup();
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => 
+      const onPublish = vi.fn().mockImplementation(() => 
         new Promise<void>(resolve => { resolvePublish = resolve; })
       );
       
@@ -226,7 +226,7 @@ describe('ShareAuditModal Component', () => {
 
     it('PUB-003: success updates visibility state', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -239,7 +239,7 @@ describe('ShareAuditModal Component', () => {
 
     it('PUB-004: success shows public URL', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -253,7 +253,7 @@ describe('ShareAuditModal Component', () => {
     it('PUB-005: optimistic UI update on publish', async () => {
       const user = userEvent.setup();
       let resolvePublish: () => void;
-      const onPublish = jest.fn().mockImplementation(() => 
+      const onPublish = vi.fn().mockImplementation(() => 
         new Promise<void>(resolve => { resolvePublish = resolve; })
       );
       
@@ -269,7 +269,7 @@ describe('ShareAuditModal Component', () => {
 
     it('PUB-006: reverts on API failure', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockRejectedValue(new Error('Failed'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Failed'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -282,7 +282,7 @@ describe('ShareAuditModal Component', () => {
 
     it('PUB-007: shows error message on failure', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockRejectedValue(new Error('Failed'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Failed'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -321,7 +321,7 @@ describe('ShareAuditModal Component', () => {
 
     it('UNPUB-003: cancel closes confirmation without action', async () => {
       const user = userEvent.setup();
-      const onUnpublish = jest.fn();
+      const onUnpublish = vi.fn();
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} onUnpublish={onUnpublish} />);
       
@@ -334,7 +334,7 @@ describe('ShareAuditModal Component', () => {
 
     it('UNPUB-004: confirm calls onUnpublish', async () => {
       const user = userEvent.setup();
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} onUnpublish={onUnpublish} />);
       
@@ -349,7 +349,7 @@ describe('ShareAuditModal Component', () => {
     it('UNPUB-005: loading during unpublish', async () => {
       const user = userEvent.setup();
       let resolveUnpublish: () => void;
-      const onUnpublish = jest.fn().mockImplementation(() => 
+      const onUnpublish = vi.fn().mockImplementation(() => 
         new Promise<void>(resolve => { resolveUnpublish = resolve; })
       );
       
@@ -365,7 +365,7 @@ describe('ShareAuditModal Component', () => {
 
     it('UNPUB-006: success hides public URL', async () => {
       const user = userEvent.setup();
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} onUnpublish={onUnpublish} />);
       
@@ -379,7 +379,7 @@ describe('ShareAuditModal Component', () => {
 
     it('UNPUB-007: success updates status to Private', async () => {
       const user = userEvent.setup();
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} onUnpublish={onUnpublish} />);
       
@@ -393,7 +393,7 @@ describe('ShareAuditModal Component', () => {
 
     it('UNPUB-008: error shows message on unpublish failure', async () => {
       const user = userEvent.setup();
-      const onUnpublish = jest.fn().mockRejectedValue(new Error('Failed'));
+      const onUnpublish = vi.fn().mockRejectedValue(new Error('Failed'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} onUnpublish={onUnpublish} />);
       
@@ -427,7 +427,7 @@ describe('ShareAuditModal Component', () => {
       const user = userEvent.setup();
       
       // Use jest.spyOn for clipboard mock
-      const writeTextSpy = jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+      const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} />);
       
@@ -466,7 +466,7 @@ describe('ShareAuditModal Component', () => {
   describe('Modal Interaction', () => {
     it('MODAL-001: Done button closes modal', async () => {
       const user = userEvent.setup();
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       
       render(<ShareAuditModal {...defaultProps} onClose={onClose} />);
       
@@ -505,7 +505,7 @@ describe('ShareAuditModal Component', () => {
 
     it('A11Y-002: error message has alert role', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockRejectedValue(new Error('Failed'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Failed'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -542,7 +542,7 @@ describe('ShareAuditModal Component', () => {
   describe('Error Handling', () => {
     it('ERR-001: shows network error', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockRejectedValue(new Error('Network error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Network error'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -555,7 +555,7 @@ describe('ShareAuditModal Component', () => {
 
     it('ERR-002: shows server error', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockRejectedValue(new Error('Server error'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Server error'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -568,7 +568,7 @@ describe('ShareAuditModal Component', () => {
 
     it('ERR-003: retry button available on error', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockRejectedValue(new Error('Failed'));
+      const onPublish = vi.fn().mockRejectedValue(new Error('Failed'));
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -581,7 +581,7 @@ describe('ShareAuditModal Component', () => {
 
     it('ERR-004: retry repeats action', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn()
+      const onPublish = vi.fn()
         .mockRejectedValueOnce(new Error('Failed'))
         .mockResolvedValueOnce(undefined);
       
@@ -654,7 +654,7 @@ describe('ShareAuditModal Component', () => {
   describe('Analytics', () => {
     it('tracks publish event', async () => {
       const user = userEvent.setup();
-      const onPublish = jest.fn().mockResolvedValue(undefined);
+      const onPublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={false} onPublish={onPublish} />);
       
@@ -667,7 +667,7 @@ describe('ShareAuditModal Component', () => {
 
     it('tracks unpublish event', async () => {
       const user = userEvent.setup();
-      const onUnpublish = jest.fn().mockResolvedValue(undefined);
+      const onUnpublish = vi.fn().mockResolvedValue(undefined);
       
       render(<ShareAuditModal {...defaultProps} isPublic={true} onUnpublish={onUnpublish} />);
       

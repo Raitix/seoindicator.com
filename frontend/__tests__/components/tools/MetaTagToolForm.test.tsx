@@ -113,7 +113,7 @@ const MetaTagToolForm: React.FC<MetaTagToolFormProps> = ({
 };
 
 describe('MetaTagToolForm', () => {
-  const mockOnAnalyze = jest.fn();
+  const mockOnAnalyze = vi.fn();
 
   beforeEach(() => {
     mockOnAnalyze.mockClear();

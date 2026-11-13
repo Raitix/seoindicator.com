@@ -2,14 +2,14 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { OnboardingProvider, useOnboardingContext } from '@/lib/contexts/OnboardingContext';
 
 // Mock the API module
-const mockMutate = jest.fn();
+const mockMutate = vi.fn();
 
-jest.mock('@/lib/api/onboarding', () => ({
-  useOnboarding: jest.fn(),
-  startOnboarding: jest.fn(),
-  updateOnboardingStep: jest.fn(),
-  completeOnboarding: jest.fn(),
-  skipOnboarding: jest.fn(),
+vi.mock('@/lib/api/onboarding', () => ({
+  useOnboarding: vi.fn(),
+  startOnboarding: vi.fn(),
+  updateOnboardingStep: vi.fn(),
+  completeOnboarding: vi.fn(),
+  skipOnboarding: vi.fn(),
 }));
 
 const mockedApi = require('@/lib/api/onboarding');
@@ -53,7 +53,7 @@ const renderWithProviders = () => {
 
 describe('OnboardingProvider', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Default mock for useOnboarding hook
     mockedApi.useOnboarding.mockReturnValue({
       onboarding: null,
@@ -64,7 +64,7 @@ describe('OnboardingProvider', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   // ==================== INITIAL STATE ====================
@@ -321,7 +321,7 @@ describe('OnboardingProvider', () => {
 
 describe('useOnboardingContext hook', () => {
   it('should throw error when used outside provider', () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => {
       render(<TestComponent />);

@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 // Mock fetch
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Create wrapper for React Query
@@ -71,7 +71,7 @@ const mockTransaction = {
 // ============================================
 describe('useCreatePaymentIntent', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
@@ -461,7 +461,7 @@ describe('useCreatePaymentIntent', () => {
 // ============================================
 describe('useConfirmPayment', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
@@ -827,7 +827,7 @@ describe('useConfirmPayment', () => {
 // ============================================
 describe('usePaymentHistory', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
@@ -1043,7 +1043,7 @@ describe('usePaymentHistory', () => {
 // ============================================
 describe('usePaymentMethods', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 

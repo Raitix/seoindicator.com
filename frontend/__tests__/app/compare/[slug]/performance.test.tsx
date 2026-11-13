@@ -14,27 +14,23 @@ import '@testing-library/jest-dom';
 // Mocks
 // ============================================================================
 
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return MockLink;
-});
+  return MockLink }));
 
-jest.mock('next/image', () => {
-  const MockImage = ({ src, alt, ...props }: { src: string; alt: string }) => (
+vi.mock('next/image', () => ({ default: const MockImage = ({ src, alt, ...props }: { src: string; alt: string }) => (
     <img src={src} alt={alt} {...props} loading="lazy" />
   );
   MockImage.displayName = 'MockImage';
-  return MockImage;
-});
+  return MockImage }));
 
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: ['seoindicator-vs-ahrefs', 'seoindicator-vs-semrush'],
-  getComparisonBySlug: jest.fn(() => ({
+  getComparisonBySlug: vi.fn(() => ({
     slug: 'seoindicator-vs-ahrefs',
     title: 'SEOIndicator vs Ahrefs: Which SEO Tool Is Better?',
     metaDescription: 'Compare SEOIndicator vs Ahrefs.',

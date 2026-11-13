@@ -66,7 +66,7 @@ const mockTopCandidates: DecayCandidate[] = [
 // Mock Lucide Icons
 // =============================================================================
 
-jest.mock("lucide-react", () => ({
+vi.mock("lucide-react", () => ({
   TrendingDown: () => <span data-testid="trending-down-icon">TrendingDown</span>,
   AlertTriangle: () => <span data-testid="alert-icon">AlertTriangle</span>,
   CheckCircle: () => <span data-testid="check-circle-icon">CheckCircle</span>,
@@ -166,13 +166,13 @@ describe("CDW-002: Empty State", () => {
   });
 
   test("CDW-002.4: Empty state has Run Scan button", () => {
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     render(<ContentDecayWidget siteId="1" summary={emptySummary} onRefresh={onRefresh} />);
     expect(screen.getByTestId("run-scan-btn")).toBeInTheDocument();
   });
 
   test("CDW-002.5: Empty state button triggers callback", async () => {
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     render(<ContentDecayWidget siteId="1" summary={emptySummary} onRefresh={onRefresh} />);
     await userEvent.click(screen.getByTestId("run-scan-btn"));
     expect(onRefresh).toHaveBeenCalledTimes(1);
@@ -360,7 +360,7 @@ describe("CDW-005: Top Candidates List", () => {
   });
 
   test("CDW-005.8: View action button triggers callback", async () => {
-    const onView = jest.fn();
+    const onView = vi.fn();
     render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} onViewCandidate={onView} />);
     const viewBtn = within(screen.getByTestId("candidate-1")).getByTestId("view-btn");
     await userEvent.click(viewBtn);
@@ -368,7 +368,7 @@ describe("CDW-005: Top Candidates List", () => {
   });
 
   test("CDW-005.9: Plan action button triggers callback", async () => {
-    const onPlan = jest.fn();
+    const onPlan = vi.fn();
     render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} onMarkPlanned={onPlan} />);
     const planBtn = within(screen.getByTestId("candidate-1")).getByTestId("plan-btn");
     await userEvent.click(planBtn);
@@ -466,7 +466,7 @@ describe("CDW-007: Navigation Links", () => {
 
 describe("CDW-008: Quick Actions", () => {
   test("CDW-008.1: View button triggers callback", async () => {
-    const onView = jest.fn();
+    const onView = vi.fn();
     render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} onViewCandidate={onView} />);
     const viewBtn = within(screen.getByTestId("candidate-1")).getByTestId("view-btn");
     await userEvent.click(viewBtn);
@@ -474,7 +474,7 @@ describe("CDW-008: Quick Actions", () => {
   });
 
   test("CDW-008.2: Plan button triggers callback", async () => {
-    const onPlan = jest.fn();
+    const onPlan = vi.fn();
     render(<ContentDecayWidget siteId="1" summary={mockSummary} topCandidates={mockTopCandidates} onMarkPlanned={onPlan} />);
     const planBtn = within(screen.getByTestId("candidate-1")).getByTestId("plan-btn");
     await userEvent.click(planBtn);
@@ -511,12 +511,12 @@ describe("CDW-009: Error State", () => {
   });
 
   test("CDW-009.3: Error has retry button", () => {
-    render(<ContentDecayWidget siteId="1" error="Failed" onRefresh={jest.fn()} />);
+    render(<ContentDecayWidget siteId="1" error="Failed" onRefresh={vi.fn()} />);
     expect(screen.getByTestId("retry-btn")).toBeInTheDocument();
   });
 
   test("CDW-009.4: Retry button triggers callback", async () => {
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     render(<ContentDecayWidget siteId="1" error="Failed" onRefresh={onRefresh} />);
     await userEvent.click(screen.getByTestId("retry-btn"));
     expect(onRefresh).toHaveBeenCalledTimes(1);

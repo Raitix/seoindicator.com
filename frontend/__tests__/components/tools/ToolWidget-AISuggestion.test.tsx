@@ -13,12 +13,12 @@ import '@testing-library/jest-dom';
 import { ToolWidget } from '@/components/tools/ToolWidget';
 
 // Mock the useToolAnalysis hook
-const mockAnalyze = jest.fn();
-const mockReset = jest.fn();
-const mockRetry = jest.fn();
+const mockAnalyze = vi.fn();
+const mockReset = vi.fn();
+const mockRetry = vi.fn();
 
-jest.mock('@/hooks/useToolAnalysis', () => ({
-  useToolAnalysis: jest.fn(() => ({
+vi.mock('@/hooks/useToolAnalysis', () => ({
+  useToolAnalysis: vi.fn(() => ({
     state: 'idle',
     result: null,
     error: null,
@@ -39,8 +39,8 @@ jest.mock('@/hooks/useToolAnalysis', () => ({
 }));
 
 // Mock validateUrl
-jest.mock('@/lib/utils/urlValidation', () => ({
-  validateUrl: jest.fn((url: string) => {
+vi.mock('@/lib/utils/urlValidation', () => ({
+  validateUrl: vi.fn((url: string) => {
     if (!url || !url.trim()) {
       return { valid: false, error: 'Please enter a URL' };
     }
@@ -57,10 +57,10 @@ jest.mock('@/lib/utils/urlValidation', () => ({
 }));
 
 // Mock AI Suggestions API
-const mockGetAISuggestion = jest.fn();
-jest.mock('@/lib/api/ai-suggestions', () => ({
+const mockGetAISuggestion = vi.fn();
+vi.mock('@/lib/api/ai-suggestions', () => ({
   getAISuggestion: (...args: unknown[]) => mockGetAISuggestion(...args),
-  isRateLimitError: jest.fn((error) => error?.name === 'RateLimitError'),
+  isRateLimitError: vi.fn((error) => error?.name === 'RateLimitError'),
   RateLimitError: class RateLimitError extends Error {
     retryAfter: number;
     constructor(message: string, retryAfter: number) {
@@ -73,16 +73,16 @@ jest.mock('@/lib/api/ai-suggestions', () => ({
 
 import { useToolAnalysis } from '@/hooks/useToolAnalysis';
 
-const mockUseToolAnalysis = useToolAnalysis as jest.MockedFunction<typeof useToolAnalysis>;
+const mockUseToolAnalysis = useToolAnalysis as MockedFunction<typeof useToolAnalysis>;
 
 // Mock clipboard API
 const mockClipboard = {
-  writeText: jest.fn().mockResolvedValue(undefined),
+  writeText: vi.fn().mockResolvedValue(undefined),
 };
 Object.assign(navigator, { clipboard: mockClipboard });
 
 // Mock timers
-jest.useFakeTimers();
+vi.useFakeTimers();
 
 // Sample AI suggestion responses
 const mockTitleSuggestion = {
@@ -121,13 +121,13 @@ const mockDescriptionSuggestion = {
 
 describe('ToolWidget AI Suggestion Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     jest.clearAllTimers();
     mockGetAISuggestion.mockReset();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
   });
 
   // ============================================
@@ -179,7 +179,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(mockGetAISuggestion).toHaveBeenCalledWith(
@@ -202,7 +202,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -236,7 +236,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       resolvePromise!(mockTitleSuggestion);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
     });
 
@@ -251,7 +251,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -310,7 +310,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[1]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       expect(mockGetAISuggestion).toHaveBeenCalledWith(
@@ -333,7 +333,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[1]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -382,7 +382,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -417,7 +417,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -446,7 +446,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -475,7 +475,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -487,7 +487,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(regenerateButton);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       // Should show new result
@@ -538,7 +538,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -560,7 +560,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       // Should show countdown
@@ -614,7 +614,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -634,7 +634,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -683,7 +683,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -705,7 +705,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -727,7 +727,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -788,7 +788,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -809,7 +809,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -834,7 +834,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       await user.keyboard('{Enter}');
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -942,7 +942,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -989,7 +989,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -1008,7 +1008,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {
@@ -1030,7 +1030,7 @@ describe('ToolWidget AI Suggestion Integration', () => {
       fireEvent.click(aiButtons[0]);
 
       await act(async () => {
-        jest.runAllTimers();
+        vi.runAllTimers();
       });
 
       await waitFor(() => {

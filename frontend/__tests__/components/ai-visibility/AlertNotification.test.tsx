@@ -14,7 +14,7 @@ import { AlertNotification } from '@/components/ai-visibility/AlertNotification'
 import type { Alert, AlertType } from '@/lib/ai-visibility/types';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
   TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
   AlertTriangle: () => <span data-testid="alert-triangle-icon">⚠</span>,
@@ -44,12 +44,12 @@ const createMockAlert = (overrides: Partial<Alert> = {}): Alert => ({
 });
 
 describe('AlertNotification', () => {
-  const mockOnClick = jest.fn();
-  const mockOnMarkRead = jest.fn();
-  const mockOnResolve = jest.fn();
+  const mockOnClick = vi.fn();
+  const mockOnMarkRead = vi.fn();
+  const mockOnResolve = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================================

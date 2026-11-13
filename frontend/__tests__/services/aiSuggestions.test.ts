@@ -8,7 +8,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 
 // Mock fetch globally
-const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+const mockFetch = vi.fn() as MockedFunction<typeof fetch>;
 global.fetch = mockFetch;
 
 // Types
@@ -208,7 +208,7 @@ describe('AISuggestionsService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ========================================

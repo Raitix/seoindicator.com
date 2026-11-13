@@ -12,27 +12,23 @@ import '@testing-library/jest-dom';
 // ==========================================
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock Next.js Image
-jest.mock('next/image', () => {
-  const MockImage = ({ src, alt, width, height, ...props }: { src: string; alt: string; width?: number; height?: number }) => (
+vi.mock('next/image', () => ({ default: const MockImage = ({ src, alt, width, height, ...props }: { src: string; alt: string; width?: number; height?: number }) => (
     <img src={src} alt={alt} width={width} height={height} {...props} />
   );
   MockImage.displayName = 'MockImage';
-  return MockImage;
-});
+  return MockImage }));
 
 // Mock lucide-react icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   TrendingUp: () => <span data-testid="icon-trending-up">TrendingUp</span>,
   Eye: () => <span data-testid="icon-eye">Eye</span>,
   Users: () => <span data-testid="icon-users">Users</span>,
@@ -47,8 +43,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock shadcn/ui components
-jest.mock('@/components/ui/button', () => {
-  const MockButton = ({ children, variant, className, asChild, ...props }: { children: React.ReactNode; variant?: string; className?: string; asChild?: boolean }) => {
+vi.mock('@/components/ui/button', () => ({ default: const MockButton = ({ children, variant, className, asChild, ...props }: { children: React.ReactNode; variant?: string; className?: string; asChild?: boolean }) => {
     if (asChild) {
       // When asChild is true, render children directly (Link etc.)
       return <>{children}</>;
@@ -60,18 +55,15 @@ jest.mock('@/components/ui/button', () => {
     );
   };
   MockButton.displayName = 'MockButton';
-  return { Button: MockButton, buttonVariants: () => '' };
-});
+  return { Button: MockButton, buttonVariants: () => '' } }));
 
-jest.mock('@/components/ui/input', () => {
-  const MockInput = ({ className, ...props }: { className?: string }) => (
+vi.mock('@/components/ui/input', () => ({ default: const MockInput = ({ className, ...props }: { className?: string }) => (
     <input className={className} {...props} />
   );
   MockInput.displayName = 'MockInput';
-  return MockInput;
-});
+  return MockInput }));
 
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div className={className} data-testid="card">{children}</div>
   ),
@@ -259,7 +251,7 @@ describe('Homepage', () => {
     });
 
     it('CR-010: No console errors on render', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       render(<Home />);
       expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -604,16 +596,16 @@ describe('Homepage', () => {
 
     it('EA-007: Animation respects prefers-reduced-motion', () => {
       // Mock reduced motion preference
-      const matchMediaSpy = jest.spyOn(window, 'matchMedia')
+      const matchMediaSpy = vi.spyOn(window, 'matchMedia')
         .mockImplementation((query: string) => ({
           matches: query === '(prefers-reduced-motion: reduce)',
           media: query,
           onchange: null,
-          addListener: jest.fn(),
-          removeListener: jest.fn(),
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn(),
-          dispatchEvent: jest.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
         }));
       
       render(<Home />);
@@ -978,16 +970,16 @@ describe('Homepage', () => {
 
     it('AX-015: Reduced motion respected', () => {
       // Mock reduced motion preference
-      const matchMediaSpy = jest.spyOn(window, 'matchMedia')
+      const matchMediaSpy = vi.spyOn(window, 'matchMedia')
         .mockImplementation((query: string) => ({
           matches: query === '(prefers-reduced-motion: reduce)',
           media: query,
           onchange: null,
-          addListener: jest.fn(),
-          removeListener: jest.fn(),
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn(),
-          dispatchEvent: jest.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
         }));
       
       const { container } = render(<Home />);

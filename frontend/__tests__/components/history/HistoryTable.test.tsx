@@ -12,8 +12,8 @@ import userEvent from "@testing-library/user-event";
 import HistoryTable from "@/components/history/HistoryTable";
 
 // Mock dependencies
-const mockOnView = jest.fn();
-const mockOnDelete = jest.fn();
+const mockOnView = vi.fn();
+const mockOnDelete = vi.fn();
 
 const defaultData = [
   {
@@ -69,7 +69,7 @@ const defaultProps = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== HT-001: Table Structure ====================

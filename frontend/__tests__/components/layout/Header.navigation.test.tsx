@@ -22,15 +22,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock Next.js Link
-vi.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return { default: MockLink };
-});
+  return { default: MockLink } }));
 
 // Mock notification hooks
 vi.mock('@/lib/api/notifications', () => ({

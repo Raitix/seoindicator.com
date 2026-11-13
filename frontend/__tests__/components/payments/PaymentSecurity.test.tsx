@@ -20,7 +20,7 @@ vi.mock('@stripe/react-stripe-js', () => ({
 }));
 
 vi.mock('@stripe/stripe-js', () => ({
-  loadStripe: jest.fn(() => Promise.resolve({})),
+  loadStripe: vi.fn(() => Promise.resolve({})),
 }));
 
 describe('Payment Security Tests', () => {
@@ -48,8 +48,8 @@ describe('Payment Security Tests', () => {
 
   describe('SEC-001 to SEC-003: Card Data Protection', () => {
     it('never logs card number to console', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation();
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation();
       
       render(<StripeCheckout {...defaultProps} />);
       
@@ -66,8 +66,8 @@ describe('Payment Security Tests', () => {
     });
 
     it('never logs CVC to console', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation();
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation();
       
       render(<StripeCheckout {...defaultProps} />);
       
@@ -133,7 +133,7 @@ describe('Payment Security Tests', () => {
       // This would be tested at the API layer
       // The fetch wrapper should include X-XSRF-TOKEN
       
-      const mockFetch = jest.spyOn(global, 'fetch').mockResolvedValue({
+      const mockFetch = vi.spyOn(global, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({})
       } as Response);

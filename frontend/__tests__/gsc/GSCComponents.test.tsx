@@ -70,7 +70,7 @@ describe('GSCMetricsTable', () => {
 
 describe('GSCDateFilter', () => {
   const mockDateRange = { from: '2026-02-01', to: '2026-02-21' };
-  const mockOnChange = jest.fn();
+  const mockOnChange = vi.fn();
 
   beforeEach(() => {
     mockOnChange.mockClear();

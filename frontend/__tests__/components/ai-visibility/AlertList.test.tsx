@@ -14,7 +14,7 @@ import { AlertList } from '@/components/ai-visibility/AlertList';
 import type { Alert } from '@/lib/ai-visibility/types';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Filter: () => <span data-testid="filter-icon">FilterWhere</span>,
   X: () => <span data-testid="x-icon">✗</span>,
   Check: () => <span data-testid="check-icon">✓</span>,
@@ -27,7 +27,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock AlertNotification component
-jest.mock('@/components/ai-visibility/AlertNotification', () => ({
+vi.mock('@/components/ai-visibility/AlertNotification', () => ({
   AlertNotification: ({ alert, onClick, onMarkRead, onResolve }: any) => (
     <div
       data-testid={`alert-item-${alert.id}`}
@@ -83,12 +83,12 @@ const mockProjects = [
 ];
 
 describe('AlertList', () => {
-  const mockOnAlertClick = jest.fn();
-  const mockOnMarkRead = jest.fn();
-  const mockOnResolve = jest.fn();
-  const mockOnMarkAllRead = jest.fn();
-  const mockOnPageChange = jest.fn();
-  const mockOnLoadMore = jest.fn();
+  const mockOnAlertClick = vi.fn();
+  const mockOnMarkRead = vi.fn();
+  const mockOnResolve = vi.fn();
+  const mockOnMarkAllRead = vi.fn();
+  const mockOnPageChange = vi.fn();
+  const mockOnLoadMore = vi.fn();
 
   const defaultProps = {
     alerts: createMockAlerts(5),
@@ -109,7 +109,7 @@ describe('AlertList', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================================
@@ -161,7 +161,7 @@ describe('AlertList', () => {
 
     it('AL-006: filter by project', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(<AlertList {...defaultProps} onFilterChange={onFilterChange} />);
 
       await user.click(screen.getByRole('button', { name: /filter by project/i }));
@@ -172,7 +172,7 @@ describe('AlertList', () => {
 
     it('AL-007: clear project filter', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(
         <AlertList
           {...defaultProps}
@@ -197,7 +197,7 @@ describe('AlertList', () => {
 
     it('AL-009: filter by multiple types', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(<AlertList {...defaultProps} onFilterChange={onFilterChange} />);
 
       await user.click(screen.getByRole('button', { name: /filter by type/i }));
@@ -211,7 +211,7 @@ describe('AlertList', () => {
 
     it('AL-010: clear type filter', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(
         <AlertList
           {...defaultProps}
@@ -227,7 +227,7 @@ describe('AlertList', () => {
 
     it('AL-011: read/unread toggle - unread only', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(<AlertList {...defaultProps} onFilterChange={onFilterChange} />);
 
       await user.click(screen.getByRole('button', { name: /show unread only/i }));
@@ -237,7 +237,7 @@ describe('AlertList', () => {
 
     it('AL-012: toggle back to all alerts', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(
         <AlertList
           {...defaultProps}
@@ -348,7 +348,7 @@ describe('AlertList', () => {
 
   describe('Infinite Scroll', () => {
     it('AL-017: scroll to bottom triggers onLoadMore', async () => {
-      const onLoadMore = jest.fn();
+      const onLoadMore = vi.fn();
       render(
         <AlertList
           {...defaultProps}
@@ -389,7 +389,7 @@ describe('AlertList', () => {
 
     it('AL-021: sort by type groups by type', async () => {
       const user = userEvent.setup();
-      const onSortChange = jest.fn();
+      const onSortChange = vi.fn();
       render(<AlertList {...defaultProps} onSortChange={onSortChange} />);
 
       await user.click(screen.getByRole('button', { name: /sort by/i }));
@@ -400,7 +400,7 @@ describe('AlertList', () => {
 
     it('AL-022: sort by project groups by project', async () => {
       const user = userEvent.setup();
-      const onSortChange = jest.fn();
+      const onSortChange = vi.fn();
       render(<AlertList {...defaultProps} onSortChange={onSortChange} />);
 
       await user.click(screen.getByRole('button', { name: /sort by/i }));
@@ -440,7 +440,7 @@ describe('AlertList', () => {
 
     it('AL-028: bulk mark read', async () => {
       const user = userEvent.setup();
-      const onBulkMarkRead = jest.fn();
+      const onBulkMarkRead = vi.fn();
       render(<AlertList {...defaultProps} enableSelection onBulkMarkRead={onBulkMarkRead} />);
 
       await user.click(screen.getByTestId('alert-item-alert-1'));
@@ -480,7 +480,7 @@ describe('AlertList', () => {
 
     it('AL-033: clear all filters button', async () => {
       const user = userEvent.setup();
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(
         <AlertList
           {...defaultProps}
@@ -510,7 +510,7 @@ describe('AlertList', () => {
   describe('State Persistence', () => {
     it('AL-035: filters restored from URL params', () => {
       // Mock URL with params
-      const onFilterChange = jest.fn();
+      const onFilterChange = vi.fn();
       render(
         <AlertList
           {...defaultProps}
@@ -524,7 +524,7 @@ describe('AlertList', () => {
     });
 
     it('AL-036: URL params updated on filter change', () => {
-      const onUrlChange = jest.fn();
+      const onUrlChange = vi.fn();
       render(<AlertList {...defaultProps} onUrlChange={onUrlChange} />);
 
       // Trigger filter change
@@ -563,16 +563,16 @@ describe('AlertList', () => {
     });
 
     it('AL-040: polling interval triggers refetch', () => {
-      const onRefetch = jest.fn();
-      jest.useFakeTimers();
+      const onRefetch = vi.fn();
+      vi.useFakeTimers();
 
       render(<AlertList {...defaultProps} pollingInterval={300000} onRefetch={onRefetch} />);
 
-      jest.advanceTimersByTime(300000);
+      vi.advanceTimersByTime(300000);
 
       expect(onRefetch).toHaveBeenCalled();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 
@@ -660,7 +660,7 @@ describe('AlertList', () => {
 
     it('AL-043: retry fetch triggers callback', async () => {
       const user = userEvent.setup();
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       render(<AlertList {...defaultProps} alerts={[]} error="Network error" onRetry={onRetry} />);
 
       await user.click(screen.getByRole('button', { name: /retry/i }));

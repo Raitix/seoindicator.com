@@ -12,13 +12,13 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock the generateSuggestions API function
-const mockGenerateSuggestions = jest.fn();
-jest.mock('@/lib/api/suggestions', () => ({
+const mockGenerateSuggestions = vi.fn();
+vi.mock('@/lib/api/suggestions', () => ({
   generateSuggestions: (...args: any[]) => mockGenerateSuggestions(...args),
 }));
 
 // Mock Radix-based UI components that cause act issues
-jest.mock('@/components/ui/checkbox', () => ({
+vi.mock('@/components/ui/checkbox', () => ({
   Checkbox: React.forwardRef<HTMLInputElement, { checked?: boolean; onCheckedChange?: (checked: boolean) => void; disabled?: boolean; 'data-testid'?: string; id?: string }>(
     ({ checked, onCheckedChange, disabled, 'data-testid': testId, id }, ref) => (
       <input
@@ -34,7 +34,7 @@ jest.mock('@/components/ui/checkbox', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/label', () => ({
+vi.mock('@/components/ui/label', () => ({
   Label: React.forwardRef<HTMLLabelElement, { children: React.ReactNode; htmlFor?: string; className?: string }>(
     ({ children, htmlFor, className }, ref) => (
       <label ref={ref} htmlFor={htmlFor} className={className}>
@@ -45,19 +45,19 @@ jest.mock('@/components/ui/label', () => ({
 }));
 
 // Mock fetch for any direct API calls
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 // Import the real component after mocks are set up
 import GenerateSuggestionsForm from '@/components/suggestions/GenerateSuggestionsForm';
 
 describe('GenerateSuggestionsForm', () => {
   const mockSiteId = '1';
-  const mockOnSuccess = jest.fn();
+  const mockOnSuccess = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockGenerateSuggestions.mockReset();
-    global.fetch = jest.fn();
+    global.fetch = vi.fn();
   });
 
   // ============================================

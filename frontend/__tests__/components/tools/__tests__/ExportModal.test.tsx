@@ -7,20 +7,20 @@ import userEvent from '@testing-library/user-event';
 import { ExportModal, ExportModalProps } from '@/components/tools/ExportModal';
 
 // Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  X: jest.fn(() => <svg data-testid="x-icon" />),
-  FileText: jest.fn(() => <svg data-testid="file-text-icon" />),
-  FileSpreadsheet: jest.fn(() => <svg data-testid="file-spreadsheet-icon" />),
-  Loader2: jest.fn(({ className }: { className?: string }) => (
+vi.mock('lucide-react', () => ({
+  X: vi.fn(() => <svg data-testid="x-icon" />),
+  FileText: vi.fn(() => <svg data-testid="file-text-icon" />),
+  FileSpreadsheet: vi.fn(() => <svg data-testid="file-spreadsheet-icon" />),
+  Loader2: vi.fn(({ className }: { className?: string }) => (
     <svg data-testid="loader-icon" className={className} />
   )),
-  Download: jest.fn(() => <svg data-testid="download-icon" />),
-  AlertCircle: jest.fn(() => <svg data-testid="alert-circle-icon" />),
-  Clock: jest.fn(() => <svg data-testid="clock-icon" />),
+  Download: vi.fn(() => <svg data-testid="download-icon" />),
+  AlertCircle: vi.fn(() => <svg data-testid="alert-circle-icon" />),
+  Clock: vi.fn(() => <svg data-testid="clock-icon" />),
 }));
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Type definition for ToolResultData
@@ -57,7 +57,7 @@ describe('ExportModal', () => {
 
   const defaultProps: ExportModalProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     toolName: 'meta-tag-analyzer',
     url: 'https://example.com',
     data: mockData,
@@ -66,7 +66,7 @@ describe('ExportModal', () => {
   let originalLocation: Location;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
     // Mock window.location for download tests
     originalLocation = window.location;
@@ -76,12 +76,12 @@ describe('ExportModal', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     window.location = originalLocation;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // ============================================
@@ -399,7 +399,7 @@ describe('ExportModal', () => {
 
     it('EM-027: on success, modal closes', async () => {
       const user = userEvent.setup();
-      const onClose = jest.fn();
+      const onClose = vi.fn();
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -591,7 +591,7 @@ describe('ExportModal', () => {
   describe('Modal Interaction', () => {
     it('EM-036: cancel button closes modal', async () => {
       const user = userEvent.setup();
-      const onClose = jest.fn();
+      const onClose = vi.fn();
 
       render(<ExportModal {...defaultProps} onClose={onClose} />);
 
@@ -603,7 +603,7 @@ describe('ExportModal', () => {
 
     it('EM-037: close button (X) closes modal', async () => {
       const user = userEvent.setup();
-      const onClose = jest.fn();
+      const onClose = vi.fn();
 
       render(<ExportModal {...defaultProps} onClose={onClose} />);
 
@@ -616,7 +616,7 @@ describe('ExportModal', () => {
 
     it('EM-039: escape key closes modal', async () => {
       const user = userEvent.setup();
-      const onClose = jest.fn();
+      const onClose = vi.fn();
 
       render(<ExportModal {...defaultProps} onClose={onClose} />);
 
@@ -627,7 +627,7 @@ describe('ExportModal', () => {
 
     it('EM-040: modal can be reopened after close', async () => {
       const user = userEvent.setup();
-      const onClose = jest.fn();
+      const onClose = vi.fn();
 
       const { rerender } = render(
         <ExportModal {...defaultProps} onClose={onClose} />

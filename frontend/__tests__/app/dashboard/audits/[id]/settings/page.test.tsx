@@ -16,13 +16,13 @@ import userEvent from '@testing-library/user-event';
 import { useRouter, useParams } from 'next/navigation';
 
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-  useParams: jest.fn(),
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(),
+  useParams: vi.fn(),
 }));
 
 // Mock the VisibilitySettings component
-jest.mock('@/components/audit/VisibilitySettings', () => ({
+vi.mock('@/components/audit/VisibilitySettings', () => ({
   VisibilitySettings: ({ auditId, auditHash, isPublic, onPublish, onUnpublish }: any) => (
     <div data-testid="visibility-settings">
       <h3>Visibility</h3>
@@ -38,14 +38,14 @@ jest.mock('@/components/audit/VisibilitySettings', () => ({
 }));
 
 // Mock API hooks
-jest.mock('@/lib/api/audit-settings', () => ({
-  useAuditSettings: jest.fn(),
-  usePublishAudit: jest.fn(),
-  useUnpublishAudit: jest.fn(),
+vi.mock('@/lib/api/audit-settings', () => ({
+  useAuditSettings: vi.fn(),
+  usePublishAudit: vi.fn(),
+  useUnpublishAudit: vi.fn(),
 }));
 
 // Mock dependencies
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   ArrowLeft: () => <span data-testid="arrow-left-icon">←</span>,
   Settings: () => <span data-testid="settings-icon">⚙</span>,
   Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loading</span>,
@@ -63,9 +63,9 @@ import { AuditSettingsPage } from '@/app/dashboard/audits/[id]/settings/page';
 // ============================================================
 
 const mockRouter = {
-  push: jest.fn(),
-  back: jest.fn(),
-  replace: jest.fn(),
+  push: vi.fn(),
+  back: vi.fn(),
+  replace: vi.fn(),
 };
 
 const mockParams = {
@@ -108,24 +108,24 @@ function setupMocks(options: {
     isOwner = true,
   } = options;
 
-  (useRouter as jest.Mock).mockReturnValue(mockRouter);
-  (useParams as jest.Mock).mockReturnValue(mockParams);
+  vi.mocked(useRouter).mockReturnValue(mockRouter);
+  vi.mocked(useParams).mockReturnValue(mockParams);
 
-  (useAuditSettings as jest.Mock).mockReturnValue({
+  vi.mocked(useAuditSettings).mockReturnValue({
     audit: error ? null : audit,
     isLoading,
     error,
     isOwner,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
-  (usePublishAudit as jest.Mock).mockReturnValue({
-    publish: jest.fn().mockResolvedValue({ success: true }),
+  vi.mocked(usePublishAudit).mockReturnValue({
+    publish: vi.fn().mockResolvedValue({ success: true }),
     isLoading: false,
   });
 
-  (useUnpublishAudit as jest.Mock).mockReturnValue({
-    unpublish: jest.fn().mockResolvedValue({ success: true }),
+  vi.mocked(useUnpublishAudit).mockReturnValue({
+    unpublish: vi.fn().mockResolvedValue({ success: true }),
     isLoading: false,
   });
 }
@@ -144,7 +144,7 @@ function renderPage(options: Parameters<typeof setupMocks>[0] = {}) {
 
 describe('Audit Settings Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================
@@ -409,8 +409,8 @@ describe('Audit Settings Page', () => {
     });
 
     it('publish callback is wired correctly', async () => {
-      const mockPublish = jest.fn().mockResolvedValue({ success: true });
-      (usePublishAudit as jest.Mock).mockReturnValue({
+      const mockPublish = vi.fn().mockResolvedValue({ success: true });
+      vi.mocked(usePublishAudit).mockReturnValue({
         publish: mockPublish,
         isLoading: false,
       });
@@ -430,8 +430,8 @@ describe('Audit Settings Page', () => {
     });
 
     it('unpublish callback is wired correctly', async () => {
-      const mockUnpublish = jest.fn().mockResolvedValue({ success: true });
-      (useUnpublishAudit as jest.Mock).mockReturnValue({
+      const mockUnpublish = vi.fn().mockResolvedValue({ success: true });
+      vi.mocked(useUnpublishAudit).mockReturnValue({
         unpublish: mockUnpublish,
         isLoading: false,
       });
@@ -444,8 +444,8 @@ describe('Audit Settings Page', () => {
     });
 
     it('handles publish success', async () => {
-      const mockMutate = jest.fn();
-      (useAuditSettings as jest.Mock).mockReturnValue({
+      const mockMutate = vi.fn();
+      vi.mocked(useAuditSettings).mockReturnValue({
         audit: createMockAuditSettings(),
         isLoading: false,
         error: null,
@@ -461,8 +461,8 @@ describe('Audit Settings Page', () => {
     });
 
     it('handles unpublish success', async () => {
-      const mockMutate = jest.fn();
-      (useAuditSettings as jest.Mock).mockReturnValue({
+      const mockMutate = vi.fn();
+      vi.mocked(useAuditSettings).mockReturnValue({
         audit: createMockAuditSettings({ isPublic: true }),
         isLoading: false,
         error: null,
@@ -649,8 +649,8 @@ describe('Audit Settings Page', () => {
     });
 
     it('handles concurrent updates', async () => {
-      const mockMutate = jest.fn();
-      (useAuditSettings as jest.Mock).mockReturnValue({
+      const mockMutate = vi.fn();
+      vi.mocked(useAuditSettings).mockReturnValue({
         audit: createMockAuditSettings(),
         isLoading: false,
         error: null,

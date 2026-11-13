@@ -12,8 +12,8 @@ import userEvent from "@testing-library/user-event";
 import DeleteConfirmationDialog from "@/components/history/DeleteConfirmationDialog";
 
 // Mock dependencies
-const mockOnConfirm = jest.fn();
-const mockOnCancel = jest.fn();
+const mockOnConfirm = vi.fn();
+const mockOnCancel = vi.fn();
 
 const defaultProps = {
   isOpen: true,
@@ -27,7 +27,7 @@ const defaultProps = {
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== DCD-001: Dialog Structure ====================

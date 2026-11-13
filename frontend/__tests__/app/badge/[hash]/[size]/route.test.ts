@@ -32,7 +32,7 @@ interface BadgeGenerateResult {
 }
 
 const mockBadgeService = {
-  generate: jest.fn((options: BadgeGenerateOptions): BadgeGenerateResult => {
+  generate: vi.fn((options: BadgeGenerateOptions): BadgeGenerateResult => {
     const { score, size, theme } = options;
     const dimensions = {
       small: { width: 120, height: 40 },
@@ -70,7 +70,7 @@ interface PublicAuditData {
 }
 
 const mockPublicAudit = {
-  findByHash: jest.fn((hash: string): PublicAuditData | null => {
+  findByHash: vi.fn((hash: string): PublicAuditData | null => {
     // Valid 32-char alphanumeric hash
     if (/^[a-zA-Z0-9]{32}$/.test(hash)) {
       // Simulate non-existent or non-public audit
@@ -102,11 +102,11 @@ const mockPublicAudit = {
 };
 
 // Mock modules
-jest.mock('@/services/badge-service', () => ({
+vi.mock('@/services/badge-service', () => ({
   BadgeService: mockBadgeService,
 }));
 
-jest.mock('@/models/public-audit', () => ({
+vi.mock('@/models/public-audit', () => ({
   PublicAudit: mockPublicAudit,
 }));
 
@@ -118,7 +118,7 @@ const mockRequest = (params: Record<string, string>, searchParams: URLSearchPara
 });
 
 const mockNextResponse = {
-  json: jest.fn((data: unknown, init?: ResponseInit) => {
+  json: vi.fn((data: unknown, init?: ResponseInit) => {
     return new Response(JSON.stringify(data), {
       ...init,
       headers: {
@@ -127,7 +127,7 @@ const mockNextResponse = {
       },
     });
   }),
-  svg: jest.fn((svg: string, init?: ResponseInit) => {
+  svg: vi.fn((svg: string, init?: ResponseInit) => {
     return new Response(svg, {
       ...init,
       headers: {
@@ -136,10 +136,10 @@ const mockNextResponse = {
       },
     });
   }),
-  next: jest.fn(),
+  next: vi.fn(),
 };
 
-jest.mock('next/server', () => ({
+vi.mock('next/server', () => ({
   NextResponse: mockNextResponse,
 }));
 
@@ -193,7 +193,7 @@ function isValidSvg(svg: string): boolean {
 
 describe('SVG Badge Route Handler - Route Structure', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-ROUTE-001: Route File Location', () => {
@@ -247,7 +247,7 @@ describe('SVG Badge Route Handler - Route Structure', () => {
 
 describe('SVG Badge Route Handler - Hash Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-HASH-001: Valid Hash Format', () => {
@@ -342,7 +342,7 @@ describe('SVG Badge Route Handler - Hash Validation', () => {
 
 describe('SVG Badge Route Handler - Size Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-SIZE-001: Valid Sizes', () => {
@@ -434,7 +434,7 @@ describe('SVG Badge Route Handler - Size Validation', () => {
 
 describe('SVG Badge Route Handler - Theme Parameter', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-THEME-001: Valid Themes', () => {
@@ -506,7 +506,7 @@ describe('SVG Badge Route Handler - Theme Parameter', () => {
 
 describe('SVG Badge Route Handler - Response Headers', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-HEAD-001: Content-Type Header', () => {
@@ -577,7 +577,7 @@ describe('SVG Badge Route Handler - Response Headers', () => {
 
 describe('SVG Badge Route Handler - SVG Content', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-SVG-001: SVG Structure', () => {
@@ -681,7 +681,7 @@ describe('SVG Badge Route Handler - SVG Content', () => {
 
 describe('SVG Badge Route Handler - Error Responses', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-ERR-001: Invalid Hash (404)', () => {
@@ -752,7 +752,7 @@ describe('SVG Badge Route Handler - Error Responses', () => {
 
 describe('SVG Badge Route Handler - Caching Behavior', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-CACHE-001: Browser Caching', () => {
@@ -813,7 +813,7 @@ describe('SVG Badge Route Handler - Caching Behavior', () => {
 
 describe('SVG Badge Route Handler - Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-INT-001: Full Request Flow', () => {
@@ -883,7 +883,7 @@ describe('SVG Badge Route Handler - Integration', () => {
 
 describe('SVG Badge Route Handler - Edge Cases', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-EDGE-001: Score Boundaries', () => {
@@ -961,7 +961,7 @@ describe('SVG Badge Route Handler - Edge Cases', () => {
 
 describe('SVG Badge Route Handler - Security', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BDG-SEC-001: Input Validation', () => {
@@ -1059,7 +1059,7 @@ describe('SVG Badge Route Handler - Security', () => {
 
 describe('SVG Badge Route Handler - Acceptance Criteria', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('AC-01: Route at /badge/[hash]/[size]/route.ts', () => {

@@ -14,7 +14,7 @@ import { AlertDetailModal } from '@/components/ai-visibility/AlertDetailModal';
 import type { Alert } from '@/lib/ai-visibility/types';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   X: () => <span data-testid="x-icon">✗</span>,
   TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
   TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
@@ -52,11 +52,11 @@ const createMockAlert = (overrides: Partial<Alert> = {}): Alert => ({
 });
 
 describe('AlertDetailModal', () => {
-  const mockOnClose = jest.fn();
-  const mockOnResolve = jest.fn();
-  const mockOnDismiss = jest.fn();
-  const mockOnViewProject = jest.fn();
-  const mockOnDelete = jest.fn();
+  const mockOnClose = vi.fn();
+  const mockOnResolve = vi.fn();
+  const mockOnDismiss = vi.fn();
+  const mockOnViewProject = vi.fn();
+  const mockOnDelete = vi.fn();
 
   const defaultProps = {
     isOpen: true,
@@ -70,7 +70,7 @@ describe('AlertDetailModal', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================================

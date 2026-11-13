@@ -7,23 +7,23 @@ import AddCompetitorModal from "@/components/competitors/AddCompetitorModal";
 import * as competitorsApi from "@/lib/api/competitors";
 
 // Mock the API hooks
-jest.mock("@/lib/api/competitors", () => ({
-  useCreateCompetitor: jest.fn(),
+vi.mock("@/lib/api/competitors", () => ({
+  useCreateCompetitor: vi.fn(),
 }));
 
 // Mock SWR mutate
-jest.mock("swr", () => ({
+vi.mock("swr", () => ({
   __esModule: true,
-  default: jest.fn(),
-  mutate: jest.fn(),
+  default: vi.fn(),
+  mutate: vi.fn(),
 }));
 
-const mockCreateCompetitor = jest.fn();
+const mockCreateCompetitor = vi.fn();
 
 describe("AddCompetitorModal", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (competitorsApi.useCreateCompetitor as jest.Mock).mockReturnValue(
+    vi.clearAllMocks();
+    vi.mocked(competitorsApi.useCreateCompetitor).mockReturnValue(
       mockCreateCompetitor
     );
   });

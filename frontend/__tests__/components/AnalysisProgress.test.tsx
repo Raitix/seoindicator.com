@@ -13,9 +13,9 @@ import userEvent from '@testing-library/user-event';
 import { AnalysisProgress } from '@/components/analysis/AnalysisProgress';
 
 // Mock the hook
-const mockStart = jest.fn();
-const mockStop = jest.fn();
-const mockCancel = jest.fn();
+const mockStart = vi.fn();
+const mockStop = vi.fn();
+const mockCancel = vi.fn();
 
 const defaultHookReturn = {
   job: null,
@@ -29,9 +29,9 @@ const defaultHookReturn = {
   cancel: mockCancel,
 };
 
-const mockUseAnalysisProgress = jest.fn();
+const mockUseAnalysisProgress = vi.fn();
 
-jest.mock('@/lib/hooks/useAnalysisProgress', () => ({
+vi.mock('@/lib/hooks/useAnalysisProgress', () => ({
   useAnalysisProgress: (...args: unknown[]) => mockUseAnalysisProgress(...args),
 }));
 
@@ -39,8 +39,8 @@ jest.mock('@/lib/hooks/useAnalysisProgress', () => ({
 function renderAnalysisProgress(overrides = {}) {
   const defaultProps = {
     jobId: 1,
-    onComplete: jest.fn(),
-    onCancel: jest.fn(),
+    onComplete: vi.fn(),
+    onCancel: vi.fn(),
   };
 
   return render(<AnalysisProgress {...defaultProps} {...overrides} />);
@@ -48,7 +48,7 @@ function renderAnalysisProgress(overrides = {}) {
 
 describe('AnalysisProgress', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseAnalysisProgress.mockReturnValue(defaultHookReturn);
   });
 
@@ -87,7 +87,7 @@ describe('AnalysisProgress', () => {
     });
 
     it('accepts onComplete callback', () => {
-      const onComplete = jest.fn();
+      const onComplete = vi.fn();
       renderAnalysisProgress({ onComplete });
       expect(mockUseAnalysisProgress).toHaveBeenCalledWith(
         expect.objectContaining({ onComplete })
@@ -95,7 +95,7 @@ describe('AnalysisProgress', () => {
     });
 
     it('accepts onCancel callback', () => {
-      const onCancel = jest.fn();
+      const onCancel = vi.fn();
       renderAnalysisProgress({ onCancel });
       // onCancel is used by the component, not passed to the hook
       expect(mockUseAnalysisProgress).toHaveBeenCalled();
@@ -229,7 +229,7 @@ describe('AnalysisProgress', () => {
 
     it('calls onCancel when clicked', async () => {
       const user = userEvent.setup();
-      const onCancel = jest.fn();
+      const onCancel = vi.fn();
       mockCancel.mockResolvedValue(undefined);
 
       mockUseAnalysisProgress.mockReturnValue({
@@ -413,7 +413,7 @@ describe('AnalysisProgress', () => {
 
     it('calls onComplete when view results clicked', async () => {
       const user = userEvent.setup();
-      const onComplete = jest.fn();
+      const onComplete = vi.fn();
       const job = {
         id: 1,
         status: 'completed',

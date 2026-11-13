@@ -19,18 +19,24 @@ import userEvent from '@testing-library/user-event';
 // ============================================================
 
 // Mock Next.js navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
   usePathname: () => '/dashboard/badges',
 }));
 
@@ -43,7 +49,7 @@ const mockUser = {
 let mockIsAuthenticated = true;
 let mockIsLoading = false;
 
-jest.mock('@/contexts/AuthContext', () => ({
+vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
     user: mockUser,
     isAuthenticated: mockIsAuthenticated,
@@ -52,12 +58,12 @@ jest.mock('@/contexts/AuthContext', () => ({
 }));
 
 // Mock analytics tracking
-jest.mock('@/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
 }));
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Eye: () => <span data-testid="eye-icon">👁️</span>,
   MousePointerClick: () => <span data-testid="click-icon">🖱️</span>,
   Code: () => <span data-testid="code-icon">{}</span>,
@@ -78,15 +84,15 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock sonner toast
-jest.mock('sonner', () => ({
+vi.mock('sonner', () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
 // Mock clipboard API
-const mockClipboardWrite = jest.fn();
+const mockClipboardWrite = vi.fn();
 Object.assign(navigator, {
   clipboard: {
     writeText: mockClipboardWrite,
@@ -479,7 +485,7 @@ function renderPage(props: Partial<BadgeManagementPageProps> = {}) {
 
 describe('Badge Management Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockIsAuthenticated = true;
     mockIsLoading = false;
     mockClipboardWrite.mockResolvedValue(undefined);

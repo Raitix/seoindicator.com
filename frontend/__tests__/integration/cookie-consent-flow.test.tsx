@@ -24,14 +24,14 @@ import {
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
   };
@@ -44,7 +44,7 @@ Object.defineProperty(window, "localStorage", {
 // Clear localStorage before each test
 beforeEach(() => {
   localStorageMock.clear();
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ============================================
@@ -181,7 +181,7 @@ describe("ConsentProvider", () => {
 // ============================================
 describe("Footer", () => {
   it("renders the footer with Cookie Settings link", () => {
-    const mockShowSettings = jest.fn();
+    const mockShowSettings = vi.fn();
 
     render(<Footer onShowCookieSettings={mockShowSettings} />);
 
@@ -190,7 +190,7 @@ describe("Footer", () => {
   });
 
   it("calls onShowCookieSettings when Cookie Settings is clicked", async () => {
-    const mockShowSettings = jest.fn();
+    const mockShowSettings = vi.fn();
 
     render(<Footer onShowCookieSettings={mockShowSettings} />);
 

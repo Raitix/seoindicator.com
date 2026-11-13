@@ -12,27 +12,33 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Next.js navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-const mockBack = jest.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+const mockBack = vi.fn();
 
-jest.mock('next/navigation', () => ({
+// One stable URLSearchParams instance. A mock that returns
+// `new URLSearchParams()` on every call gives a new object identity
+// each render, so any effect with [searchParams] in its deps re-runs
+// forever and the vitest worker dies with "Worker exited unexpectedly".
+const mockSearchParamsInstance = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
     back: mockBack,
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
   useParams: () => ({ projectId: '123' }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParamsInstance,
   usePathname: () => '/ai-visibility/123',
-  notFound: jest.fn(),
+  notFound: vi.fn(),
 }));
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
   TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
   Minus: () => <span data-testid="minus-icon">−</span>,
@@ -52,7 +58,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock Recharts
-jest.mock('recharts', () => ({
+vi.mock('recharts', () => ({
   LineChart: ({ children, data }: any) => (
     <div data-testid="line-chart" data-points={JSON.stringify(data?.length || 0)}>
       {children}
@@ -93,7 +99,7 @@ jest.mock('recharts', () => ({
 }));
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch as any;
 
 // Mock data
@@ -574,7 +580,7 @@ describe('CC: Competitor Comparison Section', () => {
   });
 
   test('CC-005: Clickable bars filter data', async () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
     
     renderWithProviders(
       <button data-testid="bar-clickable" onClick={handleClick}>
@@ -634,7 +640,7 @@ describe('RML: Recent Mentions List', () => {
   });
 
   test('RML-003: Expandable brand context on click', async () => {
-    const handleExpand = jest.fn();
+    const handleExpand = vi.fn();
     
     renderWithProviders(
       <div data-testid="mention-item">
@@ -813,7 +819,7 @@ describe('QA: Quick Actions', () => {
   });
 
   test('QA-002: Run Query button triggers action', async () => {
-    const handleRunQuery = jest.fn();
+    const handleRunQuery = vi.fn();
     
     renderWithProviders(
       <button data-testid="run-query-btn" onClick={handleRunQuery}>
@@ -985,7 +991,7 @@ describe('EH: Error Handling', () => {
   });
 
   test('EH-005: Retry button triggers refetch', async () => {
-    const handleRetry = jest.fn();
+    const handleRetry = vi.fn();
     
     renderWithProviders(
       <button data-testid="retry-btn" onClick={handleRetry}>
@@ -1299,7 +1305,7 @@ describe('INT: Integration Tests', () => {
   });
 
   test('INT-002: Run Query updates dashboard', async () => {
-    const handleRunQuery = jest.fn();
+    const handleRunQuery = vi.fn();
     
     renderWithProviders(
       <div>
@@ -1334,7 +1340,7 @@ describe('INT: Integration Tests', () => {
   });
 
   test('INT-005: Error recovery refetches data', async () => {
-    const handleRetry = jest.fn();
+    const handleRetry = vi.fn();
     
     renderWithProviders(
       <div>
@@ -1528,7 +1534,7 @@ describe('HOOK: useAIVisibilityDashboard Hook', () => {
       data: mockDashboardData,
       isLoading: false,
       error: null,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     };
 
     renderWithProviders(
@@ -1561,7 +1567,7 @@ describe('HOOK: useAIVisibilityDashboard Hook', () => {
   });
 
   test('HOOK-004: Hook provides refetch function', async () => {
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
     
     renderWithProviders(
       <button data-testid="refetch-btn" onClick={mockRefetch}>

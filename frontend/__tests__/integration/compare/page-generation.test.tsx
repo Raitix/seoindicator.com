@@ -11,19 +11,19 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Next.js modules
-jest.mock('next/navigation', () => ({
-  notFound: jest.fn(() => {
+vi.mock('next/navigation', () => ({
+  notFound: vi.fn(() => {
     throw new Error('notFound() called');
   }),
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
   })),
 }));
 
 // Mock the registry module
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: [
     'seoindicator-vs-ahrefs',
     'seoindicator-vs-semrush',
@@ -128,7 +128,7 @@ jest.mock('@/lib/compare/registry', () => ({
       source: 'Official',
     },
   },
-  getComparisonBySlug: jest.fn((slug: string) => {
+  getComparisonBySlug: vi.fn((slug: string) => {
     const slugs: Record<string, any> = {
       'seoindicator-vs-ahrefs': {
         slug: 'seoindicator-vs-ahrefs',
@@ -161,13 +161,13 @@ jest.mock('@/lib/compare/registry', () => ({
     };
     return slugs[slug] || null;
   }),
-  parseSlug: jest.fn((slug: string) => {
+  parseSlug: vi.fn((slug: string) => {
     if (!slug || !slug.includes('-vs-')) return null;
     const parts = slug.split('-vs-');
     if (parts.length !== 2) return null;
     return [parts[0], parts[1]] as [string, string];
   }),
-  generateComparisonData: jest.fn((a: string, b: string) => ({
+  generateComparisonData: vi.fn((a: string, b: string) => ({
     slug: `${a}-vs-${b}`,
     title: `${a} vs ${b}`,
     metaDescription: `Compare ${a} vs ${b}`,

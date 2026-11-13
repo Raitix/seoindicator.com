@@ -10,13 +10,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Next.js modules
-const mockPush = jest.fn();
-const mockBack = jest.fn();
-const mockForward = jest.fn();
-const mockReplace = jest.fn();
+const mockPush = vi.fn();
+const mockBack = vi.fn();
+const mockForward = vi.fn();
+const mockReplace = vi.fn();
 
-jest.mock('next/link', () => {
-  return function MockLink({ 
+vi.mock('next/link', () => ({ default: function MockLink({ 
     children, 
     href, 
     ...props 
@@ -37,10 +36,9 @@ jest.mock('next/link', () => {
         {children}
       </a>
     );
-  };
-});
+  } }));
 
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     back: mockBack,
@@ -49,13 +47,13 @@ jest.mock('next/navigation', () => ({
   }),
   useParams: () => ({ slug: 'meta-title' }),
   usePathname: () => '/seo-guides/meta-title',
-  notFound: jest.fn(() => {
+  notFound: vi.fn(() => {
     throw new Error('NOT_FOUND');
   }),
 }));
 
 // Mock registry
-jest.mock('@/lib/guides/registry', () => ({
+vi.mock('@/lib/guides/registry', () => ({
   getGuideBySlug: (slug: string) => {
     const guides: Record<string, object> = {
       'meta-title': {
@@ -168,7 +166,7 @@ function MockNotFoundPage() {
 
 describe('Routing Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('RI-001: Valid slug renders page', () => {

@@ -38,7 +38,7 @@ const mockChecklistItems = [
 ];
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 describe('Launch Checklist Integration - TASK-32-22', () => {

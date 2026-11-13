@@ -136,7 +136,7 @@ function MockGuideContent({ sections }: { sections: typeof mockGuideWithSections
 // Mock clipboard API
 Object.assign(navigator, {
   clipboard: {
-    writeText: jest.fn().mockImplementation(() => Promise.resolve()),
+    writeText: vi.fn().mockImplementation(() => Promise.resolve()),
   },
 });
 

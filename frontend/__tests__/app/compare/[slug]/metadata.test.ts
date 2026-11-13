@@ -49,7 +49,7 @@ const MOCK_COMPARISON_SLUGS = [
 // Mock Registry Module
 // ============================================================================
 
-const mockGetComparisonBySlug = jest.fn((slug: string): ComparisonData | null => {
+const mockGetComparisonBySlug = vi.fn((slug: string): ComparisonData | null => {
   if (slug === 'seoindicator-vs-ahrefs') return mockComparisonData;
   if (MOCK_COMPARISON_SLUGS.includes(slug)) {
     const [a, b] = slug.split('-vs-');
@@ -64,10 +64,10 @@ const mockGetComparisonBySlug = jest.fn((slug: string): ComparisonData | null =>
   return null;
 });
 
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: MOCK_COMPARISON_SLUGS,
   getComparisonBySlug: mockGetComparisonBySlug,
-  getCompetitorById: jest.fn((id: string) => ({ id, name: id.charAt(0).toUpperCase() + id.slice(1) })),
+  getCompetitorById: vi.fn((id: string) => ({ id, name: id.charAt(0).toUpperCase() + id.slice(1) })),
 }));
 
 // ============================================================================
@@ -119,7 +119,7 @@ async function generateMetadata({ params }: { params: { slug: string } }): Promi
 
 describe('generateMetadata', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('CP-META: Metadata Generation', () => {
@@ -242,7 +242,7 @@ describe('generateMetadata', () => {
 
 describe('SEO Best Practices', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('title contains primary keyword (comparison)', async () => {
@@ -300,7 +300,7 @@ describe('SEO Best Practices', () => {
 
 describe('Metadata Edge Cases', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('handles empty slug', async () => {

@@ -13,7 +13,7 @@ import '@testing-library/jest-dom';
 import type { PricingTier, PricingComparisonProps } from '@/lib/compare/types';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Check: () => <span data-testid="check-icon">✓</span>,
   Star: () => <span data-testid="star-icon">★</span>,
   Sparkles: () => <span data-testid="sparkles-icon">✨</span>,

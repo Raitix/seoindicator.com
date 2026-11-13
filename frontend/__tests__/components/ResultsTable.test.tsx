@@ -13,7 +13,7 @@ import { ResultsTable, ResultRow } from '@/components/analysis';
 import { IndicatorResult } from '@/lib/types/analysis-job';
 
 // Mock lucide-react icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   ChevronDown: () => <span data-testid="chevron-down" />,
   ChevronRight: () => <span data-testid="chevron-right" />,
   ArrowUpDown: () => <span data-testid="arrow-up-down" />,
@@ -24,7 +24,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock UI components
-jest.mock('@/components/ui/select', () => ({
+vi.mock('@/components/ui/select', () => ({
   Select: ({ children, value, onValueChange }: any) => (
     <div data-testid="select" data-value={value}>
       {React.Children.map(children, (child) =>
@@ -53,7 +53,7 @@ jest.mock('@/components/ui/select', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/card', () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: any) => (
     <div data-testid="card" className={className}>
       {children}
@@ -143,7 +143,7 @@ describe('ResultRow Component', () => {
 
   it('calls onClick when clicked', async () => {
     const result = createMockResult('meta_tags', 'completed', 85);
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
 
     render(<ResultRow result={result} onClick={handleClick} />);
 
@@ -157,7 +157,7 @@ describe('ResultRow Component', () => {
       recommendations: ['Fix meta title', 'Add meta description'],
     });
 
-    const handleToggleExpand = jest.fn();
+    const handleToggleExpand = vi.fn();
     const { rerender } = render(
       <ResultRow result={result} onToggleExpand={handleToggleExpand} isExpanded={false} />
     );
@@ -227,7 +227,7 @@ describe('ResultRow Component', () => {
 
   it('supports keyboard navigation', async () => {
     const result = createMockResult('meta_tags', 'completed', 85);
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
 
     render(<ResultRow result={result} onClick={handleClick} />);
 
@@ -315,7 +315,7 @@ describe('ResultsTable Component', () => {
   });
 
   it('calls onResultClick when a row is clicked', async () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
 
     render(
       <ResultsTable jobId={1} results={mockResults} onResultClick={handleClick} />

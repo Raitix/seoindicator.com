@@ -17,8 +17,8 @@ import {
 } from '@/lib/compare/monitoring-events';
 
 // Mock analytics
-const mockTrackEvent = jest.fn();
-jest.mock('@/lib/analytics', () => ({
+const mockTrackEvent = vi.fn();
+vi.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 

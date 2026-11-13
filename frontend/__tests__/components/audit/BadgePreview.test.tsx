@@ -23,12 +23,12 @@ import type { BadgePreviewProps, BadgeSize, BadgeTheme, EmbedType } from '@/comp
 
 // Mock clipboard API
 const mockClipboard = {
-  writeText: jest.fn().mockResolvedValue(undefined),
+  writeText: vi.fn().mockResolvedValue(undefined),
 };
 Object.assign(navigator, { clipboard: mockClipboard });
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Copy: () => <span data-testid="copy-icon">📋</span>,
   Check: () => <span data-testid="check-icon">✓</span>,
   Code: () => <span data-testid="code-icon">{ }</span>,
@@ -41,8 +41,8 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock analytics
-jest.mock('@/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
 }));
 
 // ============================================================================
@@ -60,7 +60,7 @@ const defaultProps: BadgePreviewProps = {
 
 describe('BadgePreview Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockClipboard.writeText.mockClear();
   });
 
@@ -373,7 +373,7 @@ describe('BadgePreview Component', () => {
     });
 
     it('COPY-004: should reset to "Copy Code" after 2 seconds', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       render(<BadgePreview {...defaultProps} />);
 
       clickCopy();
@@ -381,16 +381,16 @@ describe('BadgePreview Component', () => {
         expect(screen.getByText('Copied!')).toBeInTheDocument();
       });
 
-      jest.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(2000);
       await waitFor(() => {
         expect(screen.getByText('Copy Code')).toBeInTheDocument();
       });
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('COPY-005: should call onCopy callback with correct parameters', async () => {
-      const handleCopy = jest.fn();
+      const handleCopy = vi.fn();
       render(<BadgePreview {...defaultProps} onCopy={handleCopy} />);
 
       clickCopy();
@@ -400,7 +400,7 @@ describe('BadgePreview Component', () => {
     });
 
     it('COPY-006: should copy correct embed type when tab changed', async () => {
-      const handleCopy = jest.fn();
+      const handleCopy = vi.fn();
       render(<BadgePreview {...defaultProps} onCopy={handleCopy} />);
 
       clickTab('tab-js');
@@ -631,7 +631,7 @@ describe('BadgePreview Component', () => {
     });
 
     it('PROPS-004: should accept optional onCopy callback', () => {
-      const handleCopy = jest.fn();
+      const handleCopy = vi.fn();
       render(<BadgePreview {...defaultProps} onCopy={handleCopy} />);
       expect(screen.getByTestId('copy-button')).toBeInTheDocument();
     });
@@ -772,7 +772,7 @@ describe('BadgePreview Component', () => {
     });
 
     it('INT-002: should copy correct code after changing all settings', async () => {
-      const handleCopy = jest.fn();
+      const handleCopy = vi.fn();
       render(<BadgePreview {...defaultProps} onCopy={handleCopy} />);
 
       selectSize('small');
@@ -786,7 +786,7 @@ describe('BadgePreview Component', () => {
     });
 
     it('INT-003: should handle complete user flow', async () => {
-      const handleCopy = jest.fn();
+      const handleCopy = vi.fn();
       render(
         <BadgePreview
           auditHash="test123"

@@ -12,23 +12,21 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 // Mock Next.js modules
-jest.mock('next/link', () => {
-  return function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string }) {
+vi.mock('next/link', () => ({ default: function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string }) {
     return <a href={href} {...props}>{children}</a>;
-  };
-});
+  } }));
 
-jest.mock('next/navigation', () => ({
-  notFound: jest.fn(() => {
+vi.mock('next/navigation', () => ({
+  notFound: vi.fn(() => {
     throw new Error('NOT_FOUND');
   }),
   useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
   }),
   useSearchParams: () => ({
-    get: jest.fn((key: string) => {
+    get: vi.fn((key: string) => {
       if (key === 'section') return null;
       return null;
     }),
@@ -37,8 +35,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock react-markdown
-jest.mock('react-markdown', () => {
-  return function MockReactMarkdown({ children, components }: { children: string; components?: Record<string, React.FC> }) {
+vi.mock('react-markdown', () => ({ default: function MockReactMarkdown({ children, components }: { children: string; components?: Record<string, React.FC> }) {
     // Simple markdown simulation for tests
     let html = children
       .replace(/^### (.*)$/gm, '<h4>$1</h4>')
@@ -50,11 +47,10 @@ jest.mock('react-markdown', () => {
       .replace(/- (.*)/g, '<li>$1</li>');
     
     return <div data-testid="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
-  };
-});
+  } }));
 
 // Mock syntax highlighter
-jest.mock('react-syntax-highlighter', () => ({
+vi.mock('react-syntax-highlighter', () => ({
   Prism: function MockPrism({ children, language }: { children: string; language: string }) {
     return (
       <pre data-testid={`code-block-${language}`}>
@@ -64,12 +60,12 @@ jest.mock('react-syntax-highlighter', () => ({
   },
 }));
 
-jest.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
+vi.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
   vscDarkPlus: {},
 }));
 
 // Mock Lucide icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Book: () => <span data-testid="book-icon">Book</span>,
   ChevronDown: () => <span data-testid="chevron-down">ChevronDown</span>,
   ChevronRight: () => <span data-testid="chevron-right">ChevronRight</span>,
@@ -172,12 +168,12 @@ const mockGuideError = {
 };
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock clipboard API
 const mockClipboard = {
-  writeText: jest.fn(() => Promise.resolve()),
+  writeText: vi.fn(() => Promise.resolve()),
 };
 Object.defineProperty(navigator, 'clipboard', {
   value: mockClipboard,

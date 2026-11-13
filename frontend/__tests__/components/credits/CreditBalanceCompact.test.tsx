@@ -35,14 +35,14 @@ const lowBalanceData = {
 };
 
 const mockHandlers = {
-  onAddCredits: jest.fn(),
-  onRetry: jest.fn(),
+  onAddCredits: vi.fn(),
+  onRetry: vi.fn(),
 };
 
 // ==================== Test Setup ====================
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ==================== CBC-001: Rendering ====================
@@ -612,12 +612,12 @@ describe("CBC-005: Placement & Responsiveness", () => {
 
   it("CBC-005-06: adapts to dark mode", () => {
     // Mock dark mode preference
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === "(prefers-color-scheme: dark)",
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     }));
 
     render(
@@ -696,12 +696,12 @@ describe("CBC-006: Accessibility", () => {
   });
 
   it("CBC-006-04: high contrast support", () => {
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === "(prefers-contrast: more)",
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     }));
 
     render(
@@ -790,12 +790,12 @@ describe("CBC-006: Accessibility", () => {
   });
 
   it("CBC-006-08: reduced motion support", () => {
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === "(prefers-reduced-motion: reduce)",
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     }));
 
     render(

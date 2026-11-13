@@ -93,8 +93,8 @@ interface SocialMediaPreviewData {
 }
 
 // Mock ExportResultsButton component
-jest.mock('@/components/tools/ExportResultsButton', () => ({
-  ExportResultsButton: jest.fn(({ toolName, url, data, className }) => (
+vi.mock('@/components/tools/ExportResultsButton', () => ({
+  ExportResultsButton: vi.fn(({ toolName, url, data, className }) => (
     <button
       data-testid="export-results-button"
       data-tool-name={toolName}
@@ -110,8 +110,8 @@ jest.mock('@/components/tools/ExportResultsButton', () => ({
 }));
 
 // Mock ExportModal component
-jest.mock('@/components/tools/ExportModal', () => ({
-  ExportModal: jest.fn(({ isOpen, toolName, url, data }) => 
+vi.mock('@/components/tools/ExportModal', () => ({
+  ExportModal: vi.fn(({ isOpen, toolName, url, data }) => 
     isOpen ? (
       <div 
         data-testid="export-modal"
@@ -460,7 +460,7 @@ describe('Tool Page Export Integration', () => {
   const mockUrl = 'https://example.com/test-page';
   
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================

@@ -14,18 +14,16 @@ import '@testing-library/jest-dom';
 // Mocks
 // ============================================================================
 
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock lucide-react icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Search: () => <span data-testid="icon-search">🔍</span>,
   Home: () => <span data-testid="icon-home">🏠</span>,
   ArrowLeft: () => <span data-testid="icon-arrow-left">←</span>,

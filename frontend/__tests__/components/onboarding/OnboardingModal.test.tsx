@@ -3,9 +3,9 @@ import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import { useOnboardingContext } from '@/lib/contexts/OnboardingContext';
 
 // Mock the onboarding hook
-const mockSkipOnboarding = jest.fn().mockResolvedValue(undefined);
-const mockUpdateStep = jest.fn().mockResolvedValue(undefined);
-const mockCompleteOnboarding = jest.fn().mockResolvedValue(undefined);
+const mockSkipOnboarding = vi.fn().mockResolvedValue(undefined);
+const mockUpdateStep = vi.fn().mockResolvedValue(undefined);
+const mockCompleteOnboarding = vi.fn().mockResolvedValue(undefined);
 
 const createMockContext = (overrides = {}) => ({
   onboarding: {
@@ -25,20 +25,20 @@ const createMockContext = (overrides = {}) => ({
   skipOnboarding: mockSkipOnboarding,
   updateStep: mockUpdateStep,
   completeOnboarding: mockCompleteOnboarding,
-  startOnboarding: jest.fn().mockResolvedValue(undefined),
-  refreshOnboarding: jest.fn().mockResolvedValue(undefined),
+  startOnboarding: vi.fn().mockResolvedValue(undefined),
+  refreshOnboarding: vi.fn().mockResolvedValue(undefined),
   ...overrides,
 });
 
-jest.mock('@/lib/contexts/OnboardingContext', () => ({
-  useOnboardingContext: jest.fn(),
+vi.mock('@/lib/contexts/OnboardingContext', () => ({
+  useOnboardingContext: vi.fn(),
 }));
 
 const mockedUseOnboardingContext = require('@/lib/contexts/OnboardingContext').useOnboardingContext;
 
 describe('OnboardingModal', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockedUseOnboardingContext.mockReturnValue(createMockContext());
   });
 

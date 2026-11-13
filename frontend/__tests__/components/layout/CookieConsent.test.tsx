@@ -14,28 +14,26 @@ import CookieConsent from '@/components/layout/CookieConsent';
 import * as cookieConsentUtils from '@/lib/utils/cookieConsent';
 
 // Mock the cookie consent utilities
-jest.mock('@/lib/utils/cookieConsent', () => ({
-  getCookieConsent: jest.fn(),
-  setCookieConsent: jest.fn(),
-  hasCookieConsent: jest.fn(),
-  clearCookieConsent: jest.fn(),
+vi.mock('@/lib/utils/cookieConsent', () => ({
+  getCookieConsent: vi.fn(),
+  setCookieConsent: vi.fn(),
+  hasCookieConsent: vi.fn(),
+  clearCookieConsent: vi.fn(),
 }));
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
-  );
-});
+  ) }));
 
 const mockedUtils = cookieConsentUtils as jest.Mocked<typeof cookieConsentUtils>;
 
 describe('CookieConsent Component', () => {
-  const mockOnAccept = jest.fn();
-  const mockOnDecline = jest.fn();
+  const mockOnAccept = vi.fn();
+  const mockOnDecline = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockedUtils.hasCookieConsent.mockReturnValue(false);
     mockedUtils.getCookieConsent.mockReturnValue(null);
   });
@@ -694,7 +692,7 @@ describe('CookieConsent Component', () => {
   describe('Integration', () => {
     it('should complete full accept flow', async () => {
       const user = userEvent.setup();
-      const onAccept = jest.fn();
+      const onAccept = vi.fn();
       render(<CookieConsent onAccept={onAccept} />);
 
       // User sees banner
@@ -721,7 +719,7 @@ describe('CookieConsent Component', () => {
 
     it('should complete full decline flow', async () => {
       const user = userEvent.setup();
-      const onDecline = jest.fn();
+      const onDecline = vi.fn();
       render(<CookieConsent onDecline={onDecline} />);
 
       // User sees banner

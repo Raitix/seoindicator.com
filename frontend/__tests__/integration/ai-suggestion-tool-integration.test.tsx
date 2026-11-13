@@ -242,7 +242,7 @@ describe('AI Suggestion Tool Integration', () => {
       });
 
       it(`should pass correct context data for ${toolName}`, () => {
-        const onAISuggestionClick = jest.fn();
+        const onAISuggestionClick = vi.fn();
         const user = userEvent.setup();
 
         render(
@@ -498,7 +498,7 @@ describe('AI Suggestion Tool Integration', () => {
     });
 
     it('should have retry button for failed requests', async () => {
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -524,7 +524,7 @@ describe('AI Suggestion Tool Integration', () => {
   // ========================================
   describe('AC-6: Accessibility', () => {
     it('should support keyboard navigation', async () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const user = userEvent.setup();
 
       render(
@@ -646,7 +646,7 @@ describe('AI Suggestion Tool Integration', () => {
         });
 
         it('should trigger suggestion request on click', async () => {
-          const onAISuggestionClick = jest.fn();
+          const onAISuggestionClick = vi.fn();
 
           render(
             <ToolResultView
@@ -791,7 +791,7 @@ describe('AI Suggestion Tool Integration', () => {
   // ========================================
   describe('Full Flow Integration', () => {
     it('should complete full suggestion flow for Title Analyzer', async () => {
-      const onAISuggestionClick = jest.fn();
+      const onAISuggestionClick = vi.fn();
       const user = userEvent.setup();
 
       const { rerender } = render(
@@ -838,7 +838,7 @@ describe('AI Suggestion Tool Integration', () => {
     });
 
     it('should handle error and retry flow', async () => {
-      const onRetry = jest.fn();
+      const onRetry = vi.fn();
       const user = userEvent.setup();
 
       // Initial error state

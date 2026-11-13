@@ -11,17 +11,17 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
 // Mock next/navigation
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
 
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
   }),
-  usePathname: jest.fn(() => '/admin/overview'),
-  useSearchParams: jest.fn(() => ({
-    get: jest.fn(() => null),
+  usePathname: vi.fn(() => '/admin/overview'),
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn(() => null),
   })),
 }));
 
@@ -40,9 +40,9 @@ const mockNonAdminUser = {
   is_admin: false,
 };
 
-const mockUseAuth = jest.fn();
+const mockUseAuth = vi.fn();
 
-jest.mock('@/lib/contexts/AuthContext', () => ({
+vi.mock('@/lib/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -140,7 +140,7 @@ function MockAdminForbidden({ onBack }: { onBack?: () => void }) {
 
 describe('AdminGuard Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ==================== AG-001: Authorized Admin Access ====================
@@ -629,7 +629,7 @@ describe('AdminUnauthorized Component', () => {
 
   it('calls onLogin when login button clicked', async () => {
     const user = userEvent.setup();
-    const onLogin = jest.fn();
+    const onLogin = vi.fn();
     render(<MockAdminUnauthorized onLogin={onLogin} />);
 
     await user.click(screen.getByTestId('login-button'));
@@ -657,7 +657,7 @@ describe('AdminForbidden Component', () => {
 
   it('calls onBack when back button clicked', async () => {
     const user = userEvent.setup();
-    const onBack = jest.fn();
+    const onBack = vi.fn();
     render(<MockAdminForbidden onBack={onBack} />);
 
     await user.click(screen.getByTestId('back-button'));

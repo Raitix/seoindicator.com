@@ -18,8 +18,8 @@ import '@testing-library/jest-dom';
 // =============================================================================
 
 // Mock ToolEmbed component
-jest.mock('@/components/guides/ToolEmbed', () => ({
-  ToolEmbed: jest.fn(
+vi.mock('@/components/guides/ToolEmbed', () => ({
+  ToolEmbed: vi.fn(
     ({
       toolSlug,
       defaultToolTab,
@@ -133,7 +133,7 @@ function SocialPreviewEmbed({
   );
 }
 
-const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
+const mockToolEmbed = ToolEmbed as MockedFunction<typeof ToolEmbed>;
 
 // =============================================================================
 // TEST SUITE
@@ -141,7 +141,7 @@ const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
 
 describe('SocialPreviewEmbed Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ===========================================================================
@@ -252,7 +252,7 @@ describe('SocialPreviewEmbed Component', () => {
      * SPE-001-08: onAnalysisComplete callback
      */
     it('should call onAnalysisComplete callback', () => {
-      const mockOnComplete = jest.fn();
+      const mockOnComplete = vi.fn();
 
       render(
         <SocialPreviewEmbed

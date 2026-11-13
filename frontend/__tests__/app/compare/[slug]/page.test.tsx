@@ -124,7 +124,7 @@ const MOCK_COMPARISON_SLUGS = [
 // Mock Registry Module
 // ============================================================================
 
-const mockGetComparisonBySlug = jest.fn((slug: string): ComparisonData | null => {
+const mockGetComparisonBySlug = vi.fn((slug: string): ComparisonData | null => {
   if (slug === 'seoindicator-vs-ahrefs') return mockComparisonData;
   if (MOCK_COMPARISON_SLUGS.includes(slug)) {
     // Return a basic comparison for other valid slugs
@@ -139,11 +139,11 @@ const mockGetComparisonBySlug = jest.fn((slug: string): ComparisonData | null =>
   return null;
 });
 
-const mockGetCompetitorById = jest.fn((id: string): CompetitorData | null => {
+const mockGetCompetitorById = vi.fn((id: string): CompetitorData | null => {
   return mockCompetitorData[id] || null;
 });
 
-const mockParseSlug = jest.fn((slug: string): [string, string] | null => {
+const mockParseSlug = vi.fn((slug: string): [string, string] | null => {
   if (slug === null || slug === undefined || typeof slug !== 'string') return null;
   const parts = slug.split('-vs-');
   if (parts.length !== 2) return null;
@@ -151,7 +151,7 @@ const mockParseSlug = jest.fn((slug: string): [string, string] | null => {
   return [parts[0], parts[1]];
 });
 
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: MOCK_COMPARISON_SLUGS,
   getComparisonBySlug: mockGetComparisonBySlug,
   getCompetitorById: mockGetCompetitorById,
@@ -164,7 +164,7 @@ jest.mock('@/lib/compare/registry', () => ({
 // ============================================================================
 
 // Use virtual: true for components that don't exist yet
-jest.mock('@/components/compare/ComparisonTable', () => ({
+vi.mock('@/components/compare/ComparisonTable', () => ({
   ComparisonTable: ({ features }: { features: ComparisonData['featureComparison'] }) => (
     <div data-testid="comparison-table" data-categories={features?.length || 0}>
       {features?.map((category) => (
@@ -183,7 +183,7 @@ jest.mock('@/components/compare/ComparisonTable', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/PricingComparison', () => ({
+vi.mock('@/components/compare/PricingComparison', () => ({
   PricingComparison: ({ seoindicator, competitor }: { seoindicator: ComparisonData['pricingComparison']['seoindicator']; competitor: ComparisonData['pricingComparison']['competitor'] }) => (
     <div data-testid="pricing-comparison">
       <div data-testid="seoindicator-pricing" data-tiers={seoindicator?.length || 0}>
@@ -204,7 +204,7 @@ jest.mock('@/components/compare/PricingComparison', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/ProsConsCard', () => ({
+vi.mock('@/components/compare/ProsConsCard', () => ({
   ProsConsCard: ({ tool, pros, cons }: { tool: string; pros: string[]; cons: string[] }) => (
     <div data-testid={`pros-cons-card-${tool}`}>
       <h3>{tool}</h3>
@@ -218,7 +218,7 @@ jest.mock('@/components/compare/ProsConsCard', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/UseCaseSection', () => ({
+vi.mock('@/components/compare/UseCaseSection', () => ({
   UseCaseSection: ({ seoindicator, competitor }: { seoindicator: ComparisonData['useCases']['seoindicator']; competitor: ComparisonData['useCases']['competitor'] }) => (
     <div data-testid="use-cases-section">
       <div data-testid="seoindicator-use-cases">{seoindicator?.length || 0} use cases</div>
@@ -227,7 +227,7 @@ jest.mock('@/components/compare/UseCaseSection', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/ComparisonCTA', () => ({
+vi.mock('@/components/compare/ComparisonCTA', () => ({
   ComparisonCTA: ({ variant, text }: { variant?: string; text?: string }) => (
     <button data-testid="comparison-cta" data-variant={variant || 'primary'}>
       {text || 'Get Started Free'}
@@ -235,7 +235,7 @@ jest.mock('@/components/compare/ComparisonCTA', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/ComparisonSchema', () => ({
+vi.mock('@/components/compare/ComparisonSchema', () => ({
   ComparisonSchema: ({ comparison }: { comparison: ComparisonData }) => (
     <script type="application/ld+json" data-testid="comparison-schema">
       {JSON.stringify({ '@type': 'CompareSideBySide', name: comparison.title })}
@@ -243,7 +243,7 @@ jest.mock('@/components/compare/ComparisonSchema', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/FAQSection', () => ({
+vi.mock('@/components/compare/FAQSection', () => ({
   FAQSection: ({ faqs }: { faqs: FAQ[] }) => (
     <div data-testid="faq-section" data-count={faqs?.length || 0}>
       {faqs?.map((faq, index) => (
@@ -256,7 +256,7 @@ jest.mock('@/components/compare/FAQSection', () => ({
   ),
 }), { virtual: true });
 
-jest.mock('@/components/compare/RelatedComparisons', () => ({
+vi.mock('@/components/compare/RelatedComparisons', () => ({
   RelatedComparisons: ({ slugs }: { slugs: string[] }) => (
     <div data-testid="related-comparisons" data-count={slugs?.length || 0}>
       {slugs?.map((slug) => (
@@ -272,8 +272,8 @@ jest.mock('@/components/compare/RelatedComparisons', () => ({
 // Mock Next.js notFound
 // ============================================================================
 
-const mockNotFound = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockNotFound = vi.fn();
+vi.mock('next/navigation', () => ({
   notFound: () => mockNotFound(),
 }));
 
@@ -367,7 +367,7 @@ const ComparisonPage = ({ params }: ComparisonPageProps) => {
 
 describe('generateStaticParams', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('CP-STR: Static Params Structure', () => {
@@ -462,7 +462,7 @@ describe('generateStaticParams', () => {
 
 describe('ComparisonPage - 404 Handling', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockNotFound.mockClear();
   });
 
@@ -536,7 +536,7 @@ describe('ComparisonPage - 404 Handling', () => {
 
 describe('ComparisonPage - Rendering', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockNotFound.mockClear();
   });
 
@@ -618,7 +618,7 @@ describe('ComparisonPage - Rendering', () => {
 
 describe('ComparisonPage - Accessibility', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('CP-ACCESS: Accessibility', () => {
@@ -676,7 +676,7 @@ describe('ComparisonPage - Accessibility', () => {
 
 describe('ComparisonPage - Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('CP-INT: Integration', () => {
@@ -721,7 +721,7 @@ describe('ComparisonPage - Integration', () => {
 
 describe('ComparisonPage - Edge Cases', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockNotFound.mockClear();
   });
 
@@ -763,7 +763,7 @@ describe('ComparisonPage - Edge Cases', () => {
 
 describe('ComparisonPage - Acceptance Criteria', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockNotFound.mockClear();
   });
 
@@ -808,7 +808,7 @@ describe('ComparisonPage - Acceptance Criteria', () => {
 
 describe('Registry Helper Functions', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getComparisonBySlug', () => {

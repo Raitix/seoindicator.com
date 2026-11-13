@@ -14,7 +14,7 @@ import { AlertToast } from '@/components/ai-visibility/AlertToast';
 import type { Alert, AlertType } from '@/lib/ai-visibility/types';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
   TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
   AlertTriangle: () => <span data-testid="alert-triangle-icon">⚠</span>,
@@ -40,8 +40,8 @@ const createMockAlert = (type: AlertType = 'mention_spike'): Alert => ({
 });
 
 describe('AlertToast', () => {
-  const mockOnOpenDetail = jest.fn();
-  const mockOnDismiss = jest.fn();
+  const mockOnOpenDetail = vi.fn();
+  const mockOnDismiss = vi.fn();
 
   const defaultProps = {
     alert: createMockAlert(),
@@ -51,12 +51,12 @@ describe('AlertToast', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   // ============================================================================
@@ -105,7 +105,7 @@ describe('AlertToast', () => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
 
       act(() => {
-        jest.advanceTimersByTime(10000);
+        vi.advanceTimersByTime(10000);
       });
 
       expect(mockOnDismiss).toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe('AlertToast', () => {
       fireEvent.mouseEnter(toast);
 
       act(() => {
-        jest.advanceTimersByTime(10000);
+        vi.advanceTimersByTime(10000);
       });
 
       // Should NOT be dismissed because hover paused timer
@@ -127,7 +127,7 @@ describe('AlertToast', () => {
       fireEvent.mouseLeave(toast);
 
       act(() => {
-        jest.advanceTimersByTime(10000);
+        vi.advanceTimersByTime(10000);
       });
 
       expect(mockOnDismiss).toHaveBeenCalled();
@@ -141,13 +141,13 @@ describe('AlertToast', () => {
       // Hover for 5 seconds
       fireEvent.mouseEnter(toast);
       act(() => {
-        jest.advanceTimersByTime(5000);
+        vi.advanceTimersByTime(5000);
       });
 
       // Leave - timer resumes
       fireEvent.mouseLeave(toast);
       act(() => {
-        jest.advanceTimersByTime(10000);
+        vi.advanceTimersByTime(10000);
       });
 
       expect(mockOnDismiss).toHaveBeenCalled();
@@ -304,7 +304,7 @@ describe('AlertToast', () => {
       expect(progress).toHaveStyle('width: 100%');
 
       act(() => {
-        jest.advanceTimersByTime(5000);
+        vi.advanceTimersByTime(5000);
       });
 
       // Width should decrease

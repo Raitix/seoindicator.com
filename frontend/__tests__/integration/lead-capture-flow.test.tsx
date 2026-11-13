@@ -22,22 +22,22 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock clipboard API
 Object.assign(navigator, {
   clipboard: {
-    writeText: jest.fn().mockResolvedValue(undefined),
+    writeText: vi.fn().mockResolvedValue(undefined),
   },
 });
 
 // Mock window.open
-window.open = jest.fn();
+window.open = vi.fn();
 
 // Mock analytics
-const mockTrackEvent = jest.fn();
-jest.mock('@/lib/analytics', () => ({
+const mockTrackEvent = vi.fn();
+vi.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
@@ -103,7 +103,7 @@ describe('Lead Capture Flow Integration Tests', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
     Object.keys(mockCookieStore).forEach(k => delete mockCookieStore[k]);
     mockDocumentCookie = '';

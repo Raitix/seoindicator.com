@@ -16,11 +16,11 @@ import '@testing-library/jest-dom';
 import { PublicAuditCTA } from '@/components/audit/PublicAuditCTA';
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock clipboard API
-const mockClipboardWrite = jest.fn().mockResolvedValue(undefined);
+const mockClipboardWrite = vi.fn().mockResolvedValue(undefined);
 Object.assign(navigator, {
   clipboard: {
     writeText: mockClipboardWrite,
@@ -28,12 +28,12 @@ Object.assign(navigator, {
 });
 
 // Mock window.open
-const mockWindowOpen = jest.fn();
+const mockWindowOpen = vi.fn();
 window.open = mockWindowOpen;
 
 // Mock analytics
-const mockTrackEvent = jest.fn();
-jest.mock('@/lib/analytics', () => ({
+const mockTrackEvent = vi.fn();
+vi.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
@@ -49,7 +49,7 @@ describe('PublicAuditCTA Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
     mockClipboardWrite.mockReset();
     mockWindowOpen.mockReset();

@@ -10,8 +10,8 @@ import AnnotationForm from '@/components/annotations/AnnotationForm';
 import { Annotation, ANNOTATION_CATEGORIES } from '@/lib/types/annotations';
 
 // Mock date-fns format
-jest.mock('date-fns', () => ({
-  format: jest.fn((date: Date | string, formatStr: string) => {
+vi.mock('date-fns', () => ({
+  format: vi.fn((date: Date | string, formatStr: string) => {
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return 'Invalid Date';
     const year = d.getFullYear();
@@ -22,8 +22,8 @@ jest.mock('date-fns', () => ({
 }));
 
 describe('AnnotationForm', () => {
-  const mockOnSave = jest.fn();
-  const mockOnCancel = jest.fn();
+  const mockOnSave = vi.fn();
+  const mockOnCancel = vi.fn();
 
   const defaultProps = {
     keywordId: 123,
@@ -50,7 +50,7 @@ describe('AnnotationForm', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================
@@ -566,7 +566,7 @@ describe('AnnotationForm', () => {
       await user.type(titleInput, 'Test');
 
       const form = titleInput.closest('form')!;
-      const submitHandler = jest.fn((e) => e.preventDefault());
+      const submitHandler = vi.fn((e) => e.preventDefault());
       form.onsubmit = submitHandler;
 
       const submitButton = screen.getByRole('button', { name: /create/i });

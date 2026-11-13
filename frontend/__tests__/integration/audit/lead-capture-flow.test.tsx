@@ -41,31 +41,31 @@ const mockCookies: Record<string, string> = {};
 
 // Mock cookie functions
 const mockCookieManager = {
-  get: jest.fn((name: string) => mockCookies[name]),
-  set: jest.fn((name: string, value: string, options?: Record<string, unknown>) => {
+  get: vi.fn((name: string) => mockCookies[name]),
+  set: vi.fn((name: string, value: string, options?: Record<string, unknown>) => {
     mockCookies[name] = value;
   }),
-  remove: jest.fn((name: string) => {
+  remove: vi.fn((name: string) => {
     delete mockCookies[name];
   }),
 };
 
 // Mock the useAuditUnlock hook
-const mockUseAuditUnlock = jest.fn(() => ({
+const mockUseAuditUnlock = vi.fn(() => ({
   isUnlocked: false,
   isSkipped: false,
-  unlock: jest.fn(),
-  skip: jest.fn(),
-  checkUnlockStatus: jest.fn(),
+  unlock: vi.fn(),
+  skip: vi.fn(),
+  checkUnlockStatus: vi.fn(),
 }));
 
 // Mock fetch for API calls
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock analytics
-const mockTrackEvent = jest.fn();
-jest.mock('@/lib/analytics', () => ({
+const mockTrackEvent = vi.fn();
+vi.mock('@/lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
@@ -101,7 +101,7 @@ describe('Lead Capture Flow', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
     mockTrackEvent.mockReset();
     // Clear cookies
@@ -174,7 +174,7 @@ describe('Lead Capture Flow', () => {
       const user = userEvent.setup();
 
       // Mock skip handler
-      const handleSkip = jest.fn(() => {
+      const handleSkip = vi.fn(() => {
         mockCookies['audit_skips'] = JSON.stringify(['abc123def456']);
       });
 

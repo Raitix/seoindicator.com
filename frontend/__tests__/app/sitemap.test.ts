@@ -27,7 +27,7 @@ const MOCK_COMPARISON_SLUGS = [
 ];
 
 // Mock the registry module
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: MOCK_COMPARISON_SLUGS,
 }));
 
@@ -550,7 +550,7 @@ describe('Sitemap Integration - Edge Cases', () => {
     it('should handle empty COMPARISON_SLUGS array gracefully', async () => {
       // Reset modules and mock empty array
       jest.resetModules();
-      jest.doMock('@/lib/compare/registry', () => ({
+      vi.doMock('@/lib/compare/registry', () => ({
         COMPARISON_SLUGS: [],
       }));
 
@@ -571,7 +571,7 @@ describe('Sitemap Integration - Edge Cases', () => {
       const largeSlugs = Array.from({ length: 100 }, (_, i) => `tool-a-vs-tool-b-${i}`);
 
       jest.resetModules();
-      jest.doMock('@/lib/compare/registry', () => ({
+      vi.doMock('@/lib/compare/registry', () => ({
         COMPARISON_SLUGS: largeSlugs,
       }));
 
@@ -591,7 +591,7 @@ describe('Sitemap Integration - Edge Cases', () => {
       const slugsWithHyphens = ['seo-indicator-vs-ahrefs', 'sem-rush-vs-moz-pro'];
 
       jest.resetModules();
-      jest.doMock('@/lib/compare/registry', () => ({
+      vi.doMock('@/lib/compare/registry', () => ({
         COMPARISON_SLUGS: slugsWithHyphens,
       }));
 
@@ -630,7 +630,7 @@ describe('Sitemap Integration - Acceptance Criteria', () => {
   beforeEach(async () => {
     // Reset modules and re-mock to ensure clean state after edge case tests
     jest.resetModules();
-    jest.doMock('@/lib/compare/registry', () => ({
+    vi.doMock('@/lib/compare/registry', () => ({
       COMPARISON_SLUGS: MOCK_COMPARISON_SLUGS,
     }));
 
@@ -765,7 +765,7 @@ describe('Sitemap Integration - Registry Integration', () => {
     it('should reflect registry changes automatically', async () => {
       // First check with original slugs - reset and re-mock
       jest.resetModules();
-      jest.doMock('@/lib/compare/registry', () => ({
+      vi.doMock('@/lib/compare/registry', () => ({
         COMPARISON_SLUGS: MOCK_COMPARISON_SLUGS,
       }));
 
@@ -778,7 +778,7 @@ describe('Sitemap Integration - Registry Integration', () => {
 
       // After resetting modules with new mock (adding one more slug)
       jest.resetModules();
-      jest.doMock('@/lib/compare/registry', () => ({
+      vi.doMock('@/lib/compare/registry', () => ({
         COMPARISON_SLUGS: [...MOCK_COMPARISON_SLUGS, 'new-tool-vs-old-tool'],
       }));
 

@@ -12,7 +12,7 @@ import '@testing-library/jest-dom';
 import CompareIndexPage from '@/app/compare/page';
 
 // Mock the registry module
-jest.mock('@/lib/compare/registry', () => ({
+vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: [
     'seoindicator-vs-ahrefs',
     'seoindicator-vs-semrush',
@@ -35,8 +35,7 @@ jest.mock('@/lib/compare/registry', () => ({
 }));
 
 // Mock Next.js Link component
-jest.mock('next/link', () => {
-  const MockLink = ({
+vi.mock('next/link', () => ({ default: const MockLink = ({
     children,
     href,
     ...props
@@ -50,8 +49,7 @@ jest.mock('next/link', () => {
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink;
-});
+  return MockLink }));
 
 describe('Compare Index Page', () => {
   // ============================================================================

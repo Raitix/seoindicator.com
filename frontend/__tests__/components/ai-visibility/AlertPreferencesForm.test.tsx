@@ -13,7 +13,7 @@ import '@testing-library/jest-dom';
 import { AlertPreferencesForm } from '@/components/ai-visibility/AlertPreferencesForm';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   Mail: () => <span data-testid="mail-icon">📧</span>,
   Link: () => <span data-testid="link-icon">🔗</span>,
   Bell: () => <span data-testid="bell-icon">🔔</span>,
@@ -33,9 +33,9 @@ const defaultPreferences = {
 };
 
 describe('AlertPreferencesForm', () => {
-  const mockOnSave = jest.fn();
-  const mockOnCancel = jest.fn();
-  const mockOnTestWebhook = jest.fn();
+  const mockOnSave = vi.fn();
+  const mockOnCancel = vi.fn();
+  const mockOnTestWebhook = vi.fn();
 
   const defaultProps = {
     preferences: defaultPreferences,
@@ -47,7 +47,7 @@ describe('AlertPreferencesForm', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================================================
@@ -358,7 +358,7 @@ describe('AlertPreferencesForm', () => {
 
     it('APF-025: reset to defaults button', async () => {
       const user = userEvent.setup();
-      const onReset = jest.fn();
+      const onReset = vi.fn();
       render(<AlertPreferencesForm {...defaultProps} onReset={onReset} />);
 
       await user.click(screen.getByRole('button', { name: /reset to defaults/i }));

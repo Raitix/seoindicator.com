@@ -11,16 +11,14 @@ import '@testing-library/jest-dom';
 import MetaTagAnalyzerPage from '@/app/tools/meta-tag-analyzer/page';
 
 // Mock Next.js Link
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => {
+vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => {
     return <a href={href} {...props}>{children}</a>;
   };
   MockLink.displayName = 'MockLink';
-  return MockLink;
-});
+  return MockLink }));
 
 // Mock Button component
-jest.mock('@/components/ui/button', () => ({
+vi.mock('@/components/ui/button', () => ({
   Button: ({ children, className, variant, ...props }: { children: React.ReactNode; className?: string; variant?: string }) => (
     <button className={className} data-variant={variant} {...props}>
       {children}
@@ -29,7 +27,7 @@ jest.mock('@/components/ui/button', () => ({
 }));
 
 // Mock ToolWidget component
-jest.mock('@/components/tools/ToolWidget', () => ({
+vi.mock('@/components/tools/ToolWidget', () => ({
   ToolWidget: ({ tool, title, description, placeholder, showHelp }: {
     tool: string;
     title: string;

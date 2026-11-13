@@ -8,14 +8,14 @@ import '@testing-library/jest-dom';
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
       store = {};
     }),
     get store() {
@@ -130,7 +130,7 @@ import React from 'react';
 
 describe('useConsent Hook - Basic Behavior', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -196,7 +196,7 @@ describe('useConsent Hook - Basic Behavior', () => {
 
 describe('useConsent Hook - hasConsent Function', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -319,7 +319,7 @@ describe('useConsent Hook - hasConsent Function', () => {
 
 describe('useConsent Hook - Consent Update', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -409,7 +409,7 @@ describe('useConsent Hook - Consent Update', () => {
 
 describe('useConsent Hook - Clear Consent', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -459,7 +459,7 @@ describe('useConsent Hook - Clear Consent', () => {
 
 describe('useConsent Hook - Show Banner', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 
@@ -522,7 +522,7 @@ describe('useConsent Hook - Show Banner', () => {
 
 describe('useConsent Hook - Edge Cases', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorageMock.clear();
   });
 

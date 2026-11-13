@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock Lucide React icons
-jest.mock('lucide-react', () => ({
+vi.mock('lucide-react', () => ({
   AlertCircle: () => <span data-testid="alert-icon">!</span>,
   AlertTriangle: () => <span data-testid="warning-icon">⚠</span>,
   Info: () => <span data-testid="info-icon">ℹ</span>,
@@ -23,7 +23,7 @@ jest.mock('lucide-react', () => ({
 }));
 
 // Mock shadcn/ui Badge
-jest.mock('@/components/ui/badge', () => ({
+vi.mock('@/components/ui/badge', () => ({
   Badge: ({ children, variant, className }: { children: React.ReactNode; variant?: string; className?: string }) => (
     <span data-testid="badge" data-variant={variant} className={className}>
       {children}
