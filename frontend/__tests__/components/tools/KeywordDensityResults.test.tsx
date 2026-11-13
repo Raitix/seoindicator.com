@@ -222,7 +222,11 @@ describe('KeywordDensityResults', () => {
 
     // Text is split across elements, use a more flexible matcher
     expect(screen.getByText((content, element) => {
-      return element?.textContent?.includes('Found keyword in') && element?.textContent?.includes('2') && element?.textContent?.includes('of 3 headings') ?? false;
+      return (
+        element?.textContent?.includes('Found keyword in') &&
+        element?.textContent?.includes('2') &&
+        element?.textContent?.includes('of 3 headings')
+      ) ?? false;
     })).toBeInTheDocument();
   });
 

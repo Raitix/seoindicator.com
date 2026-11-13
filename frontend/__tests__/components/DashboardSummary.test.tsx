@@ -4,11 +4,11 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import DashboardSummary from "@/components/dashboard/DashboardSummary";
 
 // Mock Next.js Link
-vi.mock("next/link", () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => {
+vi.mock("next/link", () => ({
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => {
     return <a href={href}>{children}</a>;
-  };
-});
+  },
+}));
 
 describe("DashboardSummary", () => {
   beforeEach(() => {

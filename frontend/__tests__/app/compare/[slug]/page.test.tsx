@@ -18,137 +18,157 @@ import { COMPARISON_SLUGS } from '@/lib/compare/registry';
 // Mock Data
 // ============================================================================
 
-const mockComparisonData: ComparisonData = {
-  slug: 'seoindicator-vs-ahrefs',
-  title: 'SEOIndicator vs Ahrefs: Which SEO Tool Is Better?',
-  metaDescription: 'Compare SEOIndicator vs Ahrefs. Detailed analysis of features, pricing, pros and cons to help you choose the best SEO tool.',
-  competitors: ['seoindicator', 'ahrefs'],
-  summary: 'Find out how SEOIndicator compares to Ahrefs in this comprehensive comparison.',
-  featureComparison: [
-    {
-      name: 'Keyword Research',
-      features: [
-        { name: 'Keyword Database', seoindicator: true, competitor: true },
-        { name: 'Search Volume', seoindicator: true, competitor: true },
-        { name: 'Keyword Difficulty', seoindicator: 'Partial', competitor: true, tooltip: 'Limited to top 100 keywords on free plan' },
+// vi.mock factories are hoisted above the imports, so anything they
+// close over has to be hoisted with them.
+const {
+  mockComparisonData,
+  mockCompetitorData,
+  MOCK_COMPARISON_SLUGS,
+  mockGetComparisonBySlug,
+  mockGetCompetitorById,
+  mockParseSlug,
+} = vi.hoisted(() => {
+  const mockComparisonData: ComparisonData = {
+    slug: 'seoindicator-vs-ahrefs',
+    title: 'SEOIndicator vs Ahrefs: Which SEO Tool Is Better?',
+    metaDescription: 'Compare SEOIndicator vs Ahrefs. Detailed analysis of features, pricing, pros and cons to help you choose the best SEO tool.',
+    competitors: ['seoindicator', 'ahrefs'],
+    summary: 'Find out how SEOIndicator compares to Ahrefs in this comprehensive comparison.',
+    featureComparison: [
+      {
+        name: 'Keyword Research',
+        features: [
+          { name: 'Keyword Database', seoindicator: true, competitor: true },
+          { name: 'Search Volume', seoindicator: true, competitor: true },
+          { name: 'Keyword Difficulty', seoindicator: 'Partial', competitor: true, tooltip: 'Limited to top 100 keywords on free plan' },
+        ],
+      },
+      {
+        name: 'Backlink Analysis',
+        features: [
+          { name: 'Backlink Database', seoindicator: false, competitor: true },
+          { name: 'Link Quality Score', seoindicator: true, competitor: true },
+        ],
+      },
+    ],
+    pricingComparison: {
+      seoindicator: [
+        { name: 'Free', monthlyPrice: 'Free', annualPrice: 'Free', features: ['Basic features'] },
+        { name: 'Pro', monthlyPrice: 29, annualPrice: 290, features: ['All features'], highlighted: true },
+      ],
+      competitor: [
+        { name: 'Lite', monthlyPrice: 99, annualPrice: 990, features: ['Basic features'] },
+        { name: 'Standard', monthlyPrice: 199, annualPrice: 1990, features: ['More features'], highlighted: true },
       ],
     },
-    {
-      name: 'Backlink Analysis',
-      features: [
-        { name: 'Backlink Database', seoindicator: false, competitor: true },
-        { name: 'Link Quality Score', seoindicator: true, competitor: true },
+    prosCons: {
+      seoindicator: {
+        pros: ['Affordable pricing', 'Easy to use', 'Good for beginners'],
+        cons: ['Smaller database', 'Limited advanced features'],
+      },
+      competitor: {
+        pros: ['Large database', 'Advanced features', 'Industry standard'],
+        cons: ['Expensive', 'Steep learning curve', 'Overwhelming for beginners'],
+      },
+    },
+    useCases: {
+      seoindicator: [
+        { title: 'Solo Bloggers', description: 'Perfect for individuals starting out', audience: 'solo', budget: 'budget' },
+        { title: 'Small Teams', description: 'Great for small marketing teams', audience: 'small-team', budget: 'budget' },
+      ],
+      competitor: [
+        { title: 'Enterprise Teams', description: 'Built for large marketing departments', audience: 'enterprise', budget: 'premium' },
+        { title: 'Agencies', description: 'Comprehensive tool for agencies', audience: 'agency', budget: 'premium' },
       ],
     },
-  ],
-  pricingComparison: {
-    seoindicator: [
-      { name: 'Free', monthlyPrice: 'Free', annualPrice: 'Free', features: ['Basic features'] },
-      { name: 'Pro', monthlyPrice: 29, annualPrice: 290, features: ['All features'], highlighted: true },
+    verdict: 'SEOIndicator is best for budget-conscious users who need essential SEO features without the enterprise price tag. Choose Ahrefs if you need advanced backlink analysis and have the budget.',
+    faqs: [
+      { question: 'Which is better: SEOIndicator or Ahrefs?', answer: 'It depends on your needs. SEOIndicator is better for budget-conscious users.' },
+      { question: 'Is SEOIndicator cheaper than Ahrefs?', answer: 'Yes, SEOIndicator starts at $29/mo while Ahrefs starts at $99/mo.' },
     ],
-    competitor: [
-      { name: 'Lite', monthlyPrice: 99, annualPrice: 990, features: ['Basic features'] },
-      { name: 'Standard', monthlyPrice: 199, annualPrice: 1990, features: ['More features'], highlighted: true },
-    ],
-  },
-  prosCons: {
+    relatedComparisons: ['seoindicator-vs-semrush', 'seoindicator-vs-moz', 'ahrefs-vs-semrush'],
+  };
+
+  const mockCompetitorData: Record<string, CompetitorData> = {
     seoindicator: {
-      pros: ['Affordable pricing', 'Easy to use', 'Good for beginners'],
-      cons: ['Smaller database', 'Limited advanced features'],
+      id: 'seoindicator',
+      name: 'SEOIndicator',
+      slug: 'seoindicator',
+      website: 'https://seoindicator.com',
+      tagline: 'SEO made simple',
+      pricing: mockComparisonData.pricingComparison.seoindicator,
+      features: [],
+      pros: mockComparisonData.prosCons.seoindicator.pros,
+      cons: mockComparisonData.prosCons.seoindicator.cons,
+      useCases: mockComparisonData.useCases.seoindicator,
+      lastUpdated: '2026-03-05',
+      source: 'Official website',
     },
-    competitor: {
-      pros: ['Large database', 'Advanced features', 'Industry standard'],
-      cons: ['Expensive', 'Steep learning curve', 'Overwhelming for beginners'],
+    ahrefs: {
+      id: 'ahrefs',
+      name: 'Ahrefs',
+      slug: 'ahrefs',
+      website: 'https://ahrefs.com',
+      tagline: 'SEO tools and resources',
+      pricing: mockComparisonData.pricingComparison.competitor,
+      features: [],
+      pros: mockComparisonData.prosCons.competitor.pros,
+      cons: mockComparisonData.prosCons.competitor.cons,
+      useCases: mockComparisonData.useCases.competitor,
+      lastUpdated: '2026-03-05',
+      source: 'Official website',
     },
-  },
-  useCases: {
-    seoindicator: [
-      { title: 'Solo Bloggers', description: 'Perfect for individuals starting out', audience: 'solo', budget: 'budget' },
-      { title: 'Small Teams', description: 'Great for small marketing teams', audience: 'small-team', budget: 'budget' },
-    ],
-    competitor: [
-      { title: 'Enterprise Teams', description: 'Built for large marketing departments', audience: 'enterprise', budget: 'premium' },
-      { title: 'Agencies', description: 'Comprehensive tool for agencies', audience: 'agency', budget: 'premium' },
-    ],
-  },
-  verdict: 'SEOIndicator is best for budget-conscious users who need essential SEO features without the enterprise price tag. Choose Ahrefs if you need advanced backlink analysis and have the budget.',
-  faqs: [
-    { question: 'Which is better: SEOIndicator or Ahrefs?', answer: 'It depends on your needs. SEOIndicator is better for budget-conscious users.' },
-    { question: 'Is SEOIndicator cheaper than Ahrefs?', answer: 'Yes, SEOIndicator starts at $29/mo while Ahrefs starts at $99/mo.' },
-  ],
-  relatedComparisons: ['seoindicator-vs-semrush', 'seoindicator-vs-moz', 'ahrefs-vs-semrush'],
-};
+  };
 
-const mockCompetitorData: Record<string, CompetitorData> = {
-  seoindicator: {
-    id: 'seoindicator',
-    name: 'SEOIndicator',
-    slug: 'seoindicator',
-    website: 'https://seoindicator.com',
-    tagline: 'SEO made simple',
-    pricing: mockComparisonData.pricingComparison.seoindicator,
-    features: [],
-    pros: mockComparisonData.prosCons.seoindicator.pros,
-    cons: mockComparisonData.prosCons.seoindicator.cons,
-    useCases: mockComparisonData.useCases.seoindicator,
-    lastUpdated: '2026-03-05',
-    source: 'Official website',
-  },
-  ahrefs: {
-    id: 'ahrefs',
-    name: 'Ahrefs',
-    slug: 'ahrefs',
-    website: 'https://ahrefs.com',
-    tagline: 'SEO tools and resources',
-    pricing: mockComparisonData.pricingComparison.competitor,
-    features: [],
-    pros: mockComparisonData.prosCons.competitor.pros,
-    cons: mockComparisonData.prosCons.competitor.cons,
-    useCases: mockComparisonData.useCases.competitor,
-    lastUpdated: '2026-03-05',
-    source: 'Official website',
-  },
-};
+  const MOCK_COMPARISON_SLUGS = [
+    'seoindicator-vs-ahrefs',
+    'seoindicator-vs-semrush',
+    'seoindicator-vs-moz',
+    'seoindicator-vs-ubersuggest',
+    'ahrefs-vs-semrush',
+    'ahrefs-vs-moz',
+    'semrush-vs-moz',
+  ];
 
-const MOCK_COMPARISON_SLUGS = [
-  'seoindicator-vs-ahrefs',
-  'seoindicator-vs-semrush',
-  'seoindicator-vs-moz',
-  'seoindicator-vs-ubersuggest',
-  'ahrefs-vs-semrush',
-  'ahrefs-vs-moz',
-  'semrush-vs-moz',
-];
+  // ============================================================================
+  // Mock Registry Module
+  // ============================================================================
 
-// ============================================================================
-// Mock Registry Module
-// ============================================================================
+  const mockGetComparisonBySlug = vi.fn((slug: string): ComparisonData | null => {
+    if (slug === 'seoindicator-vs-ahrefs') return mockComparisonData;
+    if (MOCK_COMPARISON_SLUGS.includes(slug)) {
+      // Return a basic comparison for other valid slugs
+      const [a, b] = slug.split('-vs-');
+      return {
+        ...mockComparisonData,
+        slug,
+        title: `${a} vs ${b}: Which SEO Tool Is Better?`,
+        competitors: [a, b] as [string, string],
+      };
+    }
+    return null;
+  });
 
-const mockGetComparisonBySlug = vi.fn((slug: string): ComparisonData | null => {
-  if (slug === 'seoindicator-vs-ahrefs') return mockComparisonData;
-  if (MOCK_COMPARISON_SLUGS.includes(slug)) {
-    // Return a basic comparison for other valid slugs
-    const [a, b] = slug.split('-vs-');
-    return {
-      ...mockComparisonData,
-      slug,
-      title: `${a} vs ${b}: Which SEO Tool Is Better?`,
-      competitors: [a, b] as [string, string],
-    };
-  }
-  return null;
-});
+  const mockGetCompetitorById = vi.fn((id: string): CompetitorData | null => {
+    return mockCompetitorData[id] || null;
+  });
 
-const mockGetCompetitorById = vi.fn((id: string): CompetitorData | null => {
-  return mockCompetitorData[id] || null;
-});
+  const mockParseSlug = vi.fn((slug: string): [string, string] | null => {
+    if (slug === null || slug === undefined || typeof slug !== 'string') return null;
+    const parts = slug.split('-vs-');
+    if (parts.length !== 2) return null;
+    if (!parts[0] || !parts[1]) return null;
+    return [parts[0], parts[1]];
+  });
 
-const mockParseSlug = vi.fn((slug: string): [string, string] | null => {
-  if (slug === null || slug === undefined || typeof slug !== 'string') return null;
-  const parts = slug.split('-vs-');
-  if (parts.length !== 2) return null;
-  if (!parts[0] || !parts[1]) return null;
-  return [parts[0], parts[1]];
+  return {
+    mockComparisonData,
+    mockCompetitorData,
+    MOCK_COMPARISON_SLUGS,
+    mockGetComparisonBySlug,
+    mockGetCompetitorById,
+    mockParseSlug,
+  };
 });
 
 vi.mock('@/lib/compare/registry', () => ({

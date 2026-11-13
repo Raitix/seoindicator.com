@@ -56,6 +56,11 @@ vi.mock('@/components/ui/card', () => ({
       {children}
     </div>
   ),
+  CardTitle: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card-title" className={className}>
+      {children}
+    </div>
+  ),
 }));
 
 // ============================================================================
