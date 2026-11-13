@@ -17,19 +17,23 @@ import type { ProsConsCardProps } from '@/lib/compare/types';
 // Mock Lucide Icons
 // ============================================================================
 
+// The real lucide icons spread every prop onto the element they render.
+// The mock has to do the same, or a data-* attribute set by the component
+// under test is dropped.
 vi.mock('lucide-react', () => ({
-  Check: ({ className, 'aria-hidden': ariaHidden }: { className?: string; 'aria-hidden'?: boolean }) => (
-    <span data-testid="check-icon" className={className} aria-hidden={ariaHidden}>✓</span>
+  Check: ({ className, 'aria-hidden': ariaHidden, ...props }: { className?: string; 'aria-hidden'?: boolean; [key: string]: unknown }) => (
+    <span data-testid="check-icon" className={className} aria-hidden={ariaHidden} {...props}>✓</span>
   ),
-  X: ({ className, 'aria-hidden': ariaHidden }: { className?: string; 'aria-hidden'?: boolean }) => (
-    <span data-testid="x-icon" className={className} aria-hidden={ariaHidden}>✗</span>
+  X: ({ className, 'aria-hidden': ariaHidden, ...props }: { className?: string; 'aria-hidden'?: boolean; [key: string]: unknown }) => (
+    <span data-testid="x-icon" className={className} aria-hidden={ariaHidden} {...props}>✗</span>
   ),
-  Star: ({ className, filled, 'aria-hidden': ariaHidden }: { className?: string; filled?: boolean; 'aria-hidden'?: boolean }) => (
-    <span 
-      data-testid="star-icon" 
+  Star: ({ className, filled, 'aria-hidden': ariaHidden, ...props }: { className?: string; filled?: boolean; 'aria-hidden'?: boolean; [key: string]: unknown }) => (
+    <span
+      data-testid="star-icon"
       className={className}
       data-filled={filled}
       aria-hidden={ariaHidden}
+      {...props}
     >
       {filled ? '★' : '☆'}
     </span>
@@ -40,24 +44,27 @@ vi.mock('lucide-react', () => ({
 // Mock shadcn/ui Card Components
 // ============================================================================
 
+// The real Card components forward every prop to the underlying div.
+// The mock has to do the same, or a role or aria-label set by the
+// component under test is silently dropped.
 vi.mock('@/components/ui/card', () => ({
-  Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div data-testid="card" className={className}>
+  Card: ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card" className={className} {...props}>
       {children}
     </div>
   ),
-  CardHeader: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div data-testid="card-header" className={className}>
+  CardHeader: ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card-header" className={className} {...props}>
       {children}
     </div>
   ),
-  CardContent: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div data-testid="card-content" className={className}>
+  CardContent: ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card-content" className={className} {...props}>
       {children}
     </div>
   ),
-  CardTitle: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div data-testid="card-title" className={className}>
+  CardTitle: ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => (
+    <div data-testid="card-title" className={className} {...props}>
       {children}
     </div>
   ),

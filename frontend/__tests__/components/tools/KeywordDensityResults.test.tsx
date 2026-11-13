@@ -220,14 +220,19 @@ describe('KeywordDensityResults', () => {
   it('should display summary of heading matches', () => {
     render(<KeywordDensityResults result={defaultResult} />);
 
-    // Text is split across elements, use a more flexible matcher
-    expect(screen.getByText((content, element) => {
+    // The text is split across elements, and the wrapper div carries the
+    // same textContent as the paragraph inside it, so more than one
+    // element matches.
+    const matches = screen.getAllByText((content, element) => {
       return (
         element?.textContent?.includes('Found keyword in') &&
         element?.textContent?.includes('2') &&
         element?.textContent?.includes('of 3 headings')
       ) ?? false;
-    })).toBeInTheDocument();
+    });
+
+    expect(matches.length).toBeGreaterThan(0);
+    expect(matches[0]).toBeInTheDocument();
   });
 
   // Recommendation for missing headings
@@ -235,7 +240,11 @@ describe('KeywordDensityResults', () => {
     render(<KeywordDensityResults result={defaultResult} />);
 
     expect(screen.getByText(/Consider adding/)).toBeInTheDocument();
-    expect(screen.getByText(/On-Page Optimization/)).toBeInTheDocument();
+
+    // 'On-Page Optimization' is the heading that is missing the keyword,
+    // so it is listed twice: once in the heading list and once in the
+    // recommendation.
+    expect(screen.getAllByText(/On-Page Optimization/).length).toBeGreaterThan(0);
   });
 
   // Keyword in title

@@ -66,15 +66,33 @@ const mockTopCandidates: DecayCandidate[] = [
 // Mock Lucide Icons
 // =============================================================================
 
+// The real lucide icons spread their props onto the rendered element, so a
+// data-testid passed by the component wins over the default one here.
 vi.mock("lucide-react", () => ({
-  TrendingDown: () => <span data-testid="trending-down-icon">TrendingDown</span>,
-  AlertTriangle: () => <span data-testid="alert-icon">AlertTriangle</span>,
-  CheckCircle: () => <span data-testid="check-circle-icon">CheckCircle</span>,
-  ArrowRight: () => <span data-testid="arrow-right-icon">ArrowRight</span>,
-  Eye: () => <span data-testid="eye-icon">Eye</span>,
-  Calendar: () => <span data-testid="calendar-icon">Calendar</span>,
-  RefreshCw: () => <span data-testid="refresh-icon">RefreshCw</span>,
-  Clock: () => <span data-testid="clock-icon">Clock</span>,
+  TrendingDown: (props: Record<string, unknown>) => (
+    <span data-testid="trending-down-icon" {...props}>TrendingDown</span>
+  ),
+  AlertTriangle: (props: Record<string, unknown>) => (
+    <span data-testid="alert-icon" {...props}>AlertTriangle</span>
+  ),
+  CheckCircle: (props: Record<string, unknown>) => (
+    <span data-testid="check-circle-icon" {...props}>CheckCircle</span>
+  ),
+  ArrowRight: (props: Record<string, unknown>) => (
+    <span data-testid="arrow-right-icon" {...props}>ArrowRight</span>
+  ),
+  Eye: (props: Record<string, unknown>) => (
+    <span data-testid="eye-icon" {...props}>Eye</span>
+  ),
+  Calendar: (props: Record<string, unknown>) => (
+    <span data-testid="calendar-icon" {...props}>Calendar</span>
+  ),
+  RefreshCw: (props: Record<string, unknown>) => (
+    <span data-testid="refresh-icon" {...props}>RefreshCw</span>
+  ),
+  Clock: (props: Record<string, unknown>) => (
+    <span data-testid="clock-icon" {...props}>Clock</span>
+  ),
 }));
 
 // =============================================================================

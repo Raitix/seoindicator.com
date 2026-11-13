@@ -363,11 +363,11 @@ describe('About Page Accessibility', () => {
       
       const getStartedLink = screen.getByRole('link', { name: /get started free/i });
       expect(getStartedLink).toBeInTheDocument();
-      expect(getStartedLink).toHaveAttribute('href', '/register');
+      expect(getStartedLink).toHaveAttribute('href', '/register/');
       
       const exploreToolsLink = screen.getByRole('link', { name: /explore tools/i });
       expect(exploreToolsLink).toBeInTheDocument();
-      expect(exploreToolsLink).toHaveAttribute('href', '/tools');
+      expect(exploreToolsLink).toHaveAttribute('href', '/tools/');
     });
 
     it('should have descriptive CTA section', () => {
@@ -382,7 +382,7 @@ describe('About Page Accessibility', () => {
       
       const learnMoreLink = screen.getByRole('link', { name: /learn more about how it works/i });
       expect(learnMoreLink).toBeInTheDocument();
-      expect(learnMoreLink).toHaveAttribute('href', '/how-it-works');
+      expect(learnMoreLink).toHaveAttribute('href', '/how-it-works/');
     });
   });
 

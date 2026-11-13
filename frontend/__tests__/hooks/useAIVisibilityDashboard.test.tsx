@@ -686,7 +686,9 @@ describe('AC: Acceptance Criteria', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.data).toBeDefined();
+      // toBeDefined() is satisfied by null, which is the initial state.
+      // Wait for the data itself.
+      expect(result.current.data).not.toBeNull();
     });
 
     const data = result.current.data!;

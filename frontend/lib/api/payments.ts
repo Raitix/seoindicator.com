@@ -208,12 +208,12 @@ export function useConfirmPayment() {
       const idempotencyKey = crypto.randomUUID();
 
       try {
-        const result = await apiRequest<{
+        const response = await apiRequest<ApiResponse<{
           success: boolean;
           credits?: number;
           balance?: number;
           transaction_id?: string;
-        }>('/payments/confirm', {
+        }>>('/payments/confirm', {
           method: 'POST',
           body: JSON.stringify({
             payment_intent_id: paymentIntentId,
@@ -225,7 +225,7 @@ export function useConfirmPayment() {
           },
         });
 
-        return result;
+        return response.data ?? null;
       } catch (err: unknown) {
         const error = err as PaymentError;
         setError(error);
@@ -246,23 +246,48 @@ export function useConfirmPayment() {
  * Hook to fetch payment methods
  */
 export function usePaymentMethods(options?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<{
-    methods: PaymentMethod[];
-    default_method?: string;
-  }>(
+  // The backend returns { success, data: [...] } and names the card
+  // fields differently from the frontend type, so the response is mapped
+  // here rather than read straight off the envelope.
+  const { data, error, isLoading, mutate } = useSWR<
+    ApiResponse<{
+      id: string;
+      provider: string;
+      brand: string;
+      last_four: string;
+      exp_month: number;
+      exp_year: number;
+      is_default: boolean;
+      created_at: string;
+    }[]>
+  >(
     `${API_BASE}/payments/methods`,
-    (url) => apiRequest(url),
+    // apiRequest prefixes API_BASE itself, so it gets the path only.
+    // Passing the full URL here requested /api/v1/api/v1/payments/methods.
+    () => apiRequest('/payments/methods'),
     {
       revalidateOnFocus: false,
       ...options,
     }
   );
 
+  const methods: PaymentMethod[] = (data?.data || []).map((method) => ({
+    id: method.id,
+    type: method.provider === 'paypal' ? 'paypal' : 'card',
+    card: {
+      brand: method.brand,
+      last4: method.last_four,
+      exp_month: method.exp_month,
+      exp_year: method.exp_year,
+    },
+    is_default: method.is_default,
+  }));
+
   return {
-    methods: data?.methods || [],
-    defaultMethod: data?.default_method,
+    methods,
+    defaultMethod: methods.find((method) => method.is_default)?.id,
     isLoading,
-    error: error as PaymentError | null,
+    error: (error as PaymentError | undefined) ?? null,
     mutate,
   };
 }
@@ -395,43 +420,65 @@ export interface TransactionFilters {
  */
 export function usePaymentHistory(filters: TransactionFilters = {}, options?: SWRConfiguration) {
   const params = new URLSearchParams();
-  
+
   if (filters.page) params.set('page', String(filters.page));
-  if (filters.limit) params.set('limit', String(filters.limit));
-  if (filters.status) params.set('status', filters.status);
-  if (filters.startDate) params.set('start_date', filters.startDate);
-  if (filters.endDate) params.set('end_date', filters.endDate);
+  if (filters.limit) params.set('per_page', String(filters.limit));
   if (filters.type) params.set('type', filters.type);
-  if (filters.minAmount) params.set('min_amount', String(filters.minAmount));
-  if (filters.maxAmount) params.set('max_amount', String(filters.maxAmount));
-  if (filters.search) params.set('search', filters.search);
+  if (filters.startDate) params.set('from', filters.startDate);
+  if (filters.endDate) params.set('to', filters.endDate);
 
   const queryString = params.toString();
-  const url = `${API_BASE}/payments/history${queryString ? `?${queryString}` : ''}`;
+  // The transaction history endpoint is /credits/transactions, not
+  // /payments/history - the latter does not exist and 404'd.
+  const endpoint = `/credits/transactions${queryString ? `?${queryString}` : ''}`;
+  const url = `${API_BASE}${endpoint}`;
 
-  const { data, error, isLoading, mutate } = useSWR<{
-    transactions: Transaction[];
-    total: number;
-    page: number;
-    limit: number;
-    total_pages: number;
-  }>(
+  const { data, error, isLoading, mutate } = useSWR<
+    ApiResponse<{
+      id: string;
+      amount: number;
+      balance_after: number;
+      type: string;
+      description: string;
+      payment_provider: string;
+      created_at: string;
+    }[]> & {
+      meta?: {
+        current_page: number;
+        per_page: number;
+        total: number;
+        last_page: number;
+      };
+    }
+  >(
     url,
-    (u) => apiRequest(u),
+    // apiRequest prefixes API_BASE itself - see usePaymentMethods.
+    () => apiRequest(endpoint),
     {
       revalidateOnFocus: false,
       ...options,
     }
   );
 
+  const transactions: Transaction[] = (data?.data || []).map((tx) => ({
+    id: tx.id,
+    amount: tx.amount,
+    currency: 'USD',
+    credits: tx.balance_after,
+    status: tx.type === 'purchase' ? 'completed' : 'completed',
+    payment_method: tx.payment_provider,
+    created_at: tx.created_at,
+    description: tx.description,
+  }));
+
   return {
-    transactions: data?.transactions || [],
-    total: data?.total || 0,
-    page: data?.page || 1,
-    limit: data?.limit || 10,
-    totalPages: data?.total_pages || 1,
+    transactions,
+    total: data?.meta?.total || 0,
+    page: data?.meta?.current_page || 1,
+    limit: data?.meta?.per_page || 15,
+    totalPages: data?.meta?.last_page || 1,
     isLoading,
-    error: error as PaymentError | null,
+    error: (error as PaymentError | undefined) ?? null,
     mutate,
   };
 }
@@ -479,19 +526,40 @@ export function useDownloadReceipt() {
  * Hook to fetch available credit packages
  */
 export function useCreditPackages(options?: SWRConfiguration) {
-  const { data, error, isLoading, mutate } = useSWR<{ packages: CreditPackage[] }>(
-    `${API_BASE}/credits/packages`,
-    (url) => apiRequest(url),
+  // The backend returns { success, data: [...] } and names the price
+  // `price_usd`; the frontend type calls it `price`.
+  const { data, error, isLoading, mutate } = useSWR<
+    ApiResponse<{
+      id: string | number;
+      name: string;
+      credits: number;
+      price_usd: number;
+      bonus_percent?: number;
+      is_popular?: boolean;
+    }[]>
+  >(
+    `${API_BASE}/packages`,
+    // apiRequest prefixes API_BASE itself - see usePaymentMethods.
+    () => apiRequest('/packages'),
     {
       revalidateOnFocus: false,
       ...options,
     }
   );
 
+  const packages: CreditPackage[] = (data?.data || []).map((pkg) => ({
+    id: pkg.id,
+    name: pkg.name,
+    credits: pkg.credits,
+    price: pkg.price_usd,
+    bonus_percent: pkg.bonus_percent,
+    is_popular: pkg.is_popular,
+  }));
+
   return {
-    packages: data?.packages || [],
+    packages,
     isLoading,
-    error: error as PaymentError | null,
+    error: (error as PaymentError | undefined) ?? null,
     mutate,
   };
 }
