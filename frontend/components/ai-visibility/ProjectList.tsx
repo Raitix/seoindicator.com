@@ -102,7 +102,7 @@ export function ProjectList({
         <p className="text-red-500 mb-4">Failed to load projects</p>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
         >
           Retry
         </button>

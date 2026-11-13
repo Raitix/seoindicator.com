@@ -450,13 +450,13 @@ export function PWAGuideClient() {
                 Home
               </a>
             </li>
-            <li className="text-slate-500">/</li>
+            <li className="text-slate-400">/</li>
             <li>
               <a href="/dashboard" data-testid="breadcrumb-dashboard" className="text-slate-400 hover:text-slate-200">
                 Dashboard
               </a>
             </li>
-            <li className="text-slate-500">/</li>
+            <li className="text-slate-400">/</li>
             <li>
               <span data-testid="breadcrumb-current" className="text-slate-100 font-medium">
                 PWA Guide

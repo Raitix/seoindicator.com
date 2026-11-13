@@ -54,7 +54,7 @@ export function EmptyProjectsState({
         <button
           onClick={onCreateProject}
           data-testid="create-project-btn"
-          className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
           aria-label="Create your first project"
         >
           <FolderPlus className="w-5 h-5" data-testid="folder-plus-icon" />
