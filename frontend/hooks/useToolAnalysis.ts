@@ -69,8 +69,65 @@ export interface UseToolAnalysisReturn {
 // Default timeout (30 seconds)
 const DEFAULT_TIMEOUT = 30000;
 
-// Default API endpoint
-const DEFAULT_API_ENDPOINT = '/api/tools/analyze';
+// Default API endpoint.
+//
+// The Laravel route is registered inside a `Route::prefix('v1')` group
+// (backend/routes/api.php), so the real path is /api/v1/tools/analyze.
+// Posting to /api/tools/analyze returns 404, which this hook reported as
+// "Could not access the page" - the user's URL was never the problem.
+const DEFAULT_API_ENDPOINT = '/api/v1/tools/analyze';
+
+// Tool id translation.
+//
+// The backend validates the tool against a fixed list
+// (meta-tag-analyzer, keyword-density-checker, social-media-preview,
+// mobile-friendly). The frontend's own slugs differ for two of them, so
+// the slug is translated here rather than at every call site.
+//
+// This map is the single source of truth for the frontend slug -> API id
+// translation. Anything else that needs to talk to the tools endpoint must
+// use it rather than writing the id out again.
+export const API_TOOL_IDS: Record<ToolType, string> = {
+  'meta-tag-analyzer': 'meta-tag-analyzer',
+  'keyword-density': 'keyword-density-checker',
+  'social-preview': 'social-media-preview',
+  'mobile-friendly': 'mobile-friendly',
+};
+
+/**
+ * Shape the backend response the way the result renderers expect.
+ *
+ * The API returns the tool-specific payload under `data`, with `url` and
+ * `analyzedAt` as siblings at the top level. The renderers read a flat
+ * object, and the keyword-density payload names two fields differently
+ * from the rest of the API (keywordCount / densityStatus rather than
+ * occurrences / status).
+ *
+ * Normalising here keeps one contract between the hook and the renderers
+ * instead of making every renderer know about the API's own naming.
+ */
+function normalizeToolResponse(tool: ToolType, response: Record<string, any>): Record<string, any> {
+  const payload: Record<string, any> = { ...(response.data ?? response) };
+
+  // url / analyzedAt live on the envelope, not inside `data`.
+  if (response.url !== undefined && payload.url === undefined) {
+    payload.url = response.url;
+  }
+  if (response.analyzedAt !== undefined && payload.analyzedAt === undefined) {
+    payload.analyzedAt = response.analyzedAt;
+  }
+
+  if (tool === 'keyword-density') {
+    if (payload.occurrences === undefined && payload.keywordCount !== undefined) {
+      payload.occurrences = payload.keywordCount;
+    }
+    if (payload.status === undefined && payload.densityStatus !== undefined) {
+      payload.status = payload.densityStatus;
+    }
+  }
+
+  return payload;
+}
 
 export function useToolAnalysis(options: UseToolAnalysisOptions): UseToolAnalysisReturn {
   const {
@@ -134,7 +191,7 @@ export function useToolAnalysis(options: UseToolAnalysisOptions): UseToolAnalysi
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          tool,
+          tool: API_TOOL_IDS[tool],
           url: validation.normalized,
           keyword,
         }),
@@ -159,6 +216,24 @@ export function useToolAnalysis(options: UseToolAnalysisOptions): UseToolAnalysi
         } else if (response.status >= 500) {
           errorCode = 'FETCH_FAILED';
           errorMessage = ERROR_MESSAGES.FETCH_FAILED;
+        } else if (response.status === 422) {
+          // The request itself was rejected (bad tool id, missing keyword).
+          // Telling the user to check their URL would be wrong - their URL
+          // is fine.
+          errorCode = 'INVALID_URL';
+          errorMessage = ERROR_MESSAGES.INVALID_URL;
+        } else if (response.status === 404) {
+          errorCode = 'UNKNOWN';
+          errorMessage = 'This tool is temporarily unavailable. Please try again later.';
+        } else {
+          // Prefer the server's own message: it says what actually went
+          // wrong (SSRF block, timeout, unreachable host).
+          const serverError = await response.json().catch(() => null);
+          const serverMessage =
+            serverError?.error?.message ?? serverError?.error ?? null;
+          if (typeof serverMessage === 'string' && serverMessage.trim()) {
+            errorMessage = serverMessage;
+          }
         }
 
         const errorResult: AnalysisResult = {
@@ -178,8 +253,8 @@ export function useToolAnalysis(options: UseToolAnalysisOptions): UseToolAnalysi
 
       const successResult: AnalysisResult = {
         success: true,
-        data: data.data || data,
-        analyzedAt: new Date().toISOString(),
+        data: normalizeToolResponse(tool, data),
+        analyzedAt: data.analyzedAt || new Date().toISOString(),
       };
 
       setState('success');

@@ -14,38 +14,81 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 // Mock analysis response - matches ToolWidget results structure
+// These fixtures mirror the real API response exactly: the tool-specific
+// payload lives under `data`, `url` and `analyzedAt` are siblings at the
+// top level, and the keyword-density payload names its counters
+// `keywordCount` / `densityStatus`. The frontend hook is what translates
+// them into the names the renderer reads, so mocking the real shape here
+// is what makes this spec able to catch a contract break.
 const mockKeywordAnalysisResponse = {
   success: true,
+  tool: 'keyword-density-checker',
+  url: 'https://example.com',
+  analyzedAt: '2026-02-26T19:30:00Z',
   data: {
-    density: 2.3,
-    occurrences: 12,
-    totalWords: 520,
     keyword: 'SEO',
-    warnings: [
+    normalizedKeyword: 'seo',
+    isPhrase: false,
+    totalWords: 520,
+    keywordCount: 12,
+    density: 2.3,
+    densityStatus: 'good',
+    densityThresholds: { low: 0.5, good: 2, acceptable: 3 },
+    placement: {
+      inTitle: true,
+      inH1: true,
+      inMetaDescription: false,
+      inFirstParagraph: true,
+      inUrl: false,
+      headings: [],
+      imagesWithKeyword: 0,
+      totalImages: 0,
+    },
+    recommendations: [
       { type: 'info', message: 'Consider adding keyword to "Content Strategy" heading' },
     ],
+    warnings: [],
   },
-  analyzedAt: '2026-02-26T19:30:00Z',
 };
 
 const mockOverOptimizedResponse = {
   success: true,
+  tool: 'keyword-density-checker',
+  url: 'https://spammy.example.com',
+  analyzedAt: '2026-02-26T19:35:00Z',
   data: {
-    density: 5.8,
-    occurrences: 35,
-    totalWords: 600,
     keyword: 'SEO',
+    normalizedKeyword: 'seo',
+    isPhrase: false,
+    totalWords: 600,
+    keywordCount: 35,
+    density: 5.8,
+    densityStatus: 'stuffing',
+    densityThresholds: { low: 0.5, good: 2, acceptable: 3 },
+    placement: {
+      inTitle: true,
+      inH1: true,
+      inMetaDescription: true,
+      inFirstParagraph: true,
+      inUrl: true,
+      headings: ['h1', 'h2', 'h3'],
+      imagesWithKeyword: 12,
+      totalImages: 15,
+    },
+    recommendations: [
+      { type: 'warning', message: 'Keyword density is too high (5.8%)' },
+    ],
     warnings: [
       { type: 'warning', message: 'Keyword density is too high (5.8%)' },
     ],
   },
-  analyzedAt: '2026-02-26T19:35:00Z',
 };
 
 // Helper to set up API mocks
 async function setupMocks(page: Page) {
-  // Mock keyword density analysis API - the ToolWidget uses /api/tools/analyze
-  await page.route('**/api/tools/analyze**', async (route) => {
+  // Mock keyword density analysis API - the ToolWidget posts to
+  // /api/v1/tools/analyze (the Laravel route sits under the v1 prefix).
+  await page.route('**/api/v1/tools/analyze**', async (route) => {
     const request = route.request();
     const postData = request.postDataJSON?.() || {};
     
@@ -270,7 +313,7 @@ test.describe('Keyword Density Checker E2E Tests', () => {
   // E2E-013: Loading state during analysis
   test('E2E-013: Loading state displayed during analysis', async ({ page }) => {
     // Delay the API response
-    await page.route('**/api/tools/analyze**', async (route) => {
+    await page.route('**/api/v1/tools/analyze**', async (route) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       await route.fulfill({
         status: 200,

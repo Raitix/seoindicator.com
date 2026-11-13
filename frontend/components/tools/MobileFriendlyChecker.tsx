@@ -44,7 +44,6 @@ export function MobileFriendlyChecker({
     retry,
   } = useToolAnalysis({
     tool: "mobile-friendly",
-    apiEndpoint: "/api/v1/tools/analyze",
     onSuccess: (analysisResult) => {
       setAnalyzedUrl(url);
       onAnalysisComplete?.(analysisResult.data as MobileFriendlyResult);
