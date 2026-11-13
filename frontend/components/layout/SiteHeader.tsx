@@ -197,7 +197,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
             <Link href="/dashboard">
               <Button
                 size="sm"
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                className="bg-emerald-700 text-white hover:bg-emerald-600"
               >
                 Go to dashboard
               </Button>
@@ -216,7 +216,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
               <Link href="/register">
                 <Button
                   size="sm"
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  className="bg-emerald-700 text-white hover:bg-emerald-600"
                 >
                   Get started
                 </Button>

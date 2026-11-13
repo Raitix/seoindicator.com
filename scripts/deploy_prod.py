@@ -300,6 +300,115 @@ def prune_remote_stale(ssh, remote_dir: str, local_dir: Path, log: DeploymentLog
         log.finish_step('Prune stale directories', 'success', 'No stale directories to prune')
 
 
+def prune_remote_chunks(ssh, remote_dir: str, local_dir: Path, log: DeploymentLog):
+    """Remove build artefacts the current build no longer produces.
+
+    This is not housekeeping - it is a correctness fix.
+
+    Turbopack numbers its modules by id and the runtime registry is keyed by
+    that id. Two different builds can use the SAME id for DIFFERENT modules.
+    A chunk left over from an older build therefore does not just waste
+    space: when the browser loads it, it overwrites the current build's
+    definition of that module with months-old code, which then calls
+    functions the current build has moved elsewhere.
+
+    In practice that showed up as "This page couldn't load" on every
+    client-side navigation, because a stale chunk redefined the guides
+    category filter, whose old code asked module 99738 for a `cn` helper
+    that the current build assigns to a completely different module.
+
+    The CDN caches these chunks for seven days, so a stale copy keeps being
+    served long after the deploy that introduced it. Removing them from the
+    origin stops the problem for every new visitor; the CDN entries age out
+    on their own.
+
+    Two kinds of file are removed:
+
+    - Chunks in _next/static/chunks that this build does not produce.
+    - Per-route payload files (`__next.<route>.__PAGE__.txt` and friends).
+      These are the files the client-side router fetches to navigate. The
+      current build emits `__next._full.txt` and `__next._tree.txt`; the
+      older per-route payload files are leftovers that still reference the
+      chunks of the build that created them. The browser kept fetching one
+      of those and loading a months-old chunk from it.
+
+    Only files the current build does not produce are touched.
+    """
+    local_files = set()
+    for root, dirs, files in os.walk(local_dir):
+        for name in files:
+            rel = os.path.relpath(os.path.join(root, name), local_dir).replace(os.sep, '/')
+            local_files.add(rel)
+
+    log.start_step('Prune stale build artefacts')
+
+    sftp = ssh.open_sftp()
+    removed_chunks = 0
+    removed_payloads = 0
+    try:
+        # 1. Chunks in _next/static/chunks.
+        local_chunks_dir = local_dir / '_next' / 'static' / 'chunks'
+        remote_chunks_dir = posixpath.join(remote_dir, '_next', 'static', 'chunks')
+        local_chunk_names = set()
+        if local_chunks_dir.is_dir():
+            local_chunk_names = {p.name for p in local_chunks_dir.iterdir() if p.is_file()}
+
+        try:
+            entries = sftp.listdir_attr(remote_chunks_dir)
+        except IOError:
+            entries = []
+
+        for entry in entries:
+            name = entry.filename
+            if name in local_chunk_names:
+                continue
+            # Only remove build artefacts. Anything else that might have
+            # been placed in that directory by hand is left alone.
+            if not (name.endswith('.js') or name.endswith('.css')):
+                continue
+            try:
+                sftp.remove(posixpath.join(remote_chunks_dir, name))
+                removed_chunks += 1
+            except IOError:
+                continue
+
+        # 2. Per-route payload files the current build no longer produces.
+        #    These are what the client-side router fetches when navigating.
+        stack = [remote_dir]
+        while stack:
+            current = stack.pop()
+            try:
+                entries = sftp.listdir_attr(current)
+            except IOError:
+                continue
+            for entry in entries:
+                child = posixpath.join(current, entry.filename)
+                if entry.st_mode is not None and (entry.st_mode & 0o40000):
+                    stack.append(child)
+                    continue
+                name = entry.filename
+                if not (name.startswith('__next') and name.endswith('.txt')):
+                    continue
+                rel = posixpath.relpath(child, remote_dir)
+                if rel in local_files:
+                    continue
+                try:
+                    sftp.remove(child)
+                    removed_payloads += 1
+                except IOError:
+                    continue
+    finally:
+        sftp.close()
+
+    parts = []
+    if removed_chunks:
+        parts.append(f'{removed_chunks} chunk(s)')
+    if removed_payloads:
+        parts.append(f'{removed_payloads} stale payload file(s)')
+    detail = 'Removed ' + ', '.join(parts) if parts else 'Nothing to prune'
+    log.finish_step('Prune stale build artefacts', 'success', detail)
+
+
 def quote_single(value: str) -> str:
     return value.replace("'", "'\"'\"'")
 
@@ -473,6 +582,7 @@ chmod -R 755 "$DEPLOY_PATH/backend/bootstrap/cache" || true
             sftp.close()
 
         prune_remote_stale(ssh, env['SSH_DEPLOY_PATH'], frontend_out_dir, log)
+        prune_remote_chunks(ssh, env['SSH_DEPLOY_PATH'], frontend_out_dir, log)
 
         log.finish_step('Deploy to production', 'success', remote_output or f'Deployed commit {git_ref}')
     finally:

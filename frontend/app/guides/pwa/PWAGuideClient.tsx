@@ -71,11 +71,11 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-      <p data-testid="error-message" className="text-lg text-gray-700 mb-4">{message}</p>
+      <p data-testid="error-message" className="text-lg text-slate-300 mb-4">{message}</p>
       <button
         data-testid="retry-button"
         onClick={onRetry}
-        className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+        className="px-4 py-2 rounded bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
       >
         Retry
       </button>
@@ -86,7 +86,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 // Empty state component
 function EmptyState() {
   return (
-    <div data-testid="empty-state" className="p-6 text-center text-gray-500">
+    <div data-testid="empty-state" className="p-6 text-center text-slate-400">
       No guide content available
     </div>
   );
@@ -157,7 +157,7 @@ function createMarkdownComponents(sectionId: string, codeBlockIndex: { current: 
       
       if (isInline) {
         return (
-          <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm" {...props}>
+          <code className="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded text-sm" {...props}>
             {children}
           </code>
         );
@@ -195,17 +195,17 @@ function createMarkdownComponents(sectionId: string, codeBlockIndex: { current: 
     ),
     table: ({ children }: React.HTMLAttributes<HTMLTableElement>) => (
       <div className="overflow-x-auto my-4">
-        <table className="min-w-full border border-gray-200">{children}</table>
+        <table className="min-w-full border border-slate-800">{children}</table>
       </div>
     ),
     thead: ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
-      <thead className="bg-gray-50">{children}</thead>
+      <thead className="bg-slate-800/60">{children}</thead>
     ),
     th: ({ children }: React.HTMLAttributes<HTMLTableCellElement>) => (
-      <th className="border border-gray-200 px-4 py-2 text-left font-semibold">{children}</th>
+      <th className="border border-slate-800 px-4 py-2 text-left font-semibold">{children}</th>
     ),
     td: ({ children }: React.HTMLAttributes<HTMLTableCellElement>) => (
-      <td className="border border-gray-200 px-4 py-2">{children}</td>
+      <td className="border border-slate-800 px-4 py-2">{children}</td>
     ),
     a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
@@ -213,7 +213,7 @@ function createMarkdownComponents(sectionId: string, codeBlockIndex: { current: 
       </a>
     ),
     blockquote: ({ children }: React.HTMLAttributes<HTMLQuoteElement>) => (
-      <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4 text-gray-600">
+      <blockquote className="border-l-4 border-slate-700 pl-4 italic my-4 text-slate-400">
         {children}
       </blockquote>
     ),
@@ -247,7 +247,7 @@ function TOCSidebar({
               className={`block px-3 py-2 rounded transition-colors ${
                 activeSection === item.id
                   ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-gray-100 text-gray-700'
+                  : 'hover:bg-slate-800 text-slate-200'
               }`}
             >
               {item.title}
@@ -280,7 +280,7 @@ function MobileAccordion({
             onClick={() => onToggle(section.id)}
             aria-expanded={expandedSection === section.id}
             aria-controls={`accordion-content-${section.id}`}
-            className="w-full flex items-center justify-between p-4 text-left font-medium hover:bg-gray-50"
+            className="w-full flex items-center justify-between p-4 text-left font-medium hover:bg-slate-800/60"
           >
             <span>{section.title}</span>
             <span data-testid={`accordion-icon-${section.id}`}>
@@ -440,25 +440,25 @@ export function PWAGuideClient() {
   }
 
   return (
-    <main data-testid="pwa-guide-page" className="min-h-screen bg-gray-50">
+    <main data-testid="pwa-guide-page" className="min-h-screen bg-surface-0 text-slate-200">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" data-testid="breadcrumb" className="bg-white border-b">
+      <nav aria-label="Breadcrumb" data-testid="breadcrumb" className="bg-slate-900/60 border-b border-slate-800">
         <div className="container mx-auto px-4 py-3">
           <ol className="flex items-center space-x-2 text-sm">
             <li>
-              <a href="/" data-testid="breadcrumb-home" className="text-gray-500 hover:text-gray-700">
+              <a href="/" data-testid="breadcrumb-home" className="text-slate-400 hover:text-slate-200">
                 Home
               </a>
             </li>
-            <li className="text-gray-400">/</li>
+            <li className="text-slate-500">/</li>
             <li>
-              <a href="/dashboard" data-testid="breadcrumb-dashboard" className="text-gray-500 hover:text-gray-700">
+              <a href="/dashboard" data-testid="breadcrumb-dashboard" className="text-slate-400 hover:text-slate-200">
                 Dashboard
               </a>
             </li>
-            <li className="text-gray-400">/</li>
+            <li className="text-slate-500">/</li>
             <li>
-              <span data-testid="breadcrumb-current" className="text-gray-900 font-medium">
+              <span data-testid="breadcrumb-current" className="text-slate-100 font-medium">
                 PWA Guide
               </span>
             </li>
@@ -471,7 +471,7 @@ export function PWAGuideClient() {
         <Link
           href="/dashboard"
           data-testid="back-to-dashboard"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
+          className="inline-flex items-center text-slate-400 hover:text-slate-100 mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" data-testid="back-arrow-icon" />
           Back to Dashboard
@@ -487,7 +487,7 @@ export function PWAGuideClient() {
               {guide.title}
             </h1>
           </div>
-          <p data-testid="guide-description" className="text-lg text-gray-600 max-w-3xl">
+          <p data-testid="guide-description" className="text-lg text-slate-400 max-w-3xl">
             {guide.description}
           </p>
         </header>
@@ -495,7 +495,7 @@ export function PWAGuideClient() {
         {/* Mobile Menu Toggle */}
         <button
           data-testid="mobile-menu-toggle"
-          className="md:hidden mb-4 flex items-center gap-2 px-4 py-2 bg-white border rounded-lg"
+          className="md:hidden mb-4 flex items-center gap-2 px-4 py-2 bg-slate-900/60 border border-slate-800 rounded-lg"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-expanded={isMobileMenuOpen}
           aria-controls="toc-container"
@@ -516,7 +516,7 @@ export function PWAGuideClient() {
             id="toc-container"
             className={`${isMobileMenuOpen ? 'block' : 'hidden md:block'}`}
           >
-            <div className="bg-white rounded-lg border p-4">
+            <div className="bg-slate-900/60 rounded-lg border border-slate-800 p-4">
               <TOCSidebar
                 items={guide.table_of_contents}
                 activeSection={activeSection}
@@ -535,7 +535,7 @@ export function PWAGuideClient() {
             />
 
             {/* Desktop Sections */}
-            <div className="bg-white rounded-lg border p-6 md:p-8">
+            <div className="bg-slate-900/60 rounded-lg border border-slate-800 p-6 md:p-8">
               <DesktopSections
                 sections={guide.sections}
                 activeSection={activeSection}

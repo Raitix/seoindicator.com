@@ -367,19 +367,19 @@ export default function ApiDocumentationPage() {
                 <ul data-testid="scope-list" className="grid grid-cols-2 gap-2">
                   <li className="flex items-center gap-2 text-sm">
                     <code className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">keywords:read</code>
-                    <span className="text-gray-500">Read keywords</span>
+                    <span className="text-gray-500 dark:text-gray-400">Read keywords</span>
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <code className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">keywords:write</code>
-                    <span className="text-gray-500">Manage keywords</span>
+                    <span className="text-gray-500 dark:text-gray-400">Manage keywords</span>
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <code className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">sites:read</code>
-                    <span className="text-gray-500">Read sites</span>
+                    <span className="text-gray-500 dark:text-gray-400">Read sites</span>
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <code className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">sites:write</code>
-                    <span className="text-gray-500">Manage sites</span>
+                    <span className="text-gray-500 dark:text-gray-400">Manage sites</span>
                   </li>
                 </ul>
               </div>
@@ -443,22 +443,22 @@ export default function ApiDocumentationPage() {
                   <tr>
                     <td className="px-4 py-3 text-sm font-mono">/keywords</td>
                     <td className="px-4 py-3 text-sm">60</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">minute</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">minute</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-mono">/reports</td>
                     <td className="px-4 py-3 text-sm">10</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">minute</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">minute</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-mono">/audits</td>
                     <td className="px-4 py-3 text-sm">5</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">minute</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">minute</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-mono">/sites</td>
                     <td className="px-4 py-3 text-sm">30</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">minute</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">minute</td>
                   </tr>
                 </tbody>
               </table>
@@ -642,7 +642,7 @@ export default function ApiDocumentationPage() {
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                     selectedCategory === category
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                   )}
                 >
                   {category === 'all' ? 'All' : category}

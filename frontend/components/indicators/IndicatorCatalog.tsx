@@ -380,7 +380,7 @@ export const IndicatorCatalog = React.forwardRef<HTMLElement, IndicatorCatalogPr
               <TabsList
                 role="tablist"
                 variant="dark"
-                className="w-full justify-start overflow-x-auto"
+                className="w-full justify-start overflow-x-auto overflow-y-hidden pb-0.5"
               >
                 {categories.map((category) => (
                   <TabsTrigger

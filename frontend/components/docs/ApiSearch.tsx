@@ -227,7 +227,7 @@ export function ApiSearch({
         )}
         <kbd
           data-testid="shortcut-badge"
-          className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs text-gray-500 dark:text-gray-400 hidden sm:block"
+          className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 dark:bg-slate-600 px-2 py-0.5 rounded text-xs text-gray-600 dark:text-slate-200 hidden sm:block"
         >
           {shortcutKey}
         </kbd>

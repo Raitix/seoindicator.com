@@ -54,8 +54,8 @@ export function CategoryFilter({
           className={cn(
             'inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
             activeCategory === cat.id
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
           )}
         >
           {cat.label}
@@ -63,8 +63,8 @@ export function CategoryFilter({
             className={cn(
               'text-xs rounded-full px-2 py-0.5',
               activeCategory === cat.id
-                ? 'bg-primary-foreground/20 text-primary-foreground'
-                : 'bg-background/50'
+                ? 'bg-emerald-500/25 text-emerald-100'
+                : 'bg-slate-700/60 text-slate-300'
             )}
             data-testid={`count-${cat.id}`}
           >

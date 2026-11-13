@@ -105,7 +105,7 @@ export function CodeExample({
           )}
           <span
             data-testid="language-label"
-            className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400"
+            className="text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded text-gray-600 dark:text-slate-200"
           >
             {languageLabels[language] || language}
           </span>
