@@ -102,7 +102,50 @@ Element.prototype.scrollIntoView = vi.fn();
 (globalThis as any).__TEST__ = true;
 
 // Clean up after each test
+//
+// Timers are cleared too. Several hooks use SWR with `refreshInterval:
+// 60000`, and a pending interval keeps Node's event loop alive, so the
+// vitest worker never exits and the run appears to hang instead of
+// finishing. The timers are tracked here and cleared after every test.
+//
+// This is a test-harness concern only: the intervals are wanted in
+// production, where the page stays open and the poll is the point.
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+
+const realSetTimeout = global.setTimeout;
+const realSetInterval = global.setInterval;
+const realClearTimeout = global.clearTimeout;
+const realClearInterval = global.clearInterval;
+
+global.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+  const id = realSetTimeout(handler as any, timeout, ...args);
+  pendingTimers.add(id);
+  return id;
+}) as typeof global.setTimeout;
+
+global.setInterval = ((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+  const id = realSetInterval(handler as any, timeout, ...args);
+  pendingTimers.add(id);
+  return id;
+}) as typeof global.setInterval;
+
+global.clearTimeout = ((id: any) => {
+  pendingTimers.delete(id);
+  return realClearTimeout(id);
+}) as typeof global.clearTimeout;
+
+global.clearInterval = ((id: any) => {
+  pendingTimers.delete(id);
+  return realClearInterval(id);
+}) as typeof global.clearInterval;
+
 afterEach(() => {
   document.body.innerHTML = '';
   document.head.innerHTML = '';
+
+  for (const id of pendingTimers) {
+    realClearTimeout(id);
+    realClearInterval(id);
+  }
+  pendingTimers.clear();
 });

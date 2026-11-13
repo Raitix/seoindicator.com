@@ -20,7 +20,8 @@ expect.extend(toHaveNoViolations);
 // ============================================================================
 
 // Mock Next.js Link
-vi.mock('next/link', () => ({ default: const MockLink = ({
+vi.mock('next/link', () => {
+  const MockLink = ({
     children,
     href,
     className,
@@ -35,7 +36,8 @@ vi.mock('next/link', () => ({ default: const MockLink = ({
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink }));
+  return { default: MockLink };
+});
 
 // Mock Next.js metadata generation
 vi.mock('next', () => ({

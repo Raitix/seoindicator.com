@@ -17,19 +17,6 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { useRouter, useParams } from 'next/navigation';
 import React from 'react';
-// The inline MockGBPConnectButton below renders these icons as JSX. The
-// vi.mock factory further down returns them as named exports of the mocked
-// module, which does not put the identifiers in module scope - without these
-// imports every render threw "Loader2 is not defined".
-import {
-  AlertCircle,
-  Building2,
-  Check,
-  ChevronDown,
-  Loader2,
-  MapPin,
-  RefreshCw,
-} from 'lucide-react';
 
 // --- Types ---
 
@@ -97,24 +84,17 @@ const mockWindowOpen = vi.fn();
 const originalWindowOpen = window.open;
 window.open = mockWindowOpen;
 
-// Mock sessionStorage.
-//
-// `mockSessionStorage` is the backing store AND the object the test calls
-// `clear()` on, so it needs the Storage methods itself - a plain
-// Record<string, string> has no `clear`, and every test in the file died
-// in beforeEach with "mockSessionStorage.clear is not a function".
-const mockSessionStorage = {
-  _store: {} as Record<string, string>,
-  getItem(key: string) { return this._store[key] ?? null; },
-  setItem(key: string, value: string) { this._store[key] = value; },
-  removeItem(key: string) { delete this._store[key]; },
-  clear() { Object.keys(this._store).forEach(key => delete this._store[key]); },
-  get length() { return Object.keys(this._store).length; },
-  key(index: number) { return Object.keys(this._store)[index] ?? null; },
-};
-
+// Mock sessionStorage
+const mockSessionStorage: Record<string, string> = {};
 Object.defineProperty(window, 'sessionStorage', {
-  value: mockSessionStorage,
+  value: {
+    getItem: (key: string) => mockSessionStorage[key] || null,
+    setItem: (key: string, value: string) => { mockSessionStorage[key] = value; },
+    removeItem: (key: string) => { delete mockSessionStorage[key]; },
+    clear: () => { Object.keys(mockSessionStorage).forEach(key => delete mockSessionStorage[key]); },
+    get length() { return Object.keys(mockSessionStorage).length; },
+    key: (index: number) => Object.keys(mockSessionStorage)[index] || null,
+  },
 });
 
 // Mock addEventListener/removeEventListener for OAuth callback

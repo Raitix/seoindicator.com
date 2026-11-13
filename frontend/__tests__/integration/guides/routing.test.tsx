@@ -23,12 +23,6 @@ import '@testing-library/jest-dom';
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
 
-// One stable URLSearchParams instance. A mock that returns
-// `new URLSearchParams()` on every call gives a new object identity
-// each render, so any effect with [searchParams] in its deps re-runs
-// forever and the vitest worker dies with "Worker exited unexpectedly".
-const mockSearchParamsInstance = new URLSearchParams();
-
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
@@ -40,7 +34,7 @@ vi.mock('next/navigation', () => ({
   }),
   useParams: () => ({ slug: 'meta-title' }),
   usePathname: () => '/seo-guides/meta-title/',
-  useSearchParams: () => mockSearchParamsInstance,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock Next.js Link
@@ -61,7 +55,8 @@ vi.mock('next/link', () => ({ default: function MockLink({
   } }));
 
 // Full guide data defined INSIDE the mock factory
-vi.mock('@/lib/guides/registry', () => ({ default: const MOCK_GUIDES = [
+vi.mock('@/lib/guides/registry', () => {
+  const MOCK_GUIDES = [
     { slug: 'meta-title', title: 'Meta Title Optimization', summary: 'Learn how to craft compelling page titles.', category: 'on-page', toolSlug: 'meta-tag-analyzer', icon: '📝', readTime: 5, relatedGuides: ['meta-description', 'h1-headings'] },
     { slug: 'meta-description', title: 'Meta Description Best Practices', summary: 'Write descriptions that entice clicks.', category: 'on-page', toolSlug: 'meta-tag-analyzer', icon: '📋', readTime: 4, relatedGuides: ['meta-title'] },
     { slug: 'h1-headings', title: 'H1 Heading Structure', summary: 'Use H1 tags effectively for SEO.', category: 'on-page', icon: '🔤', readTime: 4, relatedGuides: ['heading-hierarchy'] },
@@ -94,7 +89,8 @@ vi.mock('@/lib/guides/registry', () => ({ default: const MOCK_GUIDES = [
         .slice(0, 3);
     }),
     GUIDE_SLUGS: MOCK_GUIDES.map(g => g.slug),
-  } }));
+  };
+});
 
 // Mock UI components
 vi.mock('@/components/ui/card', () => ({
@@ -136,9 +132,9 @@ vi.mock('@/components/ui/input', () => ({
 import { GuidesIndexClient } from '@/app/seo-guides/GuidesIndexClient';
 import { getAllGuides, getGuideBySlug, getRelatedGuides } from '@/lib/guides/registry';
 
-const mockGetAllGuides = getAllGuides as MockedFunction<typeof getAllGuides>;
-const mockGetGuideBySlug = getGuideBySlug as MockedFunction<typeof getGuideBySlug>;
-const mockGetRelatedGuides = getRelatedGuides as MockedFunction<typeof getRelatedGuides>;
+const mockGetAllGuides = getAllGuides as jest.MockedFunction<typeof getAllGuides>;
+const mockGetGuideBySlug = getGuideBySlug as jest.MockedFunction<typeof getGuideBySlug>;
+const mockGetRelatedGuides = getRelatedGuides as jest.MockedFunction<typeof getRelatedGuides>;
 
 // ============================================================================
 // Test Utilities

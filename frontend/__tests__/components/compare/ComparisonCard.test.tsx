@@ -36,7 +36,7 @@ const MockLink = ({
   </a>
 );
 
-vi.mock('next/link', () => MockLink);
+vi.mock('next/link', () => ({ default: MockLink }));
 
 // ============================================================================
 // Mock Component (TDD - This will be replaced by actual implementation)

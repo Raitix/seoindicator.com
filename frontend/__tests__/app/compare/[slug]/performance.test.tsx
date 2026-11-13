@@ -14,19 +14,23 @@ import '@testing-library/jest-dom';
 // Mocks
 // ============================================================================
 
-vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => {
+  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return MockLink }));
+  return { default: MockLink };
+});
 
-vi.mock('next/image', () => ({ default: const MockImage = ({ src, alt, ...props }: { src: string; alt: string }) => (
+vi.mock('next/image', () => {
+  const MockImage = ({ src, alt, ...props }: { src: string; alt: string }) => (
     <img src={src} alt={alt} {...props} loading="lazy" />
   );
   MockImage.displayName = 'MockImage';
-  return MockImage }));
+  return { default: MockImage };
+});
 
 vi.mock('@/lib/compare/registry', () => ({
   COMPARISON_SLUGS: ['seoindicator-vs-ahrefs', 'seoindicator-vs-semrush'],

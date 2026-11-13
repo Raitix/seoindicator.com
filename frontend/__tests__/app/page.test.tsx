@@ -12,20 +12,24 @@ import '@testing-library/jest-dom';
 // ==========================================
 
 // Mock Next.js Link
-vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => {
+  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'MockLink';
-  return MockLink }));
+  return { default: MockLink };
+});
 
 // Mock Next.js Image
-vi.mock('next/image', () => ({ default: const MockImage = ({ src, alt, width, height, ...props }: { src: string; alt: string; width?: number; height?: number }) => (
+vi.mock('next/image', () => {
+  const MockImage = ({ src, alt, width, height, ...props }: { src: string; alt: string; width?: number; height?: number }) => (
     <img src={src} alt={alt} width={width} height={height} {...props} />
   );
   MockImage.displayName = 'MockImage';
-  return MockImage }));
+  return { default: MockImage };
+});
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
@@ -43,7 +47,8 @@ vi.mock('lucide-react', () => ({
 }));
 
 // Mock shadcn/ui components
-vi.mock('@/components/ui/button', () => ({ default: const MockButton = ({ children, variant, className, asChild, ...props }: { children: React.ReactNode; variant?: string; className?: string; asChild?: boolean }) => {
+vi.mock('@/components/ui/button', () => {
+  const MockButton = ({ children, variant, className, asChild, ...props }: { children: React.ReactNode; variant?: string; className?: string; asChild?: boolean }) => {
     if (asChild) {
       // When asChild is true, render children directly (Link etc.)
       return <>{children}</>;
@@ -55,13 +60,16 @@ vi.mock('@/components/ui/button', () => ({ default: const MockButton = ({ childr
     );
   };
   MockButton.displayName = 'MockButton';
-  return { Button: MockButton, buttonVariants: () => '' } }));
+  return { Button: MockButton, buttonVariants: () => '' };
+});
 
-vi.mock('@/components/ui/input', () => ({ default: const MockInput = ({ className, ...props }: { className?: string }) => (
+vi.mock('@/components/ui/input', () => {
+  const MockInput = ({ className, ...props }: { className?: string }) => (
     <input className={className} {...props} />
   );
   MockInput.displayName = 'MockInput';
-  return MockInput }));
+  return { default: MockInput };
+});
 
 vi.mock('@/components/ui/card', () => ({
   Card: ({ children, className }: { children: React.ReactNode; className?: string }) => (

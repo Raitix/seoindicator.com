@@ -17,7 +17,7 @@ vi.mock('@/hooks/useToolAnalysis', () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch as jest.Mock;
 
-const mockUseToolAnalysis = useToolAnalysis as MockedFunction<typeof useToolAnalysis>;
+const mockUseToolAnalysis = useToolAnalysis as jest.MockedFunction<typeof useToolAnalysis>;
 
 describe('MobileFriendlyChecker Component', () => {
   const defaultMockReturn = {

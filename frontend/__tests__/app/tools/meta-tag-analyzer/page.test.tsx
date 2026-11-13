@@ -11,11 +11,13 @@ import '@testing-library/jest-dom';
 import MetaTagAnalyzerPage from '@/app/tools/meta-tag-analyzer/page';
 
 // Mock Next.js Link
-vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => {
+vi.mock('next/link', () => {
+  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => {
     return <a href={href} {...props}>{children}</a>;
   };
   MockLink.displayName = 'MockLink';
-  return MockLink }));
+  return { default: MockLink };
+});
 
 // Mock Button component
 vi.mock('@/components/ui/button', () => ({

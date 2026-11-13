@@ -13,7 +13,8 @@ import '@testing-library/jest-dom';
 import { ToolEmbed, type ToolSlug } from '@/components/guides/ToolEmbed';
 
 // Mock Next.js dynamic import
-vi.mock('next/dynamic', () => ({ default: const MockToolWidget = ({ tool, title, onAnalysisComplete }: { tool: string; title?: string; onAnalysisComplete?: (result: unknown) => void }) => (
+vi.mock('next/dynamic', () => {
+  const MockToolWidget = ({ tool, title, onAnalysisComplete }: { tool: string; title?: string; onAnalysisComplete?: (result: unknown) => void }) => (
     <div data-testid="tool-widget" data-tool={tool}>
       <h3>{title}</h3>
       <button
@@ -28,12 +29,15 @@ vi.mock('next/dynamic', () => ({ default: const MockToolWidget = ({ tool, title,
   return (importFn: () => Promise<{ default: React.ComponentType; ToolWidget: React.ComponentType }>) => {
     const Component = importFn();
     return vi.fn().mockImplementation((props) => <MockToolWidget {...props} />);
-  } }));
+  };
+});
 
 // Mock ErrorBoundary to allow testing error scenarios
-vi.mock('@/components/tools/ErrorBoundary', () => ({ default: {
+vi.mock('@/components/tools/ErrorBoundary', () => {
+  return {
     ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  } }));
+  };
+});
 
 // Valid tool slugs for testing
 const VALID_TOOL_SLUGS: ToolSlug[] = [

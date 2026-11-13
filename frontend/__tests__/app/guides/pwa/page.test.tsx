@@ -47,7 +47,8 @@ vi.mock('react-markdown', () => ({ default: function MockReactMarkdown({ childre
       .replace(/- (.*)/g, '<li>$1</li>');
     
     return <div data-testid="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
-  } }));
+  };
+});
 
 // Mock syntax highlighter
 vi.mock('react-syntax-highlighter', () => ({
@@ -156,8 +157,7 @@ if ('serviceWorker' in navigator) {
 }
 \`\`\``,
     },
-  ],
-};
+  ], });
 
 const mockGuideError = {
   success: false,

@@ -133,7 +133,7 @@ function SocialPreviewEmbed({
   );
 }
 
-const mockToolEmbed = ToolEmbed as MockedFunction<typeof ToolEmbed>;
+const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
 
 // =============================================================================
 // TEST SUITE

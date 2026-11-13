@@ -11,7 +11,8 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock next/link
-vi.mock('next/link', () => ({ default: interface LinkProps {
+vi.mock('next/link', () => {
+  interface LinkProps {
     children: React.ReactNode;
     href: string;
     className?: string;
@@ -22,7 +23,8 @@ vi.mock('next/link', () => ({ default: interface LinkProps {
         {children}
       </a>
     );
-  } }));
+  };
+});
 
 // Mock IndicatorCatalog component (TASK-28-7)
 vi.mock('@/components/indicators/IndicatorCatalog', () => ({

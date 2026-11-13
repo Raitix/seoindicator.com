@@ -17,12 +17,6 @@ import '@testing-library/jest-dom';
 
 // Mock Next.js navigation
 const mockPush = vi.fn();
-// One stable URLSearchParams instance. A mock that returns
-// `new URLSearchParams()` on every call gives a new object identity
-// each render, so any effect with [searchParams] in its deps re-runs
-// forever and the vitest worker dies with "Worker exited unexpectedly".
-const mockSearchParamsInstance = new URLSearchParams();
-
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
@@ -33,7 +27,7 @@ vi.mock('next/navigation', () => ({
     prefetch: vi.fn(),
   }),
   usePathname: () => '/seo-guides/twitter-cards/',
-  useSearchParams: () => mockSearchParamsInstance,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock guide registry
@@ -83,7 +77,8 @@ vi.mock('@/lib/guides/registry', () => ({
 }));
 
 // Mock ToolEmbed component with tab switching support
-vi.mock('@/components/guides/ToolEmbed', () => ({ default: const React = require('react');
+vi.mock('@/components/guides/ToolEmbed', () => {
+  const React = require('react');
   return {
     ToolEmbed: vi.fn(({ toolSlug, defaultToolTab, title, showCta, ctaText, stateKey, onAnalysisComplete }) => {
       const [activeTab, setActiveTab] = React.useState(defaultToolTab || 'twitter');
@@ -145,7 +140,8 @@ vi.mock('@/components/guides/ToolEmbed', () => ({ default: const React = require
         </div>
       );
     }),
-  } }));
+  };
+});
 
 // Mock GuideSection component
 vi.mock('@/components/guides', () => ({
@@ -178,8 +174,8 @@ vi.mock('@/components/guides', () => ({
 import { getGuideBySlug } from '@/lib/guides/registry';
 import { ToolEmbed } from '@/components/guides/ToolEmbed';
 
-const mockGetGuideBySlug = getGuideBySlug as MockedFunction<typeof getGuideBySlug>;
-const mockToolEmbed = ToolEmbed as MockedFunction<typeof ToolEmbed>;
+const mockGetGuideBySlug = getGuideBySlug as jest.MockedFunction<typeof getGuideBySlug>;
+const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
 
 // =============================================================================
 // TEST SUITE

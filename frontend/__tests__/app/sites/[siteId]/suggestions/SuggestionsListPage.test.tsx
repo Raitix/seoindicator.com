@@ -51,11 +51,10 @@ vi.mock("swr", () => ({
 
 import useSWR from "swr";
 
-const mockUseSWR = useSWR as MockedFunction<typeof useSWR>;
+const mockUseSWR = useSWR as jest.MockedFunction<typeof useSWR>;
 
 // Mock the page component
-vi.mock("@/app/sites/[siteId]/suggestions/page", () => {
-  return function MockSuggestionsListPage({
+vi.mock("@/app/sites/[siteId]/suggestions/page", () => ({ default: function MockSuggestionsListPage({
     params,
   }: {
     params: { siteId: string };
@@ -338,8 +337,7 @@ vi.mock("@/app/sites/[siteId]/suggestions/page", () => {
         </div>
       </div>
     );
-  };
-});
+  } }));
 
 import SuggestionsListPage from "@/app/sites/[siteId]/suggestions/page";
 
@@ -679,12 +677,12 @@ describe("SuggestionsListPage", () => {
         isValidating: false,
       });
 
-      // The actual component has its own loading state handling.
-      //
-      // There used to be a vi.mock here, but vitest hoists every vi.mock to
-      // file scope, so a mock declared inside an it() block never applied to
-      // the already-imported component - it only made the test misleading.
-      // The SWR mock above is what actually drives the loading state.
+      // Re-mock to show loading
+      vi.mock("@/app/sites/[siteId]/suggestions/page", () => ({ default: function MockLoadingPage() {
+          return <div data-testid="loading-state">Loading suggestions...</div>;
+        } }));
+
+      // The actual component has its own loading state handling
     });
   });
 

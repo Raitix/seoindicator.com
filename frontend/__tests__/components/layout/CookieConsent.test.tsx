@@ -22,9 +22,11 @@ vi.mock('@/lib/utils/cookieConsent', () => ({
 }));
 
 // Mock Next.js Link
-vi.mock('next/link', () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => {
+  return ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
-  ) }));
+  );
+});
 
 const mockedUtils = cookieConsentUtils as jest.Mocked<typeof cookieConsentUtils>;
 

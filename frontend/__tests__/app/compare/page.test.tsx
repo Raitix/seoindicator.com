@@ -59,7 +59,8 @@ vi.mock('@/lib/compare/registry', () => ({
 }));
 
 // Mock Next.js Link
-vi.mock('next/link', () => ({ default: const MockLink = ({ 
+vi.mock('next/link', () => {
+  const MockLink = ({ 
     children, 
     href, 
     className = '',
@@ -74,7 +75,8 @@ vi.mock('next/link', () => ({ default: const MockLink = ({
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink }));
+  return { default: MockLink };
+});
 
 // Import the component after mocks
 import CompareIndexPage, { metadata } from '@/app/compare/page';

@@ -12,7 +12,8 @@ import { NextRequest } from 'next/server';
 // ==================== Mock NextResponse ====================
 
 // Mock NextResponse before importing middleware
-vi.mock('next/server', () => ({ default: const originalModule = vi.importActual('next/server');
+vi.mock('next/server', () => {
+  const originalModule = vi.importActual('next/server');
   
   return {
     ...originalModule,
@@ -35,7 +36,8 @@ vi.mock('next/server', () => ({ default: const originalModule = vi.importActual(
         },
       })),
     },
-  } }));
+  };
+});
 
 // Import after mock
 import { NextResponse } from 'next/server';

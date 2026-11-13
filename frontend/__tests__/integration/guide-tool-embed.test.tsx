@@ -14,12 +14,6 @@ import '@testing-library/jest-dom';
 // Mock Next.js navigation
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
-// One stable URLSearchParams instance. A mock that returns
-// `new URLSearchParams()` on every call gives a new object identity
-// each render, so any effect with [searchParams] in its deps re-runs
-// forever and the vitest worker dies with "Worker exited unexpectedly".
-const mockSearchParamsInstance = new URLSearchParams();
-
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
@@ -30,7 +24,7 @@ vi.mock('next/navigation', () => ({
     prefetch: vi.fn(),
   }),
   usePathname: () => '/seo-guides/meta-title/',
-  useSearchParams: () => mockSearchParamsInstance,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock guide registry
@@ -132,8 +126,8 @@ vi.mock('@/components/guides', () => ({
 import { getGuideBySlug } from '@/lib/guides/registry';
 import { ToolEmbed } from '@/components/guides/ToolEmbed';
 
-const mockGetGuideBySlug = getGuideBySlug as MockedFunction<typeof getGuideBySlug>;
-const mockToolEmbed = ToolEmbed as MockedFunction<typeof ToolEmbed>;
+const mockGetGuideBySlug = getGuideBySlug as jest.MockedFunction<typeof getGuideBySlug>;
+const mockToolEmbed = ToolEmbed as jest.MockedFunction<typeof ToolEmbed>;
 
 describe('Guide Tool Embed Integration', () => {
   beforeEach(() => {

@@ -90,7 +90,7 @@ vi.mock('@/components/ui/button', () => ({
   Button: MockButton,
 }));
 
-vi.mock('next/link', () => MockLink);
+vi.mock('next/link', () => ({ default: MockLink }));
 
 // ============================================================================
 // Component Implementation (TDD Mock - will be replaced)

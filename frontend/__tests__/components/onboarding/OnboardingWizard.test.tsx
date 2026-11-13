@@ -28,7 +28,7 @@ vi.mock('@/components/onboarding/steps/Step5_Complete', () => ({
   Step5_Complete: () => <div data-testid="step-5">Step 5: Complete</div>,
 }));
 
-const mockedUseOnboardingContext = useOnboardingContext as MockedFunction<typeof useOnboardingContext>;
+const mockedUseOnboardingContext = useOnboardingContext as jest.MockedFunction<typeof useOnboardingContext>;
 
 describe('OnboardingWizard', () => {
   const defaultOnboarding = {

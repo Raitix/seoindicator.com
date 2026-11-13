@@ -24,7 +24,7 @@ vi.mock("lucide-react", () => ({
 }));
 
 // Mock clipboard API
-const { mockClipboardWrite } = vi.hoisted(() => ({ mockClipboardWrite:  vi.fn();
+const mockClipboardWrite = vi.fn();
 Object.assign(navigator, {
   clipboard: {
     writeText: mockClipboardWrite,
@@ -44,7 +44,7 @@ const MockAiRefreshBriefPanel: React.FC<{
   error?: string | null;
   className?: string;
 }> = ({ brief, onRequestBrief, onRegenerate, isLoading, isRegenerating, error, className }) => {
-  const [expandedSuggestions, setExpandedSuggestions] = React.useState<Set<string>>(new Set() })););
+  const [expandedSuggestions, setExpandedSuggestions] = React.useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
   const toggleSuggestion = (id: string) => {

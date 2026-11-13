@@ -35,7 +35,8 @@ vi.mock('@/lib/compare/registry', () => ({
 }));
 
 // Mock Next.js Link component
-vi.mock('next/link', () => ({ default: const MockLink = ({
+vi.mock('next/link', () => {
+  const MockLink = ({
     children,
     href,
     ...props
@@ -49,7 +50,8 @@ vi.mock('next/link', () => ({ default: const MockLink = ({
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink }));
+  return { default: MockLink };
+});
 
 describe('Compare Index Page', () => {
   // ============================================================================

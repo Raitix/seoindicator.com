@@ -16,21 +16,17 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock next/link
-vi.mock('next/link', () => ({ default: const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+vi.mock('next/link', () => {
+  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
   MockLink.displayName = 'Link';
-  return MockLink }));
+  return { default: MockLink };
+});
 
 // Mock next/navigation
-// One stable URLSearchParams instance. A mock that returns
-// `new URLSearchParams()` on every call gives a new object identity
-// each render, so any effect with [searchParams] in its deps re-runs
-// forever and the vitest worker dies with "Worker exited unexpectedly".
-const mockSearchParamsInstance = new URLSearchParams();
-
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
@@ -38,7 +34,7 @@ vi.mock('next/navigation', () => ({
     back: vi.fn(),
   }),
   usePathname: () => '/',
-  useSearchParams: () => mockSearchParamsInstance,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock IndicatorCatalog component

@@ -73,7 +73,7 @@ vi.mock('@/lib/api/ai-suggestions', () => ({
 
 import { useToolAnalysis } from '@/hooks/useToolAnalysis';
 
-const mockUseToolAnalysis = useToolAnalysis as MockedFunction<typeof useToolAnalysis>;
+const mockUseToolAnalysis = useToolAnalysis as jest.MockedFunction<typeof useToolAnalysis>;
 
 // Mock clipboard API
 const mockClipboard = {

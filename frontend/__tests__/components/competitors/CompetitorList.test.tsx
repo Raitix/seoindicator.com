@@ -11,14 +11,11 @@ vi.mock("@/lib/api/competitors", () => ({
 }));
 
 // Mock child components that have complex dependencies
-vi.mock("@/components/competitors/AddCompetitorModal", () => {
-  return function MockAddCompetitorModal() {
+vi.mock("@/components/competitors/AddCompetitorModal", () => ({ default: function MockAddCompetitorModal() {
     return <button data-testid="add-competitor-btn">Add Competitor</button>;
-  };
-});
+  } }));
 
-vi.mock("@/components/competitors/EditCompetitorModal", () => {
-  return function MockEditCompetitorModal({
+vi.mock("@/components/competitors/EditCompetitorModal", () => ({ default: function MockEditCompetitorModal({
     competitor,
     open,
   }: {
@@ -26,11 +23,9 @@ vi.mock("@/components/competitors/EditCompetitorModal", () => {
     open: boolean;
   }) {
     return open ? <div data-testid="edit-modal">Edit {competitor?.domain}</div> : null;
-  };
-});
+  } }));
 
-vi.mock("@/components/competitors/DeleteCompetitorDialog", () => {
-  return function MockDeleteCompetitorDialog({
+vi.mock("@/components/competitors/DeleteCompetitorDialog", () => ({ default: function MockDeleteCompetitorDialog({
     competitor,
     open,
   }: {
@@ -40,8 +35,7 @@ vi.mock("@/components/competitors/DeleteCompetitorDialog", () => {
     return open ? (
       <div data-testid="delete-dialog">Delete {competitor?.domain}</div>
     ) : null;
-  };
-});
+  } }));
 
 const mockCompetitors = [
   {

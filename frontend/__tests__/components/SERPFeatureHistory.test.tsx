@@ -28,7 +28,7 @@ vi.mock("@/lib/api/serp-features", () => ({
   isWithinDays: vi.fn(() => true),
 }));
 
-const mockUseSerpFeatureHistory = useSerpFeatureHistory as MockedFunction<typeof useSerpFeatureHistory>;
+const mockUseSerpFeatureHistory = useSerpFeatureHistory as jest.MockedFunction<typeof useSerpFeatureHistory>;
 
 // Mock data
 const mockKeywordData = {

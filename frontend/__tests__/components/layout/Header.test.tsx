@@ -13,6 +13,19 @@ import Header from "@/components/layout/Header";
 // Mock next/navigation
 const mockPathname = vi.fn();
 const mockPush = vi.fn();
+vi.mock("@/lib/api/notifications", () => ({
+  useUnreadCount: () => ({ count: 0, isLoading: false, error: null, mutate: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useAIVisibilityUnreadCount", () => ({
+  useAIVisibilityUnreadCount: () => ({
+    count: 0,
+    isLoading: false,
+    error: null,
+    mutate: vi.fn(),
+  }),
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => mockPathname(),
   useRouter: () => ({
