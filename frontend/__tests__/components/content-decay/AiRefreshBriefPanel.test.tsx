@@ -25,11 +25,16 @@ vi.mock("lucide-react", () => ({
 
 // Mock clipboard API
 const mockClipboardWrite = vi.fn();
-Object.assign(navigator, {
-  clipboard: {
-    writeText: mockClipboardWrite,
-  },
-});
+
+// userEvent.setup() replaces navigator.clipboard with its own stub, so the
+// mock has to be re-installed on the navigator after setup() runs.
+const installClipboardMock = () => {
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText: mockClipboardWrite },
+    configurable: true,
+    writable: true,
+  });
+};
 
 // Import types
 import type { AiRefreshBrief, AiRefreshSuggestion } from "@/lib/types/content-decay";
@@ -164,8 +169,8 @@ const MockAiRefreshBriefPanel: React.FC<{
             {/* Details (if expanded) */}
             {expandedSuggestions.has(suggestion.id) && suggestion.details && (
               <ul data-testid={`suggestion-details-${suggestion.id}`}>
-                {suggestion.details.map((detail, i) => (
-                  <li key={i}>{detail}</li>
+                {suggestion.details.map((detail) => (
+                  <li key={detail}>{detail}</li>
                 ))}
               </ul>
             )}
@@ -334,12 +339,15 @@ describe("AiRefreshBriefPanel", () => {
   // ABP-08: Copy to clipboard
   it("copies suggestion to clipboard", async () => {
     const user = userEvent.setup();
+    installClipboardMock();
     render(<MockAiRefreshBriefPanel brief={mockBrief} />);
 
     await user.click(screen.getByTestId("copy-btn-sug-1"));
 
     expect(mockClipboardWrite).toHaveBeenCalled();
-    expect(screen.getByTestId("copied-indicator")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("copied-indicator")).toBeInTheDocument();
+    });
   });
 
   // ABP-09: Request regeneration
@@ -552,10 +560,13 @@ describe("AiRefreshBriefPanel", () => {
   it("copied indicator disappears after timeout", async () => {
     vi.useFakeTimers();
     const user = userEvent.setup({ delay: null });
+    installClipboardMock();
     render(<MockAiRefreshBriefPanel brief={mockBrief} />);
 
     await user.click(screen.getByTestId("copy-btn-sug-1"));
-    expect(screen.getByTestId("copied-indicator")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("copied-indicator")).toBeInTheDocument();
+    });
 
     // Fast-forward 2 seconds
     vi.advanceTimersByTime(2000);

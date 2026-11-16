@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { CodeExample } from '@/lib/guides/types';
 
@@ -313,8 +313,12 @@ describe('GuideCodeBlock Component', () => {
       render(<GuideCodeBlock example={htmlExample} />);
       const button = screen.getByTestId('copy-button-0');
       fireEvent.click(button);
-      
-      expect(button).toHaveTextContent('Copied!');
+
+      // The copy handler is async (it awaits the clipboard), so the
+      // "Copied!" state lands a tick after the click.
+      await waitFor(() => {
+        expect(button).toHaveTextContent('Copied!');
+      });
     });
   });
 
