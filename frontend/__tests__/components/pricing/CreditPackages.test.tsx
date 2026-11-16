@@ -191,7 +191,7 @@ const MockCreditPackages = ({
             <p className="text-gray-600 mt-3">{pkg.description}</p>
             
             <p data-testid={`price-per-credit-${pkg.id}`} className="text-sm text-gray-500 mt-2">
-              ${(pkg.price / pkg.credits).toFixed(4)}/credit
+              ${(pkg.price / 100 / pkg.credits).toFixed(4)}/credit
             </p>
             
             <button
@@ -209,6 +209,18 @@ const MockCreditPackages = ({
     </section>
   );
 };
+
+// The locale may use a non-breaking space as the group separator, so
+// it is normalised before the text is compared.
+function creditText(element: HTMLElement): string {
+  return (element.textContent ?? '').replace(/\u00a0/g, ' ');
+}
+
+// The expected value carries the same separator, so it is normalised
+// the same way.
+function formattedCredits(credits: number): string {
+  return credits.toLocaleString().replace(/\u00a0/g, ' ');
+}
 
 describe('CreditPackages', () => {
   const mockOnBuyClick = vi.fn();
@@ -291,8 +303,13 @@ describe('CreditPackages', () => {
 
     it('CP-012: displays credit amounts', () => {
       render(<MockCreditPackages />);
-      expect(screen.getByTestId('credits-1')).toHaveTextContent('1,000 credits');
-      expect(screen.getByTestId('credits-4')).toHaveTextContent('50,000 credits');
+      // The amounts are grouped for the locale of the visitor.
+      expect(creditText(screen.getByTestId('credits-1'))).toContain(
+        `${formattedCredits(1000)} credits`
+      );
+      expect(creditText(screen.getByTestId('credits-4'))).toContain(
+        `${formattedCredits(50000)} credits`
+      );
     });
 
     it('CP-013: displays prices correctly', () => {
@@ -319,13 +336,18 @@ describe('CreditPackages', () => {
 
     it('CP-016: calculates price per credit', () => {
       render(<MockCreditPackages />);
+      // $5.00 for 1000 credits and $150.00 for 50000 credits.
       expect(screen.getByTestId('price-per-credit-1')).toHaveTextContent('$0.0050/credit');
-      expect(screen.getByTestId('price-per-credit-4')).toHaveTextContent('$0.0003/credit');
+      expect(screen.getByTestId('price-per-credit-4')).toHaveTextContent('$0.0030/credit');
     });
 
     it('CP-017: formats large numbers with commas', () => {
       render(<MockCreditPackages />);
-      expect(screen.getByTestId('credits-4')).toHaveTextContent('50,000 credits');
+      const credits = creditText(screen.getByTestId('credits-4'));
+      // The number is grouped for the locale, so the digits are not
+      // contiguous.
+      expect(credits).toContain(formattedCredits(50000));
+      expect(credits).not.toContain('50000');
     });
 
     it('CP-018: displays buy button for each package', () => {
@@ -480,7 +502,9 @@ describe('CreditPackages', () => {
     it('CP-040: handles large credit amounts', () => {
       const largeCredits = [{ ...mockPackages[0], credits: 10000000 }];
       render(<MockCreditPackages packages={largeCredits} />);
-      expect(screen.getByTestId('credits-1')).toHaveTextContent('10,000,000 credits');
+      expect(creditText(screen.getByTestId('credits-1'))).toContain(
+        `${formattedCredits(10000000)} credits`
+      );
     });
 
     it('CP-041: XSS prevention in name', () => {

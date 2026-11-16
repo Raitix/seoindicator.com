@@ -517,14 +517,16 @@ describe('ModelPricingTable', () => {
       const user = userEvent.setup();
       render(<MockModelPricingTable />);
       
-      await user.click(screen.getByTestId('header-cost'));
-      
-      // Check aria-sort attribute
+      // The table starts sorted by cost ascending.
       const costHeader = screen.getByTestId('header-cost');
       expect(costHeader).toHaveAttribute('aria-sort', 'ascending');
+      
+      // The click reverses the order.
+      await user.click(costHeader);
+      expect(costHeader).toHaveAttribute('aria-sort', 'descending');
     });
 
-    it('MPT-024: click cost header twice for descending', async () => {
+    it('MPT-024: click cost header twice returns to ascending', async () => {
       const user = userEvent.setup();
       render(<MockModelPricingTable />);
       
@@ -532,7 +534,7 @@ describe('ModelPricingTable', () => {
       await user.click(screen.getByTestId('header-cost'));
       
       const costHeader = screen.getByTestId('header-cost');
-      expect(costHeader).toHaveAttribute('aria-sort', 'descending');
+      expect(costHeader).toHaveAttribute('aria-sort', 'ascending');
     });
 
     it('MPT-025: sort icon appears on sorted column', async () => {
@@ -550,8 +552,8 @@ describe('ModelPricingTable', () => {
       // Get initial first row
       const initialFirstRow = screen.getByTestId('model-row-1');
       
-      // Sort by cost descending
-      await user.click(screen.getByTestId('header-cost'));
+      // Sort by cost descending. The table starts sorted by cost
+      // ascending, so one click reverses the order.
       await user.click(screen.getByTestId('header-cost'));
       
       // Rows should be reordered (Claude should be first due to highest cost)
