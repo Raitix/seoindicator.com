@@ -137,7 +137,7 @@ beforeEach(() => {
 // ==================== DP-001: Authentication & Authorization ====================
 
 describe("Authentication & Authorization", () => {
-  it("redirects to login when user is not authenticated (DP-001)", async () => {
+  it("shows guest preview instead of redirecting when user is not authenticated (DP-001)", async () => {
     vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: null,
@@ -147,9 +147,13 @@ describe("Authentication & Authorization", () => {
 
     render(<DashboardPage />);
 
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login");
-    });
+    // /dashboard is browsable without an account, so an anonymous visitor
+    // gets the preview layout rather than being bounced to the login page.
+    expect(screen.getByTestId("dashboard-guest")).toBeInTheDocument();
+    expect(screen.getByTestId("guest-preview")).toBeInTheDocument();
+    // One placeholder per stat card.
+    expect(screen.getAllByText(/sign in to see the real figure/i)).toHaveLength(4);
+    expect(mockPush).not.toHaveBeenCalledWith("/login");
   });
 
   it("shows loading state while checking authentication (DP-002)", () => {
@@ -362,7 +366,7 @@ describe("Recent Analyses Section", () => {
       const row = tableElement.closest("tr");
       if (row) {
         await user.click(row);
-        expect(mockPush).toHaveBeenCalledWith("/analyses/127");
+        expect(mockPush).toHaveBeenCalledWith("/dashboard/history");
       }
     }
   });

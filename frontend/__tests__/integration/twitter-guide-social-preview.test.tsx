@@ -17,6 +17,10 @@ import '@testing-library/jest-dom';
 
 // Mock Next.js navigation
 const mockPush = vi.fn();
+// A stable instance: a fresh URLSearchParams on every render makes
+// a useEffect([searchParams]) dependency loop forever.
+const mockSearchParams = new URLSearchParams();
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
@@ -27,7 +31,7 @@ vi.mock('next/navigation', () => ({
     prefetch: vi.fn(),
   }),
   usePathname: () => '/seo-guides/twitter-cards/',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
 }));
 
 // Mock guide registry

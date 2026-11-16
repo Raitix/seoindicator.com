@@ -584,7 +584,7 @@ describe("DE-009: Integration with Auth Context", () => {
     });
   });
 
-  it("redirects to login when auth context reports not authenticated", async () => {
+  it("shows guest preview when auth context reports not authenticated", async () => {
     vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: null,
@@ -594,9 +594,11 @@ describe("DE-009: Integration with Auth Context", () => {
 
     render(<DashboardPage />);
 
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login");
-    });
+    // /dashboard is guest-viewable, so an anonymous visitor gets the preview
+    // layout with a sign-in prompt instead of a redirect.
+    expect(screen.getByTestId("dashboard-guest")).toBeInTheDocument();
+    expect(screen.getByTestId("guest-preview")).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalledWith("/login");
   });
 
   it("shows auth loading state when auth is loading", () => {

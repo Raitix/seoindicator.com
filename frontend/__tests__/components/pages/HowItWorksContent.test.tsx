@@ -147,8 +147,9 @@ describe('HowItWorksContent', () => {
       // Steps section should have an h2 or h3 heading
       const stepsSection = screen.queryByTestId('steps-section');
       if (stepsSection) {
-        const heading = within(stepsSection).queryByRole('heading');
-        expect(heading?.textContent).toMatch(/step|journey|process|how/i);
+        const headings = within(stepsSection).getAllByRole('heading');
+        const sectionHeading = headings.find((h) => h.tagName === 'H2');
+        expect(sectionHeading?.textContent).toMatch(/step|journey|process|how/i);
       }
     });
   });
@@ -170,13 +171,17 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Check for Technical, Content, Performance, UX
-      const technical = screen.queryByText(/technical/i);
-      const content = screen.queryByText(/content/i);
-      const performance = screen.queryByText(/performance/i);
-      const ux = screen.queryByText(/ux|user experience/i);
+      const categoriesSection = screen.getByTestId('categories-section');
+      const technical = within(categoriesSection).getByRole('heading', { name: 'Technical' });
+      const content = within(categoriesSection).getByRole('heading', { name: 'Content' });
+      const performance = within(categoriesSection).getByRole('heading', { name: 'Performance' });
+      const ux = within(categoriesSection).getByRole('heading', { name: 'UX' });
       
       // All 4 categories should be present
-      expect(technical || content || performance || ux).toBeTruthy();
+      expect(technical).toBeInTheDocument();
+      expect(content).toBeInTheDocument();
+      expect(performance).toBeInTheDocument();
+      expect(ux).toBeInTheDocument();
     });
 
     it('CAT-003: Technical category weight is 30%', async () => {
@@ -184,11 +189,12 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for 30% near Technical category
-      const technicalSection = screen.queryByText(/technical/i)?.closest('div, section');
-      if (technicalSection) {
-        const weightText = within(technicalSection).queryByText(/30%|30\s*%/);
-        expect(weightText || true).toBeTruthy(); // Weight displayed somewhere
-      }
+      const categoriesSection = screen.getByTestId('categories-section');
+      const technicalHeading = within(categoriesSection).getByRole('heading', { name: 'Technical' });
+      const technicalCard = technicalHeading.closest('div.rounded-xl');
+      expect(technicalCard).toBeTruthy();
+      const weightText = within(technicalCard as HTMLElement).getAllByText(/30\s*%/);
+      expect(weightText.length).toBeGreaterThan(0); // Weight displayed somewhere
     });
 
     it('CAT-004: Content category weight is 40%', async () => {
@@ -196,11 +202,12 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for 40% near Content category
-      const contentSection = screen.queryByText(/content/i)?.closest('div, section');
-      if (contentSection) {
-        const weightText = within(contentSection).queryByText(/40%|40\s*%/);
-        expect(weightText || true).toBeTruthy();
-      }
+      const categoriesSection = screen.getByTestId('categories-section');
+      const contentHeading = within(categoriesSection).getByRole('heading', { name: 'Content' });
+      const contentCard = contentHeading.closest('div.rounded-xl');
+      expect(contentCard).toBeTruthy();
+      const weightText = within(contentCard as HTMLElement).getAllByText(/40\s*%/);
+      expect(weightText.length).toBeGreaterThan(0); // Weight displayed somewhere
     });
 
     it('CAT-005: Performance category weight is 20%', async () => {
@@ -208,11 +215,12 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for 20% near Performance category
-      const performanceSection = screen.queryByText(/performance/i)?.closest('div, section');
-      if (performanceSection) {
-        const weightText = within(performanceSection).queryByText(/20%|20\s*%/);
-        expect(weightText || true).toBeTruthy();
-      }
+      const categoriesSection = screen.getByTestId('categories-section');
+      const performanceHeading = within(categoriesSection).getByRole('heading', { name: 'Performance' });
+      const performanceCard = performanceHeading.closest('div.rounded-xl');
+      expect(performanceCard).toBeTruthy();
+      const weightText = within(performanceCard as HTMLElement).getAllByText(/20\s*%/);
+      expect(weightText.length).toBeGreaterThan(0); // Weight displayed somewhere
     });
 
     it('CAT-006: UX category weight is 10%', async () => {
@@ -220,11 +228,12 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for 10% near UX category
-      const uxSection = screen.queryByText(/ux|user experience/i)?.closest('div, section');
-      if (uxSection) {
-        const weightText = within(uxSection).queryByText(/10%|10\s*%/);
-        expect(weightText || true).toBeTruthy();
-      }
+      const categoriesSection = screen.getByTestId('categories-section');
+      const uxHeading = within(categoriesSection).getByRole('heading', { name: 'UX' });
+      const uxCard = uxHeading.closest('div.rounded-xl');
+      expect(uxCard).toBeTruthy();
+      const weightText = within(uxCard as HTMLElement).getAllByText(/10\s*%/);
+      expect(weightText.length).toBeGreaterThan(0); // Weight displayed somewhere
     });
 
     it('CAT-007: Weights sum to 100%', async () => {
@@ -244,7 +253,7 @@ describe('HowItWorksContent', () => {
       // robots.txt, sitemap, SSL, mobile-friendly, canonical, hreflang
       const technicalIndicators = ['robots.txt', 'sitemap', 'SSL', 'mobile-friendly', 'canonical', 'hreflang'];
       const foundIndicators = technicalIndicators.filter(ind => 
-        screen.queryByText(new RegExp(ind, 'i'))
+        screen.queryAllByText(new RegExp(ind, 'i')).length > 0
       );
       // At least some technical indicators should be mentioned
       expect(foundIndicators.length).toBeGreaterThan(0);
@@ -257,7 +266,7 @@ describe('HowItWorksContent', () => {
       // title tag, meta description, H1, keyword density, images
       const contentIndicators = ['title tag', 'meta description', 'H1', 'keyword density', 'images'];
       const foundIndicators = contentIndicators.filter(ind => 
-        screen.queryByText(new RegExp(ind, 'i'))
+        screen.queryAllByText(new RegExp(ind, 'i')).length > 0
       );
       expect(foundIndicators.length).toBeGreaterThan(0);
     });
@@ -269,7 +278,7 @@ describe('HowItWorksContent', () => {
       // page speed, Core Web Vitals
       const performanceIndicators = ['page speed', 'Core Web Vitals'];
       const foundIndicators = performanceIndicators.filter(ind => 
-        screen.queryByText(new RegExp(ind, 'i'))
+        screen.queryAllByText(new RegExp(ind, 'i')).length > 0
       );
       expect(foundIndicators.length).toBeGreaterThan(0);
     });
@@ -281,7 +290,7 @@ describe('HowItWorksContent', () => {
       // mobile viewport, font readability
       const uxIndicators = ['mobile viewport', 'font readability'];
       const foundIndicators = uxIndicators.filter(ind => 
-        screen.queryByText(new RegExp(ind, 'i'))
+        screen.queryAllByText(new RegExp(ind, 'i')).length > 0
       );
       expect(foundIndicators.length).toBeGreaterThan(0);
     });
@@ -316,8 +325,8 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for score range explanation
-      const scoreRange = screen.queryByText(/0.*100|100.*point|score.*range/i);
-      expect(scoreRange || true).toBeTruthy();
+      const scoreRange = screen.queryAllByText(/0.*100|100.*point|score.*range/i);
+      expect(scoreRange.length).toBeGreaterThan(0);
     });
 
     it('SCORE-003: Weight system is explained', async () => {
@@ -325,8 +334,8 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for weight explanation
-      const weightExplanation = screen.queryByText(/weight|weighted|scoring.*system/i);
-      expect(weightExplanation || true).toBeTruthy();
+      const weightExplanation = screen.queryAllByText(/weight|weighted|scoring.*system/i);
+      expect(weightExplanation.length).toBeGreaterThan(0);
     });
 
     it('SCORE-004: Visual score representation exists', async () => {
@@ -343,12 +352,12 @@ describe('HowItWorksContent', () => {
       render(<HowItWorksContent />);
       
       // Look for score thresholds
-      const good = screen.queryByText(/good|excellent|passing/i);
-      const warning = screen.queryByText(/warning|needs improvement|average/i);
-      const error = screen.queryByText(/error|poor|failing|critical/i);
+      const good = screen.queryAllByText(/good|excellent|passing/i);
+      const warning = screen.queryAllByText(/warning|needs improvement|average/i);
+      const error = screen.queryAllByText(/error|poor|failing|critical/i);
       
       // At least some score categories should be mentioned
-      expect(good || warning || error || true).toBeTruthy();
+      expect(good.length + warning.length + error.length).toBeGreaterThan(0);
     });
   });
 
@@ -472,8 +481,9 @@ describe('HowItWorksContent', () => {
       
       const faqSection = screen.queryByTestId('faq-section');
       if (faqSection) {
-        const heading = within(faqSection).queryByRole('heading');
-        expect(heading?.textContent).toMatch(/faq|frequently asked|questions/i);
+        const headings = within(faqSection).getAllByRole('heading');
+        const sectionHeading = headings.find((h) => h.tagName === 'H2');
+        expect(sectionHeading?.textContent).toMatch(/faq|frequently asked|questions/i);
       }
     });
   });
@@ -561,7 +571,7 @@ describe('HowItWorksContent', () => {
       // Check for SEO-related terms
       const seoTerms = ['SEO', 'search engine', 'ranking', 'keywords', 'analysis', 'score'];
       const foundTerms = seoTerms.filter(term => 
-        screen.queryByText(new RegExp(term, 'i'))
+        screen.queryAllByText(new RegExp(term, 'i')).length > 0
       );
       expect(foundTerms.length).toBeGreaterThan(0);
     });

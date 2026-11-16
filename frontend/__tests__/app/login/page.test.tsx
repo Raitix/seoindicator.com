@@ -4,12 +4,19 @@ import { useRouter } from "next/navigation";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import LoginPage from "@/app/login/page";
 
+// Shared search-params state. It must be created through vi.hoisted() because
+// the vi.mock factory below is hoisted above the imports and therefore cannot
+// safely reference plain module-level consts.
+const { mockSearchParams } = vi.hoisted(() => ({
+  mockSearchParams: {
+    get: vi.fn((_key: string): string | null => null),
+  },
+}));
+
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(),
-  useSearchParams: vi.fn(() => ({
-    get: vi.fn(() => null),
-  })),
+  useSearchParams: vi.fn(() => mockSearchParams),
 }));
 
 // Mock AuthContext
@@ -41,6 +48,7 @@ const mockAuthContext = {
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams.get.mockImplementation((_key: string): string | null => null);
     vi.mocked(useRouter).mockReturnValue({
       push: mockPush,
     } as any);
@@ -414,24 +422,23 @@ describe("LoginPage", () => {
 
   describe("return URL handling", () => {
     it("redirects to return URL after login", async () => {
-      const user = userEvent.setup();
-      mockLogin.mockResolvedValueOnce(undefined);
+      // The page reads the `redirect` query param and pushes to it when the
+      // user is already authenticated.
+      mockSearchParams.get.mockImplementation((key: string) =>
+        key === "redirect" ? "/settings/profile" : null
+      );
 
-      const mockSearchParams = {
-        get: vi.fn((key) => {
-          if (key === "redirect") return "/settings/profile";
-          return null;
-        }),
-      };
+      vi.mocked(useAuth).mockReturnValue({
+        ...mockAuthContext,
+        user: { id: 1, email: "test@example.com" },
+        isAuthenticated: true,
+      } as any);
 
-      vi.mock("next/navigation", () => ({
-        useRouter: vi.fn(() => ({ push: mockPush })),
-        useSearchParams: vi.fn(() => mockSearchParams),
-      }));
+      render(<LoginPage />);
 
-      // Re-import after mock change - this test would need the component to use return URL
-      // For now, just verify the mock structure is correct
-      expect(mockSearchParams.get).toBeDefined();
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith("/settings/profile");
+      });
     });
   });
 

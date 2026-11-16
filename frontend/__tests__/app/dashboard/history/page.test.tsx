@@ -202,7 +202,7 @@ beforeEach(() => {
 // ==================== HP-001: Authentication & Authorization ====================
 
 describe("Authentication & Authorization", () => {
-  it("redirects to login when user is not authenticated (HP-001)", async () => {
+  it("shows guest preview instead of redirecting when user is not authenticated (HP-001)", async () => {
     vi.mocked(useAuth).mockReturnValue({
       ...mockAuthContext,
       user: null,
@@ -212,9 +212,11 @@ describe("Authentication & Authorization", () => {
 
     render(<HistoryPage />);
 
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login");
-    });
+    // The page lives under the guest-viewable /dashboard prefix, so an
+    // anonymous visitor sees a sign-in prompt rather than being redirected.
+    expect(screen.getByTestId("history-guest")).toBeInTheDocument();
+    expect(screen.getByTestId("guest-preview")).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalledWith("/login");
   });
 
   it("shows loading state while checking authentication (HP-002)", () => {

@@ -17,6 +17,9 @@ import { AlertsPageClient } from './page.client';
 export const metadata = {
   title: 'Alerts | SEOIndicator',
   description: 'View and manage your AI Visibility alerts',
+  alternates: {
+    canonical: 'https://seoindicator.com/ai-visibility/alerts/',
+  },
   openGraph: {
     title: 'Alerts | SEOIndicator',
     description: 'View and manage your AI Visibility alerts',

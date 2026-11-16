@@ -27,6 +27,10 @@ vi.mock('next/link', () => {
 });
 
 // Mock next/navigation
+// A stable instance: a fresh URLSearchParams on every render makes
+// a useEffect([searchParams]) dependency loop forever.
+const mockSearchParams = new URLSearchParams();
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
@@ -34,7 +38,7 @@ vi.mock('next/navigation', () => ({
     back: vi.fn(),
   }),
   usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
 }));
 
 // Mock IndicatorCatalog component

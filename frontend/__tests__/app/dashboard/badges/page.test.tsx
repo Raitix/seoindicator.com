@@ -21,6 +21,10 @@ import userEvent from '@testing-library/user-event';
 // Mock Next.js navigation
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
+// A stable instance: a fresh URLSearchParams on every render makes
+// a useEffect([searchParams]) dependency loop forever.
+const mockSearchParams = new URLSearchParams();
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
@@ -30,7 +34,7 @@ vi.mock('next/navigation', () => ({
     refresh: vi.fn(),
     prefetch: vi.fn(),
   }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
   usePathname: () => '/dashboard/badges',
 }));
 

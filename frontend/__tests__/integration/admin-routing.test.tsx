@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 
@@ -64,18 +64,20 @@ vi.mock('next/link', () => ({ default: function MockLink({
   } }));
 
 // Mock AuthContext
+// The shipped AdminGuard grants access on `user.role === 'admin'`, so the
+// fixture users carry that field (the User type has no `is_admin`).
 const mockAdminUser = {
   id: 1,
   email: 'admin@example.com',
   name: 'Admin User',
-  is_admin: true,
+  role: 'admin' as const,
 };
 
 const mockRegularUser = {
   id: 2,
   email: 'user@example.com',
   name: 'Regular User',
-  is_admin: false,
+  role: 'user' as const,
 };
 
 const mockUseAuth = vi.fn();
@@ -85,32 +87,10 @@ vi.mock('@/lib/contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock AdminGuard
-vi.mock('@/components/admin/AdminGuard', () => ({
-  AdminGuard: ({ children }: { children: React.ReactNode }) => {
-    const auth = mockUseAuth();
-    if (auth.isLoading) return <div data-testid="loading">Loading...</div>;
-    if (!auth.isAuthenticated || !auth.user) return <div data-testid="unauthorized">Unauthorized</div>;
-    if (!auth.user.is_admin) return <div data-testid="forbidden">Forbidden</div>;
-    return <>{children}</>;
-  },
-}));
-
-// Mock AdminLayout
-vi.mock('@/components/admin/AdminLayout', () => ({
-  AdminLayout: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="admin-layout">
-      <nav data-testid="admin-nav">
-        <a href="/admin/overview" data-testid="nav-overview">Overview</a>
-        <a href="/admin/users" data-testid="nav-users">Users</a>
-        <a href="/admin/usage" data-testid="nav-usage">Usage</a>
-        <a href="/admin/credits" data-testid="nav-credits">Credits</a>
-        <a href="/admin/health" data-testid="nav-health">Health</a>
-      </nav>
-      <main data-testid="admin-content">{children}</main>
-    </div>
-  ),
-}));
+// The real admin layout + guard, so this integration test exercises the
+// components that are actually shipped.
+import { AdminGuard } from '@/components/admin/AdminGuard';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 
 // Mock page components
 function MockAdminIndexPage() {
@@ -193,7 +173,11 @@ function MockAdminRouter({ path }: { path: string }) {
     return <div data-testid="not-found">404 - Page Not Found</div>;
   }
 
-  return <>{page}</>;
+  return (
+    <AdminGuard>
+      <AdminLayout>{page}</AdminLayout>
+    </AdminGuard>
+  );
 }
 
 describe('Admin Routing Integration Tests', () => {
@@ -250,7 +234,8 @@ describe('Admin Routing Integration Tests', () => {
     it('/admin/health renders health page', () => {
       render(<MockAdminRouter path="/admin/health" />);
       expect(screen.getByTestId('page-health')).toBeInTheDocument();
-      expect(screen.getByText('System Health')).toBeInTheDocument();
+      // "System Health" is also a nav item label, so scope to the page body.
+      expect(within(screen.getByTestId('page-health')).getByText('System Health')).toBeInTheDocument();
     });
   });
 
@@ -275,36 +260,36 @@ describe('Admin Routing Integration Tests', () => {
       mockUsePathname.mockReturnValue('/admin/overview');
       render(<MockAdminRouter path="/admin/overview" />);
 
-      expect(screen.getByTestId('nav-overview')).toBeInTheDocument();
-      expect(screen.getByTestId('nav-users')).toBeInTheDocument();
-      expect(screen.getByTestId('nav-usage')).toBeInTheDocument();
-      expect(screen.getByTestId('nav-credits')).toBeInTheDocument();
-      expect(screen.getByTestId('nav-health')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-overview')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-users')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-usage')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-credits')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-health')).toBeInTheDocument();
     });
 
     it('Overview link has correct href', () => {
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('nav-overview')).toHaveAttribute('href', '/admin/overview');
+      expect(screen.getByTestId('nav-link-overview')).toHaveAttribute('href', '/admin/overview');
     });
 
     it('Users link has correct href', () => {
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('nav-users')).toHaveAttribute('href', '/admin/users');
+      expect(screen.getByTestId('nav-link-users')).toHaveAttribute('href', '/admin/users');
     });
 
     it('Usage link has correct href', () => {
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('nav-usage')).toHaveAttribute('href', '/admin/usage');
+      expect(screen.getByTestId('nav-link-usage')).toHaveAttribute('href', '/admin/usage');
     });
 
     it('Credits link has correct href', () => {
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('nav-credits')).toHaveAttribute('href', '/admin/credits');
+      expect(screen.getByTestId('nav-link-credits')).toHaveAttribute('href', '/admin/credits');
     });
 
     it('Health link has correct href', () => {
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('nav-health')).toHaveAttribute('href', '/admin/health');
+      expect(screen.getByTestId('nav-link-health')).toHaveAttribute('href', '/admin/health');
     });
   });
 
@@ -315,7 +300,7 @@ describe('Admin Routing Integration Tests', () => {
       const user = userEvent.setup();
       render(<MockAdminRouter path="/admin/users" />);
 
-      await user.click(screen.getByTestId('nav-overview'));
+      await user.click(screen.getByTestId('nav-link-overview'));
       expect(mockPush).toHaveBeenCalledWith('/admin/overview');
     });
 
@@ -323,7 +308,7 @@ describe('Admin Routing Integration Tests', () => {
       const user = userEvent.setup();
       render(<MockAdminRouter path="/admin/overview" />);
 
-      await user.click(screen.getByTestId('nav-users'));
+      await user.click(screen.getByTestId('nav-link-users'));
       expect(mockPush).toHaveBeenCalledWith('/admin/users');
     });
 
@@ -331,7 +316,7 @@ describe('Admin Routing Integration Tests', () => {
       const user = userEvent.setup();
       render(<MockAdminRouter path="/admin/overview" />);
 
-      await user.click(screen.getByTestId('nav-usage'));
+      await user.click(screen.getByTestId('nav-link-usage'));
       expect(mockPush).toHaveBeenCalledWith('/admin/usage');
     });
 
@@ -339,7 +324,7 @@ describe('Admin Routing Integration Tests', () => {
       const user = userEvent.setup();
       render(<MockAdminRouter path="/admin/overview" />);
 
-      await user.click(screen.getByTestId('nav-credits'));
+      await user.click(screen.getByTestId('nav-link-credits'));
       expect(mockPush).toHaveBeenCalledWith('/admin/credits');
     });
 
@@ -347,7 +332,7 @@ describe('Admin Routing Integration Tests', () => {
       const user = userEvent.setup();
       render(<MockAdminRouter path="/admin/overview" />);
 
-      await user.click(screen.getByTestId('nav-health'));
+      await user.click(screen.getByTestId('nav-link-health'));
       expect(mockPush).toHaveBeenCalledWith('/admin/health');
     });
   });
@@ -363,7 +348,7 @@ describe('Admin Routing Integration Tests', () => {
       });
 
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('loading')).toBeInTheDocument();
+      expect(screen.getByTestId('admin-loading')).toBeInTheDocument();
     });
 
     it('shows unauthorized for unauthenticated users', () => {
@@ -374,7 +359,7 @@ describe('Admin Routing Integration Tests', () => {
       });
 
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('unauthorized')).toBeInTheDocument();
+      expect(screen.getByTestId('admin-unauthorized')).toBeInTheDocument();
     });
 
     it('shows forbidden for non-admin users', () => {
@@ -385,7 +370,7 @@ describe('Admin Routing Integration Tests', () => {
       });
 
       render(<MockAdminRouter path="/admin/overview" />);
-      expect(screen.getByTestId('forbidden')).toBeInTheDocument();
+      expect(screen.getByTestId('admin-forbidden')).toBeInTheDocument();
     });
 
     it('shows content for authenticated admin users', () => {
@@ -482,7 +467,7 @@ describe('Admin Routing Integration Tests', () => {
 
       render(<MockAdminRouter path="/admin/overview" />);
       expect(screen.queryByTestId('page-overview')).not.toBeInTheDocument();
-      expect(screen.getByTestId('forbidden')).toBeInTheDocument();
+      expect(screen.getByTestId('admin-forbidden')).toBeInTheDocument();
     });
   });
 
@@ -501,8 +486,11 @@ describe('Admin Routing Integration Tests', () => {
 
     it('pages have correct heading hierarchy', () => {
       render(<MockAdminRouter path="/admin/overview" />);
-      const h1 = screen.getByRole('heading', { level: 1 });
-      expect(h1).toBeInTheDocument();
+      // The layout renders the "Admin Dashboard" heading and the page renders
+      // its own, so there is more than one level-1 heading.
+      const h1s = screen.getAllByRole('heading', { level: 1 });
+      expect(h1s.length).toBeGreaterThan(0);
+      expect(h1s.some(h => h.textContent === 'Dashboard Overview')).toBe(true);
     });
 
     it('navigation links are accessible', () => {

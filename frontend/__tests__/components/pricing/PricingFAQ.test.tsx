@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
@@ -255,7 +255,7 @@ describe('PricingFAQ', () => {
       await user.click(screen.getByTestId('faq-question-1'));
       
       expect(screen.getByTestId('faq-answer-1')).not.toHaveAttribute('hidden');
-      expect(screen.getByText('Credits are used to run SEO analyses.')).toBeInTheDocument();
+      expect(screen.getByText(/Credits are used to run SEO analyses\./)).toBeInTheDocument();
     });
 
     it('FAQ-012: click open question to collapse', async () => {
@@ -334,7 +334,9 @@ describe('PricingFAQ', () => {
     it('FAQ-019: question button has role=button', () => {
       render(<MockPricingFAQ />);
       const button = screen.getByTestId('faq-question-1');
-      expect(button).toHaveAttribute('role', 'button');
+      // The trigger is a native <button>, so it exposes the implicit "button" role.
+      expect(button.tagName).toBe('BUTTON');
+      expect(screen.getByRole('button', { name: /what are credits/i })).toBe(button);
     });
 
     it('FAQ-020: aria-expanded is false when closed', () => {

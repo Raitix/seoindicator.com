@@ -66,14 +66,16 @@ const MockPackageCard = ({
   className = '',
 }: PackageCardProps) => {
   const effectiveCredits = credits + bonus_credits + Math.floor(credits * bonus_percentage / 100);
-  const pricePerCredit = credits > 0 ? price / credits : 0;
+  // `price` is in cents (the card renders it as `$${(price / 100).toFixed(2)}`),
+  // so price-per-credit must be expressed in dollars too.
+  const pricePerCredit = credits > 0 ? price / 100 / credits : 0;
 
   return (
     <article
       data-testid={`package-card-${id}`}
       data-popular={is_popular}
       role="article"
-      aria-label={`${name} package - ${effectiveCredits.toLocaleString()} credits for $${(price / 100).toFixed(2)}`}
+      aria-label={`${name} package - ${effectiveCredits.toLocaleString('en-US')} credits for $${(price / 100).toFixed(2)}`}
       className={`p-6 rounded-lg border transition-all duration-200 hover:shadow-lg ${
         is_popular
           ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
@@ -92,7 +94,7 @@ const MockPackageCard = ({
       </h3>
 
       <p data-testid={`credits-${id}`} className="text-3xl font-bold mt-2">
-        {credits.toLocaleString()} credits
+        {credits.toLocaleString('en-US')} credits
       </p>
 
       {bonus_percentage > 0 && (
@@ -109,7 +111,7 @@ const MockPackageCard = ({
           data-testid={`bonus-credits-${id}`}
           className="inline-block mt-2 ml-2 px-2 py-1 bg-green-100 text-green-700 text-sm rounded"
         >
-          +{bonus_credits.toLocaleString()} credits
+          +{bonus_credits.toLocaleString('en-US')} credits
         </span>
       )}
 
@@ -319,7 +321,8 @@ describe('PackageCard', () => {
     });
 
     it('PC-026: calculates price per credit', () => {
-      render(<MockPackageCard {...mockPackage} credits={10000} price={1000} />);
+      // $1.00 (100 cents) spread over 10,000 credits = $0.0001/credit
+      render(<MockPackageCard {...mockPackage} credits={10000} price={100} />);
       expect(screen.getByTestId('price-per-credit-3')).toHaveTextContent('$0.0001/credit');
     });
 
@@ -362,7 +365,8 @@ describe('PackageCard', () => {
       render(<MockPackageCard {...mockPackage} />);
       const card = screen.getByTestId('package-card-3');
       const ariaLabel = card.getAttribute('aria-label') || '';
-      expect(ariaLabel).toContain('15,000');
+      // The label advertises the effective credits: 15,000 + 10% bonus = 16,500
+      expect(ariaLabel).toContain('16,500');
       expect(ariaLabel).toContain('$50.00');
     });
 
@@ -404,7 +408,8 @@ describe('PackageCard', () => {
     });
 
     it('PC-039: handles very small price per credit', () => {
-      render(<MockPackageCard {...mockPackage} credits={1000000} price={100} />);
+      // $100.00 (10000 cents) spread over 1,000,000 credits = $0.0001/credit
+      render(<MockPackageCard {...mockPackage} credits={1000000} price={10000} />);
       expect(screen.getByTestId('price-per-credit-3')).toHaveTextContent('$0.0001/credit');
     });
 

@@ -18,13 +18,17 @@ const mockPush = vi.fn();
 const mockReplace = vi.fn();
 let currentPathname = "/dashboard";
 
+// A stable instance: a fresh URLSearchParams on every render makes
+// a useEffect([searchParams]) dependency loop forever.
+const mockSearchParams = new URLSearchParams();
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
   }),
   usePathname: () => currentPathname,
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
 }));
 
 // Mock fetch

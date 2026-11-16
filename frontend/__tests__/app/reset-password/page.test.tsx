@@ -74,7 +74,11 @@ describe("ResetPasswordPage", () => {
 
     it("renders page heading", () => {
       render(<ResetPasswordPage />);
-      expect(screen.getByRole("heading", { name: /reset password/i })).toBeInTheDocument();
+      // The page renders its title through the shadcn CardTitle component,
+      // which is a <div data-slot="card-title">, not an <h1>/heading role.
+      expect(
+        screen.getByText("Reset Password", { selector: '[data-slot="card-title"]' })
+      ).toBeInTheDocument();
     });
   });
 
@@ -128,11 +132,19 @@ describe("ResetPasswordPage", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        const forgotLink = screen.queryByRole("link", { name: /request new link|forgot password/i });
-        if (forgotLink) {
-          expect(forgotLink).toHaveAttribute("href", "/forgot-password");
-        }
+        expect(screen.getByText(/invalid token/i)).toBeInTheDocument();
       });
+
+      // Without a token in the URL the page renders the invalid-link card with
+      // a button that sends the user back to the forgot-password page.
+      mockSearchParamsGet.mockReturnValue(null);
+      render(<ResetPasswordPage />);
+
+      const requestNewLink = screen.getByRole("button", { name: /request a new reset link/i });
+      expect(requestNewLink).toBeInTheDocument();
+
+      await user.click(requestNewLink);
+      expect(mockPush).toHaveBeenCalledWith("/forgot-password");
     });
   });
 
@@ -159,7 +171,9 @@ describe("ResetPasswordPage", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+        // The reset-password schema enforces the 8 character minimum, so an
+        // empty password surfaces that message.
+        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
       });
     });
 
@@ -253,8 +267,14 @@ describe("ResetPasswordPage", () => {
           "valid-reset-token-123",
           "NewPassword123"
         );
-        expect(mockPush).toHaveBeenCalledWith("/login");
       });
+
+      // On success the page shows a success card whose "Continue to Login"
+      // button navigates back to the login page.
+      const continueButton = await screen.findByRole("button", { name: /continue to login/i });
+      await user.click(continueButton);
+
+      expect(mockPush).toHaveBeenCalledWith("/login");
     });
 
     it("shows loading state during submission (RSP-010)", async () => {
@@ -312,6 +332,14 @@ describe("ResetPasswordPage", () => {
       await user.type(confirmPasswordInput, "NewPassword123");
       await user.click(submitButton);
 
+      // The success state announces the reset and offers a login button.
+      expect(
+        await screen.findByText(/password has been successfully reset/i)
+      ).toBeInTheDocument();
+
+      const continueButton = screen.getByRole("button", { name: /continue to login/i });
+      await user.click(continueButton);
+
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/login"));
       });
@@ -328,8 +356,12 @@ describe("ResetPasswordPage", () => {
       const passwordInput = screen.getByLabelText("New Password");
       expect(passwordInput).toHaveAttribute("type", "password");
 
-      const toggleButton = screen.getByRole("button", { name: /show password/i });
-      await user.click(toggleButton);
+      // The page renders one "Show password" toggle per password field; the
+      // first one belongs to the new-password field.
+      const toggleButtons = screen.getAllByRole("button", { name: /show password/i });
+      expect(toggleButtons.length).toBe(2);
+
+      await user.click(toggleButtons[0]);
 
       expect(passwordInput).toHaveAttribute("type", "text");
     });
@@ -362,6 +394,11 @@ describe("ResetPasswordPage", () => {
 
       await user.tab();
       expect(passwordInput).toHaveFocus();
+
+      // The visibility toggle button sits between the two password inputs in
+      // the DOM, so it receives focus before the confirm field.
+      await user.tab();
+      expect(screen.getAllByRole("button", { name: /show password/i })[0]).toHaveFocus();
 
       await user.tab();
       expect(confirmPasswordInput).toHaveFocus();
@@ -406,8 +443,12 @@ describe("ResetPasswordPage", () => {
 
       render(<ResetPasswordPage />);
 
-      // Should still render form, token is the critical piece
-      expect(screen.getByLabelText("New Password")).toBeInTheDocument();
+      // The page requires BOTH a token and an email; without the email it
+      // renders the invalid-link card and sends the user to forgot-password.
+      expect(
+        screen.getByText("Invalid Reset Link", { selector: '[data-slot="card-title"]' })
+      ).toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith("/forgot-password");
     });
 
     it("validates token format", async () => {
@@ -431,14 +472,16 @@ describe("ResetPasswordPage", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
       });
 
+      // After a failed submit the form re-validates on change, so a valid
+      // password clears the field-level error.
       const passwordInput = screen.getByLabelText("New Password");
-      await user.type(passwordInput, "N");
+      await user.type(passwordInput, "NewPassword123");
 
       await waitFor(() => {
-        expect(screen.queryByText(/password is required/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/at least 8 characters/i)).not.toBeInTheDocument();
       });
     });
   });

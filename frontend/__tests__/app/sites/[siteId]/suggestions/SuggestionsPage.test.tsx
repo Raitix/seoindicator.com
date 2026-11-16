@@ -22,6 +22,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: vi.fn().mockReturnValue(null),
   }),
+  useParams: () => ({
+    siteId: '1',
+  }),
+  usePathname: () => '/sites/1/suggestions',
 }));
 
 // Mock the API hooks
@@ -48,18 +52,12 @@ vi.mock('next/link', () => ({ default: function MockLink({ children, href }: { c
     return <a href={href}>{children}</a>;
   } }));
 
-import SuggestionsPage from '@/app/sites/[siteId]/suggestions/page';
+// The route module (app/sites/[siteId]/suggestions/page.tsx) is a thin async
+// server-component wrapper. The markup under test lives in the client
+// component it renders.
+import SuggestionsClient from '@/app/sites/[siteId]/suggestions/SuggestionsClient';
 
-// Helper to mock window.location.pathname
-const mockPathname = (path: string) => {
-  // @ts-ignore - delete non-configurable property for testing
-  delete window.location;
-  window.location = {
-    pathname: path,
-    href: `http://localhost${path}`,
-    origin: 'http://localhost',
-  } as Location;
-};
+const SuggestionsPage = () => <SuggestionsClient siteId="1" />;
 
 // Default mock suggestions data
 const createMockSuggestions = (count: number = 3) => [
@@ -120,7 +118,6 @@ const defaultUseSuggestionsReturn = {
 describe('SuggestionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPathname('/sites/1/suggestions');
     mockUseSuggestions.mockReturnValue(defaultUseSuggestionsReturn);
     mockTrackSuggestion.mockResolvedValue({});
     mockBulkTrackSuggestions.mockResolvedValue({});
@@ -343,9 +340,8 @@ describe('SuggestionsPage', () => {
       await user.click(trackBtn);
       
       await waitFor(() => {
-        // Note: siteId is 0 because window.location.pathname mock doesn't fully work in jsdom
-        // In production, Next.js routing provides the correct siteId
-        expect(mockTrackSuggestion).toHaveBeenCalledWith(0, 1);
+        // siteId comes from the mocked Next.js route params
+        expect(mockTrackSuggestion).toHaveBeenCalledWith(1, 1);
       });
     });
 
@@ -357,17 +353,22 @@ describe('SuggestionsPage', () => {
       await user.click(dismissBtn);
       
       await waitFor(() => {
-        // Note: siteId is 0 because window.location.pathname mock doesn't fully work in jsdom
-        // In production, Next.js routing provides the correct siteId
-        expect(mockDismissSuggestion).toHaveBeenCalledWith(0, 1);
+        // siteId comes from the mocked Next.js route params
+        expect(mockDismissSuggestion).toHaveBeenCalledWith(1, 1);
       });
     });
 
-    it('should not show actions for already tracked suggestions', () => {
+    it('should not show actions for already tracked suggestions', async () => {
+      const user = userEvent.setup();
       render(<SuggestionsPage />);
-      
-      // Row 2 is tracking, so no track/dismiss buttons
+
+      // Row 2 is tracking, so no track/dismiss buttons.
+      // The default status filter hides it, so switch to "All Status" first.
+      await user.selectOptions(screen.getByTestId('status-filter'), 'all');
+
+      expect(screen.getByTestId('suggestion-row-2')).toBeInTheDocument();
       expect(screen.queryByTestId('track-btn-2')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('dismiss-btn-2')).not.toBeInTheDocument();
     });
   });
 

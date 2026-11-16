@@ -10,6 +10,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ToolsPage from '@/app/tools/page';
+import { SiteHeader } from '@/components/layout/SiteHeader';
 
 // Mock Next.js Link
 vi.mock('next/link', () => {
@@ -47,6 +48,22 @@ vi.mock('@/components/ui/card', () => ({
     <div data-testid="card-content">{children}</div>
   ),
 }));
+
+// The site header/navigation used to live inside each page. It now lives in
+// the root layout (components/layout/SiteHeader.tsx), so it is rendered
+// alongside the page to reproduce the navigation a visitor actually sees on
+// /tools.
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/tools',
+}));
+
+const renderToolsPageWithHeader = () =>
+  render(
+    <>
+      <SiteHeader />
+      <ToolsPage />
+    </>
+  );
 
 describe('Tools Landing Page', () => {
   // TL-001: Tools Landing Page Rendering
@@ -152,26 +169,31 @@ describe('Tools Landing Page', () => {
   describe('TL-002: Navigation', () => {
     // TL-002-01: Logo links to homepage
     it('should have logo linking to homepage', () => {
-      render(<ToolsPage />);
+      renderToolsPageWithHeader();
 
-      const logo = screen.getByText('SI').closest('a');
+      const logo = screen.getByRole('link', { name: 'SEOIndicator.com' });
       expect(logo).toHaveAttribute('href', '/');
     });
 
     // TL-002-02: Dashboard nav link works
     it('should have Dashboard navigation link', () => {
-      render(<ToolsPage />);
+      // The Dashboard link is only shown to signed-in visitors.
+      window.localStorage.setItem('seoindicator_token', 'test-token');
+      renderToolsPageWithHeader();
 
       const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
       expect(dashboardLink).toHaveAttribute('href', '/dashboard');
+
+      window.localStorage.removeItem('seoindicator_token');
     });
 
     // TL-002-03: Tools nav link present
     it('should have Tools navigation button', () => {
-      render(<ToolsPage />);
+      renderToolsPageWithHeader();
 
       const toolsButton = screen.getByRole('link', { name: 'Tools' });
       expect(toolsButton).toBeInTheDocument();
+      expect(toolsButton).toHaveAttribute('href', '/tools');
     });
 
     // TL-002-04: Meta Tag Analyzer link works
@@ -213,7 +235,8 @@ describe('Tools Landing Page', () => {
       render(<ToolsPage />);
 
       const signupLink = screen.getByRole('link', { name: 'Create a free account' });
-      expect(signupLink).toHaveAttribute('href', '/signup');
+      // Sign-ups live at /register; there is no /signup route.
+      expect(signupLink).toHaveAttribute('href', '/register');
     });
   });
 
@@ -221,10 +244,11 @@ describe('Tools Landing Page', () => {
   describe('TL-005: Accessibility', () => {
     // TL-005-01: Header has landmark
     it('should have header landmark', () => {
-      const { container } = render(<ToolsPage />);
+      const { container } = renderToolsPageWithHeader();
 
       const header = container.querySelector('header');
       expect(header).toBeInTheDocument();
+      expect(header).toHaveAttribute('role', 'banner');
     });
 
     // TL-005-03: Footer has landmark
@@ -369,7 +393,7 @@ describe('Tools Landing Page', () => {
 
     // TL-003-03: Semantic HTML structure
     it('should use semantic HTML elements', () => {
-      const { container } = render(<ToolsPage />);
+      const { container } = renderToolsPageWithHeader();
 
       expect(container.querySelector('header')).toBeInTheDocument();
       expect(container.querySelector('footer')).toBeInTheDocument();
@@ -387,13 +411,17 @@ describe('Tools Landing Page', () => {
 
     // TL-003-05: Internal links are present
     it('should have internal navigation links', () => {
-      render(<ToolsPage />);
+      // The Dashboard link is only shown to signed-in visitors.
+      window.localStorage.setItem('seoindicator_token', 'test-token');
+      renderToolsPageWithHeader();
 
-      const homeLink = screen.getByText('SI').closest('a');
+      const homeLink = screen.getByRole('link', { name: 'SEOIndicator.com' });
       const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
 
       expect(homeLink).toHaveAttribute('href', '/');
       expect(dashboardLink).toHaveAttribute('href', '/dashboard');
+
+      window.localStorage.removeItem('seoindicator_token');
     });
   });
 });

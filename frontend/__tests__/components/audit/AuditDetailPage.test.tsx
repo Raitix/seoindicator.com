@@ -13,9 +13,13 @@ import { AuditDetailPage } from '@/components/audit/AuditDetailPage';
 // Mock next/navigation
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
+// A stable instance: a fresh URLSearchParams on every render makes
+// a useEffect([searchParams]) dependency loop forever.
+const mockSearchParams = new URLSearchParams();
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ siteId: '1', auditId: '123' }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 

@@ -530,7 +530,11 @@ describe('API Documentation Page', () => {
       render(<MockApiDocumentationPage />);
       
       await waitFor(() => {
-        expect(screen.getByText('API Documentation')).toBeInTheDocument();
+        // "API Documentation" also appears in the breadcrumb trail, so match
+        // the page heading specifically.
+        expect(
+          screen.getByRole('heading', { level: 1, name: 'API Documentation' })
+        ).toBeInTheDocument();
       });
     });
 
@@ -786,7 +790,10 @@ describe('API Documentation Page', () => {
       fireEvent.click(screen.getByTestId('nav-rate-limiting'));
       
       await waitFor(() => {
-        expect(screen.getByText('Rate Limiting')).toBeInTheDocument();
+        // The sidebar nav button carries the same label, so match the heading.
+        expect(
+          screen.getByRole('heading', { name: 'Rate Limiting' })
+        ).toBeInTheDocument();
       });
     });
 
@@ -966,7 +973,10 @@ describe('API Documentation Page', () => {
       fireEvent.click(screen.getByTestId('nav-webhooks'));
       
       await waitFor(() => {
-        expect(screen.getByText('Webhooks')).toBeInTheDocument();
+        // The sidebar nav button carries the same label, so match the heading.
+        expect(
+          screen.getByRole('heading', { name: 'Webhooks' })
+        ).toBeInTheDocument();
       });
     });
 
@@ -1078,7 +1088,12 @@ describe('API Documentation Page', () => {
       fireEvent.click(screen.getByTestId('nav-endpoints'));
       
       await waitFor(() => {
-        expect(screen.getByTestId('try-it-btn')).toBeInTheDocument();
+        // Every endpoint in the spec renders its own "Try It" button.
+        const tryItButtons = screen.getAllByTestId('try-it-btn');
+        expect(tryItButtons.length).toBeGreaterThan(0);
+        tryItButtons.forEach(button => {
+          expect(button).toHaveTextContent('Try It');
+        });
       });
     });
 
@@ -1176,9 +1191,18 @@ describe('API Documentation Page', () => {
     it('DOC-CODE-004: Placeholder values in code examples', async () => {
       render(<MockApiDocumentationPage />);
       
+      // The quick-start example sends a placeholder token, not a real one.
       await waitFor(() => {
         const codeBlock = screen.getByTestId('code-block');
-        expect(codeBlock.textContent).toMatch(/\{.*\}/); // Contains placeholder like {token}
+        expect(codeBlock.textContent).toMatch(/Bearer \S+/);
+      });
+
+      // The authentication section shows explicit {placeholder} values to substitute.
+      fireEvent.click(screen.getByTestId('nav-authentication'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('bearer-format').textContent).toMatch(/\{token\}/);
+        expect(screen.getByTestId('apikey-format').textContent).toMatch(/\{your-api-key\}/);
       });
     });
   });
@@ -1256,7 +1280,12 @@ describe('API Documentation Page', () => {
     it('DOC-A11Y-002: Navigation landmark present', async () => {
       render(<MockApiDocumentationPage />);
       
-      expect(screen.getByRole('navigation')).toBeInTheDocument();
+      // The page has several navigation landmarks (sidebar, breadcrumb); the
+      // documentation sidebar is the labelled one.
+      expect(
+        screen.getByRole('navigation', { name: 'Documentation navigation' })
+      ).toBeInTheDocument();
+      expect(screen.getAllByRole('navigation').length).toBeGreaterThan(0);
     });
 
     it('DOC-A11Y-003: Breadcrumb navigation present', async () => {
@@ -1501,7 +1530,8 @@ describe('API Documentation Page', () => {
       fireEvent.click(screen.getByTestId('nav-endpoints'));
       
       await waitFor(() => {
-        expect(screen.getByTestId('try-it-btn')).toBeInTheDocument();
+        const tryItButtons = screen.getAllByTestId('try-it-btn');
+        expect(tryItButtons.length).toBeGreaterThan(0);
       });
     });
 

@@ -15,10 +15,14 @@ import '@testing-library/jest-dom';
 
 // Mock next/navigation
 const mockPush = vi.fn();
+// A stable instance: a fresh URLSearchParams on every render makes
+// a useEffect([searchParams]) dependency loop forever.
+const mockSearchParams = new URLSearchParams();
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({ siteId: '1' }),
   useRouter: () => ({ push: mockPush }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
 }));
 
 // Mock next/link

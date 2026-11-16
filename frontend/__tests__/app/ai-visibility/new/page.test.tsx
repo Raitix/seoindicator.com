@@ -61,9 +61,12 @@ vi.mock('sonner', () => ({
   }
 }));
 
-// Mock CreateProjectForm component
-vi.mock('@/components/ai-visibility/CreateProjectForm', () => ({
-  default: ({ onSuccess, onCancel }: any) => (
+// Mock CreateProjectForm component.
+// The real module exports both a named `CreateProjectForm` and a default
+// export, so the mock has to provide both. The factory is hoisted, so the
+// component is declared inside it.
+vi.mock('@/components/ai-visibility/CreateProjectForm', () => {
+  const MockCreateProjectForm = ({ onSuccess, onCancel }: any) => (
     <div data-testid="create-project-form-mock">
       <button
         data-testid="mock-submit"
@@ -78,8 +81,15 @@ vi.mock('@/components/ai-visibility/CreateProjectForm', () => ({
         Mock Cancel
       </button>
     </div>
-  )
-}));
+  );
+
+  return {
+    default: MockCreateProjectForm,
+    CreateProjectForm: MockCreateProjectForm,
+  };
+});
+
+import { CreateProjectForm } from '@/components/ai-visibility/CreateProjectForm';
 
 // Mock page component for TDD reference
 const MockCreateProjectPage = () => {
@@ -114,10 +124,10 @@ const MockCreateProjectPage = () => {
         </p>
 
         <div data-testid="form-container">
-          <div data-testid="create-project-form-mock">
-            <button data-testid="mock-submit">Mock Submit</button>
-            <button data-testid="mock-cancel">Mock Cancel</button>
-          </div>
+          <CreateProjectForm
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
         </div>
       </main>
     </div>

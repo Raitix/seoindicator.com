@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import '@testing-library/jest-dom';
 
 // ============================================================================
@@ -269,15 +270,23 @@ describe('Performance Tests', () => {
     });
 
     test('CP-PERF-010: Static generation marker', () => {
-      // Verify component can be pre-rendered (no use of browser-only APIs at render time)
+      // Verify component can be pre-rendered (no use of browser-only APIs at render time).
+      // Static export prerenders to HTML on the server, so the component is
+      // rendered to a string with no DOM globals available.
       const originalWindow = global.window;
-      // @ts-expect-error - Testing SSR scenario
-      delete global.window;
-      
-      // Should not throw
-      expect(() => render(<MockOptimizedComparisonPage params={{ slug: 'seoindicator-vs-ahrefs' }} />)).not.toThrow();
-      
-      global.window = originalWindow;
+      try {
+        // @ts-expect-error - Testing SSR scenario
+        delete global.window;
+
+        // Should not throw
+        expect(() =>
+          renderToStaticMarkup(
+            <MockOptimizedComparisonPage params={{ slug: 'seoindicator-vs-ahrefs' }} />
+          )
+        ).not.toThrow();
+      } finally {
+        global.window = originalWindow;
+      }
     });
   });
 });
@@ -477,21 +486,24 @@ describe('Mobile Accessibility Tests', () => {
 describe('Static Generation Performance', () => {
   describe('CP-STATIC: Build Performance', () => {
     test('CP-STATIC-001: Component can be rendered without window object', () => {
-      // Simulate server-side rendering
+      // Simulate server-side rendering: no DOM globals are available.
       const originalWindow = global.window;
       const originalDocument = global.document;
-      
-      // @ts-expect-error - Testing SSR scenario
-      delete global.window;
-      // @ts-expect-error - Testing SSR scenario
-      delete global.document;
-      
-      expect(() => {
-        render(<MockOptimizedComparisonPage params={{ slug: 'seoindicator-vs-ahrefs' }} />);
-      }).not.toThrow();
-      
-      global.window = originalWindow;
-      global.document = originalDocument;
+      try {
+        // @ts-expect-error - Testing SSR scenario
+        delete global.window;
+        // @ts-expect-error - Testing SSR scenario
+        delete global.document;
+
+        expect(() => {
+          renderToStaticMarkup(
+            <MockOptimizedComparisonPage params={{ slug: 'seoindicator-vs-ahrefs' }} />
+          );
+        }).not.toThrow();
+      } finally {
+        global.window = originalWindow;
+        global.document = originalDocument;
+      }
     });
 
     test('CP-STATIC-002: No hydration mismatches - consistent structure', () => {
