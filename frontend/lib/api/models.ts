@@ -107,16 +107,20 @@ export async function fetchModels(
           throw new ModelsAPIError('Server error. Please try again later.', response.status, 'SERVER_ERROR');
         }
 
+        // The message from the response body is the useful part, so it
+        // is read first. Throwing inside the try would be caught by the
+        // catch below and the server's message would be lost.
+        let errorData: { message?: string; code?: string } | null = null;
         try {
-          const errorData = await response.json();
-          throw new ModelsAPIError(
-            errorData?.message || `Request failed with status ${response.status}`,
-            response.status,
-            errorData?.code
-          );
+          errorData = await response.json();
         } catch {
-          throw new ModelsAPIError(`Request failed with status ${response.status}`, response.status);
+          errorData = null;
         }
+        throw new ModelsAPIError(
+          errorData?.message || `Request failed with status ${response.status}`,
+          response.status,
+          errorData?.code
+        );
       }
 
       const data: ModelsListResponse = await response.json();
