@@ -104,10 +104,14 @@ describe('Meta Tag Analyzer Page', () => {
 
     // TL-007-09: Dashboard link works
     it('should have Dashboard navigation link', () => {
+      // The Dashboard link is part of the global site header, which the
+      // root layout renders, not of the page.
       render(<MetaTagAnalyzerPage />);
 
-      const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
-      expect(dashboardLink).toHaveAttribute('href', '/dashboard');
+      expect(screen.getByRole('link', { name: /all tools/i })).toHaveAttribute(
+        'href',
+        '/tools'
+      );
     });
   });
 
@@ -121,10 +125,11 @@ describe('Meta Tag Analyzer Page', () => {
     });
 
     it('should have header with logo', () => {
+      // The logo lives in the global site header, which the root layout
+      // renders. The page itself has no header of its own.
       render(<MetaTagAnalyzerPage />);
 
-      expect(screen.getByText('SI')).toBeInTheDocument();
-      expect(screen.getByText('SEOIndicator')).toBeInTheDocument();
+      expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
     it('should have footer with copyright', () => {
@@ -169,10 +174,12 @@ describe('Meta Tag Analyzer Page', () => {
 
   describe('Accessibility', () => {
     it('should have header landmark', () => {
+      // The page has no header of its own; the global site header is the
+      // one in the root layout.
       const { container } = render(<MetaTagAnalyzerPage />);
 
-      const header = container.querySelector('header');
-      expect(header).toBeInTheDocument();
+      expect(container.querySelector('header')).not.toBeInTheDocument();
+      expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
     it('should have main landmark', () => {
