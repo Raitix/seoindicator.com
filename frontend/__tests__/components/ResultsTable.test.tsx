@@ -321,7 +321,10 @@ describe('ResultsTable Component', () => {
       <ResultsTable jobId={1} results={mockResults} onResultClick={handleClick} />
     );
 
-    await userEvent.click(screen.getByText('Meta Tags'));
+    // The indicator name is a link to the guide and it stops the
+    // click from reaching the row, so the row is the click target.
+    const row = screen.getByRole('row', { name: /Meta Tags/i });
+    await userEvent.click(row);
 
     expect(handleClick).toHaveBeenCalledWith(
       expect.objectContaining({ indicator: 'meta_tags' })
