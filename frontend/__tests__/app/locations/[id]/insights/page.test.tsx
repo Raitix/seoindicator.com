@@ -7,17 +7,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 
-// Mock React Router
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useParams: vi.fn(),
-    useNavigate: vi.fn(),
-  };
-});
+// Mock Next.js navigation (this app uses the App Router, not react-router)
+vi.mock('next/navigation', () => ({
+  useParams: vi.fn(),
+  useRouter: vi.fn(),
+}));
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({

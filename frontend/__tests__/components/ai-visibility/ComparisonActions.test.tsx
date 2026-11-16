@@ -194,7 +194,16 @@ describe('ComparisonActions', () => {
     it('ACT-018: handles loading state', () => {
       render(<ComparisonActions {...mockProps} isLoading={true} />);
       
-      expect(screen.getByTestId('loader-icon')).toBeInTheDocument();
+      // While the component is loading, the actions are disabled so the
+      // visitor cannot act on stale data. The spinner is shown while an
+      // export is running.
+      expect(
+        screen.getByRole('button', { name: /export comparison/i })
+      ).toBeDisabled();
+      expect(screen.getByRole('button', { name: /add competitor/i })).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: /remove competitor/i })
+      ).toBeDisabled();
     });
   });
 

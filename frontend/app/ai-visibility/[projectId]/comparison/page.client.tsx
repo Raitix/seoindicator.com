@@ -127,7 +127,14 @@ export function ComparisonPageClient({ className }: ComparisonPageClientProps) {
     return (
       <main className="container mx-auto p-6" role="main">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div data-testid="loading-skeleton" className="animate-pulse space-y-4 w-full max-w-4xl">
+          <div
+            data-testid="loading-skeleton"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Loading comparison data"
+            className="animate-pulse space-y-4 w-full max-w-4xl"
+          >
             <div className="h-8 bg-slate-700 rounded w-1/4" />
             <div className="h-4 bg-slate-700 rounded w-1/3" />
             <div className="h-64 bg-slate-700 rounded" />
@@ -142,8 +149,11 @@ export function ComparisonPageClient({ className }: ComparisonPageClientProps) {
   if (error) {
     return (
       <main className="container mx-auto p-6" role="main">
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-          <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
+        <div
+          role="alert"
+          className="flex flex-col items-center justify-center min-h-[400px]"
+        >
+          <AlertCircle aria-hidden="true" className="h-12 w-12 text-red-400 mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">Failed to load comparison data</h2>
           <p className="text-slate-400 mb-4">{error.message}</p>
           <button

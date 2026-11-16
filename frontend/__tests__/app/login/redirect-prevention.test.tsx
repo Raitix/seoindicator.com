@@ -77,6 +77,10 @@ vi.mock("@/lib/api/auth", () => ({
     const user = localStorageMock.getItem("seoindicator_user");
     return user ? JSON.parse(user) : null;
   }),
+  getStoredRedirectUrl: vi.fn(() => localStorageMock.getItem("seoindicator_redirect")),
+  clearStoredRedirectUrl: vi.fn(() => {
+    localStorageMock.removeItem("seoindicator_redirect");
+  }),
   clearAuthStorage: vi.fn(() => {
     localStorageMock.removeItem("seoindicator_token");
     localStorageMock.removeItem("seoindicator_user");

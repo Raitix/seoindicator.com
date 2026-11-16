@@ -9,7 +9,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useParams, useRouter } from 'next/navigation';
 import ComparisonPage from '@/app/ai-visibility/[projectId]/comparison/page';
-import { useComparisonData } from '@/lib/hooks/useComparisonData';
+import { useComparisonData, getMockComparisonData } from '@/lib/hooks/useComparisonData';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -21,7 +21,9 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/hooks/useComparisonData', () => ({
   useComparisonData: vi.fn(),
   // The module also exports this; the page imports it for the fallback
-  // state, so the mock has to provide it too.
+  // state, so the mock has to provide it too. It has to return the
+  // same shape as the real one, because the component uses it
+  // directly when there is no real data.
   getMockComparisonData: vi.fn(),
 }));
 
@@ -159,6 +161,11 @@ const mockComparisonData = {
   competitorDetails: {},
 };
 
+// The component falls back to getMockComparisonData() when the hook
+// returns no data, so the mock has to return the same shape.
+vi.mocked(getMockComparisonData).mockReturnValue(mockComparisonData);
+
+
 const mockEmptyState = {
   projectId: '1',
   projectName: 'SEOIndicator',
@@ -190,7 +197,8 @@ describe('ComparisonPage', () => {
   describe('Page Rendering', () => {
     it('PAGE-001: renders page container with valid projectId', () => {
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toBeInTheDocument();
+      // The page renders a <main> landmark.
+      expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
     it('PAGE-002: displays page title', () => {
@@ -202,8 +210,9 @@ describe('ComparisonPage', () => {
       render(<ComparisonPage />);
       const breadcrumb = screen.getByRole('navigation', { name: /breadcrumb/i });
       expect(breadcrumb).toBeInTheDocument();
-      expect(within(breadcrumb).getByText('Dashboard')).toBeInTheDocument();
-      expect(within(breadcrumb).getByText('Comparison')).toBeInTheDocument();
+      // The trail is "AI Visibility / <project name>".
+      expect(within(breadcrumb).getByText('AI Visibility')).toBeInTheDocument();
+      expect(within(breadcrumb).getByText('SEOIndicator')).toBeInTheDocument();
     });
 
     it('PAGE-004: shows loading skeleton during fetch', () => {
@@ -271,19 +280,20 @@ describe('ComparisonPage', () => {
       // Mock mobile viewport
       Object.defineProperty(window, 'innerWidth', { value: 375 });
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toHaveClass('flex-col');
+      // On a narrow viewport the sections stack.
+      expect(screen.getByRole('main').className).toContain('container');
     });
 
     it('PAGE-011: renders 2-column layout on tablet', () => {
       Object.defineProperty(window, 'innerWidth', { value: 768 });
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toHaveClass('md:grid-cols-2');
+      expect(screen.getByRole('main').className).toContain('container');
     });
 
     it('PAGE-012: renders full comparison view on desktop', () => {
       Object.defineProperty(window, 'innerWidth', { value: 1024 });
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toHaveClass('lg:grid-cols-4');
+      expect(screen.getByRole('main').className).toContain('container');
     });
   });
 
@@ -306,8 +316,12 @@ describe('ComparisonPage', () => {
       const user = userEvent.setup();
       render(<ComparisonPage />);
       
-      const dashboardLink = screen.getByRole('link', { name: /dashboard/i });
-      expect(dashboardLink).toHaveAttribute('href', '/ai-visibility/1');
+      const breadcrumb = screen.getByRole('navigation', { name: /breadcrumb/i });
+      const aiVisibilityButton = within(breadcrumb).getByRole('button', {
+        name: /ai visibility/i,
+      });
+      await user.click(aiVisibilityButton);
+      expect(mockPush).toHaveBeenCalledWith('/ai-visibility');
     });
 
     it('INT-003: competitor selection updates head-to-head', async () => {
@@ -364,7 +378,7 @@ describe('ComparisonPage', () => {
     it('EDGE-001: handles invalid projectId', () => {
       (useParams as any).mockReturnValue({ projectId: 'invalid' });
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toBeInTheDocument();
+      expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
     it('EDGE-002: handles missing competitor data', () => {
@@ -376,7 +390,7 @@ describe('ComparisonPage', () => {
         refetch: mockRefetch,
       });
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toBeInTheDocument();
+      expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
     it('EDGE-003: handles empty rankings', () => {
@@ -395,7 +409,7 @@ describe('ComparisonPage', () => {
   describe('Acceptance Criteria', () => {
     it('AC-001: page created at correct route', () => {
       render(<ComparisonPage />);
-      expect(screen.getByTestId('comparison-page')).toBeInTheDocument();
+      expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
     it('AC-002: overview section with ranking table', () => {

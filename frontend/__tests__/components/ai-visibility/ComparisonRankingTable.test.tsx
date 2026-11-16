@@ -47,7 +47,8 @@ describe('ComparisonRankingTable', () => {
     it('RANK-002: highlights brand row', () => {
       render(<ComparisonRankingTable {...mockProps} />);
       const brandRow = screen.getByRole('row', { name: /seoindicator/i });
-      expect(brandRow).toHaveClass('bg-blue-50');
+      // The dark theme highlights the brand row with a translucent blue.
+      expect(brandRow).toHaveClass('bg-blue-500/10');
     });
 
     it('RANK-003: displays trend up indicator', () => {
@@ -109,9 +110,17 @@ describe('ComparisonRankingTable', () => {
       render(<ComparisonRankingTable {...mockProps} />);
       
       const positionHeader = screen.getByRole('columnheader', { name: /position/i });
+      
+      // The table starts sorted by position ascending. Clicking the
+      // column that is already the sort key toggles the direction, so
+      // the first click sorts descending and the second one ascending.
       await user.click(positionHeader);
       
-      const rows = screen.getAllByRole('row').slice(1); // Skip header
+      let rows = screen.getAllByRole('row').slice(1); // Skip header
+      expect(rows[0]).toHaveTextContent('5');
+      
+      await user.click(positionHeader);
+      rows = screen.getAllByRole('row').slice(1);
       expect(rows[0]).toHaveTextContent('1');
     });
 
@@ -123,7 +132,8 @@ describe('ComparisonRankingTable', () => {
       await user.click(rateHeader);
       
       const rows = screen.getAllByRole('row').slice(1);
-      expect(rows[0]).toHaveTextContent('38.5%'); // Highest rate
+      // Sorting by rate ascending puts the lowest rate first.
+      expect(rows[0]).toHaveTextContent('8.3');
     });
   });
 
@@ -184,7 +194,7 @@ describe('ComparisonRankingTable', () => {
       ];
       render(<ComparisonRankingTable {...mockProps} rankings={zeroRateRankings} />);
       
-      expect(screen.getByText('0%')).toBeInTheDocument();
+      expect(screen.getByText('0.0%')).toBeInTheDocument();
     });
 
     it('RANK-019: handles single row', () => {
@@ -225,7 +235,19 @@ describe('ComparisonRankingTable', () => {
       
       const rows = screen.getAllByRole('row').slice(1);
       rows.forEach(row => {
-        expect(within(row).getByTestId(/icon/)).toBeInTheDocument();
+        // Each row carries a trend indicator. An 'up' or 'down' trend
+        // has an arrow; a 'stable' trend has a dash. The cell holds the
+        // indicator, so the icons are queried from it.
+        const cells = within(row).getAllByRole('cell');
+        expect(
+          cells.some((cell) =>
+            cell.querySelector(
+              '[data-testid="trending-up-icon"],
+               [data-testid="trending-down-icon"],
+               [data-testid="minus-icon"]'
+            )
+          )
+        ).toBe(true);
       });
     });
   });
