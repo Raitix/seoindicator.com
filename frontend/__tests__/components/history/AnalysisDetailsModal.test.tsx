@@ -22,12 +22,12 @@ const defaultAnalysis = {
   status: "completed",
   cost: {
     total: 0.05,
-    breakdown: [
-      { type: "base", amount: 0.01, description: "Base analysis cost" },
-      { type: "compute", amount: 0.04, description: "Processing time" },
-    ],
     currency: "USD",
   },
+  costBreakdown: [
+    { type: "base", amount: 0.01, description: "Base analysis cost" },
+    { type: "compute", amount: 0.04, description: "Processing time" },
+  ],
   analysisDurationMs: 1234,
   analyzedAt: "2026-03-01T10:00:00Z",
   results: {
@@ -76,8 +76,10 @@ describe("Modal Structure", () => {
   it("has close button", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
-    expect(closeButton).toBeInTheDocument();
+    // The modal has its own footer close button plus the Radix dismiss "X" button
+    const closeButtons = screen.getAllByRole("button", { name: /close/i });
+    expect(closeButtons.length).toBeGreaterThan(0);
+    expect(screen.getByTestId("close-details-button")).toBeInTheDocument();
   });
 });
 
@@ -87,7 +89,8 @@ describe("Header Section", () => {
   it("displays tool name in header", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    expect(screen.getByText("Meta Tag Analyzer")).toBeInTheDocument();
+    // The header shows the machine-readable tool slug
+    expect(screen.getByTestId("tool-slug")).toHaveTextContent("meta-tag-analyzer");
   });
 
   it("displays analysis ID", () => {
@@ -99,9 +102,11 @@ describe("Header Section", () => {
   it("displays status badge", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    const statusBadge = screen.getByText(/completed/i);
-    expect(statusBadge).toBeInTheDocument();
-    expect(statusBadge.className).toMatch(/emerald|green/i);
+    const statusBadge = screen.getAllByText(/completed/i).find(
+      (el) => el.className.includes("rounded-full")
+    );
+    expect(statusBadge).toBeDefined();
+    expect(statusBadge?.className).toMatch(/emerald|green/i);
   });
 });
 
@@ -146,7 +151,8 @@ describe("Results Section", () => {
   it("displays title from results", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    expect(screen.getByText("Example Domain")).toBeInTheDocument();
+    // Results are rendered as raw JSON, so the title value appears in the JSON viewer
+    expect(screen.getByTestId("json-viewer")).toHaveTextContent("Example Domain");
   });
 
   it("displays meta description from results", () => {
@@ -186,12 +192,13 @@ describe("Cost Breakdown Section", () => {
   it("displays total cost", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    expect(screen.getByText(/\$0\.05/)).toBeInTheDocument();
+    expect(screen.getAllByText(/\$0\.05/).length).toBeGreaterThan(0);
   });
 
   it("displays individual cost items", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
+    // The breakdown is read from the top-level costBreakdown array
     expect(screen.getByText(/base analysis cost/i)).toBeInTheDocument();
     expect(screen.getByText(/\$0\.01/)).toBeInTheDocument();
     expect(screen.getByText(/processing time/i)).toBeInTheDocument();
@@ -201,12 +208,14 @@ describe("Cost Breakdown Section", () => {
   it("handles missing cost breakdown gracefully", () => {
     const analysisWithoutBreakdown = {
       ...defaultAnalysis,
-      cost: { total: 0.05, currency: "USD" },
+      costBreakdown: [],
     };
 
     render(<AnalysisDetailsModal {...defaultProps} analysis={analysisWithoutBreakdown} />);
 
-    expect(screen.getByText(/\$0\.05/)).toBeInTheDocument();
+    // Without a breakdown the component falls back to a cost summary
+    expect(screen.getByText(/cost summary/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/\$0\.05/).length).toBeGreaterThan(0);
   });
 });
 
@@ -222,7 +231,8 @@ describe("Error Section", () => {
 
     render(<AnalysisDetailsModal {...defaultProps} analysis={failedAnalysis} />);
 
-    expect(screen.getByText(/error|failed/i)).toBeInTheDocument();
+    expect(screen.getByTestId("error-section")).toBeInTheDocument();
+    expect(screen.getByText(/analysis failed/i)).toBeInTheDocument();
     expect(screen.getByText(/connection timeout/i)).toBeInTheDocument();
   });
 
@@ -254,7 +264,7 @@ describe("Actions", () => {
     const user = userEvent.setup();
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
+    const closeButton = screen.getByTestId("close-details-button");
     await user.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalled();
@@ -264,12 +274,10 @@ describe("Actions", () => {
     const user = userEvent.setup();
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    // Click on overlay (outside dialog content)
-    const overlay = screen.getByRole("dialog").parentElement;
-    if (overlay) {
-      await user.click(overlay);
-      expect(mockOnClose).toHaveBeenCalled();
-    }
+    // Radix renders the dismissable overlay as the previous sibling of the dialog content
+    const overlay = screen.getByRole("dialog").previousElementSibling as HTMLElement;
+    await user.click(overlay);
+    expect(mockOnClose).toHaveBeenCalled();
   });
 
   it("closes modal when pressing Escape key", async () => {
@@ -307,8 +315,7 @@ describe("Focus Management", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
     await waitFor(() => {
-      const closeButton = screen.getByRole("button", { name: /close/i });
-      expect(closeButton).toHaveFocus();
+      expect(screen.getByTestId("close-details-button")).toHaveFocus();
     });
   });
 
@@ -316,7 +323,7 @@ describe("Focus Management", () => {
     const user = userEvent.setup();
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
+    const closeButton = screen.getByTestId("close-details-button");
     closeButton.focus();
 
     // Tab through all focusable elements
@@ -353,7 +360,7 @@ describe("Accessibility", () => {
   it("close button has accessible label", () => {
     render(<AnalysisDetailsModal {...defaultProps} />);
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
+    const closeButton = screen.getByTestId("close-details-button");
     expect(closeButton).toHaveAttribute("aria-label");
   });
 
@@ -411,7 +418,7 @@ describe("Different Tool Results", () => {
 
     render(<AnalysisDetailsModal {...defaultProps} analysis={keywordAnalysis} />);
 
-    expect(screen.getByText(/keyword density/i)).toBeInTheDocument();
+    expect(screen.getByTestId("tool-slug")).toHaveTextContent("keyword-density");
   });
 
   it("displays mobile-friendly results correctly", () => {

@@ -30,24 +30,25 @@ vi.mock('lucide-react', () => ({
 }));
 
 // Test data
+// Shape mirrors the backend AIVisibilityAlertResource (see lib/ai-visibility/types.ts):
+// numeric ids, `change_percent`, and no `message`/`recommendations` fields - the
+// component derives both from the alert data.
 const createMockAlert = (overrides: Partial<Alert> = {}): Alert => ({
-  id: 'alert-1',
-  project_id: 'proj-1',
+  id: 1,
+  project_id: 7,
   project_name: 'SEOIndicator',
   alert_type: 'mention_spike',
-  message: 'Brand mentions increased by 25% across all tracked platforms',
+  threshold: 20,
   previous_value: 40,
   current_value: 50,
-  percentage_change: 25,
+  change_percent: 25,
   is_read: false,
   is_resolved: false,
-  created_at: '2026-03-07T10:00:00Z',
   resolved_at: null,
-  recommendations: [
-    'Investigate the source of new mentions',
-    'Track trending queries related to your brand',
-    'Consider expanding keyword coverage',
-  ],
+  triggered_at: null,
+  metadata: null,
+  created_at: '2026-03-07T10:00:00Z',
+  updated_at: '2026-03-07T10:00:00Z',
   ...overrides,
 });
 
@@ -106,12 +107,14 @@ describe('AlertDetailModal', () => {
     });
 
     it('ADM-004: displays full message', () => {
-      const alert = createMockAlert({
-        message: 'Full alert message that should be displayed completely without truncation',
-      });
+      const alert = createMockAlert();
       render(<AlertDetailModal {...defaultProps} alert={alert} />);
 
-      expect(screen.getByText(alert.message)).toBeInTheDocument();
+      // The modal renders the message derived from the alert data
+      // (generateAlertMessage) - there is no `message` field in the payload.
+      expect(
+        screen.getByText('Mentions for SEOIndicator increased by 25.0%')
+      ).toBeInTheDocument();
     });
 
     it('ADM-005: displays previous value', () => {
@@ -132,7 +135,7 @@ describe('AlertDetailModal', () => {
       render(<AlertDetailModal {...defaultProps} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('+25%');
+      expect(changeEl).toHaveTextContent('+25.0%');
       expect(changeEl).toHaveClass('text-emerald-600');
     });
 
@@ -140,7 +143,7 @@ describe('AlertDetailModal', () => {
       render(<AlertDetailModal {...defaultProps} />);
 
       const link = screen.getByRole('link', { name: /view project/i });
-      expect(link).toHaveAttribute('href', '/ai-visibility/projects/proj-1');
+      expect(link).toHaveAttribute('href', '/ai-visibility/projects/7');
     });
 
     it('ADM-009: displays recommendations list', () => {
@@ -168,7 +171,7 @@ describe('AlertDetailModal', () => {
 
       await user.click(screen.getByRole('button', { name: /resolve/i }));
 
-      expect(mockOnResolve).toHaveBeenCalledWith('alert-1');
+      expect(mockOnResolve).toHaveBeenCalledWith(1);
     });
 
     it('ADM-011: dismiss button triggers callback', async () => {
@@ -177,7 +180,7 @@ describe('AlertDetailModal', () => {
 
       await user.click(screen.getByRole('button', { name: /dismiss/i }));
 
-      expect(mockOnDismiss).toHaveBeenCalledWith('alert-1');
+      expect(mockOnDismiss).toHaveBeenCalledWith(1);
     });
 
     it('ADM-012: view project button navigates', async () => {
@@ -186,7 +189,7 @@ describe('AlertDetailModal', () => {
 
       await user.click(screen.getByRole('button', { name: /view project/i }));
 
-      expect(mockOnViewProject).toHaveBeenCalledWith('proj-1');
+      expect(mockOnViewProject).toHaveBeenCalledWith(7);
     });
 
     it('ADM-013: close button triggers callback', async () => {
@@ -226,39 +229,57 @@ describe('AlertDetailModal', () => {
     it('ADM-016: focus trap keeps focus in modal', async () => {
       const user = userEvent.setup();
       render(<AlertDetailModal {...defaultProps} />);
+      const modal = screen.getByTestId('alert-detail-modal');
 
-      // Tab through elements
-      await user.tab();
-      const firstFocusable = screen.getByRole('button', { name: /close/i });
-      expect(firstFocusable).toHaveFocus();
+      // The modal focuses its close button when it opens
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: /close/i })).toHaveFocus()
+      );
 
-      // Continue tabbing - focus should stay in modal
-      await user.tab();
-      await user.tab();
-      await user.tab();
-      await user.tab();
-      // Focus should cycle back to first element
+      // Focus the last focusable element inside the modal and press Tab
+      const focusables = Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      const last = focusables[focusables.length - 1];
+      last.focus();
+      expect(last).toHaveFocus();
+
+      await user.keyboard('{Tab}');
+
+      // The trap wraps focus back to the first element instead of leaving the modal
+      expect(screen.getByRole('button', { name: /close/i })).toHaveFocus();
+      expect(modal.contains(document.activeElement)).toBe(true);
     });
 
-    it('ADM-017: initial focus on first element', () => {
+    it('ADM-017: initial focus on first element', async () => {
       render(<AlertDetailModal {...defaultProps} />);
 
-      // First focusable element should be close button
-      const closeButton = screen.getByRole('button', { name: /close/i });
-      expect(closeButton).toHaveFocus();
+      // First focusable element should be close button. The component defers the
+      // initial focus to a timeout, so wait for it.
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: /close/i })).toHaveFocus()
+      );
     });
 
     it('ADM-018: focus restored on close', async () => {
-      const { unmount } = render(<AlertDetailModal {...defaultProps} />);
-
-      // Simulate previous focus
+      // The element that had focus before the modal opened
       const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
       trigger.focus();
-
-      unmount();
-
-      // Focus should return to trigger
       expect(trigger).toHaveFocus();
+
+      const { rerender } = render(<AlertDetailModal {...defaultProps} />);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: /close/i })).toHaveFocus()
+      );
+
+      // Closing the modal restores focus to the previously focused element
+      rerender(<AlertDetailModal {...defaultProps} isOpen={false} />);
+
+      expect(trigger).toHaveFocus();
+      trigger.remove();
     });
   });
 
@@ -309,7 +330,9 @@ describe('AlertDetailModal', () => {
       render(<AlertDetailModal {...defaultProps} alert={alert} />);
 
       expect(screen.getByText(/resolved/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /resolve/i })).toBeDisabled();
+      // A resolved alert offers no resolve action at all - the component hides
+      // the Resolve button instead of leaving it clickable.
+      expect(screen.queryByRole('button', { name: /^resolve$/i })).not.toBeInTheDocument();
     });
   });
 
@@ -319,29 +342,29 @@ describe('AlertDetailModal', () => {
 
   describe('Percentage Change', () => {
     it('ADM-025: negative change shows red color', () => {
-      const alert = createMockAlert({ percentage_change: -15 });
+      const alert = createMockAlert({ change_percent: -15 });
       render(<AlertDetailModal {...defaultProps} alert={alert} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('-15%');
+      expect(changeEl).toHaveTextContent('-15.0%');
       expect(changeEl).toHaveClass('text-rose-600');
     });
 
     it('ADM-026: positive change shows green color', () => {
-      const alert = createMockAlert({ percentage_change: 25 });
+      const alert = createMockAlert({ change_percent: 25 });
       render(<AlertDetailModal {...defaultProps} alert={alert} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('+25%');
+      expect(changeEl).toHaveTextContent('+25.0%');
       expect(changeEl).toHaveClass('text-emerald-600');
     });
 
     it('ADM-027: zero change shows neutral color', () => {
-      const alert = createMockAlert({ percentage_change: 0 });
+      const alert = createMockAlert({ change_percent: 0 });
       render(<AlertDetailModal {...defaultProps} alert={alert} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('0%');
+      expect(changeEl).toHaveTextContent('0.0%');
       expect(changeEl).toHaveClass('text-slate-500');
     });
   });
@@ -364,12 +387,24 @@ describe('AlertDetailModal', () => {
 
     it('ADM-029: copy recommendations button', async () => {
       const user = userEvent.setup();
+      // jsdom does not implement the Clipboard API
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText },
+        configurable: true,
+      });
+
       render(<AlertDetailModal {...defaultProps} />);
 
-      await user.click(screen.getByRole('button', { name: /copy recommendations/i }));
+      await user.click(screen.getByRole('button', { name: /copy/i }));
 
-      // Check clipboard was called
-      expect(screen.getByText(/copied/i)).toBeInTheDocument();
+      // The recommendations were written to the clipboard...
+      expect(writeText).toHaveBeenCalledTimes(1);
+      expect(writeText.mock.calls[0][0]).toContain(
+        'Monitor the trend to see if it continues'
+      );
+      // ...and the button confirms the copy
+      expect(screen.getByText(/copied!/i)).toBeInTheDocument();
     });
   });
 
@@ -416,15 +451,13 @@ describe('AlertDetailModal', () => {
       expect(modal).toHaveClass('rounded-t-2xl');
     });
 
-    it('ADM-033: swipe down closes modal', async () => {
-      const user = userEvent.setup();
+    it('ADM-033: swipe down closes modal', () => {
       render(<AlertDetailModal {...defaultProps} />);
 
       const handle = screen.getByTestId('swipe-handle');
-      await user.pointer([
-        { target: handle, coords: { x: 0, y: 0 } },
-        { coords: { x: 0, y: 100 } },
-      ]);
+      // The modal closes when the swipe moves down by more than 100px
+      fireEvent.touchStart(handle, { touches: [{ clientY: 0 }] });
+      fireEvent.touchEnd(handle, { changedTouches: [{ clientY: 150 }] });
 
       expect(mockOnClose).toHaveBeenCalled();
     });

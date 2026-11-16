@@ -11,6 +11,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { SWRConfig } from 'swr';
 import { PaymentMethodSelector } from '@/components/payments/PaymentMethodSelector';
 
 // Mock Lucide icons
@@ -26,31 +27,32 @@ vi.mock('lucide-react', () => ({
   AlertCircle: () => <span data-testid="alert-circle-icon">AlertCircle</span>,
 }));
 
-// Mock API hooks
-vi.mock('@/lib/api/payments', () => ({
-  usePaymentMethods: () => ({
-    methods: [],
-    isLoading: false,
-    error: null,
-    mutate: vi.fn(),
-  }),
-  useDeletePaymentMethod: () => ({
-    deleteMethod: vi.fn(),
-    isLoading: false,
-  }),
-  useSetDefaultPaymentMethod: () => ({
-    setDefault: vi.fn(),
-    isLoading: false,
-  }),
-  getCardBrandIcon: (brand: string) => `/icons/cards/${brand}.svg`,
-  getCardBrandName: (brand: string) => brand.charAt(0).toUpperCase() + brand.slice(1),
-  isCardExpired: () => false,
-  isCardExpiringSoon: () => false,
-}));
-
-// Mock fetch
+// Mock the payments API layer's network calls only. The hooks themselves are the
+// real ones from '@/lib/api/payments', so the tests exercise the current backend
+// envelope: { success, data } for methods and { success, data, meta } for history.
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+/** Build a { success, data } envelope for GET /api/v1/payments/methods */
+function methodsResponse(methods: Array<Record<string, unknown>> = []) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ success: true, data: methods }),
+  };
+}
+
+/** Build a { success, data, meta } envelope for GET /api/v1/credits/transactions */
+function transactionsResponse(
+  data: Array<Record<string, unknown>> = [],
+  meta: Record<string, number> = { current_page: 1, per_page: 15, total: 0, last_page: 1 }
+) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ success: true, data, meta }),
+  };
+}
 
 // Test data
 const mockMethods = [

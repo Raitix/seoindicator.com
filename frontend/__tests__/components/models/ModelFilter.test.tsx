@@ -23,7 +23,10 @@ vi.mock('lucide-react', () => ({
 }));
 
 describe('ModelFilter Component', () => {
-  const user = userEvent.setup();
+  // userEvent.setup() has to run AFTER vi.useFakeTimers(), otherwise the
+  // user instance holds the real timers while the test advances the fake
+  // ones, the debounce never fires and the test times out.
+  let user: ReturnType<typeof userEvent.setup>;
 
   const defaultProps = {
     onSearchChange: vi.fn(),
@@ -37,6 +40,7 @@ describe('ModelFilter Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
   });
 
   afterEach(() => {
@@ -231,23 +235,40 @@ describe('ModelFilter Component', () => {
   });
 
   describe('MF-PROVIDER: Provider Filter', () => {
+    // The Radix Select opens its listbox through a pointer sequence that
+    // user-event only performs with real timers. These tests therefore
+    // use real timers and wait for the result, instead of advancing the
+    // fake clock.
+    beforeEach(() => {
+      vi.useRealTimers();
+      user = userEvent.setup();
+    });
+
     it('MF-PROVIDER-01: should call onProviderChange on selection', async () => {
       const onProviderChange = vi.fn();
       render(<ModelFilter {...defaultProps} onProviderChange={onProviderChange} />);
 
       const providerSelect = screen.getByTestId('provider-select');
-      await user.selectOptions(providerSelect, 'openrouter');
+      await user.click(screen.getByRole('combobox', { name: /filter by provider/i }));
+      await user.click(screen.getByRole('option', { name: 'openrouter' }));
 
       expect(onProviderChange).toHaveBeenCalledWith('openrouter');
     });
 
     it('MF-PROVIDER-02: should allow selecting "All Providers"', async () => {
       const onProviderChange = vi.fn();
-      render(<ModelFilter {...defaultProps} onProviderChange={onProviderChange} />);
+      render(
+        <ModelFilter
+          {...defaultProps}
+          providerValue="openrouter"
+          onProviderChange={onProviderChange}
+        />
+      );
 
-      const providerSelect = screen.getByTestId('provider-select');
-      await user.selectOptions(providerSelect, 'all');
+      await user.click(screen.getByRole('combobox', { name: /filter by provider/i }));
+      await user.click(screen.getByRole('option', { name: 'All Providers' }));
 
+      // 'all' is the internal value for "no provider filter".
       expect(onProviderChange).toHaveBeenCalledWith(null);
     });
 
@@ -260,12 +281,10 @@ describe('ModelFilter Component', () => {
     });
 
     it('MF-PROVIDER-04: should update selection visually', async () => {
-      render(<ModelFilter {...defaultProps} />);
+      render(<ModelFilter {...defaultProps} providerValue="openrouter" />);
 
       const providerSelect = screen.getByTestId('provider-select');
-      await user.selectOptions(providerSelect, 'openrouter');
-
-      expect(providerSelect).toHaveValue('openrouter');
+      expect(providerSelect).toHaveTextContent('openrouter');
     });
 
     it('MF-PROVIDER-05: should handle empty providers list', () => {
@@ -282,15 +301,15 @@ describe('ModelFilter Component', () => {
     });
 
     it('MF-PROVIDER-07: should persist selection across re-renders', async () => {
-      const { rerender } = render(<ModelFilter {...defaultProps} />);
+      const { rerender } = render(
+        <ModelFilter {...defaultProps} providerValue="openrouter" />
+      );
 
       const providerSelect = screen.getByTestId('provider-select');
-      await user.selectOptions(providerSelect, 'openrouter');
+      expect(providerSelect).toHaveTextContent('openrouter');
 
-      rerender(<ModelFilter {...defaultProps} />);
-
-      // Value should persist when controlled
-      expect(providerSelect).toHaveValue('openrouter');
+      rerender(<ModelFilter {...defaultProps} providerValue="anthropic" />);
+      expect(providerSelect).toHaveTextContent('anthropic');
     });
 
     it('MF-PROVIDER-08: should show provider icon/logo', () => {
@@ -301,23 +320,37 @@ describe('ModelFilter Component', () => {
   });
 
   describe('MF-CAPABILITY: Capability Filter', () => {
+    // See MF-PROVIDER: real timers for the Radix pointer sequence.
+    beforeEach(() => {
+      vi.useRealTimers();
+      user = userEvent.setup();
+    });
+
     it('MF-CAPABILITY-01: should call onCapabilityChange on selection', async () => {
       const onCapabilityChange = vi.fn();
       render(<ModelFilter {...defaultProps} onCapabilityChange={onCapabilityChange} />);
 
       const capabilitySelect = screen.getByTestId('capability-select');
-      await user.selectOptions(capabilitySelect, 'vision');
+      await user.click(screen.getByRole('combobox', { name: /filter by capability/i }));
+      await user.click(screen.getByRole('option', { name: 'Vision' }));
 
       expect(onCapabilityChange).toHaveBeenCalledWith('vision');
     });
 
     it('MF-CAPABILITY-02: should allow selecting "All Capabilities"', async () => {
       const onCapabilityChange = vi.fn();
-      render(<ModelFilter {...defaultProps} onCapabilityChange={onCapabilityChange} />);
+      render(
+        <ModelFilter
+          {...defaultProps}
+          capabilityValue="tools"
+          onCapabilityChange={onCapabilityChange}
+        />
+      );
 
-      const capabilitySelect = screen.getByTestId('capability-select');
-      await user.selectOptions(capabilitySelect, 'all');
+      await user.click(screen.getByRole('combobox', { name: /filter by capability/i }));
+      await user.click(screen.getByRole('option', { name: 'All Capabilities' }));
 
+      // 'all' is the internal value for "no capability filter".
       expect(onCapabilityChange).toHaveBeenCalledWith(null);
     });
 
@@ -329,12 +362,10 @@ describe('ModelFilter Component', () => {
     });
 
     it('MF-CAPABILITY-04: should update selection visually', async () => {
-      render(<ModelFilter {...defaultProps} />);
+      render(<ModelFilter {...defaultProps} capabilityValue="tools" />);
 
       const capabilitySelect = screen.getByTestId('capability-select');
-      await user.selectOptions(capabilitySelect, 'tools');
-
-      expect(capabilitySelect).toHaveValue('tools');
+      expect(capabilitySelect).toHaveTextContent('Tool Support');
     });
 
     it('MF-CAPABILITY-05: should handle empty capabilities list', () => {
@@ -364,6 +395,12 @@ describe('ModelFilter Component', () => {
   });
 
   describe('MF-FREE: Free Tier Filter', () => {
+    // See MF-PROVIDER: real timers for the Radix pointer sequence.
+    beforeEach(() => {
+      vi.useRealTimers();
+      user = userEvent.setup();
+    });
+
     it('MF-FREE-01: should call onFreeOnlyChange when checked', async () => {
       const onFreeOnlyChange = vi.fn();
       render(<ModelFilter {...defaultProps} onFreeOnlyChange={onFreeOnlyChange} />);
@@ -376,26 +413,58 @@ describe('ModelFilter Component', () => {
 
     it('MF-FREE-02: should call onFreeOnlyChange when unchecked', async () => {
       const onFreeOnlyChange = vi.fn();
-      render(<ModelFilter {...defaultProps} onFreeOnlyChange={onFreeOnlyChange} />);
+      const { rerender } = render(
+        <ModelFilter
+          {...defaultProps}
+          freeOnlyValue={false}
+          onFreeOnlyChange={onFreeOnlyChange}
+        />
+      );
 
       const checkbox = screen.getByTestId('free-only-checkbox');
-      await user.click(checkbox); // Check
-      await user.click(checkbox); // Uncheck
 
-      expect(onFreeOnlyChange).toHaveBeenCalledWith(false);
+      // Check
+      await user.click(checkbox);
+      expect(onFreeOnlyChange).toHaveBeenLastCalledWith(true);
+
+      // The parent passes the new value back, then the user unchecks it.
+      rerender(
+        <ModelFilter
+          {...defaultProps}
+          freeOnlyValue={true}
+          onFreeOnlyChange={onFreeOnlyChange}
+        />
+      );
+      await user.click(checkbox);
+      expect(onFreeOnlyChange).toHaveBeenLastCalledWith(false);
     });
 
     it('MF-FREE-03: should toggle checkbox state', async () => {
-      render(<ModelFilter {...defaultProps} />);
+      const onFreeOnlyChange = vi.fn();
+      const { rerender } = render(
+        <ModelFilter
+          {...defaultProps}
+          freeOnlyValue={false}
+          onFreeOnlyChange={onFreeOnlyChange}
+        />
+      );
 
       const checkbox = screen.getByTestId('free-only-checkbox');
       expect(checkbox).not.toBeChecked();
 
       await user.click(checkbox);
-      expect(checkbox).toBeChecked();
+      expect(onFreeOnlyChange).toHaveBeenCalledWith(true);
 
-      await user.click(checkbox);
-      expect(checkbox).not.toBeChecked();
+      // The checkbox is controlled by the prop, so it is only checked
+      // once the parent passes the new value back.
+      rerender(
+        <ModelFilter
+          {...defaultProps}
+          freeOnlyValue={true}
+          onFreeOnlyChange={onFreeOnlyChange}
+        />
+      );
+      expect(checkbox).toBeChecked();
     });
 
     it('MF-FREE-04: should have descriptive label', () => {
@@ -411,12 +480,31 @@ describe('ModelFilter Component', () => {
     });
 
     it('MF-FREE-06: should be keyboard accessible', async () => {
-      render(<ModelFilter {...defaultProps} />);
+      const onFreeOnlyChange = vi.fn();
+      const { rerender } = render(
+        <ModelFilter
+          {...defaultProps}
+          freeOnlyValue={false}
+          onFreeOnlyChange={onFreeOnlyChange}
+        />
+      );
 
       const checkbox = screen.getByTestId('free-only-checkbox');
       checkbox.focus();
-      await user.keyboard('{Space}');
+      expect(checkbox).toHaveFocus();
 
+      // Space toggles the focused checkbox, the way it does in a browser.
+      await user.keyboard(' ');
+
+      expect(onFreeOnlyChange).toHaveBeenCalledWith(true);
+
+      rerender(
+        <ModelFilter
+          {...defaultProps}
+          freeOnlyValue={true}
+          onFreeOnlyChange={onFreeOnlyChange}
+        />
+      );
       expect(checkbox).toBeChecked();
     });
   });
@@ -538,7 +626,8 @@ describe('ModelFilter Component', () => {
       render(<ModelFilter {...defaultProps} onSearchChange={onSearchChange} />);
 
       const searchInput = screen.getByTestId('search-input');
-      await user.type(searchInput, 'GPT-4 [Turbo]');
+      // '[' and ']' are user-event key descriptors, so they are escaped.
+      await user.type(searchInput, 'GPT-4 {[}Turbo{]}');
 
       act(() => {
         vi.advanceTimersByTime(500);

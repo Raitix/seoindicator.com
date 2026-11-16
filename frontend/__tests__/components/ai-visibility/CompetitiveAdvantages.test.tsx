@@ -65,10 +65,11 @@ describe('CompetitiveAdvantages', () => {
   describe('Category Display', () => {
     it('ADV-005: shows all categories', () => {
       render(<CompetitiveAdvantages {...mockProps} />);
-      expect(screen.getByText(/comparison/i)).toBeInTheDocument();
-      expect(screen.getByText(/use case/i)).toBeInTheDocument();
-      expect(screen.getByText(/recommendation/i)).toBeInTheDocument();
-      expect(screen.getByText(/feature/i)).toBeInTheDocument();
+      // Each category appears both as a filter chip and as an advantage item
+      expect(screen.getAllByText(/comparison/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/use case/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/recommendation/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/feature/i).length).toBeGreaterThan(0);
     });
 
     it('ADV-006: displays query count badge', () => {
@@ -94,31 +95,35 @@ describe('CompetitiveAdvantages', () => {
     it('ADV-009: expands on category click', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const category = screen.getByText(/comparison/i).closest('button');
+
+      // The expandable category is the brand-wins item button
+      const brandWins = screen.getByTestId('brand-wins');
+      const category = within(brandWins).getByText(/comparison/i).closest('button');
       await user.click(category!);
-      
+
       expect(screen.getByTestId('comparison-details')).toBeInTheDocument();
     });
 
     it('ADV-010: shows query examples when expanded', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const category = screen.getByText(/comparison/i).closest('button');
+
+      const brandWins = screen.getByTestId('brand-wins');
+      const category = within(brandWins).getByText(/comparison/i).closest('button');
       await user.click(category!);
-      
+
       expect(screen.getByText(/how does seoindicator compare/i)).toBeInTheDocument();
     });
 
     it('ADV-011: collapses on second click', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const category = screen.getByText(/comparison/i).closest('button');
+
+      const brandWins = screen.getByTestId('brand-wins');
+      const category = within(brandWins).getByText(/comparison/i).closest('button');
       await user.click(category!);
       await user.click(category!);
-      
+
       expect(screen.queryByTestId('comparison-details')).not.toBeInTheDocument();
     });
   });
@@ -127,23 +132,35 @@ describe('CompetitiveAdvantages', () => {
     it('ADV-012: filters by category', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const filterBtn = screen.getByRole('button', { name: /comparison/i });
+
+      // The category filter chip is the button whose name is exactly the category
+      const filterBtn = screen.getByRole('button', { name: /^comparison$/i });
       await user.click(filterBtn);
-      
-      expect(screen.getAllByText(/comparison/i).length).toBe(1);
+
+      // Only the "comparison" category remains in the brand wins list
+      const brandWins = screen.getByTestId('brand-wins');
+      expect(within(brandWins).getAllByText(/comparison/i)).toHaveLength(1);
+      expect(within(brandWins).queryByText(/use case/i)).not.toBeInTheDocument();
+
+      // No competitor win has the "comparison" category
+      const competitorWins = screen.getByTestId('competitor-wins');
+      expect(within(competitorWins).queryByText(/comparison/i)).not.toBeInTheDocument();
+      expect(within(competitorWins).getByText(/no competitive threats/i)).toBeInTheDocument();
     });
 
     it('ADV-013: shows all categories on "All" click', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
+
       // First filter to one category
-      await user.click(screen.getByRole('button', { name: /comparison/i }));
-      
+      await user.click(screen.getByRole('button', { name: /^comparison$/i }));
+      const brandWins = screen.getByTestId('brand-wins');
+      expect(within(brandWins).queryByText(/use case/i)).not.toBeInTheDocument();
+
       // Then click All
-      await user.click(screen.getByRole('button', { name: /all/i }));
-      
+      await user.click(screen.getByRole('button', { name: /^all$/i }));
+
+      expect(within(brandWins).getByText(/use case/i)).toBeInTheDocument();
       expect(screen.getAllByTestId(/icon/).length).toBeGreaterThan(2);
     });
   });
@@ -166,17 +183,24 @@ describe('CompetitiveAdvantages', () => {
     it('ADV-016: handles both empty', () => {
       const emptyBoth = { brand_wins: [], competitor_wins: [] };
       render(<CompetitiveAdvantages {...mockProps} advantages={emptyBoth} />);
-      
-      expect(screen.getByText(/no data/i)).toBeInTheDocument();
+
+      expect(screen.getByText(/no advantage data available/i)).toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
     it('ADV-017: has accessible category buttons', () => {
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const buttons = screen.getAllByRole('button');
-      buttons.forEach(btn => {
+
+      // The expandable category items expose aria-expanded
+      const brandWins = screen.getByTestId('brand-wins');
+      const competitorWins = screen.getByTestId('competitor-wins');
+      const categoryButtons = [
+        ...within(brandWins).getAllByRole('button'),
+        ...within(competitorWins).getAllByRole('button'),
+      ];
+      expect(categoryButtons.length).toBe(4);
+      categoryButtons.forEach(btn => {
         expect(btn).toHaveAttribute('aria-expanded');
       });
     });
@@ -184,10 +208,11 @@ describe('CompetitiveAdvantages', () => {
     it('ADV-018: expanded state announced', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const category = screen.getByText(/comparison/i).closest('button');
+
+      const brandWins = screen.getByTestId('brand-wins');
+      const category = within(brandWins).getByText(/comparison/i).closest('button');
       await user.click(category!);
-      
+
       expect(category).toHaveAttribute('aria-expanded', 'true');
     });
   });
@@ -206,10 +231,11 @@ describe('CompetitiveAdvantages', () => {
     it('AC-003: expandable details with queries', async () => {
       const user = userEvent.setup();
       render(<CompetitiveAdvantages {...mockProps} />);
-      
-      const category = screen.getByText(/comparison/i).closest('button');
+
+      const brandWins = screen.getByTestId('brand-wins');
+      const category = within(brandWins).getByText(/comparison/i).closest('button');
       await user.click(category!);
-      
+
       expect(screen.getByText(/how does seoindicator/i)).toBeInTheDocument();
     });
   });

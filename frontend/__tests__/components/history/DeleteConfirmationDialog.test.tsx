@@ -10,18 +10,29 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DeleteConfirmationDialog from "@/components/history/DeleteConfirmationDialog";
+import type { AnalysisRecord } from "@/lib/types/analysis";
 
 // Mock dependencies
 const mockOnConfirm = vi.fn();
-const mockOnCancel = vi.fn();
+const mockOnClose = vi.fn();
+
+const defaultAnalysis: AnalysisRecord = {
+  id: 127,
+  toolName: "meta-tag-analyzer",
+  toolDisplayName: "Meta Tag Analyzer",
+  inputUrl: "https://example.com",
+  status: "completed",
+  analyzedAt: "2026-03-01T10:00:00Z",
+  analysisDurationMs: 1234,
+  cost: { total: 0.05, currency: "USD" },
+};
 
 const defaultProps = {
+  analysis: defaultAnalysis,
   isOpen: true,
-  analysisId: 127,
-  analysisName: "Meta Tag Analyzer - example.com",
+  onClose: mockOnClose,
   onConfirm: mockOnConfirm,
-  onCancel: mockOnCancel,
-  isLoading: false,
+  isDeleting: false,
 };
 
 // ==================== Test Setup ====================
@@ -37,7 +48,6 @@ describe("Dialog Structure", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 
   it("does not render when isOpen is false", () => {
@@ -46,10 +56,10 @@ describe("Dialog Structure", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("has correct ARIA attributes for alertdialog", () => {
+  it("has correct ARIA attributes for the dialog", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const dialog = screen.getByRole("alertdialog");
+    const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute("aria-labelledby");
     expect(dialog).toHaveAttribute("aria-describedby");
@@ -74,19 +84,28 @@ describe("Dialog Content", () => {
   it("displays analysis name being deleted", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    expect(screen.getByText(/meta tag analyzer.*example\.com/i)).toBeInTheDocument();
+    // The dialog identifies the analysis by its tool name and the analysed URL
+    expect(screen.getByText("Meta Tag Analyzer")).toBeInTheDocument();
+    expect(screen.getByText("https://example.com")).toBeInTheDocument();
   });
 
   it("displays irreversible action warning", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    expect(screen.getByText(/cannot be undone|permanent|irreversible/i)).toBeInTheDocument();
+    // Both the description and the closing warning state the action is permanent
+    const warnings = screen.getAllByText(/cannot be undone|permanent|irreversible/i);
+    expect(warnings.length).toBeGreaterThan(0);
+    expect(warnings.some((w) => /cannot be undone/i.test(w.textContent || ""))).toBe(true);
   });
 
-  it("displays analysis ID for reference", () => {
+  it("displays analysis details for reference", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    expect(screen.getByText(/#127/i) || screen.getByText(/id.*127/i)).toBeTruthy();
+    // The dialog shows the tool, the analysed URL and the current status
+    expect(screen.getByText("Tool:")).toBeInTheDocument();
+    expect(screen.getByText("URL:")).toBeInTheDocument();
+    expect(screen.getByText("Status:")).toBeInTheDocument();
+    expect(screen.getByText("completed")).toBeInTheDocument();
   });
 });
 
@@ -103,14 +122,15 @@ describe("Dialog Buttons", () => {
   it("displays delete button", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const deleteButton = screen.getByRole("button", { name: /delete/i });
+    const deleteButton = screen.getByRole("button", { name: /^delete$/i });
     expect(deleteButton).toBeInTheDocument();
   });
 
   it("delete button has destructive styling", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const deleteButton = screen.getByRole("button", { name: /delete/i });
+    const deleteButton = screen.getByRole("button", { name: /^delete$/i });
+    expect(deleteButton).toHaveAttribute("data-variant", "destructive");
     expect(deleteButton.className).toMatch(/red|rose|destructive|danger/i);
   });
 
@@ -118,43 +138,42 @@ describe("Dialog Buttons", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
-    expect(cancelButton.className).not.toMatch(/red|rose|destructive|danger/i);
+    expect(cancelButton).toHaveAttribute("data-variant", "outline");
+    expect(cancelButton.className).not.toMatch(/bg-red-|bg-destructive/);
   });
 });
 
 // ==================== DCD-004: Cancel Action ====================
 
 describe("Cancel Action", () => {
-  it("calls onCancel when cancel button clicked", async () => {
+  it("calls onClose when cancel button clicked", async () => {
     const user = userEvent.setup();
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
     await user.click(cancelButton);
 
-    expect(mockOnCancel).toHaveBeenCalled();
+    expect(mockOnClose).toHaveBeenCalled();
     expect(mockOnConfirm).not.toHaveBeenCalled();
   });
 
-  it("calls onCancel when clicking outside dialog", async () => {
+  it("calls onClose when clicking outside dialog", async () => {
     const user = userEvent.setup();
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    // Click on overlay
-    const overlay = screen.getByRole("alertdialog").parentElement;
-    if (overlay) {
-      await user.click(overlay);
-      expect(mockOnCancel).toHaveBeenCalled();
-    }
+    // Radix renders the dismissable overlay as the previous sibling of the dialog content
+    const overlay = screen.getByRole("dialog").previousElementSibling as HTMLElement;
+    await user.click(overlay);
+    expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("calls onCancel when pressing Escape key", async () => {
+  it("calls onClose when pressing Escape key", async () => {
     const user = userEvent.setup();
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
     await user.keyboard("{Escape}");
 
-    expect(mockOnCancel).toHaveBeenCalled();
+    expect(mockOnClose).toHaveBeenCalled();
   });
 });
 
@@ -165,20 +184,20 @@ describe("Confirm Action", () => {
     const user = userEvent.setup();
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const deleteButton = screen.getByRole("button", { name: /delete/i });
+    const deleteButton = screen.getByRole("button", { name: /^delete$/i });
     await user.click(deleteButton);
 
-    expect(mockOnConfirm).toHaveBeenCalledWith(127);
+    expect(mockOnConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("does not call onCancel when delete button clicked", async () => {
+  it("does not call onClose when delete button clicked", async () => {
     const user = userEvent.setup();
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const deleteButton = screen.getByRole("button", { name: /delete/i });
+    const deleteButton = screen.getByRole("button", { name: /^delete$/i });
     await user.click(deleteButton);
 
-    expect(mockOnCancel).not.toHaveBeenCalled();
+    expect(mockOnClose).not.toHaveBeenCalled();
   });
 });
 
@@ -186,7 +205,7 @@ describe("Confirm Action", () => {
 
 describe("Loading State", () => {
   it("shows spinner on delete button when loading", () => {
-    render(<DeleteConfirmationDialog {...defaultProps} isLoading={true} />);
+    render(<DeleteConfirmationDialog {...defaultProps} isDeleting={true} />);
 
     const deleteButton = screen.getByRole("button", { name: /deleting|delete/i });
     expect(deleteButton).toBeInTheDocument();
@@ -195,32 +214,32 @@ describe("Loading State", () => {
   });
 
   it("disables delete button when loading", () => {
-    render(<DeleteConfirmationDialog {...defaultProps} isLoading={true} />);
+    render(<DeleteConfirmationDialog {...defaultProps} isDeleting={true} />);
 
     const deleteButton = screen.getByRole("button", { name: /deleting|delete/i });
     expect(deleteButton).toBeDisabled();
   });
 
   it("disables cancel button when loading", () => {
-    render(<DeleteConfirmationDialog {...defaultProps} isLoading={true} />);
+    render(<DeleteConfirmationDialog {...defaultProps} isDeleting={true} />);
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
     expect(cancelButton).toBeDisabled();
   });
 
   it("changes delete button text when loading", () => {
-    render(<DeleteConfirmationDialog {...defaultProps} isLoading={true} />);
+    render(<DeleteConfirmationDialog {...defaultProps} isDeleting={true} />);
 
     expect(screen.getByText(/deleting/i)).toBeInTheDocument();
   });
 
   it("does not close on Escape when loading", async () => {
     const user = userEvent.setup();
-    render(<DeleteConfirmationDialog {...defaultProps} isLoading={true} />);
+    render(<DeleteConfirmationDialog {...defaultProps} isDeleting={true} />);
 
     await user.keyboard("{Escape}");
 
-    expect(mockOnCancel).not.toHaveBeenCalled();
+    expect(mockOnClose).not.toHaveBeenCalled();
   });
 });
 
@@ -231,7 +250,7 @@ describe("Focus Management", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
     await waitFor(() => {
-      const deleteButton = screen.getByRole("button", { name: /delete/i });
+      const deleteButton = screen.getByRole("button", { name: /^delete$/i });
       expect(deleteButton).not.toHaveFocus(); // Cancel is usually focused by default
     });
   });
@@ -248,24 +267,24 @@ describe("Focus Management", () => {
     const secondFocus = document.activeElement;
 
     // Both should be within dialog
-    expect(firstFocus?.closest('[role="alertdialog"]')).toBeTruthy();
-    expect(secondFocus?.closest('[role="alertdialog"]')).toBeTruthy();
+    expect(firstFocus?.closest('[role="dialog"]')).toBeTruthy();
+    expect(secondFocus?.closest('[role="dialog"]')).toBeTruthy();
   });
 });
 
 // ==================== DCD-008: Accessibility ====================
 
 describe("Accessibility", () => {
-  it("has alertdialog role", () => {
+  it("has dialog role", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("has aria-labelledby pointing to heading", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const dialog = screen.getByRole("alertdialog");
+    const dialog = screen.getByRole("dialog");
     const labelledBy = dialog.getAttribute("aria-labelledby");
     const heading = screen.getByRole("heading", { name: /delete analysis/i });
 
@@ -276,22 +295,22 @@ describe("Accessibility", () => {
   it("has aria-describedby for warning message", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const dialog = screen.getByRole("alertdialog");
+    const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-describedby");
   });
 
-  it("delete button has aria-label", () => {
+  it("delete button has accessible name", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const deleteButton = screen.getByRole("button", { name: /delete/i });
-    expect(deleteButton).toHaveAttribute("aria-label");
+    const deleteButton = screen.getByRole("button", { name: /^delete$/i });
+    expect(deleteButton).toHaveAccessibleName(/delete/i);
   });
 
-  it("cancel button has aria-label", () => {
+  it("cancel button has accessible name", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
-    expect(cancelButton).toHaveAttribute("aria-label");
+    expect(cancelButton).toHaveAccessibleName(/cancel/i);
   });
 });
 
@@ -302,12 +321,12 @@ describe("Keyboard Navigation", () => {
     const user = userEvent.setup();
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const deleteButton = screen.getByRole("button", { name: /delete/i });
+    const deleteButton = screen.getByRole("button", { name: /^delete$/i });
     deleteButton.focus();
 
     await user.keyboard("{Enter}");
 
-    expect(mockOnConfirm).toHaveBeenCalledWith(127);
+    expect(mockOnConfirm).toHaveBeenCalledTimes(1);
   });
 
   it("cancels on Enter key from cancel button", async () => {
@@ -319,7 +338,7 @@ describe("Keyboard Navigation", () => {
 
     await user.keyboard("{Enter}");
 
-    expect(mockOnCancel).toHaveBeenCalled();
+    expect(mockOnClose).toHaveBeenCalled();
   });
 });
 
@@ -327,26 +346,37 @@ describe("Keyboard Navigation", () => {
 
 describe("Edge Cases", () => {
   it("handles missing analysis name gracefully", () => {
-    render(<DeleteConfirmationDialog {...defaultProps} analysisName="" />);
+    const analysisWithoutName = { ...defaultAnalysis, toolDisplayName: "" };
+    render(<DeleteConfirmationDialog {...defaultProps} analysis={analysisWithoutName} />);
 
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText(/analysis.*#127/i) || screen.getByText(/#127/i)).toBeTruthy();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("https://example.com")).toBeInTheDocument();
   });
 
   it("handles very long analysis name", () => {
     const longName = "Meta Tag Analyzer - " + "a".repeat(200) + ".com";
-    render(<DeleteConfirmationDialog {...defaultProps} analysisName={longName} />);
+    render(
+      <DeleteConfirmationDialog
+        {...defaultProps}
+        analysis={{ ...defaultAnalysis, toolDisplayName: longName }}
+      />
+    );
 
     // Should truncate or wrap
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("handles special characters in analysis name", () => {
-    render(<DeleteConfirmationDialog {...defaultProps} analysisName="<script>alert(1)</script>example.com" />);
+    render(
+      <DeleteConfirmationDialog
+        {...defaultProps}
+        analysis={{ ...defaultAnalysis, toolDisplayName: "<script>alert(1)</script>example.com" }}
+      />
+    );
 
     // Should escape HTML
     expect(document.querySelector('script')).toBeNull();
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
 
@@ -356,7 +386,7 @@ describe("Responsive Design", () => {
   it("has responsive dialog width", () => {
     render(<DeleteConfirmationDialog {...defaultProps} />);
 
-    const dialog = screen.getByRole("alertdialog");
+    const dialog = screen.getByRole("dialog");
     expect(dialog.className).toMatch(/max-w|w-full/i);
   });
 

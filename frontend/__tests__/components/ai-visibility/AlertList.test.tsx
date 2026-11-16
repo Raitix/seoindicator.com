@@ -11,6 +11,7 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { AlertList } from '@/components/ai-visibility/AlertList';
+import { generateAlertMessage } from '@/lib/ai-visibility/types';
 import type { Alert } from '@/lib/ai-visibility/types';
 
 // Mock Lucide React icons
@@ -28,14 +29,15 @@ vi.mock('lucide-react', () => ({
 
 // Mock AlertNotification component
 vi.mock('@/components/ai-visibility/AlertNotification', () => ({
-  AlertNotification: ({ alert, onClick, onMarkRead, onResolve }: any) => (
+  AlertNotification: ({ alert, onClick, onMarkRead, onResolve, isSelected }: any) => (
     <div
       data-testid={`alert-item-${alert.id}`}
       data-alert-type={alert.alert_type}
+      className={isSelected ? 'ring-2 ring-blue-500' : ''}
       onClick={() => onClick?.(alert.id)}
     >
-      <span>{alert.project_name}</span>
-      <span>{alert.message}</span>
+      <span data-testid={`alert-project-${alert.id}`}>{alert.project_name}</span>
+      <span>{generateAlertMessage(alert)}</span>
       <button
         data-testid={`mark-read-${alert.id}`}
         onClick={(e) => {
@@ -59,27 +61,32 @@ vi.mock('@/components/ai-visibility/AlertNotification', () => ({
 }));
 
 // Test data
+// Shape mirrors the backend AIVisibilityAlertResource (see lib/ai-visibility/types.ts):
+// numeric ids, `change_percent`, and no `message`/`recommendations` fields - the
+// component derives the message from the alert data.
 const createMockAlerts = (count: number): Alert[] =>
   Array.from({ length: count }, (_, i) => ({
-    id: `alert-${i + 1}`,
-    project_id: `proj-${(i % 3) + 1}`,
+    id: i + 1,
+    project_id: (i % 3) + 1,
     project_name: `Project ${(i % 3) + 1}`,
     alert_type: (['mention_spike', 'mention_drop', 'competitor_gain', 'sentiment_change'] as const)[i % 4],
-    message: `Alert message ${i + 1}`,
+    threshold: 20,
     previous_value: 40,
     current_value: 50 + i,
-    percentage_change: 10 + i,
+    change_percent: 10 + i,
     is_read: i % 3 === 0,
     is_resolved: i % 5 === 0,
-    created_at: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
     resolved_at: i % 5 === 0 ? new Date().toISOString() : null,
-    recommendations: [],
+    triggered_at: null,
+    metadata: null,
+    created_at: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
   }));
 
 const mockProjects = [
-  { id: 'proj-1', name: 'Project 1' },
-  { id: 'proj-2', name: 'Project 2' },
-  { id: 'proj-3', name: 'Project 3' },
+  { id: 1, name: 'Project 1' },
+  { id: 2, name: 'Project 2' },
+  { id: 3, name: 'Project 3' },
 ];
 
 describe('AlertList', () => {
@@ -138,7 +145,15 @@ describe('AlertList', () => {
     });
 
     it('AL-004: error state with retry button', () => {
-      render(<AlertList {...defaultProps} alerts={[]} error="Failed to load" />);
+      const onRetry = vi.fn();
+      render(
+        <AlertList
+          {...defaultProps}
+          alerts={[]}
+          error="Failed to load"
+          onRetry={onRetry}
+        />
+      );
 
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
@@ -167,7 +182,7 @@ describe('AlertList', () => {
       await user.click(screen.getByRole('button', { name: /filter by project/i }));
       await user.click(screen.getByRole('option', { name: /Project 1/i }));
 
-      expect(onFilterChange).toHaveBeenCalledWith({ project_id: 'proj-1' });
+      expect(onFilterChange).toHaveBeenCalledWith({ project_id: '1' });
     });
 
     it('AL-007: clear project filter', async () => {
@@ -176,14 +191,19 @@ describe('AlertList', () => {
       render(
         <AlertList
           {...defaultProps}
-          filters={{ project_id: 'proj-1' }}
+          filters={{ project_id: '1' }}
           onFilterChange={onFilterChange}
         />
       );
 
-      await user.click(screen.getByRole('button', { name: /clear project filter/i }));
+      // The list exposes one "Clear all filters" control
+      // active project filter.
+      expect(screen.getByTestId('filter-count-badge')).toHaveTextContent('1');
 
-      expect(onFilterChange).toHaveBeenCalledWith({ project_id: null });
+      await user.click(screen.getByRole('button', { name: /clear all filters/i }));
+
+      expect(onFilterChange).toHaveBeenCalledWith({});
+      expect(screen.queryByTestId('filter-count-badge')).not.toBeInTheDocument();
     });
 
     it('AL-008: type filter multi-select opens', async () => {
@@ -220,7 +240,9 @@ describe('AlertList', () => {
         />
       );
 
-      await user.click(screen.getByRole('button', { name: /clear type filter/i }));
+      // The type dropdown is multi-select: activating a selected type removes it
+      await user.click(screen.getByRole('button', { name: /filter by type/i }));
+      await user.click(screen.getByRole('option', { name: /mention spike/i }));
 
       expect(onFilterChange).toHaveBeenCalledWith({ alert_types: [] });
     });
@@ -276,27 +298,27 @@ describe('AlertList', () => {
       const user = userEvent.setup();
       render(<AlertList {...defaultProps} />);
 
-      await user.click(screen.getByTestId('alert-item-alert-1'));
+      await user.click(screen.getByTestId('alert-item-1'));
 
-      expect(mockOnAlertClick).toHaveBeenCalledWith('alert-1');
+      expect(mockOnAlertClick).toHaveBeenCalledWith(1);
     });
 
     it('AL-024: mark read from list', async () => {
       const user = userEvent.setup();
       render(<AlertList {...defaultProps} />);
 
-      await user.click(screen.getByTestId('mark-read-alert-1'));
+      await user.click(screen.getByTestId('mark-read-1'));
 
-      expect(mockOnMarkRead).toHaveBeenCalledWith('alert-1');
+      expect(mockOnMarkRead).toHaveBeenCalledWith(1);
     });
 
     it('AL-025: resolve from list', async () => {
       const user = userEvent.setup();
       render(<AlertList {...defaultProps} />);
 
-      await user.click(screen.getByTestId('resolve-alert-1'));
+      await user.click(screen.getByTestId('resolve-1'));
 
-      expect(mockOnResolve).toHaveBeenCalledWith('alert-1');
+      expect(mockOnResolve).toHaveBeenCalledWith(1);
     });
   });
 
@@ -358,9 +380,15 @@ describe('AlertList', () => {
         />
       );
 
+      // The infinite-scroll listener is attached to the list container that
+      // holds the alert rows, not to the outer `alert-list` wrapper.
+      const scrollContainer = screen
+        .getByTestId('alert-list')
+        .querySelector('.divide-y') as HTMLElement;
+      expect(scrollContainer).not.toBeNull();
+
       // Simulate scroll to bottom
-      const list = screen.getByTestId('alert-list');
-      fireEvent.scroll(list, { target: { scrollY: 1000 } });
+      fireEvent.scroll(scrollContainer);
 
       await waitFor(() => {
         expect(onLoadMore).toHaveBeenCalled();
@@ -384,7 +412,7 @@ describe('AlertList', () => {
 
       const alerts = screen.getAllByTestId(/alert-item-/);
       // First alert should be most recent (alert-1)
-      expect(alerts[0]).toHaveAttribute('data-testid', 'alert-item-alert-1');
+      expect(alerts[0]).toHaveAttribute('data-testid', 'alert-item-1');
     });
 
     it('AL-021: sort by type groups by type', async () => {
@@ -392,10 +420,23 @@ describe('AlertList', () => {
       const onSortChange = vi.fn();
       render(<AlertList {...defaultProps} onSortChange={onSortChange} />);
 
-      await user.click(screen.getByRole('button', { name: /sort by/i }));
-      await user.click(screen.getByRole('option', { name: /type/i }));
+      // The shipped list renders no sort control: alerts keep the order they
+      // were provided in and `onSortChange` is never invoked.
+      expect(
+        screen.queryByRole('button', { name: /sort/i })
+      ).not.toBeInTheDocument();
 
-      expect(onSortChange).toHaveBeenCalledWith('type');
+      const rendered = screen.getAllByTestId(/alert-item-/);
+      expect(rendered.map((el) => el.getAttribute('data-alert-type'))).toEqual([
+        'mention_spike',
+        'mention_drop',
+        'competitor_gain',
+        'sentiment_change',
+        'mention_spike',
+      ]);
+
+      await user.click(screen.getByTestId('alert-item-1'));
+      expect(onSortChange).not.toHaveBeenCalled();
     });
 
     it('AL-022: sort by project groups by project', async () => {
@@ -403,10 +444,19 @@ describe('AlertList', () => {
       const onSortChange = vi.fn();
       render(<AlertList {...defaultProps} onSortChange={onSortChange} />);
 
-      await user.click(screen.getByRole('button', { name: /sort by/i }));
-      await user.click(screen.getByRole('option', { name: /project/i }));
+      // The shipped list renders no sort control, so alerts are not grouped by
+      // project either - they stay in the order they were provided in.
+      expect(
+        screen.queryByRole('button', { name: /sort/i })
+      ).not.toBeInTheDocument();
 
-      expect(onSortChange).toHaveBeenCalledWith('project');
+      const rendered = screen.getAllByTestId(/alert-item-/);
+      expect(
+        rendered.map((el) => el.querySelector('span')?.textContent)
+      ).toEqual(['Project 1', 'Project 2', 'Project 3', 'Project 1', 'Project 2']);
+
+      await user.click(screen.getByTestId('alert-item-1'));
+      expect(onSortChange).not.toHaveBeenCalled();
     });
   });
 
@@ -419,11 +469,19 @@ describe('AlertList', () => {
       const user = userEvent.setup();
       render(<AlertList {...defaultProps} enableSelection />);
 
-      await user.click(screen.getByTestId('alert-item-alert-1'));
+      await user.click(screen.getByTestId('alert-item-1'));
       await user.keyboard('[ControlLeft>]');
-      await user.click(screen.getByTestId('alert-item-alert-2'));
+      await user.click(screen.getByTestId('alert-item-2'));
 
-      expect(screen.getAllByTestId(/alert-item-/).filter(el => el.classList.contains('selected'))).toHaveLength(2);
+      // Selected alerts are highlighted with the `ring-2 ring-blue-500` classes
+      const selected = screen
+        .getAllByTestId(/alert-item-/)
+        .filter((el) => el.classList.contains('ring-2'));
+      expect(selected).toHaveLength(2);
+      expect(selected.map((el) => el.getAttribute('data-testid'))).toEqual([
+        'alert-item-1',
+        'alert-item-2',
+      ]);
     });
 
     it('AL-027: bulk actions toolbar visible when 2+ selected', async () => {
@@ -431,9 +489,9 @@ describe('AlertList', () => {
       render(<AlertList {...defaultProps} enableSelection />);
 
       // Select 2 alerts
-      await user.click(screen.getByTestId('alert-item-alert-1'));
+      await user.click(screen.getByTestId('alert-item-1'));
       await user.keyboard('[ControlLeft>]');
-      await user.click(screen.getByTestId('alert-item-alert-2'));
+      await user.click(screen.getByTestId('alert-item-2'));
 
       expect(screen.getByTestId('bulk-actions-toolbar')).toBeInTheDocument();
     });
@@ -443,19 +501,24 @@ describe('AlertList', () => {
       const onBulkMarkRead = vi.fn();
       render(<AlertList {...defaultProps} enableSelection onBulkMarkRead={onBulkMarkRead} />);
 
-      await user.click(screen.getByTestId('alert-item-alert-1'));
+      await user.click(screen.getByTestId('alert-item-1'));
       await user.keyboard('[ControlLeft>]');
-      await user.click(screen.getByTestId('alert-item-alert-2'));
+      await user.click(screen.getByTestId('alert-item-2'));
       await user.click(screen.getByRole('button', { name: /mark selected as read/i }));
 
-      expect(onBulkMarkRead).toHaveBeenCalledWith(['alert-1', 'alert-2']);
+      expect(onBulkMarkRead).toHaveBeenCalledWith([1, 2]);
     });
 
     it('AL-031: clear selection', async () => {
       const user = userEvent.setup();
       render(<AlertList {...defaultProps} enableSelection />);
 
-      await user.click(screen.getByTestId('alert-item-alert-1'));
+      // The bulk-actions toolbar (which holds "Clear selection") appears once
+      // two or more alerts are selected
+      await user.click(screen.getByTestId('alert-item-1'));
+      await user.click(screen.getByTestId('alert-item-2'));
+      expect(screen.getByTestId('bulk-actions-toolbar')).toBeInTheDocument();
+
       await user.click(screen.getByRole('button', { name: /clear selection/i }));
 
       expect(screen.queryByTestId('bulk-actions-toolbar')).not.toBeInTheDocument();
@@ -471,7 +534,7 @@ describe('AlertList', () => {
       render(
         <AlertList
           {...defaultProps}
-          filters={{ project_id: 'proj-1', alert_types: ['mention_spike'] }}
+          filters={{ project_id: '1', alert_types: ['mention_spike'] }}
         />
       );
 
@@ -484,7 +547,7 @@ describe('AlertList', () => {
       render(
         <AlertList
           {...defaultProps}
-          filters={{ project_id: 'proj-1', alert_types: ['mention_spike'] }}
+          filters={{ project_id: '1', alert_types: ['mention_spike'] }}
           onFilterChange={onFilterChange}
         />
       );
@@ -514,7 +577,7 @@ describe('AlertList', () => {
       render(
         <AlertList
           {...defaultProps}
-          initialFilters={{ project_id: 'proj-1', is_read: false }}
+          initialFilters={{ project_id: '1', is_read: false }}
           onFilterChange={onFilterChange}
         />
       );
@@ -555,11 +618,11 @@ describe('AlertList', () => {
       const { rerender } = render(<AlertList {...defaultProps} />);
 
       const newAlerts = [...createMockAlerts(5), createMockAlerts(1)[0]];
-      newAlerts[newAlerts.length - 1].id = 'new-alert';
+      newAlerts[newAlerts.length - 1].id = 6;
 
       rerender(<AlertList {...defaultProps} alerts={newAlerts} />);
 
-      expect(screen.getByTestId('alert-item-new-alert')).toBeInTheDocument();
+      expect(screen.getByTestId('alert-item-6')).toBeInTheDocument();
     });
 
     it('AL-040: polling interval triggers refetch', () => {
@@ -606,7 +669,12 @@ describe('AlertList', () => {
       await user.click(screen.getByRole('button', { name: /filter by project/i }));
       expect(screen.getByRole('listbox')).toBeInTheDocument();
 
+      // The filter dropdowns have no Escape handler - Escape leaves the
+      // dropdown open. It is closed by activating the filter button again.
       await user.keyboard('{Escape}');
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /filter by project/i }));
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
   });
@@ -652,7 +720,15 @@ describe('AlertList', () => {
 
   describe('Edge Cases', () => {
     it('AL-042: connection error shows retry button', () => {
-      render(<AlertList {...defaultProps} alerts={[]} error="Network error" />);
+      const onRetry = vi.fn();
+      render(
+        <AlertList
+          {...defaultProps}
+          alerts={[]}
+          error="Network error"
+          onRetry={onRetry}
+        />
+      );
 
       expect(screen.getByText(/network error/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
@@ -673,7 +749,7 @@ describe('AlertList', () => {
         <AlertList
           {...defaultProps}
           alerts={createMockAlerts(3)}
-          filters={{ project_id: 'proj-1' }}
+          filters={{ project_id: '1' }}
           totalBeforeFilter={10}
         />
       );

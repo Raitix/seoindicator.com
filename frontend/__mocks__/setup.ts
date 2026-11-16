@@ -84,7 +84,16 @@ class MockResizeObserver {
 global.ResizeObserver = MockResizeObserver;
 
 if (hasDom) {
-  // Mock matchMedia
+  // jsdom does not implement the pointer-capture API. Radix UI's Select
+// calls target.hasPointerCapture() when the trigger is clicked, so
+// without these the listbox never opens and every option query fails.
+if (hasDom && typeof Element !== 'undefined') {
+  Element.prototype.hasPointerCapture = Element.prototype.hasPointerCapture || (() => false);
+  Element.prototype.setPointerCapture = Element.prototype.setPointerCapture || (() => {});
+  Element.prototype.releasePointerCapture = Element.prototype.releasePointerCapture || (() => {});
+}
+
+// Mock matchMedia
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query) => ({

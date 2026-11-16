@@ -76,14 +76,21 @@ describe("Header Component", () => {
   // ============================================
   describe("Rendering", () => {
     it("RENDER-001: should render logo with correct link", () => {
-      render(<Header {...defaultProps} />);
+      const { unmount } = render(<Header {...defaultProps} />);
+      const guestLogo = screen.getByRole("link", { name: /seoindicator home/i });
+      expect(guestLogo).toBeInTheDocument();
+      // Guests are sent to the landing page
+      expect(guestLogo).toHaveAttribute("href", "/");
+      unmount();
+
+      render(<Header {...userProps} />);
       const logo = screen.getByRole("link", { name: /seoindicator home/i });
       expect(logo).toBeInTheDocument();
       expect(logo).toHaveAttribute("href", "/dashboard");
     });
 
     it("RENDER-002: should render all navigation items", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /keywords/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /competitors/i })).toBeInTheDocument();
@@ -116,13 +123,13 @@ describe("Header Component", () => {
     });
 
     it("RENDER-007: should render notification bell", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const bellButton = screen.getByRole("button", { name: /notifications/i });
       expect(bellButton).toBeInTheDocument();
     });
 
     it("RENDER-008: should render settings link", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       // There are multiple Settings links (nav + right side), so we use getAllByRole
       const settingsLinks = screen.getAllByRole("link", { name: "Settings" });
       expect(settingsLinks.length).toBeGreaterThan(0);
@@ -135,30 +142,29 @@ describe("Header Component", () => {
   describe("Active State Indicators", () => {
     it("ACTIVE-001: should mark Dashboard active on /dashboard", () => {
       mockPathname.mockReturnValue("/dashboard");
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const dashboardLink = screen.getByRole("link", { name: /dashboard/i });
       expect(dashboardLink).toHaveAttribute("aria-current", "page");
     });
 
     it("ACTIVE-002: should mark Keywords active on /keywords", () => {
       mockPathname.mockReturnValue("/keywords");
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const keywordsLink = screen.getByRole("link", { name: /keywords/i });
       expect(keywordsLink).toHaveAttribute("aria-current", "page");
     });
 
     it("ACTIVE-003: should mark Settings active on /settings/* routes", () => {
       mockPathname.mockReturnValue("/settings/alerts");
-      render(<Header {...defaultProps} />);
-      // Find the nav Settings link (in the nav element)
-      const nav = screen.getByRole("navigation", { name: /main navigation/i });
-      const settingsLink = within(nav).getByRole("link", { name: "Settings" });
+      render(<Header {...userProps} />);
+      // The Settings link is rendered in the right-side actions (icon only, aria-label "Settings")
+      const settingsLink = screen.getByRole("link", { name: "Settings" });
       expect(settingsLink).toHaveAttribute("aria-current", "page");
     });
 
     it("ACTIVE-004: should mark Dashboard active on sub-routes", () => {
       mockPathname.mockReturnValue("/dashboard/projects/123");
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const dashboardLink = screen.getByRole("link", { name: /dashboard/i });
       expect(dashboardLink).toHaveAttribute("aria-current", "page");
     });
@@ -178,7 +184,7 @@ describe("Header Component", () => {
 
     it("ACTIVE-006: should render active indicator underline", () => {
       mockPathname.mockReturnValue("/dashboard");
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const dashboardLink = screen.getByRole("link", { name: /dashboard/i });
       // Check for underline indicator span
       const indicator = dashboardLink.querySelector("span.bg-blue-500");
@@ -187,7 +193,7 @@ describe("Header Component", () => {
 
     it("ACTIVE-007: should have aria-current='page' on active link", () => {
       mockPathname.mockReturnValue("/keywords");
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const keywordsLink = screen.getByRole("link", { name: /keywords/i });
       expect(keywordsLink).toHaveAttribute("aria-current", "page");
     });
@@ -358,7 +364,7 @@ describe("Header Component", () => {
   // ============================================
   describe("Hover Effects", () => {
     it("HOVER-001: should have hover class on nav links", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const keywordsLink = screen.getByRole("link", { name: /keywords/i });
       expect(keywordsLink.className).toMatch(/hover:text-white|hover:bg/);
     });
@@ -370,13 +376,13 @@ describe("Header Component", () => {
     });
 
     it("HOVER-003: should have hover effect on notification bell", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const bellButton = screen.getByRole("button", { name: /notifications/i });
       expect(bellButton.className).toMatch(/hover:bg/);
     });
 
     it("HOVER-004: should have hover effect on settings link", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       // Find settings link in the right side actions (has aria-label)
       const settingsLinks = screen.getAllByRole("link", { name: /settings/i });
       // At least one should have hover effect
@@ -434,7 +440,7 @@ describe("Header Component", () => {
   describe("Navigation Functionality", () => {
     it("NAV-001: should navigate when clicking nav link", async () => {
       const user = userEvent.setup();
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
 
       const keywordsLink = screen.getByRole("link", { name: /keywords/i });
       await user.click(keywordsLink);
@@ -444,28 +450,28 @@ describe("Header Component", () => {
     });
 
     it("NAV-002: should navigate to dashboard on logo click", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const logo = screen.getByRole("link", { name: /seoindicator home/i });
       expect(logo).toHaveAttribute("href", "/dashboard");
     });
 
-    it("NAV-003: should have settings link pointing to /settings/alerts", () => {
-      render(<Header {...defaultProps} />);
+    it("NAV-003: should have settings link pointing to /settings", () => {
+      render(<Header {...userProps} />);
       // Find all links with /settings in href
       const allSettingsLinks = screen.getAllByRole("link").filter(link => 
         link.getAttribute("href")?.includes("/settings")
       );
       expect(allSettingsLinks.length).toBeGreaterThan(0);
-      // Check that at least one points to /settings/alerts (the icon-only link)
-      const hasSettingsAlertsLink = allSettingsLinks.some(link => 
-        link.getAttribute("href") === "/settings/alerts"
+      // The icon-only settings link points at /settings
+      const hasSettingsLink = allSettingsLinks.some(link => 
+        link.getAttribute("href") === "/settings"
       );
-      expect(hasSettingsAlertsLink).toBe(true);
+      expect(hasSettingsLink).toBe(true);
     });
 
     it("NAV-004: should navigate to notifications on bell click", async () => {
       const user = userEvent.setup();
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
 
       const bellButton = screen.getByRole("button", { name: /notifications/i });
       await user.click(bellButton);
@@ -533,13 +539,13 @@ describe("Header Component", () => {
 
     it("A11Y-002: should have aria-current on active link", () => {
       mockPathname.mockReturnValue("/keywords");
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const keywordsLink = screen.getByRole("link", { name: /keywords/i });
       expect(keywordsLink).toHaveAttribute("aria-current", "page");
     });
 
     it("A11Y-003: should have focus-visible outline", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const dashboardLink = screen.getByRole("link", { name: /dashboard/i });
       expect(dashboardLink.className).toMatch(/focus-visible:ring/);
     });
@@ -587,7 +593,7 @@ describe("Header Component", () => {
     });
 
     it("A11Y-008: should have minimum touch targets (44px)", () => {
-      render(<Header {...defaultProps} />);
+      render(<Header {...userProps} />);
       const bellButton = screen.getByRole("button", { name: /notifications/i });
       expect(bellButton.className).toMatch(/min-h-\[44px\]|min-w-\[44px\]|h-11|w-11/);
     });

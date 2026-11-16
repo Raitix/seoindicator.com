@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock Lucide icons
@@ -437,9 +437,13 @@ describe('TagInput Component', () => {
 
       const input = screen.getByTestId('tag-input-keywords');
       const longTag = 'a'.repeat(15);
-      await user.type(input, `${longTag}{enter}`);
 
-      // Input is limited by maxLength, so it won't have the full value
+      // jsdom does not apply the native `maxlength` attribute to programmatic
+      // value changes, so this reaches the component's own length guard.
+      fireEvent.change(input, { target: { value: longTag } });
+      await user.keyboard('{Enter}');
+
+      // A tag longer than maxLength is rejected
       expect(mockOnChange).not.toHaveBeenCalled();
     });
 
@@ -675,8 +679,10 @@ describe('TagInput Component', () => {
         />
       );
 
-      expect(screen.getByRole('listitem', { name: /tag1/ })).toBeInTheDocument();
-      expect(screen.getByRole('listitem', { name: /tag2/ })).toBeInTheDocument();
+      const items = screen.getAllByRole('listitem');
+      expect(items).toHaveLength(2);
+      expect(items[0]).toHaveTextContent('tag1');
+      expect(items[1]).toHaveTextContent('tag2');
     });
 
     it('TAG-REMOVE-010: should show X icon in remove button', () => {
@@ -1070,8 +1076,10 @@ describe('TagInput Component', () => {
         />
       );
 
-      // Now should be able to add it
+      // Now should be able to add it. The rejected attempt above left its
+      // text in the input, so clear it before typing the tag again.
       const newInput = screen.getByTestId('tag-input-keywords');
+      await user.clear(newInput);
       await user.type(newInput, 'duplicate{enter}');
       expect(mockOnChange).toHaveBeenCalledWith(['duplicate']);
     });
@@ -1327,12 +1335,10 @@ describe('TagInput Component', () => {
         />
       );
 
-      const input = screen.getByTestId('tag-input-keywords');
-      input.focus();
-
+      // The remove buttons are rendered before the input, so they come first
+      // in the tab order
       await user.tab();
 
-      // Focus should move to remove button
       expect(screen.getByTestId('tag-remove-keywords-0')).toHaveFocus();
     });
 
@@ -1366,15 +1372,15 @@ describe('TagInput Component', () => {
         />
       );
 
-      const input = screen.getByTestId('tag-input-keywords');
-      input.focus();
-
-      // Tab through remove buttons, then back to input
+      // Tab through the remove buttons, then on to the input
       await user.tab();
       expect(screen.getByTestId('tag-remove-keywords-0')).toHaveFocus();
 
       await user.tab();
       expect(screen.getByTestId('tag-remove-keywords-1')).toHaveFocus();
+
+      await user.tab();
+      expect(screen.getByTestId('tag-input-keywords')).toHaveFocus();
     });
 
     it('TAG-FOCUS-006: should have label associated with input', () => {

@@ -23,20 +23,25 @@ vi.mock('lucide-react', () => ({
 }));
 
 // Test data
+// Shape mirrors the backend AIVisibilityAlertResource (see lib/ai-visibility/types.ts):
+// numeric ids, `change_percent`, and no `message`/`recommendations` fields - the
+// toast derives the message from the alert data.
 const createMockAlert = (type: AlertType = 'mention_spike'): Alert => ({
-  id: 'alert-1',
-  project_id: 'proj-1',
+  id: 1,
+  project_id: 1,
   project_name: 'SEOIndicator',
   alert_type: type,
-  message: 'Brand mentions increased by 25%',
+  threshold: 20,
   previous_value: 40,
   current_value: 50,
-  percentage_change: 25,
+  change_percent: 25,
   is_read: false,
   is_resolved: false,
-  created_at: new Date().toISOString(),
   resolved_at: null,
-  recommendations: [],
+  triggered_at: null,
+  metadata: null,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 });
 
 describe('AlertToast', () => {
@@ -73,10 +78,13 @@ describe('AlertToast', () => {
 
     it('AT-009: displays message', () => {
       const alert = createMockAlert();
-      alert.message = 'Custom alert message';
+      alert.change_percent = 42.5;
       render(<AlertToast {...defaultProps} alert={alert} />);
 
-      expect(screen.getByText(/Custom alert message/i)).toBeInTheDocument();
+      // The toast derives the message from the alert data
+      expect(
+        screen.getByText('Mentions for SEOIndicator increased by 42.5%')
+      ).toBeInTheDocument();
     });
 
     it('AT-010: displays project name', () => {
@@ -108,6 +116,11 @@ describe('AlertToast', () => {
         vi.advanceTimersByTime(10000);
       });
 
+      // The toast animates out over 300ms before onDismiss fires
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
       expect(mockOnDismiss).toHaveBeenCalled();
     });
 
@@ -130,6 +143,10 @@ describe('AlertToast', () => {
         vi.advanceTimersByTime(10000);
       });
 
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
       expect(mockOnDismiss).toHaveBeenCalled();
     });
 
@@ -150,6 +167,10 @@ describe('AlertToast', () => {
         vi.advanceTimersByTime(10000);
       });
 
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
       expect(mockOnDismiss).toHaveBeenCalled();
     });
   });
@@ -165,7 +186,7 @@ describe('AlertToast', () => {
 
       await user.click(screen.getByTestId('alert-toast'));
 
-      expect(mockOnOpenDetail).toHaveBeenCalledWith('alert-1');
+      expect(mockOnOpenDetail).toHaveBeenCalledWith(1);
     });
 
     it('AT-004: dismiss button closes toast', async () => {
@@ -173,6 +194,14 @@ describe('AlertToast', () => {
       render(<AlertToast {...defaultProps} />);
 
       await user.click(screen.getByRole('button', { name: /dismiss/i }));
+
+      // The toast is removed from the DOM straight away
+      expect(screen.queryByTestId('alert-toast')).not.toBeInTheDocument();
+
+      // The toast animates out over 300ms before onDismiss fires
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
 
       expect(mockOnDismiss).toHaveBeenCalled();
     });
@@ -227,8 +256,8 @@ describe('AlertToast', () => {
   describe('Multiple Toasts', () => {
     it('AT-012: multiple toasts stacked', () => {
       const alert1 = createMockAlert();
-      const alert2 = { ...createMockAlert(), id: 'alert-2' };
-      const alert3 = { ...createMockAlert(), id: 'alert-3' };
+      const alert2 = { ...createMockAlert(), id: 2 };
+      const alert3 = { ...createMockAlert(), id: 3 };
 
       const { container } = render(
         <>
@@ -245,7 +274,7 @@ describe('AlertToast', () => {
     it('AT-013: max toasts limit enforced', () => {
       const alerts = Array.from({ length: 7 }, (_, i) => ({
         ...createMockAlert(),
-        id: `alert-${i}`,
+        id: i + 1,
       }));
 
       const { container } = render(
@@ -322,6 +351,11 @@ describe('AlertToast', () => {
       render(<AlertToast {...defaultProps} />);
 
       await user.keyboard('{Escape}');
+
+      // The toast animates out over 300ms before onDismiss fires
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
 
       expect(mockOnDismiss).toHaveBeenCalled();
     });

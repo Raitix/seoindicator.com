@@ -26,20 +26,25 @@ vi.mock('lucide-react', () => ({
 }));
 
 // Test data
+// Shape mirrors the backend AIVisibilityAlertResource (see lib/ai-visibility/types.ts):
+// numeric ids, `change_percent`, `triggered_at`, and no `message`/`recommendations`
+// fields - the component derives both from the alert data.
 const createMockAlert = (overrides: Partial<Alert> = {}): Alert => ({
-  id: 'alert-1',
-  project_id: 'proj-1',
+  id: 1,
+  project_id: 1,
   project_name: 'SEOIndicator',
   alert_type: 'mention_spike',
-  message: 'Brand mentions increased by 25%',
+  threshold: 20,
   previous_value: 40,
   current_value: 50,
-  percentage_change: 25,
+  change_percent: 25,
   is_read: false,
   is_resolved: false,
-  created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
   resolved_at: null,
-  recommendations: ['Investigate source', 'Track trending queries'],
+  triggered_at: null,
+  metadata: null,
+  created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+  updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   ...overrides,
 });
 
@@ -105,10 +110,14 @@ describe('AlertNotification', () => {
     });
 
     it('AN-006: displays message', () => {
-      const alert = createMockAlert({ message: 'Test alert message' });
+      const alert = createMockAlert();
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
-      expect(screen.getByText('Test alert message')).toBeInTheDocument();
+      // The component renders the message derived from the alert data
+      // (generateAlertMessage), not a `message` field from the payload.
+      expect(screen.getByTestId('alert-message')).toHaveTextContent(
+        'Mentions for SEOIndicator increased by 25.0%'
+      );
     });
 
     it('AN-007: displays time ago', () => {
@@ -240,38 +249,38 @@ describe('AlertNotification', () => {
 
   describe('Percentage Change', () => {
     it('AN-017: positive percentage change displayed with plus', () => {
-      const alert = createMockAlert({ percentage_change: 25 });
+      const alert = createMockAlert({ change_percent: 25 });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('+25%');
+      expect(changeEl).toHaveTextContent('+25.0%');
       expect(changeEl).toHaveClass('text-emerald-600');
     });
 
     it('AN-018: negative percentage change displayed with minus', () => {
-      const alert = createMockAlert({ percentage_change: -15 });
+      const alert = createMockAlert({ change_percent: -15 });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('-15%');
+      expect(changeEl).toHaveTextContent('-15.0%');
       expect(changeEl).toHaveClass('text-rose-600');
     });
 
     it('AN-035: zero percentage change in neutral color', () => {
-      const alert = createMockAlert({ percentage_change: 0 });
+      const alert = createMockAlert({ change_percent: 0 });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('0%');
+      expect(changeEl).toHaveTextContent('0.0%');
       expect(changeEl).toHaveClass('text-slate-500');
     });
 
     it('AN-036: large percentage change formatted correctly', () => {
-      const alert = createMockAlert({ percentage_change: 500 });
+      const alert = createMockAlert({ change_percent: 500 });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       const changeEl = screen.getByTestId('percentage-change');
-      expect(changeEl).toHaveTextContent('+500%');
+      expect(changeEl).toHaveTextContent('+500.0%');
     });
   });
 
@@ -281,12 +290,15 @@ describe('AlertNotification', () => {
 
   describe('Edge Cases', () => {
     it('AN-019: long message truncated with ellipsis', () => {
-      const longMessage = 'A'.repeat(150);
-      const alert = createMockAlert({ message: longMessage });
+      // The rendered message is derived from project_name, so a long project
+      // name is what produces a long message.
+      const longName = 'A'.repeat(150);
+      const alert = createMockAlert({ project_name: longName });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       const messageEl = screen.getByTestId('alert-message');
-      expect(messageEl.textContent!.length).toBeLessThan(longMessage.length);
+      expect(messageEl.textContent!.length).toBe(150);
+      expect(messageEl.textContent).toMatch(/\.\.\.$/);
     });
 
     it('AN-020: loading state shows skeleton', () => {
@@ -297,30 +309,32 @@ describe('AlertNotification', () => {
     });
 
     it('AN-023: has data attributes', () => {
-      const alert = createMockAlert({ id: 'alert-123', alert_type: 'mention_spike' });
+      const alert = createMockAlert({ id: 123, alert_type: 'mention_spike' });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       const card = screen.getByTestId('alert-notification');
-      expect(card).toHaveAttribute('data-alert-id', 'alert-123');
+      expect(card).toHaveAttribute('data-alert-id', '123');
       expect(card).toHaveAttribute('data-alert-type', 'mention_spike');
     });
 
     it('AN-024: empty recommendations - no section shown', () => {
-      const alert = createMockAlert({ recommendations: [] });
+      // Recommendations are derived from alert_type now (generateRecommendations),
+      // so there is no longer an empty array in the payload. The preview block is
+      // only rendered for the 'full' variant - outside of it no recommendations
+      // section is shown at all.
+      const alert = createMockAlert();
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
       expect(screen.queryByTestId('recommendations-preview')).not.toBeInTheDocument();
     });
 
     it('AN-025: multiple recommendations shown in preview', () => {
-      const alert = createMockAlert({
-        recommendations: ['First', 'Second', 'Third'],
-      });
-      render(<AlertNotification alert={alert} onClick={mockOnClick} />);
+      const alert = createMockAlert({ alert_type: 'competitor_gain' });
+      render(<AlertNotification alert={alert} onClick={mockOnClick} variant="full" />);
 
       const preview = screen.getByTestId('recommendations-preview');
-      expect(within(preview).getByText('First')).toBeInTheDocument();
-      expect(within(preview).getByText('Second')).toBeInTheDocument();
+      expect(within(preview).getByText(/Analyze competitor's recent activities/)).toBeInTheDocument();
+      expect(within(preview).getByText(/Identify gaps in your own content/)).toBeInTheDocument();
     });
 
     it('AN-026: custom className applied', () => {
@@ -338,21 +352,22 @@ describe('AlertNotification', () => {
     });
 
     it('AN-037: unicode in message rendered correctly', () => {
-      const alert = createMockAlert({ message: 'Brand 🚀 mentions increased! 日本語' });
+      const alert = createMockAlert({ project_name: 'Brand 🚀 mentions increased! 日本語' });
       render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
-      expect(screen.getByText(/Brand 🚀 mentions increased!/)).toBeInTheDocument();
+      expect(screen.getByTestId('alert-message')).toHaveTextContent('Brand 🚀 mentions increased! 日本語');
     });
 
     it('AN-038: XSS prevention - script not executed', () => {
       const alert = createMockAlert({
-        message: '<script>alert("xss")</script>Normal text',
+        project_name: '<script>alert("xss")</script>Normal text',
       });
-      render(<AlertNotification alert={alert} onClick={mockOnClick} />);
+      const { container } = render(<AlertNotification alert={alert} onClick={mockOnClick} />);
 
-      // Script tag should be escaped, not executed
-      expect(screen.queryByText(/alert\("xss"\)/)).not.toBeInTheDocument();
-      expect(screen.getByText(/Normal text/)).toBeInTheDocument();
+      // The payload is rendered as inert text - no script element is created
+      // and nothing is executed.
+      expect(container.querySelector('script')).toBeNull();
+      expect(screen.getByTestId('alert-message')).toHaveTextContent('<script>alert("xss")</script>Normal text');
     });
 
     it('AN-039: long project name truncated', () => {
@@ -379,14 +394,12 @@ describe('AlertNotification', () => {
     });
 
     it('AN-028: full variant shows all recommendations', () => {
-      const alert = createMockAlert({
-        recommendations: ['First', 'Second', 'Third'],
-      });
+      const alert = createMockAlert({ alert_type: 'mention_spike' });
       render(<AlertNotification alert={alert} onClick={mockOnClick} variant="full" />);
 
-      expect(screen.getByText('First')).toBeInTheDocument();
-      expect(screen.getByText('Second')).toBeInTheDocument();
-      expect(screen.getByText('Third')).toBeInTheDocument();
+      expect(screen.getByText(/Monitor the trend to see if it continues/)).toBeInTheDocument();
+      expect(screen.getByText(/Analyze which queries are driving the increase/)).toBeInTheDocument();
+      expect(screen.getByText(/Consider doubling down on successful content/)).toBeInTheDocument();
     });
 
     it('AN-029: disabled state - no click, opacity reduced', () => {

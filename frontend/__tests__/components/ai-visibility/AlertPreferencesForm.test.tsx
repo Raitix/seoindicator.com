@@ -26,8 +26,10 @@ vi.mock('lucide-react', () => ({
 }));
 
 // Test data
+// The component consumes the backend AlertPreferences shape
+// (see lib/ai-visibility/types.ts): `email_notifications_enabled`.
 const defaultPreferences = {
-  email_notifications: true,
+  email_notifications_enabled: true,
   webhook_url: 'https://example.com/webhook',
   alert_types: ['mention_spike', 'mention_drop', 'competitor_gain', 'sentiment_change'] as const,
 };
@@ -65,7 +67,7 @@ describe('AlertPreferencesForm', () => {
       render(
         <AlertPreferencesForm
           {...defaultProps}
-          preferences={{ ...defaultPreferences, email_notifications: false }}
+          preferences={{ ...defaultPreferences, email_notifications_enabled: false }}
         />
       );
 
@@ -272,7 +274,8 @@ describe('AlertPreferencesForm', () => {
       render(<AlertPreferencesForm {...defaultProps} isSaving />);
 
       expect(screen.getByTestId('loader-icon')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+      // While saving, the button reads "Saving..." and is disabled
+      expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
     });
 
     it('APF-019: success toast on save', async () => {
@@ -329,7 +332,9 @@ describe('AlertPreferencesForm', () => {
       await user.click(screen.getByRole('button', { name: /cancel/i }));
 
       expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-      expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /unsaved changes/i })
+      ).toBeInTheDocument();
     });
 
     it('APF-023: confirm discard resets form', async () => {
@@ -390,7 +395,13 @@ describe('AlertPreferencesForm', () => {
       await user.click(screen.getByRole('button', { name: /test webhook/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/webhook test successful/i)).toBeInTheDocument();
+        // The status is reported on the button and in the status paragraph
+        expect(
+          screen.getByRole('button', { name: /webhook test successful/i })
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(/webhook test successful/i, { selector: 'p' })
+        ).toBeInTheDocument();
       });
     });
 
@@ -403,7 +414,10 @@ describe('AlertPreferencesForm', () => {
       await user.click(screen.getByRole('button', { name: /test webhook/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/webhook test failed/i)).toBeInTheDocument();
+        // The error thrown by the webhook test is surfaced to the user
+        expect(
+          screen.getByText(/connection failed/i, { selector: 'p' })
+        ).toBeInTheDocument();
       });
     });
   });
@@ -506,8 +520,13 @@ describe('AlertPreferencesForm', () => {
     it('APF-037: alert type descriptions shown', () => {
       render(<AlertPreferencesForm {...defaultProps} />);
 
-      // Each alert type should have a description
-      expect(screen.getByText(/notify when brand mentions/i)).toBeInTheDocument();
+      // Each alert type has its own description
+      expect(
+        screen.getByText(/notify when brand mentions increase significantly/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/notify when brand mentions decrease significantly/i)
+      ).toBeInTheDocument();
     });
   });
 
