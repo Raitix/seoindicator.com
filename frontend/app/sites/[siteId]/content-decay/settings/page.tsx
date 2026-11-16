@@ -149,16 +149,17 @@ export default function ContentDecaySettingsPage() {
           ))}
         </div>
       ) : (
-        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
+        <form noValidate onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
           <section className="bg-slate-800/50 border border-slate-700 rounded-lg p-4" aria-labelledby="detection-heading">
             <h2 id="detection-heading" className="text-lg font-medium text-white mb-4">Detection Settings</h2>
 
             <div className="flex items-center justify-between py-3 border-b border-slate-700">
               <div>
-                <p className="text-slate-200 font-medium">Enable Detection</p>
+                <label htmlFor="detection-toggle" className="text-slate-200 font-medium">Enable Detection</label>
                 <p className="text-sm text-slate-400">Automatically detect decaying content</p>
               </div>
               <button
+                id="detection-toggle"
                 type="button"
                 role="switch"
                 aria-checked={formData.detectionEnabled}
@@ -233,10 +234,11 @@ export default function ContentDecaySettingsPage() {
 
             <div className="flex items-center justify-between py-3 border-b border-slate-700">
               <div>
-                <p className="text-slate-200 font-medium">Enable Digest</p>
+                <label htmlFor="digest-toggle" className="text-slate-200 font-medium">Enable Digest</label>
                 <p className="text-sm text-slate-400">Receive periodic decay summary emails</p>
               </div>
               <button
+                id="digest-toggle"
                 type="button"
                 role="switch"
                 aria-checked={formData.digestEnabled}

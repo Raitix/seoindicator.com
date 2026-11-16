@@ -21,11 +21,13 @@ vi.mock('next/navigation', () => ({
   useParams: vi.fn(),
 }));
 
-// Mock the VisibilitySettings component
+// Mock the VisibilitySettings component.
+// Its markup mirrors the real component: a labelled section whose
+// aria-labelledby points at its own heading.
 vi.mock('@/components/audit/VisibilitySettings', () => ({
   VisibilitySettings: ({ auditId, auditHash, isPublic, onPublish, onUnpublish }: any) => (
-    <div data-testid="visibility-settings">
-      <h3>Visibility</h3>
+    <div data-testid="visibility-settings" aria-labelledby="visibility-section-heading">
+      <h3 id="visibility-section-heading">Visibility</h3>
       <p>Current: {isPublic ? 'Public' : 'Private'}</p>
       <button
         onClick={isPublic ? onUnpublish : onPublish}
@@ -50,13 +52,16 @@ vi.mock('lucide-react', () => ({
   Settings: () => <span data-testid="settings-icon">⚙</span>,
   Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loading</span>,
   AlertCircle: () => <span data-testid="alert-icon">!</span>,
+  Lock: () => <span data-testid="lock-icon">🔒</span>,
 }));
 
 // Import the mocked hooks
 import { useAuditSettings, usePublishAudit, useUnpublishAudit } from '@/lib/api/audit-settings';
 
-// Import the component after mocks
-import { AuditSettingsPage } from '@/app/dashboard/audits/[id]/settings/page';
+// Import the component after mocks.
+// The route module is a thin server-component wrapper whose default export
+// renders the client component that owns the behaviour under test.
+import AuditSettingsPage from '@/app/dashboard/audits/[id]/settings/page';
 
 // ============================================================
 // Test Utilities
@@ -201,6 +206,12 @@ describe('Audit Settings Page', () => {
     it('redirects to login for unauthorized users', async () => {
       renderPage({ error: new Error('Unauthorized') });
 
+      // The page shows a sign-in prompt rather than redirecting on its own.
+      const signInButton = screen.getByRole('button', { name: /sign in/i });
+      expect(signInButton).toBeInTheDocument();
+
+      await userEvent.click(signInButton);
+
       await waitFor(() => {
         expect(mockRouter.push).toHaveBeenCalledWith('/login');
       });
@@ -320,6 +331,12 @@ describe('Audit Settings Page', () => {
 
     it('unauthenticated user is redirected', async () => {
       renderPage({ error: new Error('Unauthorized') });
+
+      // The page shows a sign-in prompt rather than redirecting on its own.
+      const signInButton = screen.getByRole('button', { name: /sign in/i });
+      expect(signInButton).toBeInTheDocument();
+
+      await userEvent.click(signInButton);
 
       await waitFor(() => {
         expect(mockRouter.push).toHaveBeenCalledWith('/login');

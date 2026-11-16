@@ -106,6 +106,8 @@ const mockInsightsData = {
 
 // Mock components (TDD reference implementation)
 const MockInsightsDashboardPage = ({ isLoading = false, error = null, data = mockInsightsData }) => {
+  const { id } = useParams() as { id: string };
+
   if (isLoading) {
     return (
       <div data-testid="loading-skeleton" role="status" aria-live="polite">
@@ -133,7 +135,7 @@ const MockInsightsDashboardPage = ({ isLoading = false, error = null, data = moc
           <span>/</span>
           <a href="/locations">Locations</a>
           <span>/</span>
-          <a href="/locations/1">Location</a>
+          <a href={`/locations/${id}`}>Location</a>
           <span>/</span>
           <span aria-current="page">Insights</span>
         </nav>
@@ -233,13 +235,13 @@ const MockInsightsDashboardPage = ({ isLoading = false, error = null, data = moc
 };
 
 describe('GBP Insights Dashboard Page', () => {
-  const mockNavigate = vi.fn();
+  const mockRouter = { push: vi.fn(), replace: vi.fn(), back: vi.fn(), refresh: vi.fn() };
   const mockParams = { id: '1' };
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useParams).mockReturnValue(mockParams);
-    vi.mocked(useNavigate).mockReturnValue(mockNavigate);
+    vi.mocked(useRouter).mockReturnValue(mockRouter);
   });
 
   afterEach(() => {
@@ -249,9 +251,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-001 to PAGE-005: Page Structure', () => {
     it('PAGE-001: renders page with all sections', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('insights-dashboard-page')).toBeInTheDocument();
@@ -266,9 +268,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-002: displays breadcrumb navigation', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
@@ -280,9 +282,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-003: displays page title', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByRole('heading', { name: 'GBP Insights', level: 1 })).toBeInTheDocument();
@@ -290,9 +292,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-004: shows loading skeleton on initial load', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage isLoading={true} />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
@@ -301,9 +303,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-005: shows error state on API error', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage error={{ message: 'Failed to load' }} />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('error-state')).toBeInTheDocument();
@@ -315,9 +317,9 @@ describe('GBP Insights Dashboard Page', () => {
     it('PAGE-006: retry button calls refetch on error', async () => {
       const user = userEvent.setup();
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage error={{ message: 'Failed to load' }} />
-        </MemoryRouter>
+        </>
       );
 
       const retryButton = screen.getByRole('button', { name: /retry/i });
@@ -328,9 +330,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-007: loading skeleton has aria-live for accessibility', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage isLoading={true} />
-        </MemoryRouter>
+        </>
       );
 
       const skeleton = screen.getByTestId('loading-skeleton');
@@ -339,9 +341,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-008: error state has role="alert"', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage error={{ message: 'Failed' }} />
-        </MemoryRouter>
+        </>
       );
 
       const errorDiv = screen.getByTestId('error-state');
@@ -352,9 +354,9 @@ describe('GBP Insights Dashboard Page', () => {
       vi.mocked(useParams).mockReturnValue({ id: '42' });
 
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       // In real implementation, this would verify the API was called with id: 42
@@ -363,9 +365,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-010: renders all chart sections', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('views-line-chart')).toBeInTheDocument();
@@ -378,9 +380,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-011 to PAGE-015: Date Range Selector', () => {
     it('PAGE-011: renders preset buttons', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('preset-7d')).toBeInTheDocument();
@@ -391,9 +393,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-012: highlights selected preset', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const preset7d = screen.getByTestId('preset-7d');
@@ -402,9 +404,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-013: date range selector has accessible label', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const selector = screen.getByTestId('date-range-selector');
@@ -413,9 +415,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-014: preset buttons are focusable', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const buttons = screen.getAllByRole('button');
@@ -426,9 +428,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-015: date range selector has role="group"', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const selector = screen.getByTestId('date-range-selector');
@@ -439,9 +441,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-016 to PAGE-020: Overview Cards', () => {
     it('PAGE-016: displays total views card', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const card = screen.getByTestId('card-views');
@@ -451,9 +453,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-017: displays total searches card', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const card = screen.getByTestId('card-searches');
@@ -463,9 +465,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-018: displays total actions card', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const card = screen.getByTestId('card-actions');
@@ -475,9 +477,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-019: displays conversion rate card', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const card = screen.getByTestId('card-conversion');
@@ -487,9 +489,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-020: displays correct values in cards', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('views-value')).toHaveTextContent('1250');
@@ -502,9 +504,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-021 to PAGE-025: Trend Indicators', () => {
     it('PAGE-021: shows positive trend with up indicator', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const viewsTrend = screen.getByTestId('views-trend');
@@ -514,9 +516,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-022: shows negative trend with down indicator', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const searchesTrend = screen.getByTestId('searches-trend');
@@ -526,9 +528,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-023: card has trend data attribute', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const viewsCard = screen.getByTestId('card-views');
@@ -540,9 +542,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-024: trend values are formatted with sign', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('views-trend')).toHaveTextContent('+12.5%');
@@ -553,9 +555,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-025: renders trend icons', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       // Icons are rendered with aria-hidden for decorative purposes
@@ -568,9 +570,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-026 to PAGE-030: Chart Sections', () => {
     it('PAGE-026: views chart section has accessible heading', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const heading = screen.getByRole('heading', { name: 'Views Over Time', level: 2 });
@@ -579,9 +581,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-027: searches chart section has accessible heading', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const heading = screen.getByRole('heading', { name: 'Searches Over Time', level: 2 });
@@ -590,9 +592,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-028: actions breakdown section has accessible heading', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const heading = screen.getByRole('heading', { name: 'Actions Breakdown', level: 2 });
@@ -601,9 +603,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-029: actions trend section has accessible heading', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const heading = screen.getByRole('heading', { name: 'Actions Trend', level: 2 });
@@ -612,9 +614,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-030: period comparison section has accessible heading', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const heading = screen.getByRole('heading', { name: 'Period Comparison', level: 2 });
@@ -625,9 +627,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-031 to PAGE-035: Actions Breakdown', () => {
     it('PAGE-031: displays all action types', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('action-calls')).toBeInTheDocument();
@@ -638,9 +640,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-032: displays correct action counts', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('action-calls')).toHaveAttribute('data-count', '32');
@@ -651,9 +653,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-033: calculates total actions correctly', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const total = 32 + 25 + 22 + 10; // 89
@@ -662,9 +664,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-034: actions breakdown chart renders', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const chart = screen.getByTestId('actions-breakdown-chart');
@@ -673,9 +675,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-035: action labels are human-readable', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByText(/Calls: 32/)).toBeInTheDocument();
@@ -688,9 +690,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-036 to PAGE-040: Period Comparison', () => {
     it('PAGE-036: displays views change', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const change = screen.getByTestId('views-change');
@@ -700,9 +702,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-037: displays searches change', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const change = screen.getByTestId('searches-change');
@@ -712,9 +714,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-038: displays actions change', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const change = screen.getByTestId('actions-change');
@@ -724,9 +726,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-039: period comparison section renders', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('period-comparison')).toBeInTheDocument();
@@ -734,9 +736,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-040: change values match overview trends', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       // Views change matches views_trend
@@ -749,9 +751,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-041 to PAGE-045: Accessibility', () => {
     it('PAGE-041: all sections have accessible landmarks', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const sections = screen.getAllByRole('region');
@@ -760,9 +762,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-042: headings have proper hierarchy', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const h1 = screen.getByRole('heading', { level: 1 });
@@ -774,21 +776,21 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-043: icons have aria-hidden', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
-      const icons = screen.getAllByRole('img', { hidden: true });
+      const icons = screen.queryAllByRole('img', { hidden: true });
       // Icons should be decorative and hidden from screen readers
       expect(icons.length).toBe(0); // All icons are aria-hidden
     });
 
     it('PAGE-044: breadcrumb has aria-current for current page', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const currentPage = screen.getByText('Insights');
@@ -797,9 +799,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-045: date range selector buttons have aria-pressed', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const buttons = [
@@ -827,9 +829,9 @@ describe('GBP Insights Dashboard Page', () => {
       };
 
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage data={zeroData} />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('views-value')).toHaveTextContent('0');
@@ -844,9 +846,9 @@ describe('GBP Insights Dashboard Page', () => {
       };
 
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage data={emptyData} />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('views-line-chart')).toHaveAttribute('data-points', '0');
@@ -863,9 +865,9 @@ describe('GBP Insights Dashboard Page', () => {
       };
 
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage data={largeData} />
-        </MemoryRouter>
+        </>
       );
 
       // In real implementation, this would show "1.25M" and "420K"
@@ -884,9 +886,9 @@ describe('GBP Insights Dashboard Page', () => {
       };
 
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage data={negativeData} />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('views-trend')).toHaveTextContent('-25.5%');
@@ -897,9 +899,9 @@ describe('GBP Insights Dashboard Page', () => {
       // Location name would typically come from API
       // This test verifies the page handles it without crashing
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       expect(screen.getByTestId('insights-dashboard-page')).toBeInTheDocument();
@@ -909,9 +911,9 @@ describe('GBP Insights Dashboard Page', () => {
   describe('PAGE-051 to PAGE-052: Responsive Design', () => {
     it('PAGE-051: overview cards use responsive grid', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       const cards = screen.getByTestId('overview-cards');
@@ -922,9 +924,9 @@ describe('GBP Insights Dashboard Page', () => {
 
     it('PAGE-052: chart containers are responsive', () => {
       render(
-        <MemoryRouter>
+        <>
           <MockInsightsDashboardPage />
-        </MemoryRouter>
+        </>
       );
 
       // All chart containers should exist and be responsive

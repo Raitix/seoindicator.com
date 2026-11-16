@@ -7,7 +7,6 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
 import { PayPalButton } from '@/components/payments/PayPalButton';
 import * as paypalApi from '@/lib/api/paypal';
 

@@ -8,16 +8,20 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 
-// Mock the HowItWorksContent component
+// Mock the HowItWorksContent component.
+// The structure mirrors the real component: an <article> root wrapping a
+// max-width container, which is what the layout assertions below check.
 vi.mock('@/components/pages/HowItWorksContent', () => ({
   HowItWorksContent: () => (
-    <div data-testid="how-it-works-content">
-      <h1>How It Works</h1>
-      <section data-testid="steps-section">User Journey Steps</section>
-      <section data-testid="categories-section">Indicator Categories</section>
-      <section data-testid="scoring-section">Scoring Methodology</section>
-      <section data-testid="faq-section">FAQ</section>
-    </div>
+    <article data-testid="how-it-works-content">
+      <div className="mx-auto max-w-5xl px-4 py-16">
+        <h1>How It Works</h1>
+        <section data-testid="steps-section">User Journey Steps</section>
+        <section data-testid="categories-section">Indicator Categories</section>
+        <section data-testid="scoring-section">Scoring Methodology</section>
+        <section data-testid="faq-section">FAQ</section>
+      </div>
+    </article>
   ),
 }));
 

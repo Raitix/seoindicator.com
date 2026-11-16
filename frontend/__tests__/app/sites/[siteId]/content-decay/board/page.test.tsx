@@ -10,12 +10,13 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { BrowserRouter } from "react-router-dom";
 import RecoveryBoardPage from "@/app/sites/[siteId]/content-decay/board/page";
+import { useContentDecayCandidates } from "@/lib/hooks/useContentDecay";
 
 // Mock hooks
 vi.mock("@/lib/hooks/useContentDecay", () => ({
   useContentDecayCandidates: vi.fn(() => ({
+    mutate: vi.fn(),
     candidates: [
       {
         id: 1,
@@ -68,11 +69,24 @@ vi.mock("@/lib/hooks/useContentDecay", () => ({
   })),
 }));
 
-// Mock components
-vi.mock("@/components/content-decay", () => ({
+// Mock components (the page imports each one by its own module path)
+vi.mock("@/components/content-decay/SeverityBadge", () => ({
   SeverityBadge: ({ severity }: { severity: string }) => (
     <span data-testid={`severity-badge-${severity}`}>{severity}</span>
   ),
+}));
+
+vi.mock("@/components/content-decay/DecayReasonBadges", () => ({
+  DecayReasonBadges: () => null,
+}));
+
+vi.mock("@/components/content-decay/CandidateDetailDrawer", () => ({
+  CandidateDetailDrawer: () => null,
+}));
+
+// Mock next/link
+vi.mock("next/link", () => ({
+  default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
 // Mock next/navigation
@@ -89,22 +103,22 @@ vi.mock("next/navigation", () => ({
 
 // Mock Lucide icons
 vi.mock("lucide-react", () => ({
-  LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
-  Kanban: () => <span data-testid="kanban-icon">Kanban</span>,
-  TrendingUp: () => <span data-testid="trending-up-icon">TrendingUp</span>,
-  AlertTriangle: () => <span data-testid="alert-triangle-icon">AlertTriangle</span>,
-  FileText: () => <span data-testid="file-text-icon">FileText</span>,
-  Globe: () => <span data-testid="globe-icon">Globe</span>,
-  ChevronRight: () => <span data-testid="chevron-right-icon">ChevronRight</span>,
-  AlertCircle: () => <span data-testid="alert-circle-icon">AlertCircle</span>,
-  Info: () => <span data-testid="info-icon">Info</span>,
-  Minus: () => <span data-testid="minus-icon">Minus</span>,
-  X: () => <span data-testid="x-icon">X</span>,
-  Filter: () => <span data-testid="filter-icon">Filter</span>,
+  LayoutDashboard: () => <span data-testid="layout-icon" aria-hidden="true" />,
+  Kanban: () => <span data-testid="kanban-icon" aria-hidden="true" />,
+  TrendingUp: () => <span data-testid="trending-up-icon" aria-hidden="true" />,
+  AlertTriangle: () => <span data-testid="alert-triangle-icon" aria-hidden="true" />,
+  FileText: () => <span data-testid="file-text-icon" aria-hidden="true" />,
+  Globe: () => <span data-testid="globe-icon" aria-hidden="true" />,
+  ChevronRight: () => <span data-testid="chevron-right-icon" aria-hidden="true" />,
+  AlertCircle: () => <span data-testid="alert-circle-icon" aria-hidden="true" />,
+  Info: () => <span data-testid="info-icon" aria-hidden="true" />,
+  Minus: () => <span data-testid="minus-icon" aria-hidden="true" />,
+  X: () => <span data-testid="x-icon" aria-hidden="true" />,
+  Filter: () => <span data-testid="filter-icon" aria-hidden="true" />,
 }));
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
+  return render(component);
 };
 
 describe("Recovery Board Page", () => {
@@ -115,7 +129,7 @@ describe("Recovery Board Page", () => {
   describe("Page Rendering", () => {
     it("renders the page container", () => {
       renderWithRouter(<RecoveryBoardPage />);
-      expect(screen.getByTestId("recovery-board-page")).toBeInTheDocument();
+      expect(screen.getByTestId("content-decay-board-page")).toBeInTheDocument();
     });
 
     it("renders the page title", () => {
@@ -125,16 +139,16 @@ describe("Recovery Board Page", () => {
 
     it("renders the page description", () => {
       renderWithRouter(<RecoveryBoardPage />);
-      expect(screen.getByText(/manage content refresh workflow/i)).toBeInTheDocument();
+      expect(screen.getByText(/manage content recovery workflow/i)).toBeInTheDocument();
     });
 
     it("renders all five Kanban columns", () => {
       renderWithRouter(<RecoveryBoardPage />);
-      expect(screen.getByTestId("column-backlog")).toBeInTheDocument();
-      expect(screen.getByTestId("column-planned")).toBeInTheDocument();
-      expect(screen.getByTestId("column-in_progress")).toBeInTheDocument();
-      expect(screen.getByTestId("column-refreshed")).toBeInTheDocument();
-      expect(screen.getByTestId("column-recovered")).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "Backlog column" })).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "Planned column" })).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "In Progress column" })).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "Refreshed column" })).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "Recovered column" })).toBeInTheDocument();
     });
 
     it("renders column titles", () => {
@@ -184,27 +198,28 @@ describe("Recovery Board Page", () => {
 
   describe("Loading States", () => {
     it("shows loading state when candidates are loading", () => {
-      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecayCandidates).mockReturnValue({
+      vi.mocked(useContentDecayCandidates).mockReturnValue({
         candidates: [],
         isLoading: true,
         error: null,
       });
       renderWithRouter(<RecoveryBoardPage />);
-      // Page should still render with loading state
-      expect(screen.getByTestId("recovery-board-page")).toBeInTheDocument();
+      // The page swaps the board for a loading skeleton while fetching
+      expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
+      expect(screen.queryByTestId("content-decay-board-page")).not.toBeInTheDocument();
     });
   });
 
   describe("Empty States", () => {
     it("shows empty state when no candidates exist", () => {
-      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecayCandidates).mockReturnValue({
+      vi.mocked(useContentDecayCandidates).mockReturnValue({
         candidates: [],
         isLoading: false,
         error: null,
       });
       renderWithRouter(<RecoveryBoardPage />);
-      // Each column should show "No items"
-      const noItemsTexts = screen.getAllByText(/no items/i);
+      // Each column should show "No candidates"
+      const noItemsTexts = screen.getAllByText(/no candidates/i);
       expect(noItemsTexts.length).toBe(5); // 5 columns
     });
   });
@@ -218,7 +233,7 @@ describe("Recovery Board Page", () => {
 
     it("has accessible navigation", () => {
       renderWithRouter(<RecoveryBoardPage />);
-      const nav = screen.getByRole("navigation", { name: /content decay views/i });
+      const nav = screen.getByRole("navigation", { name: /content decay navigation/i });
       expect(nav).toBeInTheDocument();
     });
 
@@ -232,7 +247,7 @@ describe("Recovery Board Page", () => {
   describe("Column Structure", () => {
     it("renders columns in correct order", () => {
       renderWithRouter(<RecoveryBoardPage />);
-      const columns = screen.getAllByRole("heading", { level: 2 });
+      const columns = screen.getAllByRole("heading", { level: 3 });
       const columnTitles = columns.map((col) => col.textContent);
       expect(columnTitles).toContain("Backlog");
       expect(columnTitles).toContain("Planned");

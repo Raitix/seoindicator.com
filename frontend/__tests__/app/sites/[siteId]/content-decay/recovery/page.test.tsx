@@ -10,8 +10,8 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { BrowserRouter } from "react-router-dom";
 import RecoveryReportPage from "@/app/sites/[siteId]/content-decay/recovery/page";
+import { useContentDecayRecovery } from "@/lib/hooks/useContentDecay";
 
 // Mock hooks
 vi.mock("@/lib/hooks/useContentDecay", () => ({
@@ -64,9 +64,14 @@ vi.mock("@/lib/hooks/useContentDecay", () => ({
     error: null,
   })),
   useExportContentDecay: vi.fn(() => ({
-    trigger: vi.fn(),
-    isMutating: false,
+    exportData: vi.fn(),
+    isExporting: false,
   })),
+}));
+
+// Mock next/link
+vi.mock("next/link", () => ({
+  default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
 // Mock next/navigation
@@ -83,17 +88,17 @@ vi.mock("next/navigation", () => ({
 
 // Mock Lucide icons
 vi.mock("lucide-react", () => ({
-  LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
-  Columns: () => <span data-testid="columns-icon">Columns</span>,
-  BarChart3: () => <span data-testid="chart-icon">BarChart3</span>,
-  Download: () => <span data-testid="download-icon">Download</span>,
-  TrendingUp: () => <span data-testid="trending-icon">TrendingUp</span>,
-  Calendar: () => <span data-testid="calendar-icon">Calendar</span>,
-  Target: () => <span data-testid="target-icon">Target</span>,
+  LayoutDashboard: () => <span data-testid="layout-icon" aria-hidden="true" />,
+  Columns: () => <span data-testid="columns-icon" aria-hidden="true" />,
+  BarChart3: () => <span data-testid="chart-icon" aria-hidden="true" />,
+  Download: () => <span data-testid="download-icon" aria-hidden="true" />,
+  TrendingUp: () => <span data-testid="trending-icon" aria-hidden="true" />,
+  Calendar: () => <span data-testid="calendar-icon" aria-hidden="true" />,
+  Target: () => <span data-testid="target-icon" aria-hidden="true" />,
 }));
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
+  return render(component);
 };
 
 describe("Recovery Report Page", () => {
@@ -126,7 +131,7 @@ describe("Recovery Report Page", () => {
 
     it("renders export PDF button", () => {
       renderWithRouter(<RecoveryReportPage />);
-      expect(screen.getByRole("button", { name: /export pdf/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /export to pdf/i })).toBeInTheDocument();
     });
   });
 
@@ -236,19 +241,21 @@ describe("Recovery Report Page", () => {
 
   describe("Loading States", () => {
     it("shows loading state when data is loading", () => {
-      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecayRecovery).mockReturnValue({
+      vi.mocked(useContentDecayRecovery).mockReturnValue({
         recovery: null,
         isLoading: true,
         error: null,
       });
       renderWithRouter(<RecoveryReportPage />);
       expect(screen.getByTestId("recovery-report-page")).toBeInTheDocument();
+      // Restore the default so the override does not leak into later tests
+      vi.mocked(useContentDecayRecovery).mockReset();
     });
   });
 
   describe("Empty States", () => {
     it("shows empty state for stories when none exist", () => {
-      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecayRecovery).mockReturnValue({
+      vi.mocked(useContentDecayRecovery).mockReturnValue({
         recovery: {
           summary: { totalRecovered: 0, totalClicksRecovered: 0, avgRecoveryRate: 0, avgDaysToRecovery: 0 },
           timeline: [],
@@ -260,6 +267,8 @@ describe("Recovery Report Page", () => {
       });
       renderWithRouter(<RecoveryReportPage />);
       expect(screen.getByText(/no recovery stories yet/i)).toBeInTheDocument();
+      // Restore the default so the override does not leak into later tests
+      vi.mocked(useContentDecayRecovery).mockReset();
     });
   });
 

@@ -185,7 +185,7 @@ const MockPricingPage = ({
             <article key={pkg.id} data-testid={`package-card-${pkg.id}`} role="article">
               {pkg.is_popular && <span data-testid={`popular-badge-${pkg.id}`}>Popular</span>}
               <h3>{pkg.name}</h3>
-              <p data-testid={`credits-${pkg.id}`}>{pkg.credits.toLocaleString()} credits</p>
+              <p data-testid={`credits-${pkg.id}`}>{pkg.credits.toLocaleString('en-US')} credits</p>
               <p data-testid={`price-${pkg.id}`}>${(pkg.price / 100).toFixed(2)}</p>
               {pkg.bonus_percentage > 0 && (
                 <span data-testid={`bonus-${pkg.id}`}>+{pkg.bonus_percentage}% bonus</span>
@@ -475,7 +475,9 @@ describe('PricingPage', () => {
     it('PP-027: Schema.org contains offers', () => {
       render(<MockPricingPage />);
       const schemaScript = screen.getByTestId('schema-org');
-      const schema = JSON.parse(schemaScript.getAttribute('dangerouslySetInnerHTML')?.__html || '{}');
+      // dangerouslySetInnerHTML is a React prop, not a DOM attribute: the JSON
+      // lands in the script element's text content.
+      const schema = JSON.parse(schemaScript.textContent || '{}');
       expect(schema['@type']).toBe('Product');
       expect(schema.offers).toHaveLength(4);
     });

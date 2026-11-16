@@ -10,8 +10,8 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { BrowserRouter } from "react-router-dom";
 import ContentDecaySettingsPage from "@/app/sites/[siteId]/content-decay/settings/page";
+import { useContentDecaySettings } from "@/lib/hooks/useContentDecay";
 
 // Mock hooks with stable settings reference
 const mockSettings = {
@@ -30,9 +30,14 @@ vi.mock("@/lib/hooks/useContentDecay", () => ({
     error: null,
   })),
   useSaveContentDecaySettings: vi.fn(() => ({
-    trigger: vi.fn().mockResolvedValue({ success: true }),
-    isMutating: false,
+    saveSettings: vi.fn().mockResolvedValue({ success: true }),
+    isSaving: false,
   })),
+}));
+
+// Mock next/link
+vi.mock("next/link", () => ({
+  default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
 // Mock next/navigation
@@ -45,18 +50,20 @@ vi.mock("next/navigation", () => ({
 
 // Mock Lucide icons
 vi.mock("lucide-react", () => ({
-  LayoutDashboard: () => <span data-testid="layout-icon">LayoutDashboard</span>,
-  Kanban: () => <span data-testid="kanban-icon">Kanban</span>,
-  TrendingUp: () => <span data-testid="trending-up-icon">TrendingUp</span>,
-  Save: () => <span data-testid="save-icon">Save</span>,
-  RotateCcw: () => <span data-testid="reset-icon">RotateCcw</span>,
-  AlertCircle: () => <span data-testid="alert-icon">AlertCircle</span>,
-  AlertTriangle: () => <span data-testid="alert-triangle-icon">AlertTriangle</span>,
-  Info: () => <span data-testid="info-icon">Info</span>,
+  LayoutDashboard: () => <span data-testid="layout-icon" aria-hidden="true" />,
+  Kanban: () => <span data-testid="kanban-icon" aria-hidden="true" />,
+  Columns: () => <span data-testid="columns-icon" aria-hidden="true" />,
+  BarChart3: () => <span data-testid="chart-icon" aria-hidden="true" />,
+  TrendingUp: () => <span data-testid="trending-up-icon" aria-hidden="true" />,
+  Save: () => <span data-testid="save-icon" aria-hidden="true" />,
+  RotateCcw: () => <span data-testid="reset-icon" aria-hidden="true" />,
+  AlertCircle: () => <span data-testid="alert-icon" aria-hidden="true" />,
+  AlertTriangle: () => <span data-testid="alert-triangle-icon" aria-hidden="true" />,
+  Info: () => <span data-testid="info-icon" aria-hidden="true" />,
 }));
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
+  return render(component);
 };
 
 describe("Content Decay Settings Page", () => {
@@ -245,8 +252,10 @@ describe("Content Decay Settings Page", () => {
       renderWithRouter(<ContentDecaySettingsPage />);
       
       const clicksInput = screen.getByLabelText(/minimum clicks/i);
-      await user.clear(clicksInput);
-      await user.type(clicksInput, "-5");
+      // Deliver the completed negative value: a controlled number input drops
+      // the intermediate "-" because the handler parses it as 0.
+      fireEvent.input(clicksInput, { target: { value: "-5" } });
+      expect(clicksInput).toHaveValue(-5);
       
       // Trigger save to show validation
       const saveButton = screen.getByRole("button", { name: /save settings/i });
@@ -263,8 +272,8 @@ describe("Content Decay Settings Page", () => {
       renderWithRouter(<ContentDecaySettingsPage />);
       
       const impressionsInput = screen.getByLabelText(/minimum impressions/i);
-      await user.clear(impressionsInput);
-      await user.type(impressionsInput, "-10");
+      fireEvent.input(impressionsInput, { target: { value: "-10" } });
+      expect(impressionsInput).toHaveValue(-10);
       
       // Trigger save to show validation
       const saveButton = screen.getByRole("button", { name: /save settings/i });
@@ -279,7 +288,7 @@ describe("Content Decay Settings Page", () => {
 
   describe("Loading States", () => {
     it("shows loading state when settings are loading", () => {
-      vi.mocked(require("@/lib/hooks/useContentDecay").useContentDecaySettings).mockReturnValue({
+      vi.mocked(useContentDecaySettings).mockReturnValue({
         settings: null,
         isLoading: true,
         error: null,
@@ -287,6 +296,8 @@ describe("Content Decay Settings Page", () => {
       renderWithRouter(<ContentDecaySettingsPage />);
       // Page should still render with loading state
       expect(screen.getByTestId("settings-page")).toBeInTheDocument();
+      // Restore the default so the override does not leak into later tests
+      vi.mocked(useContentDecaySettings).mockReset();
     });
   });
 
