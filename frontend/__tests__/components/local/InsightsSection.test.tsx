@@ -95,9 +95,9 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({
           <span data-testid="searches-label">Searches</span>
           <span data-testid="searches-total">{insights.searches.total.toLocaleString()}</span>
           <div data-testid="searches-breakdown">
-            <span data-testid="searches-direct">{insights.searches.breakdown.direct} Direct</span>
-            <span data-testid="searches-discovery">{insights.searches.breakdown.discovery} Discovery</span>
-            <span data-testid="searches-branded">{insights.searches.breakdown.branded} Branded</span>
+            <span data-testid="searches-direct">{insights.searches.breakdown.direct.toLocaleString()} Direct</span>
+            <span data-testid="searches-discovery">{insights.searches.breakdown.discovery.toLocaleString()} Discovery</span>
+            <span data-testid="searches-branded">{insights.searches.breakdown.branded.toLocaleString()} Branded</span>
           </div>
           <div data-testid="area-chart" data-points={insights.searches.trend.length} />
         </div>
@@ -108,9 +108,9 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({
           <span data-testid="actions-label">Actions</span>
           <span data-testid="actions-total">{insights.actions.total.toLocaleString()}</span>
           <div data-testid="actions-breakdown">
-            <span data-testid="actions-website">{insights.actions.breakdown.website} Website</span>
-            <span data-testid="actions-directions">{insights.actions.breakdown.directions} Directions</span>
-            <span data-testid="actions-call">{insights.actions.breakdown.call} Calls</span>
+            <span data-testid="actions-website">{insights.actions.breakdown.website.toLocaleString()} Website</span>
+            <span data-testid="actions-directions">{insights.actions.breakdown.directions.toLocaleString()} Directions</span>
+            <span data-testid="actions-call">{insights.actions.breakdown.call.toLocaleString()} Calls</span>
           </div>
           <div data-testid="area-chart" data-points={insights.actions.trend.length} />
         </div>
@@ -133,6 +133,17 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({
 // TESTS
 // ============================================
 
+// The numbers are grouped for the locale of the visitor and the
+// locale may use a non-breaking space, so the text and the expected
+// value are normalised the same way.
+function formattedNumber(value: number): string {
+  return value.toLocaleString().replace(/\u00a0/g, ' ');
+}
+
+function renderedText(testId: string): string {
+  return (screen.getByTestId(testId).textContent ?? '').replace(/\u00a0/g, ' ');
+}
+
 describe('InsightsSection', () => {
   test('renders section with header', () => {
     render(<InsightsSection insights={mockInsights} />);
@@ -152,18 +163,18 @@ describe('InsightsSection', () => {
   test('displays views total and breakdown', () => {
     render(<InsightsSection insights={mockInsights} />);
     
-    expect(screen.getByTestId('views-total')).toHaveTextContent('12,543');
-    expect(screen.getByTestId('views-search')).toHaveTextContent('8,234 Search');
-    expect(screen.getByTestId('views-maps')).toHaveTextContent('3,512 Maps');
+    expect(renderedText('views-total')).toContain(formattedNumber(12543));
+    expect(renderedText('views-search')).toContain(formattedNumber(8234) + ' Search');
+    expect(renderedText('views-maps')).toContain(formattedNumber(3512) + ' Maps');
   });
 
   test('displays searches total and breakdown', () => {
     render(<InsightsSection insights={mockInsights} />);
     
-    expect(screen.getByTestId('searches-total')).toHaveTextContent('3,456');
-    expect(screen.getByTestId('searches-direct')).toHaveTextContent('1,234 Direct');
-    expect(screen.getByTestId('searches-discovery')).toHaveTextContent('1,890 Discovery');
-    expect(screen.getByTestId('searches-branded')).toHaveTextContent('332 Branded');
+    expect(renderedText('searches-total')).toContain(formattedNumber(3456));
+    expect(renderedText('searches-direct')).toContain(formattedNumber(1234) + ' Direct');
+    expect(renderedText('searches-discovery')).toContain(formattedNumber(1890) + ' Discovery');
+    expect(renderedText('searches-branded')).toContain(formattedNumber(332) + ' Branded');
   });
 
   test('displays actions total and breakdown', () => {
@@ -234,8 +245,8 @@ describe('InsightsSection', () => {
     
     render(<InsightsSection insights={largeInsights} />);
     
-    expect(screen.getByTestId('views-total')).toHaveTextContent('1,234,567');
-    expect(screen.getByTestId('searches-total')).toHaveTextContent('987,654');
-    expect(screen.getByTestId('actions-total')).toHaveTextContent('123,456');
+    expect(renderedText('views-total')).toContain(formattedNumber(1234567));
+    expect(renderedText('searches-total')).toContain(formattedNumber(987654));
+    expect(renderedText('actions-total')).toContain(formattedNumber(123456));
   });
 });

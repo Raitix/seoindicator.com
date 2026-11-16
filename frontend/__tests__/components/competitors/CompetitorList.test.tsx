@@ -10,6 +10,16 @@ vi.mock("@/lib/api/competitors", () => ({
   useCompetitors: vi.fn(),
 }));
 
+// The component reads the session from the auth context, so the
+// context is mocked. Without it every render throws.
+vi.mock("@/lib/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: true,
+    isLoading: false,
+  }),
+}));
+
 // Mock child components that have complex dependencies
 vi.mock("@/components/competitors/AddCompetitorModal", () => ({ default: function MockAddCompetitorModal() {
     return <button data-testid="add-competitor-btn">Add Competitor</button>;
