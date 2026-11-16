@@ -77,7 +77,12 @@ function MockAdminNav({
     { id: 'health', label: 'System Health', href: '/admin/health', icon: '❤️' },
   ];
 
-  const isActive = (href: string) => activePath === href || activePath.startsWith(href + '/');
+  // The query string and the hash are not part of the path, so they
+  // are dropped before the comparison.
+  const isActive = (href: string) => {
+    const path = activePath.split(/[?#]/)[0];
+    return path === href || path.startsWith(href + '/');
+  };
 
   return (
     <nav
@@ -108,6 +113,12 @@ function MockAdminNav({
               data-active={isActive(item.href)}
               className={isActive(item.href) ? 'active' : ''}
               aria-current={isActive(item.href) ? 'page' : undefined}
+              onClick={(e) => {
+                // The real component prevents the default and pushes
+                // the route.
+                e.preventDefault();
+                mockPush(item.href);
+              }}
             >
               <span data-testid={`nav-icon-${item.id}`} className="nav-icon">
                 {item.icon}
@@ -128,6 +139,12 @@ function MockAdminNav({
           href="/dashboard"
           data-testid="back-to-dashboard"
           className="text-slate-400 hover:text-white"
+          onClick={(e) => {
+            // The real component prevents the default and pushes the
+            // route.
+            e.preventDefault();
+            mockPush("/dashboard");
+          }}
         >
           <span>←</span>
           {!collapsed && <span>Back to Dashboard</span>}

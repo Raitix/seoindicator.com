@@ -140,7 +140,10 @@ export function AdminNav({
 
   const isActive = React.useCallback(
     (href: string) => {
-      return activePath === href || activePath.startsWith(href + "/");
+      // The query string and the hash are not part of the path, so they
+      // are dropped before the comparison.
+      const path = activePath.split(/[?#]/)[0];
+      return path === href || path.startsWith(href + "/");
     },
     [activePath]
   );

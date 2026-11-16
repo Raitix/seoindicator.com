@@ -109,8 +109,17 @@ function isValidDateRange(start: Date, end: Date, minDate?: Date, maxDate?: Date
  * Calculate days between dates
  */
 function daysBetween(start: Date, end: Date): number {
-  const diff = end.getTime() - start.getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  // The range is measured in calendar days, not in elapsed
+  // milliseconds. Across a daylight saving transition two calendar
+  // days are not exactly 24 hours apart, so dividing by the length
+  // of a day reports a day too many.
+  const startDay = Date.UTC(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate()
+  );
+  const endDay = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.round((endDay - startDay) / (1000 * 60 * 60 * 24));
 }
 
 // ============================================================================
