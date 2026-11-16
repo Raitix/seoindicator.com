@@ -11,6 +11,11 @@ import { vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { PaymentSuccess } from '@/components/payments/PaymentSuccess';
 
+// The component uses the App Router, so it has to be mocked.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 describe('PaymentSuccess', () => {
   const mockOnDone = vi.fn();
   
@@ -88,7 +93,9 @@ describe('PaymentSuccess', () => {
     it('shows view history link', () => {
       render(<PaymentSuccess {...defaultProps} />);
       
-      expect(screen.getByRole('link', { name: /transaction history/i })).toBeInTheDocument();
+      // The transaction history opens in a new tab, so it is a button
+      // rather than a link.
+      expect(screen.getByRole('button', { name: /transaction history/i })).toBeInTheDocument();
     });
 
     it('auto-closes after delay', () => {
