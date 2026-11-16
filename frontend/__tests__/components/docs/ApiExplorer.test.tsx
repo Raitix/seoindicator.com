@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { installClipboardMock } from "@/__mocks__/setup";
 
 // Mock fetch for API calls
 const mockFetch = vi.fn();
@@ -423,7 +424,7 @@ describe('ApiExplorer', () => {
     });
 
     it('token input updates on change', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       const input = screen.getByTestId('token-input');
@@ -457,7 +458,7 @@ describe('ApiExplorer', () => {
     });
 
     it('parameter input updates on change', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       const input = screen.getByTestId('input-site_id');
@@ -500,7 +501,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -517,7 +518,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} defaultToken="test-token" />);
       
       await user.click(screen.getByTestId('send-btn'));
@@ -535,7 +536,7 @@ describe('ApiExplorer', () => {
     it('shows loading state during request', async () => {
       mockFetch.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.click(screen.getByTestId('send-btn'));
@@ -546,7 +547,7 @@ describe('ApiExplorer', () => {
     it('disables send button during loading', async () => {
       mockFetch.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.click(screen.getByTestId('send-btn'));
@@ -557,7 +558,7 @@ describe('ApiExplorer', () => {
     it('shows error state on failure', async () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.click(screen.getByTestId('send-btn'));
@@ -570,7 +571,7 @@ describe('ApiExplorer', () => {
     it('shows error message', async () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.click(screen.getByTestId('send-btn'));
@@ -592,7 +593,7 @@ describe('ApiExplorer', () => {
     });
 
     it('shows response section after successful request', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -604,7 +605,7 @@ describe('ApiExplorer', () => {
     });
 
     it('shows status badge', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -616,7 +617,7 @@ describe('ApiExplorer', () => {
     });
 
     it('shows duration badge', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -628,7 +629,7 @@ describe('ApiExplorer', () => {
     });
 
     it('shows response body tab', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -640,7 +641,7 @@ describe('ApiExplorer', () => {
     });
 
     it('shows response JSON', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -652,7 +653,7 @@ describe('ApiExplorer', () => {
     });
 
     it('switches to headers tab', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -677,7 +678,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -697,7 +698,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -717,7 +718,7 @@ describe('ApiExplorer', () => {
     });
 
     it('clears parameters on click', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '123');
@@ -734,7 +735,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -753,7 +754,7 @@ describe('ApiExplorer', () => {
   describe('Close Handler', () => {
     it('calls onClose when close button clicked', async () => {
       const onClose = vi.fn();
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       
       render(<MockApiExplorer endpoint={defaultEndpoint} onClose={onClose} />);
       
@@ -772,7 +773,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -791,7 +792,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');
@@ -832,7 +833,7 @@ describe('ApiExplorer', () => {
         headers: new Headers(),
       });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiExplorer endpoint={defaultEndpoint} />);
       
       await user.type(screen.getByTestId('input-site_id'), '1');

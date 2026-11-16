@@ -611,7 +611,9 @@ describe('SocialMediaPreview Component', () => {
 
       const longUrl = 'https://example.com/' + 'a'.repeat(2000);
       const input = screen.getByLabelText('Enter page URL');
-      await userEvent.type(input, longUrl);
+      // Typing 2000 characters one at a time takes seconds, so the
+      // value is set directly.
+      fireEvent.change(input, { target: { value: longUrl } });
 
       // Should still allow input
       expect(input).toHaveValue(longUrl);
@@ -629,9 +631,12 @@ describe('SocialMediaPreview Component', () => {
 
       render(<PreviewCard platform="facebook" data={data} />);
 
-      // Should render text, not execute script
+      // The title is rendered as text. React escapes it, so the script
+      // tag shows up as text and no script element is created.
       expect(screen.getByTestId('preview-title').textContent).toContain('Title');
-      expect(screen.getByTestId('preview-title').textContent).not.toContain('<script>');
+      expect(screen.getByTestId('preview-title').textContent).toContain('<script>');
+      expect(screen.getByTestId('preview-title').querySelector('script')).toBeNull();
+      expect(document.querySelectorAll('script')).toHaveLength(0);
     });
 
     /**

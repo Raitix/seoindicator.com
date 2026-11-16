@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { installClipboardMock } from "@/__mocks__/setup";
 
 // Mock OpenAPI spec
 const mockOpenApiSpec = {
@@ -1231,7 +1232,7 @@ describe('API Documentation Page', () => {
     });
 
     it('DOC-SEARCH-004: Search filters endpoints', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiDocumentationPage />);
       
       fireEvent.click(screen.getByTestId('nav-endpoints'));
@@ -1376,7 +1377,7 @@ describe('API Documentation Page', () => {
     });
 
     it('DOC-EDGE-004: Unicode in search handled', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiDocumentationPage />);
       
       const searchInput = screen.getByTestId('search-input');
@@ -1465,7 +1466,7 @@ describe('API Documentation Page', () => {
     });
 
     it('DOC-SEC-004: Search input sanitizes special characters', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<MockApiDocumentationPage />);
       
       const searchInput = screen.getByTestId('search-input');

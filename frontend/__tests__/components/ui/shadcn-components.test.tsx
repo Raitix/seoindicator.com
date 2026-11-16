@@ -31,10 +31,11 @@ describe('Component Existence', () => {
   ];
 
   componentFiles.forEach(({ id, name, path }) => {
-    it(`${id}: ${name}.tsx exists in components/ui/`, () => {
-      expect(() => {
-        require(path);
-      }).not.toThrow();
+  
+    it(`${id}: ${name}.tsx exists in components/ui/`, async () => {
+      // A dynamic import resolves the alias through Vite. require() does
+      // not resolve the '@/' alias under Vitest.
+      await expect(import(/* @vite-ignore */ path)).resolves.toBeDefined();
     });
   });
 });
@@ -506,8 +507,11 @@ describe('Acceptance Criteria', () => {
 
     let darkThemeCount = 0;
     for (const path of componentPaths) {
-      const content = require(`${path}`);
+      // A dynamic import resolves the alias through Vite. require() does
+      // not resolve the '@/' alias under Vitest.
+      const content = await import(/* @vite-ignore */ path);
       // Component loaded successfully
+      expect(content).toBeDefined();
       darkThemeCount++;
     }
     expect(darkThemeCount).toBe(componentPaths.length);

@@ -7,7 +7,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { installClipboardMock } from "@/__mocks__/setup";
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock clipboard API
@@ -249,6 +250,8 @@ describe('CodeExample', () => {
   describe('Copy Functionality', () => {
     it('copies code to clipboard on button click', async () => {
       const user = userEvent.setup();
+    // setup() replaces the clipboard with its own stub, so the mock goes back.
+    installClipboardMock(mockClipboardWrite);
       render(<MockCodeExample language="curl" code="curl localhost" />);
       
       await user.click(screen.getByTestId('copy-btn'));
@@ -258,6 +261,8 @@ describe('CodeExample', () => {
 
     it('copies processed code with placeholders replaced', async () => {
       const user = userEvent.setup();
+    // setup() replaces the clipboard with its own stub, so the mock goes back.
+    installClipboardMock(mockClipboardWrite);
       render(
         <MockCodeExample
           language="curl"
@@ -273,6 +278,8 @@ describe('CodeExample', () => {
 
     it('shows "Copied!" feedback after copy', async () => {
       const user = userEvent.setup();
+    // setup() replaces the clipboard with its own stub, so the mock goes back.
+    installClipboardMock(mockClipboardWrite);
       render(<MockCodeExample language="curl" code="curl localhost" />);
       
       await user.click(screen.getByTestId('copy-btn'));
@@ -282,6 +289,8 @@ describe('CodeExample', () => {
 
     it('shows check icon after copy', async () => {
       const user = userEvent.setup();
+    // setup() replaces the clipboard with its own stub, so the mock goes back.
+    installClipboardMock(mockClipboardWrite);
       render(<MockCodeExample language="curl" code="curl localhost" />);
       
       await user.click(screen.getByTestId('copy-btn'));
@@ -290,15 +299,28 @@ describe('CodeExample', () => {
     });
 
     it('resets to copy state after timeout', async () => {
+      // user-event needs to know how to advance the fake timers,
+      // otherwise the click never completes.
       vi.useFakeTimers();
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup({
+        delay: null,
+        advanceTimers: vi.advanceTimersByTime,
+      });
+      // setup() replaces the clipboard with its own stub, so the mock goes back.
+      installClipboardMock(mockClipboardWrite);
       
       render(<MockCodeExample language="curl" code="curl localhost" />);
       
-      await user.click(screen.getByTestId('copy-btn'));
+      // The copy handler is async, so the state update lands after the
+      // click resolves. act flushes it before the assertion.
+      await act(async () => {
+        await user.click(screen.getByTestId('copy-btn'));
+      });
       expect(screen.getByText('Copied!')).toBeInTheDocument();
       
-      vi.advanceTimersByTime(2000);
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+      });
       
       expect(screen.queryByText('Copied!')).not.toBeInTheDocument();
       expect(screen.getByTestId('copy-icon')).toBeInTheDocument();

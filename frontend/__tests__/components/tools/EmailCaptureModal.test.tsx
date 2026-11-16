@@ -75,7 +75,12 @@ describe('EmailCaptureModal', () => {
       render(<EmailCaptureModal {...defaultProps} isOpen={true} onClose={onClose} />);
 
       // Radix Dialog's Close button triggers onClose
-      const closeButton = screen.getByRole('button', { name: /close/i });
+      // The dialog has two close buttons with the same accessible name: the
+      // X in the corner that the DialogContent adds, and the footer
+      // button. The footer one is the one this test means.
+      const closeButton = screen.getAllByRole('button', { name: /close/i }).find((button) =>
+        button.textContent?.trim() === 'Close'
+      )!;
       await act(async () => {
         fireEvent.click(closeButton);
       });
@@ -706,7 +711,12 @@ describe('EmailCaptureModal', () => {
       render(<EmailCaptureModal {...defaultProps} isOpen={true} />);
 
       const emailInput = screen.getByLabelText(/email/i);
-      const closeButton = screen.getByRole('button', { name: /close/i });
+      // The dialog has two close buttons with the same accessible name: the
+      // X in the corner that the DialogContent adds, and the footer
+      // button. The footer one is the one this test means.
+      const closeButton = screen.getAllByRole('button', { name: /close/i }).find((button) =>
+        button.textContent?.trim() === 'Close'
+      )!;
 
       // Verify both interactive elements are present
       expect(emailInput).toBeInTheDocument();

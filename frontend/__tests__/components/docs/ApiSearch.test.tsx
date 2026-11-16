@@ -442,8 +442,11 @@ describe('ApiSearch', () => {
       
       fireEvent.keyDown(screen.getByTestId('search-input'), { key: 'ArrowDown' });
       
-      const firstResult = screen.getByTestId('result-0');
-      expect(firstResult).toHaveAttribute('data-selected', 'true');
+      // The first result is selected when the results appear. One
+      // ArrowDown moves the selection to the next result.
+      const secondResult = screen.getByTestId('result-1');
+      expect(secondResult).toHaveAttribute('data-selected', 'true');
+      expect(screen.getByTestId('result-0')).toHaveAttribute('data-selected', 'false');
     });
 
     it('selects previous result on ArrowUp', async () => {

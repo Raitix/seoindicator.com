@@ -120,6 +120,7 @@ export function KeywordDensityForm({
     <form
       onSubmit={handleSubmit}
       data-testid="keyword-density-form"
+      noValidate
       className={cn("space-y-6", className)}
     >
       {/* URL Input */}

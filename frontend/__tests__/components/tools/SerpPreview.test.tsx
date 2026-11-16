@@ -159,7 +159,11 @@ describe('SerpPreview', () => {
   it('should show warning for missing description', () => {
     render(<SerpPreview {...defaultProps} description="" />);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Missing meta description');
+    // The preview renders a status for a short title as well, so the
+    // description warning is matched by its own text.
+    expect(
+      screen.getByText(/missing meta description/i)
+    ).toHaveAttribute('role', 'status');
   });
 
   // UT-019: Mobile preview toggle

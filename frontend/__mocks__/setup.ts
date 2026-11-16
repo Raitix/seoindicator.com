@@ -119,6 +119,27 @@ if (hasDom && typeof Element !== 'undefined') {
 }
 (globalThis as any).__TEST__ = true;
 
+
+// A helper for the tests that assert on the clipboard.
+//
+// userEvent.setup() replaces navigator.clipboard with its own stub, so
+// a test that mocks the clipboard and then calls setup() loses the mock.
+// Calling this after setup() puts the mock back.
+export function installClipboardMock(writeText: (text: string) => void = () => {}) {
+  if (!hasDom) return;
+
+  Object.defineProperty(navigator, "clipboard", {
+    value: {
+      writeText: vi.fn(writeText),
+      readText: vi.fn().mockResolvedValue(""),
+      read: vi.fn().mockResolvedValue([]),
+      write: vi.fn().mockResolvedValue(undefined),
+    },
+    configurable: true,
+    writable: true,
+  });
+}
+
 // Clean up after each test
 //
 // Timers are cleared too. Several hooks use SWR with `refreshInterval:

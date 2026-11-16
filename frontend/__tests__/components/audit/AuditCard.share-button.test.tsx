@@ -10,6 +10,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { installClipboardMock } from "@/__mocks__/setup";
 import '@testing-library/jest-dom';
 
 // Import the actual AuditCard component
@@ -114,7 +115,7 @@ describe('AuditCard Share Button Integration', () => {
 
   describe('Modal Triggering', () => {
     it('INT-003: click opens modal', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} />);
       
       await user.click(screen.getByTestId('share-button'));
@@ -126,7 +127,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('INT-008: modal receives correct audit data', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} />);
       
       await user.click(screen.getByTestId('share-button'));
@@ -139,7 +140,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('modal receives correct isPublic state', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} isPublic={true} />);
       
       await user.click(screen.getByTestId('share-button'));
@@ -156,7 +157,7 @@ describe('AuditCard Share Button Integration', () => {
 
   describe('Focus Management', () => {
     it('INT-009: focus returns to share button after modal close', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} />);
       
       const shareButton = screen.getByTestId('share-button');
@@ -192,7 +193,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('each card opens its own modal', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       
       render(
         <div>
@@ -216,7 +217,7 @@ describe('AuditCard Share Button Integration', () => {
 
   describe('Accessibility', () => {
     it('share button is keyboard accessible', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} />);
       
       // Tab to find the share button
@@ -230,7 +231,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('Enter key opens modal', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} />);
       
       const shareButton = screen.getByTestId('share-button');
@@ -243,7 +244,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('Space key opens modal', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} />);
       
       const shareButton = screen.getByTestId('share-button');
@@ -262,7 +263,7 @@ describe('AuditCard Share Button Integration', () => {
 
   describe('Edge Cases', () => {
     it('handles score of 0', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} score={0} />);
       
       await user.click(screen.getByTestId('share-button'));
@@ -273,7 +274,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('handles score of 100', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<AuditCard {...defaultProps} score={100} />);
       
       await user.click(screen.getByTestId('share-button'));
@@ -284,7 +285,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('handles long URLs', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       const longUrl = 'https://' + 'a'.repeat(200) + '.com';
       render(<AuditCard {...defaultProps} url={longUrl} />);
       
@@ -318,7 +319,7 @@ describe('AuditCard Share Button Integration', () => {
 
   describe('Card Interaction', () => {
     it('card is clickable when onClick provided', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       const onClick = vi.fn();
       render(<AuditCard {...defaultProps} onClick={onClick} />);
       
@@ -330,7 +331,7 @@ describe('AuditCard Share Button Integration', () => {
     });
 
     it('share button click does not trigger card onClick', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       const onClick = vi.fn();
       render(<AuditCard {...defaultProps} onClick={onClick} />);
       

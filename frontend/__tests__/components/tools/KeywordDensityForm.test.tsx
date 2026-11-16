@@ -276,7 +276,9 @@ describe('KeywordDensityForm', () => {
     const urlInput = screen.getByPlaceholderText('Enter page URL');
     const keywordInput = screen.getByPlaceholderText('Enter target keyword');
 
-    await userEvent.type(urlInput, longUrl);
+    // Typing 2100 characters one at a time takes seconds, so the value
+    // is set directly. The component reads the input value on submit.
+    fireEvent.change(urlInput, { target: { value: longUrl } });
     await userEvent.type(keywordInput, 'test');
 
     const submitButton = screen.getByRole('button', { name: /analyze/i });

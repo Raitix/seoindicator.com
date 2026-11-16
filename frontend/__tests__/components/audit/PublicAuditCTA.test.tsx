@@ -10,6 +10,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { installClipboardMock } from "@/__mocks__/setup";
 import '@testing-library/jest-dom';
 
 // Import the actual component
@@ -124,7 +125,7 @@ describe('PublicAuditCTA Component', () => {
   describe('Email Capture Form', () => {
     describe('Form Validation', () => {
       it('FORM-001: validates empty email', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const submitButton = screen.getByTestId('submit-button');
@@ -134,7 +135,7 @@ describe('PublicAuditCTA Component', () => {
       });
 
       it('FORM-002: validates invalid email format', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -147,7 +148,7 @@ describe('PublicAuditCTA Component', () => {
       it('FORM-003: accepts valid email', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -161,7 +162,7 @@ describe('PublicAuditCTA Component', () => {
       it('FORM-004: trims whitespace from email', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -179,7 +180,7 @@ describe('PublicAuditCTA Component', () => {
       });
 
       it('FORM-005: validates max email length', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const longEmail = 'a'.repeat(250) + '@example.com'; // > 255 chars
@@ -193,7 +194,7 @@ describe('PublicAuditCTA Component', () => {
       }, 10000);
 
       it('FORM-006: shows validation error on blur', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -204,7 +205,7 @@ describe('PublicAuditCTA Component', () => {
       });
 
       it('FORM-007: clears error when input becomes valid', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -225,7 +226,7 @@ describe('PublicAuditCTA Component', () => {
       it('SUBMIT-001: submits valid email to API', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -243,7 +244,7 @@ describe('PublicAuditCTA Component', () => {
       it('SUBMIT-002: includes audit hash in request', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -261,7 +262,7 @@ describe('PublicAuditCTA Component', () => {
       it('SUBMIT-003: includes email in request body', async () => {
         mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -283,7 +284,7 @@ describe('PublicAuditCTA Component', () => {
           new Promise(resolve => setTimeout(() => resolve({ ok: true }), 100))
         );
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -300,7 +301,7 @@ describe('PublicAuditCTA Component', () => {
           new Promise(resolve => setTimeout(() => resolve({ ok: true }), 100))
         );
         
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -311,7 +312,7 @@ describe('PublicAuditCTA Component', () => {
       });
 
       it('FORM-008: prevents submit with invalid email', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
         render(<PublicAuditCTA {...defaultProps} />);
         
         const emailInput = screen.getByTestId('email-input');
@@ -333,7 +334,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SUCC-001: shows success message', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -347,7 +348,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SUCC-002: hides form on success', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -360,7 +361,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SUCC-003: shows confirmation icon', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -373,7 +374,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SUCC-004: tracks success event', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -389,7 +390,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SUCC-005: shows score reminder in success', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -405,7 +406,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SUCC-006: offers to view audit', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -427,7 +428,7 @@ describe('PublicAuditCTA Component', () => {
     it('ERR-001: shows error message on API failure', async () => {
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -442,7 +443,7 @@ describe('PublicAuditCTA Component', () => {
     it('ERR-002: shows retry option on error', async () => {
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -457,7 +458,7 @@ describe('PublicAuditCTA Component', () => {
     it('ERR-003: clears error on retry click', async () => {
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -476,7 +477,7 @@ describe('PublicAuditCTA Component', () => {
     it('ERR-005: handles rate limit (429)', async () => {
       mockFetch.mockResolvedValueOnce({ ok: false, status: 429 });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -491,7 +492,7 @@ describe('PublicAuditCTA Component', () => {
     it('ERR-006: handles invalid hash (404)', async () => {
       mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -506,7 +507,7 @@ describe('PublicAuditCTA Component', () => {
     it('ERR-007: handles network error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -525,7 +526,7 @@ describe('PublicAuditCTA Component', () => {
   
   describe('Social Sharing', () => {
     it('SHARE-001: Twitter share opens dialog', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('twitter-share'));
@@ -538,7 +539,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-002: Twitter share includes score', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('twitter-share'));
@@ -551,7 +552,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-003: Twitter share includes audit URL', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('twitter-share'));
@@ -564,7 +565,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-004: LinkedIn share opens dialog', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('linkedin-share'));
@@ -577,7 +578,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-006: Facebook share opens dialog', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('facebook-share'));
@@ -590,7 +591,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-007: Facebook share includes correct URL', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('facebook-share'));
@@ -603,7 +604,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-010: tracks share event', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('twitter-share'));
@@ -615,7 +616,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('SHARE-012: properly encodes share URLs', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA auditHash="abc+123=def" siteUrl="example.com" score={85} />);
       
       await user.click(screen.getByTestId('twitter-share'));
@@ -661,7 +662,7 @@ describe('PublicAuditCTA Component', () => {
       mockClipboardWrite.mockClear();
       mockClipboardWrite.mockResolvedValueOnce(undefined);
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('copy-button'));
@@ -674,7 +675,7 @@ describe('PublicAuditCTA Component', () => {
     it('EMBED-005: shows copy success feedback', async () => {
       mockClipboardWrite.mockResolvedValueOnce(undefined);
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('copy-button'));
@@ -692,7 +693,7 @@ describe('PublicAuditCTA Component', () => {
     it('EMBED-008: tracks copy event', async () => {
       mockClipboardWrite.mockResolvedValueOnce(undefined);
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.click(screen.getByTestId('copy-button'));
@@ -738,7 +739,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('A11Y-003: keyboard navigation - tab order', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       await user.tab();
@@ -751,7 +752,7 @@ describe('PublicAuditCTA Component', () => {
     it('A11Y-004: Enter key submits form', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -763,7 +764,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('A11Y-005: focus moves to error on validation', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -775,7 +776,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('A11Y-006: aria-describedby links input to error', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -786,7 +787,7 @@ describe('PublicAuditCTA Component', () => {
     });
 
     it('A11Y-007: role="alert" on error', async () => {
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -820,7 +821,7 @@ describe('PublicAuditCTA Component', () => {
     it('A11Y-014: live region for status updates', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');
@@ -907,7 +908,7 @@ describe('PublicAuditCTA Component', () => {
         new Promise(resolve => setTimeout(() => resolve({ ok: true }), 100))
       );
       
-      const user = userEvent.setup();
+      const user = userEvent.setup(); installClipboardMock(mockClipboardWrite);;
       render(<PublicAuditCTA {...defaultProps} />);
       
       const emailInput = screen.getByTestId('email-input');

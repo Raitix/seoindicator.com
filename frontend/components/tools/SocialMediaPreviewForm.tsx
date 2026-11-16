@@ -74,6 +74,7 @@ export function SocialMediaPreviewForm({
     <form
       onSubmit={handleSubmit}
       data-testid="social-media-form"
+      noValidate
       className={cn("space-y-4", className)}
     >
       <div className="space-y-2">

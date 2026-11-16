@@ -262,8 +262,11 @@ describe('MetaTagResults', () => {
 
     render(<MetaTagResults result={resultWithWarnings} />);
 
-    expect(screen.getByRole('alert', { name: /open graph/i })).toBeInTheDocument();
-    expect(screen.getByRole('alert', { name: /structured data/i })).toBeInTheDocument();
+    // The alert role does not take its accessible name from its content,
+    // so the warnings are matched by their text.
+    expect(screen.getByText(/consider adding open graph tags/i)).toBeInTheDocument();
+    expect(screen.getByText(/add structured data for rich snippets/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('alert')).toHaveLength(2);
   });
 
   // Additional: Export button

@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { installClipboardMock } from "@/__mocks__/setup";
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -468,6 +469,8 @@ describe('ApiEndpointCard', () => {
   describe('Copy Path', () => {
     it('copies path to clipboard on click', async () => {
       const user = userEvent.setup();
+    // setup() replaces the clipboard with its own stub, so the mock goes back.
+    installClipboardMock(mockClipboardWrite);
       render(<MockApiEndpointCard {...defaultProps} />);
       
       await user.click(screen.getByTestId('endpoint-path'));
@@ -477,6 +480,8 @@ describe('ApiEndpointCard', () => {
 
     it('shows copy feedback after copying', async () => {
       const user = userEvent.setup();
+    // setup() replaces the clipboard with its own stub, so the mock goes back.
+    installClipboardMock(mockClipboardWrite);
       render(<MockApiEndpointCard {...defaultProps} />);
       
       await user.click(screen.getByTestId('endpoint-path'));

@@ -288,7 +288,9 @@ describe('MetaTagToolForm', () => {
 
     const longUrl = 'https://example.com/' + 'a'.repeat(2100);
     const urlInput = screen.getByPlaceholderText('Enter page URL');
-    await userEvent.type(urlInput, longUrl);
+    // Typing 2100 characters one at a time takes seconds, so the value
+    // is set directly. The component reads the input value on submit.
+    fireEvent.change(urlInput, { target: { value: longUrl } });
 
     const submitButton = screen.getByRole('button', { name: /analyze/i });
     fireEvent.click(submitButton);
