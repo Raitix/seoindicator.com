@@ -151,7 +151,9 @@ describe("ProjectContext", () => {
     });
 
     expect(storeProjectId).toHaveBeenCalledWith(2);
-    expect(mockPush).toHaveBeenCalledWith("/projects/2/dashboard");
+    // The project context navigates to the dashboard. The per-project
+    // path was never a real route.
+    expect(mockPush).toHaveBeenCalledWith("/dashboard");
   });
 
   // UC-037: createProject method
@@ -180,7 +182,9 @@ describe("ProjectContext", () => {
     });
 
     expect(createProject).toHaveBeenCalledWith({ name: "New Project" });
-    expect(mockPush).toHaveBeenCalledWith("/projects/3/dashboard");
+    // The project context navigates to the dashboard. The per-project
+    // path was never a real route.
+    expect(mockPush).toHaveBeenCalledWith("/dashboard");
   });
 
   // UC-038: updateProject method

@@ -21,11 +21,13 @@ import { AuthError, AuthErrorCode } from "@/lib/types/auth";
 // ==================== Mocks ====================
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
+      replace: mockReplace,
   }),
   usePathname: () => mockPathname(),
 }));
@@ -305,7 +307,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
     // TV-013: UI shows loading indicator on protected route
     it("TV-013: shows loading indicator on protected route during verification", async () => {
-      mockPathname.mockReturnValue("/dashboard");
+      mockPathname.mockReturnValue("/settings");
       mockGetStoredAuthToken.mockReturnValue("verifying-token");
 
       // Delay the API response
@@ -325,7 +327,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
       // Should be loading, not redirected yet
       expect(screen.getByTestId("loading")).toHaveTextContent("true");
-      expect(mockPush).not.toHaveBeenCalled();
+      expect(mockReplace).not.toHaveBeenCalled();
 
       // Resolve the API call
       await act(async () => {
@@ -338,7 +340,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
       // Now should redirect to login (token invalid)
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith("/login");
+        expect(mockReplace).toHaveBeenCalledWith("/login");
       });
     });
   });
@@ -363,12 +365,12 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       });
 
       // Should NOT redirect to login (token is valid)
-      expect(mockPush).not.toHaveBeenCalledWith("/login");
+      expect(mockReplace).not.toHaveBeenCalledWith("/login");
     });
 
     // TV-021: Expired token on protected route
     it("TV-021: redirects to login (not dashboard) when token expired on protected route", async () => {
-      mockPathname.mockReturnValue("/dashboard");
+      mockPathname.mockReturnValue("/settings");
       mockGetStoredAuthToken.mockReturnValue("expired-token");
       mockFetchUser.mockRejectedValue(
         new AuthError("Unauthenticated", AuthErrorCode.UNAUTHORIZED)
@@ -386,16 +388,16 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
       // Should redirect to login, NOT stay on dashboard
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith("/login");
+        expect(mockReplace).toHaveBeenCalledWith("/login");
       });
 
       // Should store redirect URL
-      expect(mockStoreRedirectUrl).toHaveBeenCalledWith("/dashboard");
+      expect(mockStoreRedirectUrl).toHaveBeenCalledWith("/settings");
     });
 
     // TV-022: No token on protected route
     it("TV-022: redirects to login immediately when no token on protected route", async () => {
-      mockPathname.mockReturnValue("/dashboard");
+      mockPathname.mockReturnValue("/settings");
       mockGetStoredAuthToken.mockReturnValue(null);
 
       render(
@@ -410,7 +412,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
       // Should redirect to login
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith("/login");
+        expect(mockReplace).toHaveBeenCalledWith("/login");
       });
     });
 
@@ -453,7 +455,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       });
 
       // Should NOT redirect to login (already there with valid token)
-      expect(mockPush).not.toHaveBeenCalledWith("/login");
+      expect(mockReplace).not.toHaveBeenCalled();
 
       // Should redirect to dashboard instead
       await waitFor(() => {
@@ -523,7 +525,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
 
     // TV-032: Preserve redirect URL
     it("TV-032: preserves redirect URL during auth flow", async () => {
-      mockPathname.mockReturnValue("/dashboard/settings");
+      mockPathname.mockReturnValue("/settings")
       mockGetStoredAuthToken.mockReturnValue("expired-token");
       mockFetchUser.mockRejectedValue(
         new AuthError("Unauthenticated", AuthErrorCode.UNAUTHORIZED)
@@ -536,7 +538,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       );
 
       await waitFor(() => {
-        expect(mockStoreRedirectUrl).toHaveBeenCalledWith("/dashboard/settings");
+        expect(mockStoreRedirectUrl).toHaveBeenCalledWith("/settings");
       });
     });
 
@@ -817,7 +819,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
     });
 
     it("AC-3: Users with expired tokens see login page, not dashboard error", async () => {
-      mockPathname.mockReturnValue("/dashboard");
+      mockPathname.mockReturnValue("/settings");
       mockGetStoredAuthToken.mockReturnValue("expired-token");
       mockFetchUser.mockRejectedValue(
         new AuthError("Unauthenticated", AuthErrorCode.UNAUTHORIZED)
@@ -830,7 +832,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       );
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith("/login");
+        expect(mockReplace).toHaveBeenCalledWith("/login");
       });
 
       // Should NOT redirect to dashboard
@@ -884,7 +886,7 @@ describe("AuthContext Token Validation (TASK-37-1)", () => {
       });
 
       // Should NOT redirect to dashboard
-      expect(mockPush).not.toHaveBeenCalledWith("/dashboard");
+      expect(mockReplace).not.toHaveBeenCalledWith("/dashboard");
     });
 
     it("AC-6: All token validation scenarios have unit tests", () => {

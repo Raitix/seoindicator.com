@@ -133,7 +133,13 @@ describe('GuideBreadcrumb Component', () => {
 
     it('uses forward slash as separator', () => {
       render(<MockGuideBreadcrumb guide={mockGuide} />);
-      expect(screen.getByText('/')).toBeInTheDocument();
+      // Two separators are rendered (between the three trail items) and both
+      // must be a forward slash.
+      const separators = screen.getAllByText('/');
+      expect(separators).toHaveLength(2);
+      separators.forEach((separator) => {
+        expect(separator).toHaveTextContent('/');
+      });
     });
   });
 

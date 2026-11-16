@@ -184,9 +184,11 @@ describe('GuideChecklist Component', () => {
   describe('CR-005: Shows priority label', () => {
     it('all items show their priority label', () => {
       render(<GuideChecklist items={mockChecklistItems} />);
-      expect(screen.getByText('Critical')).toBeInTheDocument();
-      expect(screen.getByText('Important')).toBeInTheDocument();
-      expect(screen.getByText('Recommended')).toBeInTheDocument();
+      // The mock list has 2 critical, 2 important and 1 recommended item, so
+      // each label appears once per item of that priority.
+      expect(screen.getAllByText('Critical')).toHaveLength(2);
+      expect(screen.getAllByText('Important')).toHaveLength(2);
+      expect(screen.getAllByText('Recommended')).toHaveLength(1);
     });
   });
 

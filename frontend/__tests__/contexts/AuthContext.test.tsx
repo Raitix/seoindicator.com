@@ -23,17 +23,22 @@ import { AuthError, AuthErrorCode } from "@/lib/types/auth";
 // ==================== Mocks ====================
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
+      replace: mockReplace,
   }),
   usePathname: () => mockPathname(),
 }));
 
 // Mock the auth API
 const mockFetchUser = vi.fn();
+// The context only verifies the session with the API when a token is
+// stored, so the tests have to control it.
+const mockStoredToken = vi.fn(() => "stored-token");
 const mockLogin = vi.fn();
 const mockRegister = vi.fn();
 const mockLogout = vi.fn();
@@ -55,7 +60,7 @@ vi.mock("@/lib/api/auth", () => ({
   resendVerificationEmail: () => mockResendVerificationEmail(),
   storeUserData: vi.fn(),
   getStoredUserData: vi.fn(() => null),
-  getStoredAuthToken: vi.fn(() => null),
+  getStoredAuthToken: vi.fn(() => mockStoredToken()),
   storeRedirectUrl: vi.fn(),
   getStoredRedirectUrl: vi.fn(() => null),
   clearStoredRedirectUrl: vi.fn(),
@@ -120,6 +125,7 @@ describe("AuthContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetchUser.mockResolvedValue(null);
+    mockStoredToken.mockReturnValue("stored-token");
     mockPathname.mockReturnValue("/");
   });
 
@@ -418,6 +424,9 @@ describe("AuthContext", () => {
   // ==================== AC-014: No auto-fetch without token ====================
 
   it("does not set user when not authenticated (AC-014)", async () => {
+    // Without a stored token the context does not call the API at all,
+    // so there is no session to verify.
+    mockStoredToken.mockReturnValue(null);
     mockFetchUser.mockResolvedValue(null);
 
     render(
@@ -427,9 +436,11 @@ describe("AuthContext", () => {
     );
 
     await waitFor(() => {
-      expect(mockFetchUser).toHaveBeenCalled();
-      expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
+      expect(screen.getByTestId("loading")).toHaveTextContent("false");
     });
+
+    expect(mockFetchUser).not.toHaveBeenCalled();
+    expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
   });
 
   // ==================== AC-015: 401 response triggers logout ====================

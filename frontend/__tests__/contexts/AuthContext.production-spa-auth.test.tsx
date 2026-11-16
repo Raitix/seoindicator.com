@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/lib/contexts/AuthContext";
 import type { User } from "@/lib/types/auth";
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 const mockPathname = vi.fn(() => "/sites/42/local");
 const mockFetchUser = vi.fn();
 const mockLogin = vi.fn();
@@ -19,7 +20,7 @@ const mockResendVerificationEmail = vi.fn();
 const mockBroadcastAuthChange = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   usePathname: () => mockPathname(),
 }));
 
@@ -85,7 +86,11 @@ describe("AuthContext production SPA auth persistence", () => {
     mockLogout.mockResolvedValue(undefined);
   });
 
-  it("keeps the stored user authenticated on protected routes when bearer fallback state exists and auth/user cannot hydrate the session", async () => {
+  it("clears the stored session when the API cannot confirm it", async () => {
+    // The auth contract verifies the stored token with the API before it
+    // trusts the session (SPEC-037). The routing bug that made the API
+    // unreachable is fixed, so a token the API will not confirm is stale
+    // and must not keep the visitor signed in.
     seedStoredAuth();
 
     render(
@@ -98,14 +103,20 @@ describe("AuthContext production SPA auth persistence", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("false");
     });
 
-    expect(screen.getByTestId("authenticated")).toHaveTextContent("true");
-    expect(screen.getByTestId("user-name")).toHaveTextContent("Raitis");
-    expect(localStorage.getItem("seoindicator_user")).not.toBeNull();
-    expect(localStorage.getItem("seoindicator_token")).toBe("spa-fallback-token");
-    expect(mockPush).not.toHaveBeenCalledWith("/login");
+    expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
+    expect(screen.getByTestId("user-name")).toHaveTextContent("null");
+
+    // The stale session is dropped rather than trusted.
+    expect(localStorage.getItem("seoindicator_user")).toBeNull();
+    expect(localStorage.getItem("seoindicator_token")).toBeNull();
+
+    // The protected route redirects to the login page.
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/login");
+    });
   });
 
-  it("refreshUser keeps the current user when bearer fallback state exists but auth/user still returns null", async () => {
+  it("refreshUser clears the session when the API still returns no user", async () => {
     const user = userEvent.setup();
     seedStoredAuth();
     mockFetchUser.mockResolvedValueOnce(mockUser).mockResolvedValueOnce(null);
@@ -127,11 +138,11 @@ describe("AuthContext production SPA auth persistence", () => {
       expect(screen.getByTestId("loading")).toHaveTextContent("false");
     });
 
-    expect(screen.getByTestId("authenticated")).toHaveTextContent("true");
-    expect(screen.getByTestId("user-name")).toHaveTextContent("Raitis");
-    expect(localStorage.getItem("seoindicator_user")).not.toBeNull();
-    expect(localStorage.getItem("seoindicator_token")).toBe("spa-fallback-token");
-    expect(mockPush).not.toHaveBeenCalledWith("/login");
+    // The refresh could not confirm the session, so it is dropped.
+    expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
+    expect(screen.getByTestId("user-name")).toHaveTextContent("null");
+    expect(localStorage.getItem("seoindicator_user")).toBeNull();
+    expect(localStorage.getItem("seoindicator_token")).toBeNull();
   });
 
   it("still redirects protected routes to login when no stored fallback auth state exists", async () => {
@@ -148,7 +159,7 @@ describe("AuthContext production SPA auth persistence", () => {
     expect(screen.getByTestId("authenticated")).toHaveTextContent("false");
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login");
+      expect(mockReplace).toHaveBeenCalledWith("/login");
     });
   });
 });
