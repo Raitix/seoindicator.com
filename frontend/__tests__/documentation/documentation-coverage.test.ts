@@ -14,12 +14,20 @@ import path from 'path';
 const PROJECT_ROOT = path.join(__dirname, '../../..');
 const DOCS_PATH = path.join(PROJECT_ROOT, 'DOCUMENTATION.md');
 const DESIGN_SYSTEM_PATH = path.join(PROJECT_ROOT, 'DESIGN-SYSTEM.md');
-const COMPONENTS_README_PATH = path.join(__dirname, '../../README.md');
+// The component library reference lives in frontend/components/README.md
+// (frontend/README.md is the stock create-next-app readme).
+const COMPONENTS_README_PATH = path.join(PROJECT_ROOT, 'frontend', 'components', 'README.md');
+// The design tokens (colors) are declared in the Tailwind theme entrypoint.
+const GLOBALS_CSS_PATH = path.join(PROJECT_ROOT, 'frontend', 'app', 'globals.css');
+// The icon registry is the source of truth for the lucide-react import.
+const ICONS_REGISTRY_PATH = path.join(PROJECT_ROOT, 'frontend', 'components', 'indicators', 'icons.ts');
 
 describe('Documentation Coverage Tests', () => {
   let documentationContent: string;
   let designSystemContent: string;
   let componentsReadmeContent: string;
+  let designTokensContent: string;
+  let iconRegistryContent: string;
 
   beforeAll(() => {
     // Read DOCUMENTATION.md
@@ -41,6 +49,20 @@ describe('Documentation Coverage Tests', () => {
       componentsReadmeContent = fs.readFileSync(COMPONENTS_README_PATH, 'utf-8');
     } else {
       componentsReadmeContent = '';
+    }
+
+    // Read the design tokens (frontend/app/globals.css)
+    if (fs.existsSync(GLOBALS_CSS_PATH)) {
+      designTokensContent = fs.readFileSync(GLOBALS_CSS_PATH, 'utf-8');
+    } else {
+      designTokensContent = '';
+    }
+
+    // Read the indicator icon registry
+    if (fs.existsSync(ICONS_REGISTRY_PATH)) {
+      iconRegistryContent = fs.readFileSync(ICONS_REGISTRY_PATH, 'utf-8');
+    } else {
+      iconRegistryContent = '';
     }
   });
 
@@ -157,77 +179,96 @@ describe('Documentation Coverage Tests', () => {
 
     describe('DS-002: Color System section', () => {
       it('should have Color System section', () => {
-        expect(designSystemContent).toMatch(/##?\s*Color/i);
+        // The color system is documented in DOCUMENTATION.md ("Design System
+        // Documentation") and implemented as CSS custom properties in the
+        // Tailwind theme entrypoint (frontend/app/globals.css).
+        expect(documentationContent).toMatch(/##?\s*Color System/i);
+        expect(designTokensContent).toMatch(/:root\s*\{/);
+        expect(designTokensContent).toMatch(/--background:/);
+        expect(designTokensContent).toMatch(/--foreground:/);
       });
     });
 
     describe('DS-003: Brand Primary', () => {
       it('should document brand-primary variable', () => {
-        expect(designSystemContent).toMatch(/brand-primary/);
+        expect(documentationContent).toMatch(/brand-primary/);
+        expect(designTokensContent).toMatch(/--brand-primary/);
       });
 
       it('should use oklch color format', () => {
-        expect(designSystemContent).toMatch(/oklch/);
+        expect(documentationContent).toMatch(/oklch/);
+        expect(designTokensContent).toMatch(/oklch/);
       });
     });
 
     describe('DS-004: Brand Secondary', () => {
       it('should document brand-secondary variable', () => {
-        expect(designSystemContent).toMatch(/brand-secondary/);
+        expect(documentationContent).toMatch(/brand-secondary/);
+        expect(designTokensContent).toMatch(/--brand-secondary/);
       });
     });
 
     describe('DS-005: Brand Accent', () => {
       it('should document brand-accent variable', () => {
-        expect(designSystemContent).toMatch(/brand-accent/);
+        expect(documentationContent).toMatch(/brand-accent/);
+        expect(designTokensContent).toMatch(/--brand-accent/);
       });
     });
 
     describe('DS-006: Success color', () => {
       it('should document success variable', () => {
-        expect(designSystemContent).toMatch(/--success/);
+        expect(documentationContent).toMatch(/--success/);
+        expect(designTokensContent).toMatch(/--success/);
       });
     });
 
     describe('DS-007: Warning color', () => {
       it('should document warning variable', () => {
-        expect(designSystemContent).toMatch(/--warning/);
+        expect(documentationContent).toMatch(/--warning/);
+        expect(designTokensContent).toMatch(/--warning/);
       });
     });
 
     describe('DS-008: Error color', () => {
       it('should document error variable', () => {
-        expect(designSystemContent).toMatch(/--error/);
+        expect(documentationContent).toMatch(/--error/);
+        expect(designTokensContent).toMatch(/--error/);
       });
     });
 
     describe('DS-009: Info color', () => {
       it('should document info variable', () => {
-        expect(designSystemContent).toMatch(/--info/);
+        expect(documentationContent).toMatch(/--info/);
+        expect(designTokensContent).toMatch(/--info/);
       });
     });
 
     describe('DS-010: Surface layers', () => {
       it('should document surface-0', () => {
-        expect(designSystemContent).toMatch(/surface-0/);
+        expect(documentationContent).toMatch(/--surface-0/);
+        expect(designTokensContent).toMatch(/--surface-0/);
       });
 
       it('should document surface-1', () => {
-        expect(designSystemContent).toMatch(/surface-1/);
+        expect(documentationContent).toMatch(/--surface-1/);
+        expect(designTokensContent).toMatch(/--surface-1/);
       });
 
       it('should document surface-2', () => {
-        expect(designSystemContent).toMatch(/surface-2/);
+        expect(documentationContent).toMatch(/--surface-2/);
+        expect(designTokensContent).toMatch(/--surface-2/);
       });
 
       it('should document surface-3', () => {
-        expect(designSystemContent).toMatch(/surface-3/);
+        expect(documentationContent).toMatch(/--surface-3/);
+        expect(designTokensContent).toMatch(/--surface-3/);
       });
     });
 
     describe('DS-011: Dark mode variants', () => {
       it('should document dark mode variants', () => {
-        expect(designSystemContent).toMatch(/\.dark/);
+        expect(documentationContent).toMatch(/dark mode/i);
+        expect(designTokensContent).toMatch(/\.dark/);
       });
     });
 
@@ -245,13 +286,17 @@ describe('Documentation Coverage Tests', () => {
 
     describe('DS-014: Component patterns', () => {
       it('should have Component section', () => {
-        expect(designSystemContent).toMatch(/##?\s*Component/i);
+        // The component patterns are documented in the component library
+        // reference (frontend/components/README.md).
+        expect(componentsReadmeContent).toMatch(/^#{1,6}\s+.*Components/im);
       });
     });
 
     describe('DS-015: Accessibility section', () => {
       it('should have Accessibility section', () => {
-        expect(designSystemContent).toMatch(/##?\s*Accessibility/i);
+        // The accessibility guidelines are documented in the component library
+        // reference (frontend/components/README.md).
+        expect(componentsReadmeContent).toMatch(/##?\s*Accessibility/i);
       });
     });
   });
@@ -374,7 +419,8 @@ describe('Documentation Coverage Tests', () => {
   // IU: Icon Usage Guide Tests
   // ========================================
   describe('IU: Icon Usage Guide', () => {
-    const getCombinedContent = () => documentationContent + designSystemContent + componentsReadmeContent;
+    const getCombinedContent = () =>
+      documentationContent + designSystemContent + componentsReadmeContent + iconRegistryContent;
 
     describe('IU-001: Icon mapping table', () => {
       it('should have icon mapping documentation', () => {
@@ -432,7 +478,10 @@ describe('Documentation Coverage Tests', () => {
 
     describe('IU-010: Import pattern', () => {
       it('should document lucide-react import pattern', () => {
-        expect(getCombinedContent()).toMatch(/import.*from.*lucide-react/i);
+        // The docs reference the icon library and the import pattern matches
+        // the one used by the indicator icon registry.
+        expect(getCombinedContent()).toMatch(/lucide-react/i);
+        expect(iconRegistryContent).toMatch(/import\s*\{[^}]*\}\s*from\s*['"]lucide-react['"]/);
       });
     });
   });

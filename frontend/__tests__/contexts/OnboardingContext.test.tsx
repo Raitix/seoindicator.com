@@ -48,7 +48,15 @@ function TestComponent() {
       <span data-testid="is-active">{context.isActive.toString()}</span>
       <span data-testid="is-loading">{context.isLoading.toString()}</span>
       <span data-testid="error">{context.error ?? "none"}</span>
-      <button onClick={() => context.startOnboarding()} data-testid="start-btn">
+      <button
+        onClick={() => {
+          // The provider stores the error message in context state and then
+          // re-throws it. Swallow the rejection here so it is not reported as
+          // an unhandled promise rejection by the test runner.
+          context.startOnboarding().catch(() => {});
+        }}
+        data-testid="start-btn"
+      >
         Start
       </button>
       <button onClick={() => context.updateStep(1, { website_url: "https://test.com" })} data-testid="update-btn">
@@ -302,7 +310,13 @@ describe("useOnboardingStep hook", () => {
 describe("useOnboardingStatus hook", () => {
   it("returns completion status", () => {
     vi.mocked(useOnboarding).mockReturnValue({
-      onboarding: { ...mockOnboardingData, completedAt: "2024-01-01T00:00:00Z" },
+      // A completed onboarding reports 100% progress (the API returns
+      // progressPercentage: 100 once the flow is finished).
+      onboarding: {
+        ...mockOnboardingData,
+        completedAt: "2024-01-01T00:00:00Z",
+        progressPercentage: 100,
+      },
       isLoading: false,
       error: null,
       mutate: mockMutate,

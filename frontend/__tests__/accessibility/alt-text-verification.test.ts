@@ -134,8 +134,12 @@ function findIconsInFile(filePath: string, content: string): IconInfo[] {
     }
   });
 
-  // Match Lucide icon components (e.g., <TrendingUp />)
-  const lucideRegex = /<[A-Z][a-zA-Z]+\s[^>]*\/?>/gi;
+  // Match Lucide icon components (e.g., <TrendingUp />).
+  // The pattern is case-sensitive on purpose: React component names always
+  // start with an upper case letter, while lowercase markup such as <svg>
+  // is already handled by the <svg> matcher above and must not be counted
+  // twice.
+  const lucideRegex = /<[A-Z][a-zA-Z]+\s[^>]*\/?>/g;
   lines.forEach((line, lineIndex) => {
     let match;
     while ((match = lucideRegex.exec(line)) !== null) {

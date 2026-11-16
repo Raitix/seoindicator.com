@@ -110,6 +110,25 @@ function readFileContent(filePath: string): string {
 // ============================================================================
 
 const COMPONENTS_DIR = path.join(process.cwd(), 'components');
+const APP_DIR = path.join(process.cwd(), 'app');
+
+/**
+ * Collect every source that can carry focus styling.
+ *
+ * Since the Tailwind v4 migration the global stylesheet only declares the
+ * design tokens (--ring, outline-ring/...). The focus indicators themselves
+ * are applied with the `focus:` / `focus-visible:` utilities inside the
+ * components, and the reduced-motion support is implemented with the
+ * `prefers-reduced-motion` media query in the components as well. Both
+ * sources therefore have to be inspected.
+ */
+function getStyleSources(css: string): string {
+  const files = [
+    ...getComponentFiles(COMPONENTS_DIR),
+    ...getComponentFiles(APP_DIR),
+  ];
+  return [css, ...files.map((file) => readFileContent(file))].join('\n');
+}
 
 // ============================================================================
 // Focus Visibility Tests
@@ -118,10 +137,12 @@ const COMPONENTS_DIR = path.join(process.cwd(), 'components');
 describe('Focus Visibility Tests', () => {
   let cssContent: string;
   let variables: CSSVariable[];
+  let styleSources: string;
 
   beforeAll(() => {
     cssContent = getCSSContent();
     variables = parseCSSVariables(cssContent);
+    styleSources = getStyleSources(cssContent);
   });
 
   // ========================================================================
@@ -152,17 +173,20 @@ describe('Focus Visibility Tests', () => {
 
   describe('FV-002: Focus pseudo-class in CSS', () => {
     it('should contain :focus selector', () => {
-      const hasFocus = /:focus[\s,{]/.test(cssContent);
+      // Either a plain CSS rule or the Tailwind `focus:` utility.
+      const hasFocus = /:focus[\s,{]/.test(styleSources) || /\bfocus:/.test(styleSources);
       expect(hasFocus).toBe(true);
     });
 
     it('should contain :focus-visible selector', () => {
-      const hasFocusVisible = /:focus-visible[\s,{]/.test(cssContent);
+      // Either a plain CSS rule or the Tailwind `focus-visible:` utility.
+      const hasFocusVisible =
+        /:focus-visible[\s,{]/.test(styleSources) || /\bfocus-visible:/.test(styleSources);
       expect(hasFocusVisible).toBe(true);
     });
 
     it('should contain :focus-within selector (optional but recommended)', () => {
-      const hasFocusWithin = /:focus-within[\s,{]/.test(cssContent);
+      const hasFocusWithin = /:focus-within[\s,{]/.test(styleSources);
       // This is optional - document if missing
       if (!hasFocusWithin) {
         console.log(':focus-within not found - recommended for parent focus states');
@@ -402,7 +426,7 @@ describe('Focus Visibility Tests', () => {
 
   describe('FV-009: Reduced motion support', () => {
     it('should respect prefers-reduced-motion', () => {
-      const hasReducedMotion = /prefers-reduced-motion/i.test(cssContent);
+      const hasReducedMotion = /prefers-reduced-motion/i.test(styleSources);
       expect(hasReducedMotion).toBe(true);
     });
 
@@ -425,15 +449,15 @@ describe('Focus Visibility Tests', () => {
     it('AC-6: Focus should be visible in all states', () => {
       // Verify all required focus-related CSS exists
       const requirements = [
-        { pattern: /:focus/, description: ':focus selector' },
-        { pattern: /:focus-visible/, description: ':focus-visible selector' },
+        { pattern: /:focus[\s,{]|\bfocus:/, description: ':focus selector' },
+        { pattern: /:focus-visible[\s,{]|\bfocus-visible:/, description: ':focus-visible selector' },
         { pattern: /--ring/, description: '--ring CSS variable' },
         { pattern: /outline-ring/, description: 'outline-ring class' },
       ];
 
       const results = requirements.map(req => ({
         ...req,
-        found: req.pattern.test(cssContent),
+        found: req.pattern.test(styleSources),
       }));
 
       const allFound = results.every(r => r.found);

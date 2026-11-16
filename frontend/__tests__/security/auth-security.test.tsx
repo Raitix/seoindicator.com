@@ -16,10 +16,11 @@ import * as authApi from "@/lib/api/auth";
 // ==================== Mocks ====================
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 const mockPathname = vi.fn(() => "/");
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   usePathname: () => mockPathname(),
 }));
 
@@ -58,8 +59,27 @@ function TestComponent() {
       <span data-testid="user-name">{user?.name ?? "null"}</span>
       <span data-testid="user-email">{user?.email ?? "null"}</span>
       <span data-testid="error">{error?.message ?? "null"}</span>
-      <button onClick={() => login("test@example.com", "password")}>Login</button>
-      <button onClick={() => register({ name: "Test", email: "test@example.com", password: "pass", password_confirmation: "pass" })}>Register</button>
+      {/* The context stores the error in state and then re-throws it, so the
+          rejection is caught here to avoid unhandled promise rejections. */}
+      <button
+        onClick={() => {
+          login("test@example.com", "password").catch(() => {});
+        }}
+      >
+        Login
+      </button>
+      <button
+        onClick={() => {
+          register({
+            name: "Test",
+            email: "test@example.com",
+            password: "pass",
+            password_confirmation: "pass",
+          }).catch(() => {});
+        }}
+      >
+        Register
+      </button>
     </div>
   );
 }
@@ -100,10 +120,17 @@ describe("Auth Security Tests", () => {
       });
 
       await waitFor(() => {
-        const userName = screen.getByTestId("user-name").textContent;
-        // Should not contain raw script tag
-        expect(userName).not.toContain("<script>");
-        expect(userName).not.toContain("alert");
+        const nameElement = screen.getByTestId("user-name");
+
+        // The payload must be HTML-escaped in the rendered markup, so it is
+        // displayed as inert text and never becomes markup.
+        expect(nameElement.innerHTML).toContain("&lt;script&gt;");
+        expect(nameElement.innerHTML).not.toContain("<script>");
+
+        // No script element may be created from the payload, neither inside
+        // the rendered output nor anywhere else in the document.
+        expect(nameElement.querySelector("script")).toBeNull();
+        expect(document.querySelectorAll("script")).toHaveLength(0);
       });
     });
 
@@ -132,8 +159,15 @@ describe("Auth Security Tests", () => {
       });
 
       await waitFor(() => {
-        const errorText = screen.getByTestId("error").textContent;
-        expect(errorText).not.toContain("<script>");
+        const errorElement = screen.getByTestId("error");
+
+        // The error message is escaped before it is rendered.
+        expect(errorElement.innerHTML).toContain("&lt;script&gt;");
+        expect(errorElement.innerHTML).not.toContain("<script>");
+
+        // The payload must not create any element.
+        expect(errorElement.querySelector("*")).toBeNull();
+        expect(document.querySelectorAll("script")).toHaveLength(0);
       });
     });
   });
@@ -389,11 +423,13 @@ describe("Auth Security Tests", () => {
         screen.getByText("Login").click();
       });
 
-      // Email should be sanitized
+      // The payload is rendered as inert text: it must not be interpreted as
+      // markup and it must not create any element.
       await waitFor(() => {
-        const displayedEmail = screen.getByTestId("user-email").textContent;
-        expect(displayedEmail).not.toContain("'");
-        expect(displayedEmail).not.toContain("OR");
+        const emailElement = screen.getByTestId("user-email");
+        expect(emailElement.textContent).toBe(sqlPayload);
+        expect(emailElement.innerHTML).not.toContain("<");
+        expect(emailElement.querySelector("*")).toBeNull();
       });
     });
 

@@ -160,7 +160,13 @@ export function generateComparisonData(
     return null;
   }
 
-  const slug = `${compA.slug}-vs-${compB.slug}`;
+  // The comparison slug is the URL segment used by /compare/[slug] and it is
+  // built from the competitor IDs (see COMPARISON_SLUGS). Using the competitor
+  // `slug` here produced a different slug for competitors whose slug differs
+  // from their id (e.g. id 'gsc' -> slug 'google-search-console'), so the
+  // canonical URL and the related-comparison links pointed at a page that is
+  // never generated.
+  const slug = `${compA.id}-vs-${compB.id}`;
 
   return {
     slug,

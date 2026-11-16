@@ -105,6 +105,14 @@ function CardItem({
         isExpired && "opacity-60"
       )}
       onClick={onSelect}
+      // role="radio" elements must be reachable and operable by keyboard
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
     >
       <div className="flex items-center gap-4">
         {/* Card Icon */}

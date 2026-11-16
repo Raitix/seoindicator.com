@@ -17,8 +17,10 @@
 import {
   PROTECTED_ROUTES,
   PUBLIC_ROUTES,
+  GUEST_VIEWABLE_ROUTES,
   isProtectedRoute,
   isPublicRoute,
+  isGuestViewableRoute,
 } from '@/lib/routes';
 
 describe('route access lists', () => {
@@ -48,18 +50,14 @@ describe('route access lists', () => {
   });
 
   describe('protected routes', () => {
+    // These routes show account data, so an anonymous visitor is
+    // redirected to /login.
     const mustBeProtected = [
-      '/dashboard',
       '/settings',
-      '/projects',
-      '/competitors',
-      '/comparison',
-      '/notifications',
       '/sites',
       '/locations',
-      '/ranking-history',
       '/admin',
-      '/audit',
+      '/ai-visibility',
     ];
 
     it.each(mustBeProtected)('treats %s as protected', (route) => {
@@ -71,10 +69,42 @@ describe('route access lists', () => {
       expect(isProtectedRoute(`${route}/sub`)).toBe(true);
     });
 
-    it('keeps /comparison protected while /compare stays public', () => {
-      expect(isProtectedRoute('/comparison')).toBe(true);
+    it('keeps /comparison guest-viewable while /compare stays public', () => {
+      expect(isProtectedRoute('/comparison')).toBe(false);
       expect(isPublicRoute('/compare')).toBe(true);
       expect(isPublicRoute('/comparison')).toBe(false);
+    });
+  });
+
+  describe('guest-viewable routes', () => {
+    // These routes render in "guest preview" mode: the layout and the
+    // explanatory copy are visible, and any account data is replaced by
+    // a prompt to sign in. They are neither public nor protected.
+    const mustBeGuestViewable = [
+      '/dashboard',
+      '/projects',
+      '/competitors',
+      '/comparison',
+      '/notifications',
+      '/ranking-history',
+      '/audit',
+      '/guides',
+    ];
+
+    it.each(mustBeGuestViewable)('treats %s as guest-viewable', (route) => {
+      expect(isGuestViewableRoute(route)).toBe(true);
+      expect(GUEST_VIEWABLE_ROUTES).toContain(route);
+    });
+
+    it.each(mustBeGuestViewable)('treats %s and its children as guest-viewable', (route) => {
+      expect(isGuestViewableRoute(`${route}/sub`)).toBe(true);
+    });
+
+    it('does not treat a guest-viewable route as protected or public', (route) => {
+      for (const r of mustBeGuestViewable) {
+        expect(isProtectedRoute(r)).toBe(false);
+        expect(isPublicRoute(r)).toBe(false);
+      }
     });
   });
 
@@ -86,9 +116,24 @@ describe('route access lists', () => {
       expect(overlap).toEqual([]);
     });
 
+    it('has no route in both public and guest-viewable lists', () => {
+      const overlap = PUBLIC_ROUTES.filter((route) =>
+        GUEST_VIEWABLE_ROUTES.includes(route)
+      );
+      expect(overlap).toEqual([]);
+    });
+
+    it('has no route in both protected and guest-viewable lists', () => {
+      const overlap = PROTECTED_ROUTES.filter((route) =>
+        GUEST_VIEWABLE_ROUTES.includes(route)
+      );
+      expect(overlap).toEqual([]);
+    });
+
     it('contains no duplicates', () => {
       expect(new Set(PUBLIC_ROUTES).size).toBe(PUBLIC_ROUTES.length);
       expect(new Set(PROTECTED_ROUTES).size).toBe(PROTECTED_ROUTES.length);
+      expect(new Set(GUEST_VIEWABLE_ROUTES).size).toBe(GUEST_VIEWABLE_ROUTES.length);
     });
   });
 });

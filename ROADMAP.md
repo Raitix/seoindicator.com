@@ -127,6 +127,9 @@ protection, a script can burn the operator's credits.
 - **Content quality pass on the marketing site** — the guide pages and
   comparison pages are functional but thin; they should be genuinely useful
   rather than merely present.
+- **Comparison-page analytics and performance targets** — the tracking and
+  Core Web Vitals helpers specified for the comparison pages were never
+  built. Tracked in [#16](https://github.com/Raitix/seoindicator.com/issues/16).
 
 ---
 

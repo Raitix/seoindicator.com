@@ -22,7 +22,21 @@ export function stripHtmlTags(html: string): string {
     return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body?.textContent || '';
+  const body = doc.body;
+  if (!body) return '';
+
+  // Separate every element with a space so text of adjacent elements is not
+  // glued into a single word. `textContent` alone concatenates the text of
+  // neighbouring elements without a separator ("<p>one</p><p>two</p>" would
+  // become "onetwo"), which under-counts words and breaks keyword matching
+  // across element boundaries. The server-side branch above replaces tags
+  // with a space for the same reason - both branches must agree.
+  body.querySelectorAll('*').forEach((element) => {
+    element.before(' ');
+    element.after(' ');
+  });
+
+  return (body.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
 /**

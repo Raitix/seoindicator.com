@@ -2,7 +2,7 @@
  * Tests for Static Params Generation
  * Task: TASK-20-4 - Set Up Routing with Static Params Generation
  * 
- * Tests verify the generateStaticParams function for all 17 guide slugs.
+ * Tests verify the generateStaticParams function for all 18 guide slugs.
  */
 
 import { GUIDE_SLUGS } from '@/lib/guides/registry';
@@ -28,10 +28,10 @@ describe('generateStaticParams', () => {
     });
   });
 
-  describe('SP-002: Returns all 17 guides', () => {
-    it('should return exactly 17 params', () => {
+  describe('SP-002: Returns all 18 guides', () => {
+    it('should return exactly 18 params', () => {
       const params = generateStaticParams();
-      expect(params).toHaveLength(17);
+      expect(params).toHaveLength(18);
     });
   });
 
@@ -141,7 +141,7 @@ describe('generateStaticParams', () => {
       const params1 = generateStaticParams();
       params1.push({ slug: 'new-slug' });
       const params2 = generateStaticParams();
-      expect(params2).toHaveLength(17);
+      expect(params2).toHaveLength(18);
     });
   });
 
@@ -249,6 +249,7 @@ describe('generateStaticParams', () => {
       'external-links',
       'page-speed',
       'mobile-friendly',
+      'backlinks',
       'https-security',
       'structured-data',
       'canonical-urls',

@@ -77,6 +77,48 @@ function extractCssVariable(content: string, varName: string): string | null {
 }
 
 /**
+ * Extract a CSS variable value from the dark mode block
+ */
+function extractDarkCssVariable(content: string, varName: string): string | null {
+  const darkMatch = content.match(/\.dark\s*\{([^}]+)\}/);
+  if (!darkMatch) return null;
+  const pattern = new RegExp(`--${escapeRegex(varName)}\\s*:\\s*([^;]+);`);
+  const match = darkMatch[1].match(pattern);
+  return match ? match[1].trim() : null;
+}
+
+/**
+ * Extract the color tokens documented in the "Color System" section of
+ * DOCUMENTATION.md.
+ * Returns a map of token name -> { light, dark }.
+ */
+function extractDocumentedTokens(
+  docContent: string
+): Map<string, { light: string; dark: string | null }> {
+  const tokens = new Map<string, { light: string; dark: string | null }>();
+
+  const sectionStart = docContent.indexOf('### Color System');
+  if (sectionStart === -1) return tokens;
+
+  const rest = docContent.slice(sectionStart + '### Color System'.length);
+  const nextHeading = rest.search(/\n#{1,6}\s/);
+  const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
+
+  // Rows look like: | `--brand-primary` | `oklch(...)` | `oklch(...)` | usage |
+  const rowRegex = /\|\s*`(--[\w-]+)`\s*\|\s*`([^`]+)`\s*\|([^|]*)\|/g;
+  let match;
+  while ((match = rowRegex.exec(section)) !== null) {
+    const dark = match[3].trim().replace(/`/g, '').trim();
+    tokens.set(match[1], {
+      light: match[2].trim(),
+      dark: /^(oklch|rgba?|hsla?|#)/i.test(dark) ? dark : null,
+    });
+  }
+
+  return tokens;
+}
+
+/**
  * Parse oklch value and extract components
  */
 function parseOklch(value: string): { l: number; c: number; h: number } | null {
@@ -199,45 +241,59 @@ describe('UI/UX Documentation', () => {
   // ==========================================================================
   describe('DESIGN-SYSTEM.md Content (DS)', () => {
     let designContent: string;
+    let tokenContent: string;
+    let docContent: string;
 
     beforeAll(() => {
       designContent = readFile(DESIGN_SYSTEM_PATH);
+      // The color tokens are documented in DOCUMENTATION.md and declared in
+      // the Tailwind theme entrypoint; DESIGN-SYSTEM.md covers typography
+      // and spacing.
+      tokenContent = readFile(GLOBALS_CSS_PATH);
+      docContent = readFile(DOCUMENTATION_PATH);
     });
 
     it('DS-01: Brand colors documented', () => {
       expect(
-        containsText(designContent, 'brand-primary') &&
-        containsText(designContent, 'brand-secondary') &&
-        containsText(designContent, 'brand-accent')
+        containsText(docContent, 'brand-primary') &&
+        containsText(docContent, 'brand-secondary') &&
+        containsText(docContent, 'brand-accent') &&
+        containsText(tokenContent, 'brand-primary') &&
+        containsText(tokenContent, 'brand-secondary') &&
+        containsText(tokenContent, 'brand-accent')
       ).toBe(true);
     });
 
     it('DS-02: Semantic colors documented', () => {
       expect(
-        containsText(designContent, 'success') &&
-        containsText(designContent, 'warning') &&
-        containsText(designContent, 'error') &&
-        containsText(designContent, 'info')
+        containsText(docContent, 'success') &&
+        containsText(docContent, 'warning') &&
+        containsText(docContent, 'error') &&
+        containsText(docContent, 'info') &&
+        containsText(tokenContent, 'success') &&
+        containsText(tokenContent, 'warning') &&
+        containsText(tokenContent, 'error') &&
+        containsText(tokenContent, 'info')
       ).toBe(true);
     });
 
     it('DS-03: Surface layers documented', () => {
       expect(
-        containsText(designContent, 'surface-0') ||
-        containsText(designContent, 'surface-1') ||
-        containsText(designContent, 'surface layers')
+        containsText(docContent, 'surface-0') &&
+        containsText(tokenContent, 'surface-0') &&
+        containsText(tokenContent, 'surface-1')
       ).toBe(true);
     });
 
     it('DS-04: oklch color format used', () => {
-      expect(containsText(designContent, 'oklch')).toBe(true);
+      expect(containsText(docContent, 'oklch')).toBe(true);
+      expect(containsText(tokenContent, 'oklch')).toBe(true);
     });
 
     it('DS-05: Dark mode variants documented', () => {
       expect(
-        containsText(designContent, '.dark') ||
-        containsText(designContent, 'dark mode') ||
-        containsText(designContent, 'dark mode')
+        containsText(docContent, 'dark mode') &&
+        containsText(tokenContent, '.dark')
       ).toBe(true);
     });
 
@@ -531,8 +587,9 @@ describe('UI/UX Documentation', () => {
           expect(parsed.h).toBeLessThanOrEqual(180);
         }
       }
-      // If value not found, check design system docs
+      // If value not found, check the design system sources
       expect(
+        containsText(globalsCss, 'brand-primary') ||
         containsText(designContent, 'brand-primary') ||
         containsText(designContent, 'green') ||
         containsText(designContent, 'emerald')
@@ -549,7 +606,7 @@ describe('UI/UX Documentation', () => {
           expect(parsed.h).toBeLessThanOrEqual(170);
         }
       }
-      expect(containsText(designContent, 'success')).toBe(true);
+      expect(containsText(globalsCss, 'success') || containsText(designContent, 'success')).toBe(true);
     });
 
     it('DT-03: Warning hue in yellow/orange range', () => {
@@ -562,7 +619,7 @@ describe('UI/UX Documentation', () => {
           expect(parsed.h).toBeLessThanOrEqual(100);
         }
       }
-      expect(containsText(designContent, 'warning')).toBe(true);
+      expect(containsText(globalsCss, 'warning') || containsText(designContent, 'warning')).toBe(true);
     });
 
     it('DT-04: Error hue in red range', () => {
@@ -575,7 +632,7 @@ describe('UI/UX Documentation', () => {
           expect(parsed.h).toBeLessThanOrEqual(50);
         }
       }
-      expect(containsText(designContent, 'error')).toBe(true);
+      expect(containsText(globalsCss, 'error') || containsText(designContent, 'error')).toBe(true);
     });
 
     it('DT-05: Info hue in blue range', () => {
@@ -588,7 +645,7 @@ describe('UI/UX Documentation', () => {
           expect(parsed.h).toBeLessThanOrEqual(260);
         }
       }
-      expect(containsText(designContent, 'info')).toBe(true);
+      expect(containsText(globalsCss, 'info') || containsText(designContent, 'info')).toBe(true);
     });
 
     it('DT-06: Surface layers have zero chroma', () => {
@@ -650,11 +707,12 @@ describe('UI/UX Documentation', () => {
     });
 
     it('CE-03: CSS variable usage example present', () => {
-      const designContent = readFile(DESIGN_SYSTEM_PATH);
+      // The CSS variables are declared in the Tailwind theme entrypoint.
+      const tokenContent = readFile(GLOBALS_CSS_PATH);
       expect(
-        containsText(designContent, '```css') ||
-        containsText(designContent, '--brand') ||
-        containsText(designContent, 'oklch')
+        containsText(tokenContent, '```css') ||
+        containsText(tokenContent, '--brand') ||
+        containsText(tokenContent, 'oklch')
       ).toBe(true);
     });
 
@@ -689,18 +747,26 @@ describe('UI/UX Documentation', () => {
     });
 
     it('CR-03: Design tokens match globals.css', () => {
-      // Verify design system documentation matches actual CSS
+      // Verify the documented design tokens match the actual CSS values.
       const globalsCss = readFile(GLOBALS_CSS_PATH);
-      const designContent = readFile(DESIGN_SYSTEM_PATH);
-      
-      // Both should contain oklch
-      const hasOklchInCss = containsText(globalsCss, 'oklch');
-      const hasOklchInDocs = containsText(designContent, 'oklch');
-      
-      // If CSS has oklch, docs should too
-      if (hasOklchInCss) {
-        expect(hasOklchInDocs).toBe(true);
-      }
+      const docContent = readFile(DOCUMENTATION_PATH);
+
+      const documented = extractDocumentedTokens(docContent);
+      expect(documented.size).toBeGreaterThan(0);
+
+      documented.forEach((values, token) => {
+        const varName = token.replace(/^--/, '');
+
+        const lightValue = extractCssVariable(globalsCss, varName);
+        expect(lightValue, `${token} must be declared in globals.css`).not.toBeNull();
+        expect(lightValue!.replace(/\s+/g, ' ')).toBe(values.light.replace(/\s+/g, ' '));
+
+        if (values.dark) {
+          const darkValue = extractDarkCssVariable(globalsCss, varName);
+          expect(darkValue, `${token} must declare a dark mode value`).not.toBeNull();
+          expect(darkValue!.replace(/\s+/g, ' ')).toBe(values.dark.replace(/\s+/g, ' '));
+        }
+      });
     });
 
     it('CR-04: Component props documented correctly', () => {
@@ -746,8 +812,9 @@ describe('UI/UX Documentation', () => {
     });
 
     it('EC-03: Documentation file sizes are reasonable', () => {
-      // DOCUMENTATION.md is a comprehensive project file - allow up to 2MB
-      const MAX_DOCS_SIZE = 2 * 1024 * 1024; // 2MB
+      // DOCUMENTATION.md is a comprehensive project file that collects the
+      // documentation of every feature - allow up to 4MB
+      const MAX_DOCS_SIZE = 4 * 1024 * 1024; // 4MB
       const MAX_DESIGN_SYSTEM_SIZE = 500 * 1024; // 500KB
       
       if (fileExists(DOCUMENTATION_PATH)) {

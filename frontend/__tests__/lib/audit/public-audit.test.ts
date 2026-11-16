@@ -502,12 +502,17 @@ describe('Public Audit Utilities', () => {
   
   describe('Email Hashing', () => {
     beforeEach(() => {
-      // Setup mock crypto.subtle.digest
+      // Setup mock crypto.subtle.digest.
+      // The digest is derived from the input bytes so that the mock behaves
+      // like a real hash function: deterministic for equal input, different
+      // for different input.
       mockDigest.mockImplementation(async (algorithm: string, data: BufferSource) => {
-        // Simple mock hash - just return a fixed value for testing
+        const bytes = new Uint8Array(
+          data instanceof ArrayBuffer ? data : (data as ArrayBufferView).buffer
+        );
         const hashArray = new Uint8Array(32);
         for (let i = 0; i < 32; i++) {
-          hashArray[i] = i;
+          hashArray[i] = (bytes[i % bytes.length] ?? 0) + i;
         }
         return hashArray.buffer;
       });
@@ -564,14 +569,24 @@ describe('Public Audit Utilities', () => {
     });
 
     it('uses fallback when crypto.subtle is unavailable', async () => {
-      const originalCrypto = global.crypto;
-      // @ts-expect-error - testing fallback
-      global.crypto = undefined;
-      
-      const hash = await hashEmail('test@example.com');
-      expect(hash).toMatch(/^[0-9a-f]+$/);
-      
-      global.crypto = originalCrypto;
+      // `global.crypto` is a read-only accessor on modern Node versions, so it
+      // has to be redefined instead of assigned.
+      Object.defineProperty(global, 'crypto', {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      });
+
+      try {
+        const hash = await hashEmail('test@example.com');
+        expect(hash).toMatch(/^[0-9a-f]+$/);
+      } finally {
+        Object.defineProperty(global, 'crypto', {
+          value: { subtle: { digest: mockDigest } },
+          configurable: true,
+          writable: true,
+        });
+      }
     });
 
     it('HASH-011: uses fallback when digest throws', async () => {

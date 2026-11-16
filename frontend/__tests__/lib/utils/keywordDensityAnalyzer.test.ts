@@ -144,6 +144,8 @@ describe('Keyword Density Analyzer', () => {
     const html = '<p>One two three</p><div>four five</div>';
     const stripped = stripHtmlTags(html);
     const words = countWords(stripped);
+    // The text of adjacent elements must be separated by whitespace, otherwise
+    // "three" and "four" would be glued into a single word ("threefour").
     expect(words).toBe(5);
   });
 
@@ -169,8 +171,9 @@ describe('Keyword Density Analyzer', () => {
     expect(result).toHaveProperty('positions');
     expect(result).toHaveProperty('totalWords');
     expect(result.occurrences).toBe(3);
-    expect(result.totalWords).toBe(10);
-    expect(Math.abs(result.density - 30)).toBeLessThan(0.1); // ~30%
+    // "SEO is important for SEO ranking. Learn SEO today." -> 9 words
+    expect(result.totalWords).toBe(9);
+    expect(Math.abs(result.density - 33.3)).toBeLessThan(0.1); // 3/9 -> ~33.3%
   });
 
   // Edge case: Keyword at start of text

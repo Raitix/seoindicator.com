@@ -20,7 +20,7 @@ import {
   GUIDE_SLUGS,
 } from '@/lib/guides/registry';
 
-// Expected 17 guide slugs from SPEC-020
+// Expected 18 guide slugs from SPEC-020
 const EXPECTED_GUIDE_SLUGS = [
   'meta-title',
   'meta-description',
@@ -32,6 +32,7 @@ const EXPECTED_GUIDE_SLUGS = [
   'external-links',
   'page-speed',
   'mobile-friendly',
+  'backlinks',
   'https-security',
   'structured-data',
   'canonical-urls',
@@ -44,7 +45,7 @@ const EXPECTED_GUIDE_SLUGS = [
 // Expected category distribution
 const EXPECTED_CATEGORIES = {
   'on-page': ['meta-title', 'meta-description', 'h1-headings', 'heading-hierarchy', 'image-alt-text', 'image-optimization', 'internal-links', 'external-links'],
-  'technical': ['page-speed', 'mobile-friendly', 'https-security', 'structured-data', 'canonical-urls', 'robots-txt', 'xml-sitemap'],
+  'technical': ['page-speed', 'mobile-friendly', 'backlinks', 'https-security', 'structured-data', 'canonical-urls', 'robots-txt', 'xml-sitemap'],
   'content': ['open-graph', 'twitter-cards'],
 };
 
@@ -127,9 +128,9 @@ describe('getAllGuides', () => {
   });
 
   describe('R-006: getAllGuides count', () => {
-    it('should return exactly 17 guides', () => {
+    it('should return exactly 18 guides', () => {
       const guides = getAllGuides();
-      expect(guides.length).toBe(17);
+      expect(guides.length).toBe(18);
     });
   });
 
@@ -218,7 +219,7 @@ describe('getRelatedGuides', () => {
 
 describe('Registry Structure', () => {
   describe('R-014: Registry structure', () => {
-    it('should have all 17 expected slugs', () => {
+    it('should have all 18 expected slugs', () => {
       const guides = getAllGuides();
       const slugs = guides.map((g) => g.slug).sort();
       expect(slugs).toEqual(EXPECTED_GUIDE_SLUGS.sort());
@@ -298,7 +299,7 @@ describe('getGuidesByCategory', () => {
     const onPageCount = getGuidesByCategory('on-page').length;
     const technicalCount = getGuidesByCategory('technical').length;
     const contentCount = getGuidesByCategory('content').length;
-    expect(onPageCount + technicalCount + contentCount).toBe(17);
+    expect(onPageCount + technicalCount + contentCount).toBe(18);
   });
 });
 
@@ -364,9 +365,9 @@ describe('getGuidesWithoutTools', () => {
       });
     });
 
-    it('should return exactly 12 guides without tools', () => {
+    it('should return exactly 13 guides without tools', () => {
       const guides = getGuidesWithoutTools();
-      expect(guides.length).toBe(12);
+      expect(guides.length).toBe(13);
     });
   });
 });
@@ -455,7 +456,7 @@ describe('Edge Cases', () => {
 // ============================================================================
 
 describe('GUIDE_SLUGS constant', () => {
-  it('should contain all 17 expected slugs', () => {
+  it('should contain all 18 expected slugs', () => {
     expect(GUIDE_SLUGS.sort()).toEqual(EXPECTED_GUIDE_SLUGS.sort());
   });
 
