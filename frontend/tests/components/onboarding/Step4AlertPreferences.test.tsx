@@ -135,7 +135,7 @@ describe('Step4AlertPreferences', () => {
 
     it('AP-001-07: renders skip link', () => {
       render(<Step4AlertPreferences {...defaultProps} />);
-      expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /skip alert preferences setup/i })).toBeInTheDocument();
     });
 
     it('AP-001-08: renders tooltip text', () => {
@@ -444,13 +444,13 @@ describe('Step4AlertPreferences', () => {
   describe('Skip Functionality', () => {
     it('AP-007-01: skip link renders', () => {
       render(<Step4AlertPreferences {...defaultProps} />);
-      expect(screen.getByRole('button', { name: /skip for now/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /skip alert preferences setup/i })).toBeInTheDocument();
     });
 
     it('AP-007-02: skip triggers callback', () => {
       render(<Step4AlertPreferences {...defaultProps} />);
 
-      const skipButton = screen.getByRole('button', { name: /skip for now/i });
+      const skipButton = screen.getByRole('button', { name: /skip alert preferences setup/i });
       fireEvent.click(skipButton);
 
       expect(defaultProps.onSkip).toHaveBeenCalledTimes(1);
@@ -474,7 +474,7 @@ describe('Step4AlertPreferences', () => {
       const user = userEvent.setup();
       render(<Step4AlertPreferences {...defaultProps} />);
 
-      const skipButton = screen.getByRole('button', { name: /skip for now/i });
+      const skipButton = screen.getByRole('button', { name: /skip alert preferences setup/i });
       skipButton.focus();
       await user.keyboard('{Enter}');
 
@@ -627,7 +627,7 @@ describe('Step4AlertPreferences', () => {
       const props = { ...defaultProps, onSkip: undefined as unknown as typeof defaultProps.onSkip };
       render(<Step4AlertPreferences {...props} />);
 
-      const skipButton = screen.getByRole('button', { name: /skip for now/i });
+      const skipButton = screen.getByRole('button', { name: /skip alert preferences setup/i });
       // Should not crash
       expect(() => fireEvent.click(skipButton)).not.toThrow();
     });

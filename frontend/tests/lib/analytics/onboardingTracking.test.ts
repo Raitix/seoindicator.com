@@ -472,7 +472,10 @@ describe('Onboarding Analytics Tracking', () => {
   // ============================================
   describe('Performance', () => {
     it('AT-008-01: no blocking on track', async () => {
-      mockFetch.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+      // The fetch resolves on a timer, so the clock has to be driven.
+      mockFetch.mockImplementation(
+        () => new Promise((resolve) => setTimeout(resolve, 1000))
+      );
 
       const start = Date.now();
       const promise = tracker.trackStarted();
@@ -481,6 +484,9 @@ describe('Onboarding Analytics Tracking', () => {
       // Should return immediately (async)
       expect(elapsed).toBeLessThan(100);
 
+      // The fake timers have to be advanced, otherwise the fetch never
+      // resolves and the test times out.
+      await vi.advanceTimersByTimeAsync(1000);
       await promise;
     });
 

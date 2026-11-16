@@ -219,11 +219,11 @@ describe("ForgotPasswordPage", () => {
 
       // Type again to clear error
       await user.clear(emailInput);
-      await user.type(emailInput, "new");
+      await user.type(emailInput, "new@example.com");
 
+      // The address is typed again as a valid one, so the only alert
+      // that can be left is the stale submit error.
       await waitFor(() => {
-        // /error/i also matches the card, whose description text says
-        // "password reset", so the alert role is the right anchor.
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       });
     });

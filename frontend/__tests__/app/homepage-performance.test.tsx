@@ -378,7 +378,9 @@ describe('Performance: Bundle Optimization', () => {
     
     // Icons are rendered as text (emoji) which is lightweight
     const indicators = screen.getByTestId('indicators-grid');
-    const icons = indicators.querySelectorAll('div > div:first-child');
+    // The indicators are anchors, so the icon is the first child of an
+    // anchor rather than of a div.
+    const icons = indicators.querySelectorAll(':scope > a > div:first-child');
     
     expect(icons.length).toBe(4);
   });
