@@ -75,6 +75,7 @@ const MockDateRangeSelector = ({ value, onChange, className = '', disabled = fal
             type="date"
             data-testid="start-date"
             aria-label="Start date"
+            disabled={disabled}
             onChange={(e) => onChange({ preset: 'custom', start: new Date(e.target.value) })}
           />
           <span data-testid="date-separator">to</span>
@@ -82,6 +83,7 @@ const MockDateRangeSelector = ({ value, onChange, className = '', disabled = fal
             type="date"
             data-testid="end-date"
             aria-label="End date"
+            disabled={disabled}
             onChange={(e) => onChange({ preset: 'custom', end: new Date(e.target.value) })}
           />
         </div>

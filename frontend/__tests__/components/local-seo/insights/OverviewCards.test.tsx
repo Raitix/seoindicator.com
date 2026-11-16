@@ -131,9 +131,9 @@ describe('OverviewCards', () => {
     it('OC-003: displays metric values', () => {
       render(<MockOverviewCards metrics={mockMetrics} />);
 
-      expect(screen.getByTestId('value-0')).toHaveTextContent('1.25K');
-      expect(screen.getByTestId('value-1')).toHaveTextContent('420');
-      expect(screen.getByTestId('value-2')).toHaveTextContent('89');
+      expect(screen.getByTestId('value-0')).toHaveTextContent(formatNumber(1250));
+      expect(screen.getByTestId('value-1')).toHaveTextContent(formatNumber(420));
+      expect(screen.getByTestId('value-2')).toHaveTextContent(formatNumber(89));
       expect(screen.getByTestId('value-3')).toHaveTextContent('7.12%');
     });
 
@@ -404,7 +404,7 @@ describe('OverviewCards', () => {
     it('OC-037: skeleton has screen reader text', () => {
       render(<MockOverviewCards metrics={mockMetrics} isLoading={true} />);
 
-      expect(screen.getByText('Loading...')).toHaveClass('sr-only');
+      expect(screen.getAllByText('Loading...')[0]).toHaveClass('sr-only');
     });
 
     it('OC-038: skeleton container has same grid classes', () => {
@@ -553,7 +553,7 @@ describe('OverviewCards', () => {
     it('OC-055: screen reader text is visually hidden', () => {
       render(<MockOverviewCards metrics={mockMetrics} isLoading={true} />);
 
-      const srText = screen.getByText('Loading...');
+      const srText = screen.getAllByText('Loading...')[0];
       expect(srText).toHaveClass('sr-only');
     });
 

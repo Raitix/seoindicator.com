@@ -17,6 +17,19 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { useRouter, useParams } from 'next/navigation';
 import React from 'react';
+import {
+  AlertCircle,
+  Building2,
+  Check,
+  ChevronDown,
+  ExternalLink,
+  Link,
+  Loader2,
+  MapPin,
+  RefreshCw,
+  Unlink,
+  X,
+} from 'lucide-react';
 
 // --- Types ---
 
@@ -546,7 +559,7 @@ describe('GBPConnectButton', () => {
     vi.clearAllMocks();
     mockFetch.mockReset();
     mockWindowOpen.mockReset();
-    mockSessionStorage.clear();
+    Object.keys(mockSessionStorage).forEach((key) => delete mockSessionStorage[key]);
     mockEventListeners['message'] = [];
   });
 

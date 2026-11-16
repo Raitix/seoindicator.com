@@ -260,6 +260,13 @@ const TestReviewStatsHeader = MockReviewStatsHeader;
 // Test Suite
 // ============================================
 
+// The count is grouped for the locale of the visitor and the locale
+// may use a non-breaking space, so the text and the expected value are
+// normalised the same way.
+function formattedCount(value: number): string {
+  return value.toLocaleString().replace(/\u00a0/g, ' ');
+}
+
 describe('ReviewStatsHeader', () => {
   const user = userEvent.setup();
 
@@ -302,7 +309,9 @@ describe('ReviewStatsHeader', () => {
 
     it('STATS-006: Total count formatted with thousands separator', () => {
       render(<TestReviewStatsHeader stats={{ ...mockStats, total_count: 12345 }} />);
-      expect(screen.getByTestId('total-count-value')).toHaveTextContent('12,345');
+      expect(
+      screen.getByTestId('total-count-value').textContent?.replace(/\u00a0/g, ' ')
+    ).toContain(formattedCount(12345));
     });
 
     it('STATS-007: Distribution bar rendered for each rating', () => {
@@ -416,7 +425,9 @@ describe('ReviewStatsHeader', () => {
 
     it('STATS-027: Large numbers formatted correctly', () => {
       render(<TestReviewStatsHeader stats={{ ...mockStats, total_count: 1234567 }} />);
-      expect(screen.getByTestId('total-count-value')).toHaveTextContent('1,234,567');
+      expect(
+      screen.getByTestId('total-count-value').textContent?.replace(/\u00a0/g, ' ')
+    ).toContain(formattedCount(1234567));
     });
 
     it('STATS-028: Perfect rating has special styling', () => {

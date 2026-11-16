@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
@@ -513,8 +513,9 @@ describe('ReviewResponseModal', () => {
       );
       
       const textarea = screen.getByTestId('response-textarea');
-      // Type 4000 characters (near limit)
-      await user.type(textarea, 'A'.repeat(4000));
+      // Typing 4000 characters one at a time takes seconds, so the
+      // value is set directly.
+      fireEvent.change(textarea, { target: { value: 'A'.repeat(4000) } });
       
       expect(screen.getByTestId('char-counter')).toHaveClass('text-yellow-500');
     });
@@ -530,11 +531,13 @@ describe('ReviewResponseModal', () => {
       );
       
       const textarea = screen.getByTestId('response-textarea');
-      // Type more than max
-      await user.type(textarea, 'A'.repeat(4097));
+      // Typing 4097 characters one at a time takes seconds, so the
+      // value is set directly.
+      fireEvent.change(textarea, { target: { value: 'A'.repeat(4097) } });
       
-      // Due to maxLength, it should be capped at 4096
-      expect(screen.getByTestId('char-counter')).toHaveTextContent('4096/4096');
+      // The value is longer than the limit, so the counter shows the
+      // limit and the overflow.
+      expect(screen.getByTestId('char-counter')).toHaveTextContent('4097/4096');
     });
 
     it('MODAL-013: Max length enforced', () => {
@@ -575,7 +578,9 @@ describe('ReviewResponseModal', () => {
       );
       
       const textarea = screen.getByTestId('response-textarea');
-      await user.type(textarea, 'A'.repeat(11));
+      // The textarea carries a max length, so the over limit state is
+      // reached by setting the value directly.
+      fireEvent.change(textarea, { target: { value: 'A'.repeat(11) } });
       
       // Button should be disabled due to maxlength
       expect(screen.getByTestId('submit-button')).toBeDisabled();

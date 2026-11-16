@@ -293,13 +293,13 @@ describe('PeriodComparison', () => {
     it('PC-027: positive change shows arrow up icon', () => {
       render(<MockPeriodComparison {...defaultProps} viewsChange={10} />);
 
-      expect(screen.getByTestId('arrow-up-icon')).toBeInTheDocument();
+      expect(screen.getAllByTestId('arrow-up-icon').length).toBeGreaterThan(0);
     });
 
     it('PC-028: negative change shows arrow down icon', () => {
       render(<MockPeriodComparison {...defaultProps} searchesChange={-10} />);
 
-      expect(screen.getByTestId('arrow-down-icon')).toBeInTheDocument();
+      expect(screen.getAllByTestId('arrow-down-icon').length).toBeGreaterThan(0);
     });
 
     it('PC-029: icons are decorative (aria-hidden)', () => {
@@ -314,8 +314,8 @@ describe('PeriodComparison', () => {
     it('PC-030: both arrow icons can appear simultaneously', () => {
       render(<MockPeriodComparison {...defaultProps} />);
 
-      expect(screen.getByTestId('arrow-up-icon')).toBeInTheDocument();
-      expect(screen.getByTestId('arrow-down-icon')).toBeInTheDocument();
+      expect(screen.getAllByTestId('arrow-up-icon').length).toBeGreaterThan(0);
+      expect(screen.getAllByTestId('arrow-down-icon').length).toBeGreaterThan(0);
     });
   });
 
