@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import '@testing-library/jest-dom';
 
 // ============================================================================
@@ -430,22 +431,23 @@ describe('Not Found Page Next.js Integration', () => {
     });
 
     test('NF-NEXT-003: Can be statically generated', () => {
-      // Simulate SSR
-      const originalWindow = global.window;
-      // @ts-expect-error - Testing SSR scenario
-      delete global.window;
-      
-      expect(() => render(<MockCompareNotFound />)).not.toThrow();
-      
-      global.window = originalWindow;
+      // Rendering to a string with react-dom/server is how a
+      // server-rendered page is checked: it needs no DOM, so it cannot
+      // accidentally depend on the browser.
+      expect(() => renderToStaticMarkup(<MockCompareNotFound />)).not.toThrow();
+      expect(renderToStaticMarkup(<MockCompareNotFound />)).toContain(
+        'not-found-page'
+      );
     });
 
     test('NF-NEXT-004: No client-side state required', () => {
-      // Component should be stateless
-      const { rerender } = render(<MockCompareNotFound />);
+      // Component should be stateless: re-rendering it produces the same
+      // markup.
+      const { container, rerender } = render(<MockCompareNotFound />);
+      const first = container.innerHTML;
       
-      // Re-render should work without issues
       rerender(<MockCompareNotFound />);
+      expect(container.innerHTML).toBe(first);
       expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
     });
   });

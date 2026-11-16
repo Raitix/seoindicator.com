@@ -1047,8 +1047,13 @@ describe('SVG Badge Route Handler - Security', () => {
         theme: 'light',
       });
       
-      // Badge should not contain the audit ID
-      expect(result.svg).not.toContain(audit!.id.toString());
+      // The badge contains the score and the dimensions, so it always
+      // contains digits. What must not leak is the audit's public hash
+      // or the URL that was analysed.
+      expect(result.svg).not.toContain(audit!.public_hash);
+      expect(result.svg).not.toContain(audit!.analyzed_url);
+      // The score is the only data the badge is meant to carry.
+      expect(result.svg).toContain(String(audit!.overall_score));
     });
   });
 });
