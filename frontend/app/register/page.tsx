@@ -109,13 +109,15 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <h1 className="text-2xl font-bold text-center">Create Account</h1>
           <CardDescription className="text-center">
             Enter your details to create a new account
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        // The browser's native validation would preempt the form's own
+  // zod validation, so the page's error messages would never be shown.
+  <form noValidate onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             {/* Error Message */}
             {(submitError || error) && (

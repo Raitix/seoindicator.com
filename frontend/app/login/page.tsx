@@ -232,13 +232,15 @@ function LoginContent() {
   ) : (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+        <h1 className="text-2xl font-bold text-center">Sign In</h1>
         <CardDescription className="text-center">
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      // The browser's native validation would preempt the form's own
+  // zod validation, so the page's error messages would never be shown.
+  <form noValidate onSubmit={handleSubmit(onSubmit)}>
       <CardContent className="space-y-4">
         {/* Error Message */}
         {(submitError || error) && (

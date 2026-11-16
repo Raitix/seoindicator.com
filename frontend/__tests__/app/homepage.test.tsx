@@ -1146,7 +1146,12 @@ describe('HI-009: Existing Functionality Preserved', () => {
     render(<Home />);
     
     expect(screen.getByText('Keyword Tracking')).toBeInTheDocument();
-    expect(screen.getByText('Competitor Analysis')).toBeInTheDocument();
+    // 'Competitor Analysis' is both an indicator title and a feature
+    // card heading, so the card is the one that is asserted here.
+    const cards = screen.getAllByTestId(/^feature-card-/);
+    expect(
+      cards.some((card) => card.textContent?.includes('Competitor Analysis'))
+    ).toBe(true);
     expect(screen.getByText('Custom Indicators')).toBeInTheDocument();
   });
 

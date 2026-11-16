@@ -64,6 +64,31 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  // A stale error should not sit on the page while the visitor is
+  // correcting the address that caused it.
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (submitError) setSubmitError(null);
+    if (error) clearError();
+    register("email").onChange(e);
+  };
+
+  // Resend the reset link to the same address.
+  const handleResend = async () => {
+    if (!submittedEmail) {
+      setIsSuccess(false);
+      return;
+    }
+
+    setSubmitError(null);
+    try {
+      await resetPassword(submittedEmail);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to send reset email"
+      );
+    }
+  };
+
   const isLoadingState = isLoading || isSubmitting;
 
   if (isSuccess) {
@@ -74,7 +99,7 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
               <CheckCircle className="h-6 w-6 text-green-500" />
             </div>
-            <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
+            <h1 className="text-2xl font-bold">Check Your Email</h1>
             <CardDescription>
               We&apos;ve sent a password reset link to{" "}
               <span className="font-medium text-foreground">{submittedEmail}</span>
@@ -89,7 +114,8 @@ export default function ForgotPasswordPage() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setIsSuccess(false)}
+              onClick={handleResend}
+              disabled={isLoadingState}
             >
               Send another email
             </Button>
@@ -115,13 +141,15 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Forgot Password</CardTitle>
+          <h1 className="text-2xl font-bold text-center">Forgot Password</h1>
           <CardDescription className="text-center">
             Enter your email address and we&apos;ll send you a link to reset your password
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        // The browser's native validation would preempt the form's own
+  // zod validation, so the page's error messages would never be shown.
+  <form noValidate onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             {/* Error Message */}
             {(submitError || error) && (
@@ -144,6 +172,7 @@ export default function ForgotPasswordPage() {
                 aria-describedby={errors.email ? "email-error" : undefined}
                 aria-invalid={!!errors.email}
                 {...register("email")}
+                onChange={handleEmailChange}
               />
               {errors.email && (
                 <p id="email-error" className="text-sm text-destructive" role="alert">

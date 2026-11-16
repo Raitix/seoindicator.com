@@ -198,7 +198,7 @@ describe("ForgotPasswordPage", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/user not found|error/i)).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent(/user not found|error/i);
       });
     });
 
@@ -214,7 +214,7 @@ describe("ForgotPasswordPage", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/error/i)).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent(/error/i);
       });
 
       // Type again to clear error
@@ -222,7 +222,9 @@ describe("ForgotPasswordPage", () => {
       await user.type(emailInput, "new");
 
       await waitFor(() => {
-        expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
+        // /error/i also matches the card, whose description text says
+        // "password reset", so the alert role is the right anchor.
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       });
     });
   });
@@ -408,7 +410,7 @@ describe("ForgotPasswordPage", () => {
 
       await waitFor(() => {
         // Look for success indicator (could be icon, color change, or message)
-        const successMessage = screen.getByText(/check your email|sent|success/i);
+        const successMessage = screen.getByRole('heading', { name: /check your email/i });
         expect(successMessage).toBeInTheDocument();
       });
     });
