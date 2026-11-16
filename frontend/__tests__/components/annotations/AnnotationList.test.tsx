@@ -323,9 +323,9 @@ describe('AnnotationList Component', () => {
       renderAnnotationList();
 
       // Check for category labels
-      expect(screen.getByText('Algorithm Update')).toBeInTheDocument();
-      expect(screen.getByText('Content Update')).toBeInTheDocument();
-      expect(screen.getByText('Link Building')).toBeInTheDocument();
+      expect(screen.getByText('Algorithm Update', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText('Content Update', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText('Link Building', { selector: 'span' })).toBeInTheDocument();
     });
 
     /** @test CAT-002: Displays category icon for each annotation */
@@ -341,7 +341,9 @@ describe('AnnotationList Component', () => {
     it('shows correct icon for algorithm-update category', () => {
       renderAnnotationList();
 
-      const badge = screen.getByText('Algorithm Update').closest('span');
+      // The badge holds the icon and the label in separate spans,
+      // so the badge is the parent of the label.
+      const badge = screen.getByText('Algorithm Update').parentElement;
       expect(badge?.textContent).toContain('🔄');
     });
 
@@ -349,7 +351,9 @@ describe('AnnotationList Component', () => {
     it('shows correct icon for content-update category', () => {
       renderAnnotationList();
 
-      const badge = screen.getByText('Content Update').closest('span');
+      // The badge holds the icon and the label in separate spans,
+      // so the badge is the parent of the label.
+      const badge = screen.getByText('Content Update').parentElement;
       expect(badge?.textContent).toContain('📝');
     });
 
@@ -357,7 +361,9 @@ describe('AnnotationList Component', () => {
     it('shows correct icon for link-building category', () => {
       renderAnnotationList();
 
-      const badge = screen.getByText('Link Building').closest('span');
+      // The badge holds the icon and the label in separate spans,
+      // so the badge is the parent of the label.
+      const badge = screen.getByText('Link Building').parentElement;
       expect(badge?.textContent).toContain('🔗');
     });
 
@@ -393,13 +399,13 @@ describe('AnnotationList Component', () => {
 
       expect(screen.getByText('Algorithm Update')).toBeInTheDocument();
       expect(screen.getByText('Content Update')).toBeInTheDocument();
-      expect(screen.getByText('Technical Change')).toBeInTheDocument();
+      expect(screen.getByText('Technical Change', { selector: 'span' })).toBeInTheDocument();
       expect(screen.getByText('Link Building')).toBeInTheDocument();
-      expect(screen.getByText('Competitor Activity')).toBeInTheDocument();
-      expect(screen.getByText('Seasonal Trend')).toBeInTheDocument();
-      expect(screen.getByText('Manual Action')).toBeInTheDocument();
-      expect(screen.getByText('Recovery')).toBeInTheDocument();
-      expect(screen.getByText('Other')).toBeInTheDocument();
+      expect(screen.getByText('Competitor Activity', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText('Seasonal Trend', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText('Manual Action', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText('Recovery', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText('Other', { selector: 'span' })).toBeInTheDocument();
     });
   });
 
