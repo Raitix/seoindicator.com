@@ -60,11 +60,18 @@ class MockIntersectionObserver {
 // @ts-expect-error Mocking global
 global.IntersectionObserver = MockIntersectionObserver;
 
+// A few test files declare `@jest-environment node`, which Vitest honours.
+// Everything below touches the DOM, so it is guarded: in a node
+// environment there is no window, navigator or Element to patch.
+const hasDom = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 // Mock navigator.sendBeacon
-Object.defineProperty(navigator, 'sendBeacon', {
-  value: vi.fn().mockReturnValue(true),
-  writable: true
-});
+if (typeof navigator !== 'undefined') {
+  Object.defineProperty(navigator, 'sendBeacon', {
+    value: vi.fn().mockReturnValue(true),
+    writable: true
+  });
+}
 
 // Mock ResizeObserver
 class MockResizeObserver {
@@ -76,29 +83,31 @@ class MockResizeObserver {
 // @ts-expect-error Mocking global
 global.ResizeObserver = MockResizeObserver;
 
-// Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
+if (hasDom) {
+  // Mock matchMedia
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
 
-// Mock scrollTo
-window.scrollTo = vi.fn();
+  // Mock scrollTo
+  window.scrollTo = vi.fn();
 
-// Mock scrollIntoView
-Element.prototype.scrollIntoView = vi.fn();
+  // Mock scrollIntoView
+  Element.prototype.scrollIntoView = vi.fn();
 
-// Set test environment flag for components to detect
-(window as any).__TEST__ = true;
+  // Set test environment flag for components to detect
+  (window as any).__TEST__ = true;
+}
 (globalThis as any).__TEST__ = true;
 
 // Clean up after each test
@@ -140,8 +149,10 @@ global.clearInterval = ((id: any) => {
 }) as typeof global.clearInterval;
 
 afterEach(() => {
-  document.body.innerHTML = '';
-  document.head.innerHTML = '';
+  if (hasDom) {
+    document.body.innerHTML = '';
+    document.head.innerHTML = '';
+  }
 
   for (const id of pendingTimers) {
     realClearTimeout(id);

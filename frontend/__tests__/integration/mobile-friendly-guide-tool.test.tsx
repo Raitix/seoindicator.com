@@ -11,6 +11,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { ToolEmbed } from '@/components/guides/ToolEmbed';
+import { getGuideBySlug } from '@/lib/guides/registry';
 
 // Mock the guide page component that will contain the ToolEmbed
 // This will be implemented by Developer after TASK-20-22 is complete
@@ -163,8 +165,7 @@ const MockMobileFriendlyGuidePage: React.FC = () => {
     ],
   };
 
-  const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+  
   return (
     <article data-testid="guide-page">
       <header>
@@ -293,16 +294,14 @@ describe('Mobile-Friendly Guide Tool Integration', () => {
 
     // MFG-002-02
     it('should match registry toolSlug for mobile-friendly guide', () => {
-      const { getGuideBySlug } = require('@/lib/guides/registry');
-      const guide = getGuideBySlug('mobile-friendly');
+            const guide = getGuideBySlug('mobile-friendly');
 
       expect(guide.toolSlug).toBe('mobile-friendly-checker');
     });
 
     // MFG-002-03
     it('should show fallback for invalid toolSlug', () => {
-      const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+      
       render(<ToolEmbed toolSlug="invalid-tool-slug" />);
 
       expect(screen.getByTestId('tool-fallback')).toBeInTheDocument();
@@ -311,8 +310,7 @@ describe('Mobile-Friendly Guide Tool Integration', () => {
 
     // MFG-002-04
     it('should treat case-variant slugs as invalid', () => {
-      const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+      
       render(<ToolEmbed toolSlug="Mobile-Friendly-Checker" />);
 
       // Case-sensitive - should show fallback
@@ -346,8 +344,7 @@ describe('Mobile-Friendly Guide Tool Integration', () => {
   describe('MFG-004: Graceful Fallback', () => {
     // MFG-004-01
     it('should show fallback message when tool unavailable', () => {
-      const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+      
       render(<ToolEmbed toolSlug="nonexistent-tool" />);
 
       expect(screen.getByText(/tool not available/i)).toBeInTheDocument();
@@ -355,8 +352,7 @@ describe('Mobile-Friendly Guide Tool Integration', () => {
 
     // MFG-004-02
     it('should include CTA to tools page in fallback', () => {
-      const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+      
       render(<ToolEmbed toolSlug="nonexistent-tool" />);
 
       const fallbackCta = screen.getByTestId('fallback-cta');
@@ -365,8 +361,7 @@ describe('Mobile-Friendly Guide Tool Integration', () => {
 
     // MFG-004-03
     it('should style fallback appropriately', () => {
-      const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+      
       render(<ToolEmbed toolSlug="nonexistent-tool" />);
 
       const fallback = screen.getByTestId('tool-fallback');
@@ -403,8 +398,7 @@ describe('Mobile-Friendly Guide Tool Integration', () => {
 
     // MFG-005-04
     it('should hide CTA when showCta is false', () => {
-      const { ToolEmbed } = require('@/components/guides/ToolEmbed');
-
+      
       render(
         <ToolEmbed toolSlug="mobile-friendly-checker" showCta={false} />
       );

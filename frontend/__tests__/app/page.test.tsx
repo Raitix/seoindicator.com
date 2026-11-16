@@ -32,19 +32,37 @@ vi.mock('next/image', () => {
 });
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-  TrendingUp: () => <span data-testid="icon-trending-up">TrendingUp</span>,
-  Eye: () => <span data-testid="icon-eye">Eye</span>,
-  Users: () => <span data-testid="icon-users">Users</span>,
-  Wrench: () => <span data-testid="icon-wrench">Wrench</span>,
-  Link: () => <span data-testid="icon-link">Link</span>,
-  FileText: () => <span data-testid="icon-file-text">FileText</span>,
-  Star: () => <span data-testid="icon-star">Star</span>,
-  Zap: () => <span data-testid="icon-zap">Zap</span>,
-  RefreshCw: () => <span data-testid="icon-refresh">RefreshCw</span>,
-  AlertCircle: () => <span data-testid="icon-alert">AlertCircle</span>,
-  FolderOpen: () => <span data-testid="icon-folder">FolderOpen</span>,
-}));
+vi.mock('lucide-react', () => {
+  // Every icon the component under test imports, so the mock
+  // cannot drift when a new icon is added.
+  const IconStub = ({ ...props }: { [key: string]: unknown }) =>
+    React.createElement('span', { 'data-testid': 'lucide-icon', ...props });
+
+  return {
+    Activity: IconStub,
+    AlertCircle: IconStub,
+    AlertTriangle: IconStub,
+    CheckCircle: IconStub,
+    ChevronDown: IconStub,
+    Eye: IconStub,
+    FileText: IconStub,
+    FolderOpen: IconStub,
+    HelpCircle: IconStub,
+    Info: IconStub,
+    Link: IconStub,
+    Link2: IconStub,
+    LucideIcon: IconStub,
+    Minus: IconStub,
+    RefreshCw: IconStub,
+    Search: IconStub,
+    Star: IconStub,
+    TrendingUp: IconStub,
+    Users: IconStub,
+    Wrench: IconStub,
+    XCircle: IconStub,
+    Zap: IconStub,
+  };
+});
 
 // Mock shadcn/ui components
 vi.mock('@/components/ui/button', () => {
@@ -95,6 +113,19 @@ vi.mock('@/components/ui/card', () => ({
 
 // Import the page component after mocks
 import Home from '@/app/page';
+import { TooltipProvider } from '@/components/ui/tooltip';
+
+/**
+ * The root layout wraps every page in <Providers>, which supplies the
+ * TooltipProvider the indicator cards need. Rendering the page directly
+ * bypassed that, so the provider is added here.
+ */
+const renderHome = () =>
+  render(
+    <TooltipProvider delayDuration={0}>
+      <Home />
+    </TooltipProvider>
+  );
 
 // Mock indicators data for tests that need it
 const mockIndicators = [
@@ -190,12 +221,12 @@ describe('Homepage', () => {
   // ==========================================
   describe('Component Rendering', () => {
     it('CR-001: Homepage renders without crashing', () => {
-      render(<Home />);
+      renderHome();
       expect(document.body).toBeInTheDocument();
     });
 
     it('CR-002: Page has proper structure with header, main, footer', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       expect(container.querySelector('header')).toBeInTheDocument();
       expect(container.querySelector('section') || container.querySelector('main')).toBeTruthy();
@@ -205,7 +236,7 @@ describe('Homepage', () => {
     it('CR-003: IndicatorCatalog renders in page (if integrated)', () => {
       // Check if IndicatorCatalog is integrated
       // This test will fail until TASK-28-8 implementation is complete
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Look for either the IndicatorCatalog test id or the features section
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
@@ -216,7 +247,7 @@ describe('Homepage', () => {
     });
 
     it('CR-004: Header renders with logo and navigation', () => {
-      render(<Home />);
+      renderHome();
       
       // Logo
       expect(screen.getByText('SEOIndicator')).toBeInTheDocument();
@@ -226,7 +257,7 @@ describe('Homepage', () => {
     });
 
     it('CR-005: Features grid renders', () => {
-      render(<Home />);
+      renderHome();
       
       const featuresHeading = screen.queryByRole('heading', { name: /key features/i, level: 2 });
       expect(featuresHeading).toBeInTheDocument();
@@ -237,30 +268,30 @@ describe('Homepage', () => {
     });
 
     it('CR-006: Footer renders with copyright', () => {
-      render(<Home />);
+      renderHome();
       expect(screen.getByText(/2026 SEOIndicator/i)).toBeInTheDocument();
     });
 
     it('CR-007: Status bar renders correctly', () => {
-      render(<Home />);
+      renderHome();
       expect(screen.getByText(/operational/i)).toBeInTheDocument();
     });
 
     it('CR-008: Page has main container with proper classes', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       expect(mainDiv).toHaveClass('min-h-screen');
     });
 
     it('CR-009: Gradient background class applied', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       expect(mainDiv.className).toMatch(/gradient|bg-/);
     });
 
     it('CR-010: No console errors on render', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
-      render(<Home />);
+      renderHome();
       expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
@@ -271,42 +302,42 @@ describe('Homepage', () => {
   // ==========================================
   describe('Hero Section Structure', () => {
     it('HS-001: Hero section has proper container', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const sections = container.querySelectorAll('section');
       expect(sections.length).toBeGreaterThanOrEqual(1);
     });
 
     it('HS-002: Hero title renders as h1', () => {
-      render(<Home />);
+      renderHome();
       const heroTitle = screen.getByRole('heading', { level: 1 });
       expect(heroTitle).toBeInTheDocument();
     });
 
     it('HS-003: Hero title text is correct', () => {
-      render(<Home />);
+      renderHome();
       const heroTitle = screen.getByRole('heading', { level: 1 });
       expect(heroTitle).toHaveTextContent(/track your seo performance/i);
     });
 
     it('HS-004: Hero subtitle/description renders', () => {
-      render(<Home />);
+      renderHome();
       expect(screen.getByText(/monitor keyword rankings/i)).toBeInTheDocument();
     });
 
     it('HS-005: CTA button renders in hero', () => {
-      render(<Home />);
+      renderHome();
       expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument();
     });
 
     it('HS-006: CTA button has correct text', () => {
-      render(<Home />);
+      renderHome();
       const ctaButton = screen.getByRole('button', { name: /get started/i });
       expect(ctaButton).toHaveTextContent('Get Started');
     });
 
     it('HS-007: CTA button triggers action on click', async () => {
       const user = userEvent.setup();
-      render(<Home />);
+      renderHome();
       
       const ctaButton = screen.getByRole('button', { name: /get started/i });
       await user.click(ctaButton);
@@ -316,20 +347,20 @@ describe('Homepage', () => {
     });
 
     it('HS-008: Email input renders in hero', () => {
-      render(<Home />);
+      renderHome();
       const emailInput = screen.getByPlaceholderText(/enter your email/i);
       expect(emailInput).toBeInTheDocument();
     });
 
     it('HS-009: Hero section contains main content', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const heroTitle = screen.getByRole('heading', { level: 1 });
       expect(heroTitle).toBeInTheDocument();
     });
 
     it('HS-010: Hero section may have role attribute', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const sections = container.querySelectorAll('section');
       
       if (sections.length > 0) {
@@ -340,7 +371,7 @@ describe('Homepage', () => {
     });
 
     it('HS-011: Hero section may have aria-labelledby', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const sections = container.querySelectorAll('section');
       
       // This is a new feature - may not be implemented yet
@@ -348,7 +379,7 @@ describe('Homepage', () => {
     });
 
     it('HS-012: Hero section has proper structure', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check basic structure exists
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
@@ -361,14 +392,14 @@ describe('Homepage', () => {
   // ==========================================
   describe('Gradient Background', () => {
     it('GB-001: Gradient background applied to page', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       
       expect(mainDiv.className).toMatch(/gradient|bg-/);
     });
 
     it('GB-002: Gradient uses slate colors or CSS variables', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       
       // Should use gradient class or slate colors
@@ -379,7 +410,7 @@ describe('Homepage', () => {
     });
 
     it('GB-003: Gradient direction is present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       
       // Check for gradient direction classes
@@ -387,28 +418,28 @@ describe('Homepage', () => {
     });
 
     it('GB-004: Gradient covers full viewport', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       
       expect(mainDiv.className).toContain('min-h-screen');
     });
 
     it('GB-005: Surface layer structure present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Background should be present
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('GB-006: Gradient transitions smoothly', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       expect(mainDiv).toBeInTheDocument();
     });
 
     it('GB-007: Dark mode classes could be applied', () => {
       document.documentElement.classList.add('dark');
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       expect(container.firstChild).toBeInTheDocument();
       
@@ -416,7 +447,7 @@ describe('Homepage', () => {
     });
 
     it('GB-008: No flicker on gradient load', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       
       // Element should have initial styles applied
@@ -429,7 +460,7 @@ describe('Homepage', () => {
   // ==========================================
   describe('Responsive Layout', () => {
     it('RL-001: Mobile layout classes present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for responsive classes
       const heroTitle = screen.getByRole('heading', { level: 1 });
@@ -437,7 +468,7 @@ describe('Homepage', () => {
     });
 
     it('RL-002: Tablet layout classes present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for grid or responsive layout classes
       const grids = container.querySelectorAll('.grid');
@@ -445,7 +476,7 @@ describe('Homepage', () => {
     });
 
     it('RL-003: Desktop layout classes present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Container should have max-width
       const containers = container.querySelectorAll('.container');
@@ -453,7 +484,7 @@ describe('Homepage', () => {
     });
 
     it('RL-004: Hero text scales responsively', () => {
-      render(<Home />);
+      renderHome();
       const heroTitle = screen.getByRole('heading', { level: 1 });
       
       // Should have responsive text classes
@@ -461,7 +492,7 @@ describe('Homepage', () => {
     });
 
     it('RL-005: Hero padding responsive', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const sections = container.querySelectorAll('section');
       
       // At least one section should have padding
@@ -469,14 +500,14 @@ describe('Homepage', () => {
     });
 
     it('RL-006: Container max-width responsive', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const containers = container.querySelectorAll('.container');
       
       expect(containers.length).toBeGreaterThan(0);
     });
 
     it('RL-007: Features grid has responsive columns', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Features grid should have grid classes
       const gridContainer = container.querySelector('.grid');
@@ -484,7 +515,7 @@ describe('Homepage', () => {
     });
 
     it('RL-008: Features grid responsive', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for grid classes with responsive breakpoints
       const html = container.innerHTML;
@@ -492,7 +523,7 @@ describe('Homepage', () => {
     });
 
     it('RL-009: Navigation responsive', () => {
-      render(<Home />);
+      renderHome();
       
       // Navigation should be present
       const navButtons = screen.getAllByRole('button');
@@ -500,14 +531,14 @@ describe('Homepage', () => {
     });
 
     it('RL-010: Footer responsive', () => {
-      render(<Home />);
+      renderHome();
       
       const footer = screen.getByText(/2026 SEOIndicator/i).closest('footer');
       expect(footer).toBeInTheDocument();
     });
 
     it('RL-011: Touch targets have padding', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Buttons should have adequate padding
       const buttons = container.querySelectorAll('button');
@@ -517,7 +548,7 @@ describe('Homepage', () => {
     });
 
     it('RL-012: Page handles overflow', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const mainDiv = container.firstChild as HTMLElement;
       
       // Check for overflow handling
@@ -525,14 +556,14 @@ describe('Homepage', () => {
     });
 
     it('RL-013: Text readable on all viewports', () => {
-      render(<Home />);
+      renderHome();
       
       const paragraphs = screen.getAllByText(/monitor keyword rankings/i);
       expect(paragraphs[0]).toBeInTheDocument();
     });
 
     it('RL-014: Images (if any) have responsive attributes', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const images = container.querySelectorAll('img');
       if (images.length > 0) {
@@ -546,7 +577,7 @@ describe('Homepage', () => {
     });
 
     it('RL-015: Status bar responsive', () => {
-      render(<Home />);
+      renderHome();
       
       const statusText = screen.getByText(/operational/i);
       expect(statusText).toBeInTheDocument();
@@ -558,7 +589,7 @@ describe('Homepage', () => {
   // ==========================================
   describe('Entrance Animations', () => {
     it('EA-001: Hero title may have animation class', () => {
-      render(<Home />);
+      renderHome();
       const heroTitle = screen.getByRole('heading', { level: 1 });
       
       // Check for animation class (may not be implemented yet)
@@ -566,21 +597,21 @@ describe('Homepage', () => {
     });
 
     it('EA-002: Hero subtitle is present', () => {
-      render(<Home />);
+      renderHome();
       const subtitle = screen.getByText(/monitor keyword rankings/i);
       
       expect(subtitle).toBeInTheDocument();
     });
 
     it('EA-003: CTA button is present', () => {
-      render(<Home />);
+      renderHome();
       const ctaButton = screen.getByRole('button', { name: /get started/i });
       
       expect(ctaButton).toBeInTheDocument();
     });
 
     it('EA-004: IndicatorCatalog may be integrated', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
       
       // May or may not be implemented yet
@@ -588,14 +619,14 @@ describe('Homepage', () => {
     });
 
     it('EA-005: Animation classes may be present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // This would be tested with actual CSS in integration tests
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('EA-006: Animation uses CSS classes', () => {
-      render(<Home />);
+      renderHome();
       const heroTitle = screen.getByRole('heading', { level: 1 });
       
       // Animation classes should be present
@@ -616,7 +647,7 @@ describe('Homepage', () => {
           dispatchEvent: vi.fn(),
         }));
       
-      render(<Home />);
+      renderHome();
       
       const heroTitle = screen.getByRole('heading', { level: 1 });
       expect(heroTitle).toBeInTheDocument();
@@ -625,19 +656,19 @@ describe('Homepage', () => {
     });
 
     it('EA-008: No animation flash on load', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('EA-009: Animation triggers on page load', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Element should be in document immediately
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('EA-010: Animation only runs once', () => {
-      render(<Home />);
+      renderHome();
       const heroTitle = screen.getByRole('heading', { level: 1 });
       
       // Animation should not re-trigger
@@ -653,7 +684,7 @@ describe('Homepage', () => {
     it('DL-001 to DL-008: Indicator links will be tested after integration', () => {
       // These tests require IndicatorCatalog integration
       // Placeholder test until implementation
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check that page renders with navigation
       const links = container.querySelectorAll('a');
@@ -661,7 +692,7 @@ describe('Homepage', () => {
     });
 
     it('DL-009: Links use Next.js Link component (anchor tag)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Links should be anchor tags (mocked Link renders as anchor)
       const links = container.querySelectorAll('a[href]');
@@ -670,7 +701,7 @@ describe('Homepage', () => {
 
     it('DL-010: Links are keyboard accessible', async () => {
       const user = userEvent.setup();
-      render(<Home />);
+      renderHome();
       
       const firstLink = screen.getByRole('link', { name: /competitors/i });
       firstLink.focus();
@@ -679,7 +710,7 @@ describe('Homepage', () => {
     });
 
     it('DL-011: Links have appropriate text content', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const links = container.querySelectorAll('a');
       links.forEach(link => {
@@ -688,7 +719,7 @@ describe('Homepage', () => {
     });
 
     it('DL-012: External links have rel attributes (if any external)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for any external links
       const externalLinks = container.querySelectorAll('a[href^="http"]');
@@ -703,7 +734,7 @@ describe('Homepage', () => {
   // ==========================================
   describe('Performance', () => {
     it('PF-001: No layout shift on load (check structure)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // All major sections should be present immediately
       expect(container.querySelector('header')).toBeInTheDocument();
@@ -712,7 +743,7 @@ describe('Homepage', () => {
     });
 
     it('PF-002: Images have width and height attributes', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const images = container.querySelectorAll('img');
       images.forEach(img => {
@@ -721,7 +752,7 @@ describe('Homepage', () => {
     });
 
     it('PF-003: Font classes are present', () => {
-      render(<Home />);
+      renderHome();
       
       const heroTitle = screen.getByRole('heading', { level: 1 });
       expect(heroTitle.className).toContain('font');
@@ -729,7 +760,7 @@ describe('Homepage', () => {
 
     it('PF-004: Component renders quickly', () => {
       const start = performance.now();
-      render(<Home />);
+      renderHome();
       const end = performance.now();
       
       // Render should complete in reasonable time
@@ -739,7 +770,7 @@ describe('Homepage', () => {
     it('PF-005: Component renders quickly (batch)', () => {
       const start = performance.now();
       for (let i = 0; i < 10; i++) {
-        const { unmount } = render(<Home />);
+        const { unmount } = renderHome();
         unmount();
       }
       const end = performance.now();
@@ -749,7 +780,7 @@ describe('Homepage', () => {
     });
 
     it('PF-006: No blocking scripts in render', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // No script tags should be rendered directly
       const scripts = container.querySelectorAll('script:not([async]):not([defer])');
@@ -758,7 +789,7 @@ describe('Homepage', () => {
     });
 
     it('PF-007: Lazy loading for below-fold content', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Footer is below the fold
       const footer = container.querySelector('footer');
@@ -766,7 +797,7 @@ describe('Homepage', () => {
     });
 
     it('PF-008: CSS loaded before render (check classes)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Elements should have CSS classes applied
       const mainDiv = container.firstChild as HTMLElement;
@@ -780,7 +811,7 @@ describe('Homepage', () => {
 
     it('PF-010: Component renders in reasonable time', () => {
       const start = performance.now();
-      render(<Home />);
+      renderHome();
       const end = performance.now();
       
       expect(end - start).toBeLessThan(100);
@@ -792,21 +823,21 @@ describe('Homepage', () => {
   // ==========================================
   describe('Existing Functionality Preservation', () => {
     it('EP-001: Features grid still renders', () => {
-      render(<Home />);
+      renderHome();
       
       const featuresHeading = screen.queryByRole('heading', { name: /key features/i, level: 2 });
       expect(featuresHeading).toBeInTheDocument();
     });
 
     it('EP-002: Features grid has 3 cards', () => {
-      render(<Home />);
+      renderHome();
       
       const cards = screen.getAllByTestId('card');
       expect(cards.length).toBeGreaterThanOrEqual(3);
     });
 
     it('EP-003: Features grid titles correct', () => {
-      render(<Home />);
+      renderHome();
       
       // Check for feature titles
       expect(screen.getByText(/keyword tracking/i)).toBeInTheDocument();
@@ -815,33 +846,33 @@ describe('Homepage', () => {
     });
 
     it('EP-004: Status bar still renders', () => {
-      render(<Home />);
+      renderHome();
       
       expect(screen.getByText(/operational/i)).toBeInTheDocument();
     });
 
     it('EP-005: Status bar shows operational', () => {
-      render(<Home />);
+      renderHome();
       
       const statusText = screen.getByText(/operational/i);
       expect(statusText).toBeInTheDocument();
     });
 
     it('EP-006: Footer still renders', () => {
-      render(<Home />);
+      renderHome();
       
       expect(screen.getByText(/2026 SEOIndicator/i)).toBeInTheDocument();
     });
 
     it('EP-007: Footer has copyright', () => {
-      render(<Home />);
+      renderHome();
       
       const copyright = screen.getByText(/© 2026 SEOIndicator/i);
       expect(copyright).toBeInTheDocument();
     });
 
     it('EP-008: Navigation still works', () => {
-      render(<Home />);
+      renderHome();
       
       expect(screen.getByText('Dashboard')).toBeInTheDocument();
       expect(screen.getByText('Indicators')).toBeInTheDocument();
@@ -854,21 +885,21 @@ describe('Homepage', () => {
   // ==========================================
   describe('Accessibility', () => {
     it('AX-001: Hero title is h1 (single h1)', () => {
-      render(<Home />);
+      renderHome();
       
       const h1Elements = screen.getAllByRole('heading', { level: 1 });
       expect(h1Elements.length).toBe(1);
     });
 
     it('AX-002: Features section has h2', () => {
-      render(<Home />);
+      renderHome();
       
       const h2Elements = screen.getAllByRole('heading', { level: 2 });
       expect(h2Elements.length).toBeGreaterThanOrEqual(1);
     });
 
     it('AX-003: Proper heading order (h1 before h2)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const h1 = container.querySelector('h1');
       const h2 = container.querySelector('h2');
@@ -881,7 +912,7 @@ describe('Homepage', () => {
     });
 
     it('AX-004: All interactive elements focusable', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const buttons = container.querySelectorAll('button');
       const links = container.querySelectorAll('a');
@@ -894,7 +925,7 @@ describe('Homepage', () => {
     });
 
     it('AX-005: Focus indicators visible (check classes)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const buttons = container.querySelectorAll('button');
       buttons.forEach(button => {
@@ -905,12 +936,12 @@ describe('Homepage', () => {
 
     it('AX-006: Color contrast meets WCAG AA (placeholder)', () => {
       // Color contrast would be tested with specialized tools
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('AX-007: Links have discernible text', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const links = container.querySelectorAll('a');
       links.forEach(link => {
@@ -921,7 +952,7 @@ describe('Homepage', () => {
     });
 
     it('AX-008: Buttons have accessible names', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const buttons = container.querySelectorAll('button');
       buttons.forEach(button => {
@@ -932,7 +963,7 @@ describe('Homepage', () => {
     });
 
     it('AX-009: Page has lang attribute', () => {
-      render(<Home />);
+      renderHome();
       
       expect(document.documentElement.getAttribute('lang')).toBeTruthy();
     });
@@ -943,7 +974,7 @@ describe('Homepage', () => {
     });
 
     it('AX-011: Skip to content link (optional)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for skip link (optional feature)
       const skipLink = container.querySelector('a[href="#main"], a[href="#content"]');
@@ -952,7 +983,7 @@ describe('Homepage', () => {
     });
 
     it('AX-012: aria-live for dynamic content', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for aria-live regions
       const liveRegions = container.querySelectorAll('[aria-live]');
@@ -960,7 +991,7 @@ describe('Homepage', () => {
     });
 
     it('AX-013: Role attributes correct', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check section roles
       const sections = container.querySelectorAll('section');
@@ -968,7 +999,7 @@ describe('Homepage', () => {
     });
 
     it('AX-014: Screen reader can navigate landmarks', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Should have header, section, footer landmarks
       expect(container.querySelector('header')).toBeInTheDocument();
@@ -990,7 +1021,7 @@ describe('Homepage', () => {
           dispatchEvent: vi.fn(),
         }));
       
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       expect(container.firstChild).toBeInTheDocument();
       
       matchMediaSpy.mockRestore();
@@ -1002,7 +1033,7 @@ describe('Homepage', () => {
   // ==========================================
   describe('CSS Variable Integration', () => {
     it('CV-001: Brand colors may be used in gradient', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check for gradient classes that could use brand primary
       const mainDiv = container.firstChild as HTMLElement;
@@ -1010,21 +1041,21 @@ describe('Homepage', () => {
     });
 
     it('CV-002: Background gradient classes present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const mainDiv = container.firstChild as HTMLElement;
       expect(mainDiv.className).toMatch(/to-|bg-/);
     });
 
     it('CV-003: Surface layer structure present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Background should be present
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('CV-004: Surface layer in cards', () => {
-      render(<Home />);
+      renderHome();
       
       const cards = screen.getAllByTestId('card');
       cards.forEach(card => {
@@ -1038,7 +1069,7 @@ describe('Homepage', () => {
     });
 
     it('CV-006: CSS variables fallback correctly', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Elements should still render without CSS variables
       expect(container.firstChild).toBeInTheDocument();
@@ -1046,7 +1077,7 @@ describe('Homepage', () => {
 
     it('CV-007: Dark mode classes could be applied', () => {
       document.documentElement.classList.add('dark');
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       expect(container.firstChild).toBeInTheDocument();
       
@@ -1054,7 +1085,7 @@ describe('Homepage', () => {
     });
 
     it('CV-008: Semantic colors for status indicators', () => {
-      render(<Home />);
+      renderHome();
       
       // Status indicator should use appropriate color
       const statusDot = document.querySelector('.animate-pulse');
@@ -1062,7 +1093,7 @@ describe('Homepage', () => {
     });
 
     it('CV-009: CSS variables not hard-coded inline', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Check that styles don't have hard-coded colors
       const elementsWithStyle = container.querySelectorAll('[style*="rgb"], [style*="#"], [style*="oklch"]');
@@ -1080,7 +1111,7 @@ describe('Homepage', () => {
   // ==========================================
   describe('Integration with IndicatorCatalog', () => {
     it('IC-001: IndicatorCatalog may be rendered (after integration)', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
       // May not be integrated yet - test will pass either way
@@ -1088,7 +1119,7 @@ describe('Homepage', () => {
     });
 
     it('IC-002: Catalog title would be "SEO Indicators"', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalogTitle = container.querySelector('[data-testid="catalog-title"]');
       // May not be integrated yet
@@ -1096,7 +1127,7 @@ describe('Homepage', () => {
     });
 
     it('IC-003: Catalog description would be present', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalogDescription = container.querySelector('[data-testid="catalog-description"]');
       // May not be integrated yet
@@ -1104,7 +1135,7 @@ describe('Homepage', () => {
     });
 
     it('IC-004: Catalog loading state would be handled', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
       if (catalog) {
@@ -1115,7 +1146,7 @@ describe('Homepage', () => {
     });
 
     it('IC-005: Catalog error state would be handled', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
       if (catalog) {
@@ -1126,28 +1157,28 @@ describe('Homepage', () => {
     });
 
     it('IC-006: Catalog refresh would work', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
       expect(catalog || screen.getByRole('heading', { level: 1 })).toBeTruthy();
     });
 
     it('IC-007: Catalog category filtering would work', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalogGrid = container.querySelector('[data-testid="catalog-grid"]');
       expect(catalogGrid || screen.getByRole('heading', { level: 1 })).toBeTruthy();
     });
 
     it('IC-008: Catalog responsive layout', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalogGrid = container.querySelector('[data-testid="catalog-grid"]');
       expect(catalogGrid || container.querySelector('.grid')).toBeTruthy();
     });
 
     it('IC-009: Catalog links would work', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const indicators = container.querySelectorAll('[data-testid^="indicator-"]');
       if (indicators.length > 0) {
@@ -1158,7 +1189,7 @@ describe('Homepage', () => {
     });
 
     it('IC-010: Catalog would be accessible', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       const catalog = container.querySelector('[data-testid="indicator-catalog"]');
       expect(catalog || screen.getByRole('heading', { level: 1 })).toBeTruthy();
@@ -1170,14 +1201,14 @@ describe('Homepage', () => {
   // ==========================================
   describe('Edge Cases', () => {
     it('EC-001: Page renders with no indicators (empty state)', () => {
-      render(<Home />);
+      renderHome();
       
       // Page should still render even if catalog is empty
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     });
 
     it('EC-002: Page renders with loading state', () => {
-      render(<Home />);
+      renderHome();
       
       // Page should render with loading indicators
       const heroTitle = screen.getByRole('heading', { level: 1 });
@@ -1185,28 +1216,28 @@ describe('Homepage', () => {
     });
 
     it('EC-003: Page renders with error state', () => {
-      render(<Home />);
+      renderHome();
       
       // Page should render even with errors
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     });
 
     it('EC-004: Page handles very long titles', () => {
-      render(<Home />);
+      renderHome();
       
       const heroTitle = screen.getByRole('heading', { level: 1 });
       expect(heroTitle.textContent?.length).toBeLessThan(200);
     });
 
     it('EC-005: Page handles very long descriptions', () => {
-      render(<Home />);
+      renderHome();
       
       const descriptions = screen.getAllByText(/monitor keyword rankings/i);
       expect(descriptions[0].textContent?.length).toBeLessThan(500);
     });
 
     it('EC-006: Page handles special characters', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Page should render without errors
       expect(container.firstChild).toBeInTheDocument();
@@ -1214,31 +1245,31 @@ describe('Homepage', () => {
 
     it('EC-007: Page handles missing CSS variables', () => {
       // Remove CSS variables (simulated)
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('EC-008: Page handles slow network (loading state)', () => {
       // Loading state is handled by component
-      render(<Home />);
+      renderHome();
       
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     });
 
     it('EC-009: Page handles rapid state changes', () => {
-      const { rerender } = render(<Home />);
+      const { rerender } = renderHome();
       
       // rapid re-renders should not cause issues
       for (let i = 0; i < 5; i++) {
-        rerender(<Home />);
+        rerenderHome();
       }
       
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     });
 
     it('EC-010: Page handles browser resize', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       
       // Simulate resize
       window.innerWidth = 500;
@@ -1298,7 +1329,7 @@ describe('Homepage', () => {
   // ==========================================
   describe('Snapshots', () => {
     it('SN-001: Desktop homepage snapshot', () => {
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
 
@@ -1306,7 +1337,7 @@ describe('Homepage', () => {
       // Mock mobile viewport
       window.innerWidth = 375;
       
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
 
@@ -1314,34 +1345,34 @@ describe('Homepage', () => {
       // Mock tablet viewport
       window.innerWidth = 768;
       
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
 
     it('SN-004: Loading state snapshot', () => {
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
 
     it('SN-005: Error state snapshot', () => {
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
 
     it('SN-006: Empty indicators snapshot', () => {
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
 
     it('SN-007: Hero section snapshot', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const heroSection = container.querySelector('section');
       
       expect(heroSection).toMatchSnapshot();
     });
 
     it('SN-008: Features grid snapshot', () => {
-      const { container } = render(<Home />);
+      const { container } = renderHome();
       const sections = container.querySelectorAll('section');
       const featuresSection = sections[1] || sections[0];
       
@@ -1349,7 +1380,7 @@ describe('Homepage', () => {
     });
 
     it('SN-009: Full page snapshot', () => {
-      const { asFragment } = render(<Home />);
+      const { asFragment } = renderHome();
       expect(asFragment()).toMatchSnapshot();
     });
   });

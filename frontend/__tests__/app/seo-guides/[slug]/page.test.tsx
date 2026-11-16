@@ -9,6 +9,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { getGuideBySlug, getRelatedGuides, GUIDE_SLUGS } from '@/lib/guides/registry';
+import { notFound } from 'next/navigation';
 
 // Mock Next.js modules
 vi.mock('next/link', () => ({ default: function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
@@ -43,7 +45,7 @@ const mockGuideWithFullContent = {
     },
     {
       title: 'Why Image Optimization Matters',
-      content: 'Image optimization directly impacts your **Core Web Vitals** scores and SEO performance.\n\n### Key Benefits\n\n- Faster crawl rates and improved rankings\n- Better user engagement\n- Mobile performance essential for mobile-first indexing',
+      content: 'Image optimization directly impacts your **Core Web Vitals** scores and SEO performance.\n\n## Key Benefits\n\n- Faster crawl rates and improved rankings\n- Better user engagement\n- Mobile performance essential for mobile-first indexing',
       codeExamples: [],
     },
     {
@@ -123,11 +125,9 @@ vi.mock('@/lib/guides/registry', () => ({
 
 // Mock component for TDD - represents expected final implementation
 function MockGuidePage({ params }: { params: { slug: string } }) {
-  const { getGuideBySlug, getRelatedGuides } = require('@/lib/guides/registry');
   const guide = getGuideBySlug(params.slug);
 
   if (!guide) {
-    const { notFound } = require('next/navigation');
     notFound();
     return null;
   }
@@ -253,13 +253,11 @@ function MockGuidePage({ params }: { params: { slug: string } }) {
 
 // Mock generateStaticParams
 function mockGenerateStaticParams() {
-  const { GUIDE_SLUGS } = require('@/lib/guides/registry');
   return GUIDE_SLUGS.map((slug: string) => ({ slug }));
 }
 
 // Mock generateMetadata
 function mockGenerateMetadata({ params }: { params: { slug: string } }) {
-  const { getGuideBySlug } = require('@/lib/guides/registry');
   const guide = getGuideBySlug(params.slug);
 
   if (!guide) {
@@ -548,8 +546,6 @@ describe('Guide Page - Content Rendering (TASK-20-29)', () => {
 
     describe('DP-002: Invalid slug returns 404', () => {
       it('calls notFound for invalid slug', () => {
-        const { notFound } = require('next/navigation');
-        
         expect(() => {
           render(<MockGuidePage params={{ slug: 'non-existent' }} />);
         }).toThrow('NOT_FOUND');

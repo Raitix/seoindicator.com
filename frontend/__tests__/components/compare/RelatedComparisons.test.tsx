@@ -11,6 +11,7 @@ import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { COMPARISON_SLUGS } from '@/lib/compare/registry';
 
 // Mock the registry module
 vi.mock('@/lib/compare/registry', () => ({
@@ -419,8 +420,7 @@ describe('RelatedComparisons Component', () => {
   describe('RC-010: Integration', () => {
     it('should work with COMPARISON_SLUGS from registry', () => {
       // Simulating real usage with imported slugs
-      const { COMPARISON_SLUGS } = require('@/lib/compare/registry');
-      render(<RelatedComparisons slugs={COMPARISON_SLUGS.slice(0, 4)} />);
+            render(<RelatedComparisons slugs={COMPARISON_SLUGS.slice(0, 4)} />);
       const links = screen.getAllByRole('link');
       expect(links.length).toBeGreaterThan(0);
     });

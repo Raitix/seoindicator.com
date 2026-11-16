@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import { useOnboardingContext } from '@/lib/contexts/OnboardingContext';
+import * as __ns1_lib_contexts_OnboardingContext from '@/lib/contexts/OnboardingContext';
 
 // Mock the onboarding hook
 const mockSkipOnboarding = vi.fn().mockResolvedValue(undefined);
@@ -34,7 +35,7 @@ vi.mock('@/lib/contexts/OnboardingContext', () => ({
   useOnboardingContext: vi.fn(),
 }));
 
-const mockedUseOnboardingContext = require('@/lib/contexts/OnboardingContext').useOnboardingContext;
+const mockedUseOnboardingContext = __ns1_lib_contexts_OnboardingContext.useOnboardingContext;
 
 describe('OnboardingModal', () => {
   beforeEach(() => {

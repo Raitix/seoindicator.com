@@ -8,6 +8,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { getGuideBySlug } from '@/lib/guides/registry';
 
 // Mock Next.js modules
 const mockPush = vi.fn();
@@ -126,8 +127,7 @@ function MockGuideIndexPage() {
 }
 
 function MockGuidePage({ slug }: { slug: string }) {
-  const { getGuideBySlug } = require('@/lib/guides/registry');
-  const guide = getGuideBySlug(slug);
+    const guide = getGuideBySlug(slug);
 
   if (!guide) {
     return <div data-testid="not-found">404 - Guide Not Found</div>;
@@ -336,8 +336,7 @@ describe('Routing Integration', () => {
       (slug) => {
         const { unmount } = render(<MockGuidePage slug={slug} />);
         // Valid slugs should render content (not 404)
-        const { getGuideBySlug } = require('@/lib/guides/registry');
-        const guide = getGuideBySlug(slug);
+                const guide = getGuideBySlug(slug);
         if (guide) {
           expect(screen.queryByTestId('guide-page')).toBeInTheDocument();
         } else {

@@ -20,6 +20,9 @@ vi.mock('next/navigation', () => ({
 // Mock the API hook
 vi.mock('@/lib/hooks/useComparisonData', () => ({
   useComparisonData: vi.fn(),
+  // The module also exports this; the page imports it for the fallback
+  // state, so the mock has to provide it too.
+  getMockComparisonData: vi.fn(),
 }));
 
 // Mock Recharts
@@ -56,29 +59,58 @@ vi.mock('recharts', () => ({
 }));
 
 // Mock Lucide icons
-vi.mock('lucide-react', () => ({
-  TrendingUp: () => <span data-testid="trending-up-icon">↑</span>,
-  TrendingDown: () => <span data-testid="trending-down-icon">↓</span>,
-  Minus: () => <span data-testid="minus-icon">−</span>,
-  ChevronDown: () => <span data-testid="chevron-down-icon">▼</span>,
-  ChevronUp: () => <span data-testid="chevron-up-icon">▲</span>,
-  ChevronRight: () => <span data-testid="chevron-right-icon">›</span>,
-  Download: () => <span data-testid="download-icon">⬇</span>,
-  Plus: () => <span data-testid="plus-icon">+</span>,
-  Trash2: () => <span data-testid="trash-icon">🗑</span>,
-  AlertTriangle: () => <span data-testid="alert-icon">⚠</span>,
-  AlertCircle: () => <span data-testid="alert-circle-icon">⭕</span>,
-  CheckCircle: () => <span data-testid="check-icon">✓</span>,
-  ThumbsUp: () => <span data-testid="thumbs-up-icon">👍</span>,
-  Info: () => <span data-testid="info-icon">ℹ</span>,
-  Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loading</span>,
-  Users: () => <span data-testid="users-icon">👥</span>,
-  ArrowUp: () => <span data-testid="arrow-up-icon">↑</span>,
-  ArrowDown: () => <span data-testid="arrow-down-icon">↓</span>,
-  Filter: () => <span data-testid="filter-icon">🔍</span>,
-  MessageSquare: () => <span data-testid="message-icon">💬</span>,
-  Globe: () => <span data-testid="globe-icon">🌐</span>,
-}));
+vi.mock('lucide-react', () => {
+  // Every icon the component under test imports, so the mock
+  // cannot drift when a new icon is added.
+  const IconStub = ({ ...props }: { [key: string]: unknown }) =>
+    React.createElement('span', { 'data-testid': 'lucide-icon', ...props });
+
+  return {
+    AlertCircle: IconStub,
+    AlertTriangle: IconStub,
+    ArrowDown: IconStub,
+    ArrowUp: IconStub,
+    Bell: IconStub,
+    Check: IconStub,
+    CheckCircle: IconStub,
+    ChevronDown: IconStub,
+    ChevronLeft: IconStub,
+    ChevronRight: IconStub,
+    ChevronUp: IconStub,
+    Clock: IconStub,
+    Copy: IconStub,
+    Download: IconStub,
+    ExternalLink: IconStub,
+    Eye: IconStub,
+    Filter: IconStub,
+    FolderPlus: IconStub,
+    Globe: IconStub,
+    Inbox: IconStub,
+    Info: IconStub,
+    Link: IconStub,
+    Loader2: IconStub,
+    Mail: IconStub,
+    Meh: IconStub,
+    MessageSquare: IconStub,
+    Minus: IconStub,
+    MoreVertical: IconStub,
+    Play: IconStub,
+    Plus: IconStub,
+    RefreshCw: IconStub,
+    Save: IconStub,
+    Search: IconStub,
+    Settings: IconStub,
+    Share2: IconStub,
+    ThumbsDown: IconStub,
+    ThumbsUp: IconStub,
+    Trash2: IconStub,
+    TrendingDown: IconStub,
+    TrendingUp: IconStub,
+    Users: IconStub,
+    X: IconStub,
+    XCircle: IconStub,
+  };
+});
 
 // Mock data
 const mockComparisonData = {

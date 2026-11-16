@@ -15,6 +15,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { ExportResultsButton } from '@/components/tools/ExportResultsButton';
 
 // Mock ExportResultsButton component
 vi.mock('@/components/tools/ExportResultsButton', () => ({
@@ -168,8 +169,7 @@ describe('Meta Tag Analyzer - ExportResultsButton Integration', () => {
     onExport,
     isLoading = false,
   }) => {
-    const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-    
+        
     const exportData = {
       analyzedAt: result.analyzedAt,
       results: {
@@ -366,8 +366,7 @@ describe('Keyword Density Checker - ExportResultsButton Integration', () => {
     url,
     isLoading = false,
   }) => {
-    const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-    
+        
     const exportData = {
       analyzedAt: result.analyzedAt,
       results: {
@@ -568,8 +567,7 @@ describe('Mobile-Friendly Checker - ExportResultsButton Integration', () => {
     url,
     isLoading = false,
   }) => {
-    const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-    
+        
     const exportData = {
       analyzedAt: result.analyzedAt,
       results: {
@@ -790,8 +788,7 @@ describe('Social Media Preview - ExportResultsButton Integration', () => {
     url,
     isLoading = false,
   }) => {
-    const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-    
+        
     const exportData = {
       analyzedAt: result.analyzedAt,
       results: {
@@ -988,8 +985,7 @@ describe('Social Media Preview - ExportResultsButton Integration', () => {
 // =============================================================================
 
 describe('Consistent UX Across All Tools', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   const tools = [
     { name: 'meta-tag-analyzer', displayName: 'Meta Tag Analyzer' },
     { name: 'keyword-density-checker', displayName: 'Keyword Density Checker' },
@@ -1111,8 +1107,7 @@ describe('Consistent UX Across All Tools', () => {
 // =============================================================================
 
 describe('Mobile Responsive Behavior', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   /**
    * MRT-001: Button visible on mobile
    */
@@ -1210,8 +1205,7 @@ describe('Mobile Responsive Behavior', () => {
 // =============================================================================
 
 describe('Tool Result Data Mapping', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   /**
    * DMT-001: Meta Tag data maps correctly
    */
@@ -1367,8 +1361,7 @@ describe('Tool Result Data Mapping', () => {
 // =============================================================================
 
 describe('Edge Cases', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   /**
    * ECT-001: Very long URL handled correctly
    */
@@ -1522,8 +1515,7 @@ describe('Edge Cases', () => {
 // =============================================================================
 
 describe('Accessibility', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   /**
    * ACC-001: Button has aria-label
    */
@@ -1659,8 +1651,7 @@ describe('Accessibility', () => {
 // =============================================================================
 
 describe('Full Integration Scenarios', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   /**
    * INT-001: Complete export flow for Meta Tag Analyzer
    */
@@ -1785,8 +1776,7 @@ describe('Full Integration Scenarios', () => {
 // =============================================================================
 
 describe('Snapshots', () => {
-  const { ExportResultsButton } = require('@/components/tools/ExportResultsButton');
-
+  
   /**
    * SNT-001: Meta Tag Analyzer snapshot
    */

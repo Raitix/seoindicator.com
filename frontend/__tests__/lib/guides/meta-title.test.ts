@@ -19,6 +19,8 @@ import {
   isCodeExample,
   ChecklistPriority,
 } from '@/lib/guides/types';
+import { getGuidesByToolSlug } from '@/lib/guides/registry';
+import { getGuidesByCategory } from '@/lib/guides/registry';
 
 // ============================================================================
 // Guide Existence Tests
@@ -449,8 +451,7 @@ describe('Meta Title Guide: Content Quality', () => {
 
 describe('Meta Title Guide: Integration', () => {
   test('MT-045: Guide is retrievable by tool slug', () => {
-    const { getGuidesByToolSlug } = require('@/lib/guides/registry');
-    const guidesForTool = getGuidesByToolSlug('meta-tag-analyzer');
+        const guidesForTool = getGuidesByToolSlug('meta-tag-analyzer');
     
     const metaTitleGuide = guidesForTool.find((g: any) => g.slug === 'meta-title');
     expect(metaTitleGuide).toBeDefined();
@@ -465,8 +466,7 @@ describe('Meta Title Guide: Integration', () => {
   });
 
   test('MT-047: Guide is listed in on-page category', () => {
-    const { getGuidesByCategory } = require('@/lib/guides/registry');
-    const onPageGuides = getGuidesByCategory('on-page');
+        const onPageGuides = getGuidesByCategory('on-page');
     
     const metaTitleGuide = onPageGuides.find((g: any) => g.slug === 'meta-title');
     expect(metaTitleGuide).toBeDefined();

@@ -12,7 +12,9 @@ vi.mock('@/lib/api/onboarding', () => ({
   skipOnboarding: vi.fn(),
 }));
 
-const mockedApi = require('@/lib/api/onboarding');
+import * as onboardingApi from '@/lib/api/onboarding';
+
+const mockedApi = vi.mocked(onboardingApi);
 
 // Test component to access context
 const TestComponent = () => {
