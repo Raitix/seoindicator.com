@@ -666,10 +666,11 @@ describe('CB-012: Category-specific icons', () => {
     const props = createMockProps({
       categories: [createMockCategoryScore({ name: 'Mobile & Performance', score: 50 })],
     });
-    const { container } = render(<CategoryBreakdown {...props} />);
+    render(<CategoryBreakdown {...props} />);
 
-    const categoryDiv = container.querySelector('[data-testid="category-mobile-&-performance"]');
-    expect(categoryDiv).toBeInTheDocument();
+    // The testid contains an ampersand, which needs escaping in a CSS
+    // selector. getByTestId does not need it.
+    expect(screen.getByTestId('category-mobile-&-performance')).toBeInTheDocument();
   });
 });
 

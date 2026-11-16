@@ -169,6 +169,7 @@ function IndicatorList({
             className="border rounded-lg mb-2"
           >
             <button
+              type="button"
               data-testid={`indicator-button-${indicator.id}`}
               onClick={() => onIndicatorClick?.(indicator.id)}
               aria-expanded={isExpanded}
