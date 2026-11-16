@@ -718,9 +718,11 @@ describe('Screen Reader Accessibility Tests', () => {
         </>
       );
 
-      // Image has alt
-      const image = screen.getByRole('img');
+      // Image has alt. The informative icon has the img role too, so
+      // the image is queried by its own testid.
+      const image = screen.getByTestId('image');
       expect(image).toHaveAttribute('alt');
+      expect(screen.getAllByRole('img')).toHaveLength(2);
 
       // Informative icon has label
       const informativeIcon = screen.getByTestId('informative-icon');

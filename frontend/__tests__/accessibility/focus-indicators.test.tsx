@@ -18,11 +18,14 @@ import userEvent from '@testing-library/user-event';
 // ============================================================================
 
 // Mock Button with focus styles
-const Button: React.FC<{ children: React.ReactNode; variant?: 'primary' | 'secondary' }> = ({
-  children,
-  variant = 'primary',
-}) => (
+const Button: React.FC<{
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary';
+  onClick?: () => void;
+}> = ({ children, variant = 'primary', onClick }) => (
   <button
+    onClick={onClick}
+    type="button"
     className={`
       px-4 py-2 rounded
       focus:outline-none
@@ -161,6 +164,48 @@ const SkipLink: React.FC = () => (
 
 // Mock Modal with focus trap
 const Modal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  // The focus stays inside the dialog. Tab from the last element
+  // wraps to the first and Shift+Tab from the first wraps to the last.
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const content = contentRef.current;
+    if (!content) return;
+
+    const focusable = () =>
+      Array.from(
+        content.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => !element.hasAttribute('disabled'));
+
+    content.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+
+      const elements = focusable();
+      if (elements.length === 0) return;
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -171,6 +216,7 @@ const Modal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onC
       data-testid="modal-overlay"
     >
       <div
+        ref={contentRef}
         className="bg-white rounded-lg p-6 focus:outline-none"
         data-testid="modal-content"
         tabIndex={-1}
@@ -213,7 +259,9 @@ function hasOutlineNone(element: HTMLElement): boolean {
  */
 function getFocusRingColor(element: HTMLElement): string | null {
   const classes = element.className;
-  const match = classes.match(/focus-visible:ring-(\w+)/);
+  // The colour is the last segment, so 'focus-visible:ring-2
+  // focus-visible:ring-primary' gives 'primary' and not '2'.
+  const match = classes.match(/focus-visible:ring-([a-z]+(?:-[a-z]+)*)(?!-\d)/);
   return match ? match[1] : null;
 }
 
