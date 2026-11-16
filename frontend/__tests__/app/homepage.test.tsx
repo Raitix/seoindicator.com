@@ -12,6 +12,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { IndicatorCatalog } from '@/components/indicators/IndicatorCatalog';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
@@ -279,8 +280,8 @@ const createHomeComponent = (catalogProps = defaultCatalogProps) => {
           <nav className="flex items-center gap-4" data-testid="nav">
             <button data-testid="nav-dashboard" className="text-slate-300 hover:text-white">Dashboard</button>
             <button data-testid="nav-indicators" className="text-slate-300 hover:text-white">Indicators</button>
-            <a href="/competitors" data-testid="nav-competitors">Competitors</a>
-            <a href="/comparison" data-testid="nav-comparison">Comparison</a>
+            <a href="/competitors" className="text-slate-300 hover:text-white" data-testid="nav-competitors">Competitors</a>
+            <a href="/comparison" className="text-slate-300 hover:text-white" data-testid="nav-comparison">Comparison</a>
             <button data-testid="sign-in-btn" className="border-emerald-500 text-emerald-500">Sign In</button>
           </nav>
         </div>
@@ -309,24 +310,7 @@ const createHomeComponent = (catalogProps = defaultCatalogProps) => {
 
         {/* IndicatorCatalog Integration */}
         <div data-testid="catalog-container">
-          <div data-testid="indicator-catalog" data-category={catalogProps.selectedCategory}>
-            {catalogProps.isLoading && <div data-testid="catalog-skeleton">Loading...</div>}
-            {catalogProps.error && <div data-testid="catalog-error">{catalogProps.error.message}</div>}
-            {!catalogProps.isLoading && !catalogProps.error && catalogProps.indicators.length > 0 && (
-              <div data-testid="indicators-grid">
-                {catalogProps.indicators.map((indicator) => (
-                  <a 
-                    key={indicator.id}
-                    href={indicator.href}
-                    data-testid={`indicator-${indicator.id}`}
-                    data-status={indicator.status}
-                  >
-                    {indicator.title}
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
+          <IndicatorCatalog {...catalogProps} />
         </div>
       </section>
 
@@ -626,7 +610,8 @@ describe('HI-004: IndicatorCatalog Integration', () => {
     });
     render(<Home />);
     
-    expect(screen.getByTestId('indicators-grid')).not.toBeInTheDocument();
+    expect(screen.getByTestId('catalog-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('indicators-grid')).not.toBeInTheDocument();
   });
 
   test('HI-004-06: Catalog with data shows grid', () => {
@@ -740,7 +725,8 @@ describe('HI-005: Dashboard Links', () => {
     render(<Home />);
     
     const dashboardLink = screen.getByTestId('nav-dashboard');
-    expect(dashboardDashboard).toBeInTheDocument();
+    expect(dashboardLink).toBeInTheDocument();
+    expect(dashboardLink).toHaveTextContent('Dashboard');
   });
 
   test('HI-005-03: Competitors nav link works', () => {
@@ -804,8 +790,11 @@ describe('HI-005: Dashboard Links', () => {
     render(<Home />);
     
     const navLinks = screen.getByTestId('nav').querySelectorAll('button, a');
+    expect(navLinks.length).toBeGreaterThan(0);
     navLinks.forEach((link) => {
-      expect(link.className).toBeTruthy();
+      // Every nav control carries a class, so the hover state can be
+      // styled.
+      expect(link.getAttribute('class')).toBeTruthy();
     });
   });
 });
@@ -878,7 +867,10 @@ describe('HI-006: Responsive Layout', () => {
   test('HI-006-09: Container padding responsive', () => {
     render(<Home />);
     
-    const sections = screen.getAllByText(/container/);
+    // 'container' is a Tailwind class on the sections, not their text.
+    const sections = screen
+      .getByTestId('home-container')
+      .querySelectorAll('.container');
     expect(sections.length).toBeGreaterThan(0);
   });
 
@@ -1298,7 +1290,8 @@ describe('HI-011: Edge Cases', () => {
     });
     
     render(<Home />);
-    expect(screen.getByTestId('indicators-grid')).not.toBeInTheDocument();
+    expect(screen.getByTestId('catalog-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('indicators-grid')).not.toBeInTheDocument();
   });
 
   test('HI-011-03: Many indicators (20+)', () => {
