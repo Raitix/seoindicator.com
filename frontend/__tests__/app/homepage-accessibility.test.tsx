@@ -32,7 +32,7 @@ vi.mock('next/link', () => {
 const AccessibleHomepage = () => (
   <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
     {/* Skip to main content link */}
-    <a href="#main-content" className="sr-only focus:not-sr-only">
+    <a href="#main-content" className="sr-only focus:not-sr-only focus:px-4 focus:py-2 focus:bg-emerald-500 focus:text-white">
       Skip to main content
     </a>
     
@@ -45,13 +45,13 @@ const AccessibleHomepage = () => (
           </div>
           <span className="text-xl font-semibold text-white">SEOIndicator</span>
         </div>
-        <nav role="navigation" aria-label="Main navigation">
+        <nav role="navigation" aria-label="Main navigation" className="flex items-center gap-4">
           <ul className="flex items-center gap-4">
-            <li><button className="text-slate-300 hover:text-white">Dashboard</button></li>
-            <li><button className="text-slate-300 hover:text-white">Indicators</button></li>
-            <li><a href="/competitors">Competitors</a></li>
-            <li><a href="/comparison">Comparison</a></li>
-            <li><button className="border-emerald-500 text-emerald-500">Sign In</button></li>
+            <li><button className="px-3 py-2 text-slate-300 hover:text-white">Dashboard</button></li>
+            <li><button className="px-3 py-2 text-slate-300 hover:text-white">Indicators</button></li>
+            <li><a href="/competitors" className="px-3 py-2 inline-block">Competitors</a></li>
+            <li><a href="/comparison" className="px-3 py-2 inline-block">Comparison</a></li>
+            <li><button className="px-3 py-2 border-emerald-500 text-emerald-500">Sign In</button></li>
           </ul>
         </nav>
       </div>
@@ -506,8 +506,8 @@ describe('Accessibility: Reduced Motion', () => {
     render(<AccessibleHomepage />);
     
     // Status is indicated by text, not just animation
-    const statusText = screen.getByText(/system status/i);
-    expect(statusText).toBeInTheDocument();
+    const statusText = screen.getAllByText(/system status/i);
+    expect(statusText.length).toBeGreaterThan(0);
   });
 });
 

@@ -112,6 +112,18 @@ export function AISuggestionButton({
 
   const defaultButtonText = buttonText || `Get ${getIndicatorLabel()} Suggestion`;
 
+
+  if (rateLimitRemaining !== null) {
+    return (
+      <button
+        disabled
+        className={`px-4 py-2 rounded-md bg-gray-300 text-gray-500 cursor-not-allowed ${className}`}
+        aria-label={`Rate limited. Retry in ${rateLimitRemaining} seconds`}
+      >
+        Rate limited ({rateLimitRemaining}s)
+      </button>
+    );
+  }
   if (error && !isLoading) {
     return (
       <div className="flex flex-col gap-2">
@@ -129,22 +141,11 @@ export function AISuggestionButton({
     );
   }
 
-  if (rateLimitRemaining !== null) {
-    return (
-      <button
-        disabled
-        className={`px-4 py-2 rounded-md bg-gray-300 text-gray-500 cursor-not-allowed ${className}`}
-        aria-label={`Rate limited. Retry in ${rateLimitRemaining} seconds`}
-      >
-        Rate limited ({rateLimitRemaining}s)
-      </button>
-    );
-  }
-
   return (
     <button
       onClick={handleClick}
       disabled={isDisabled}
+      data-testid="ai-suggestion-button"
       className={`px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed ${className}`}
       aria-label={`Get AI suggestion for ${getIndicatorLabel()}`}
       title={`Analyze ${getIndicatorLabel()} with AI`}

@@ -296,7 +296,11 @@ describe('Payment Flow Integration', () => {
 
     it('user can retry after error', async () => {
       let attempts = 0;
-      handlers.unshift(() => {
+      // Only the payment intent fails the first time, the other
+      // endpoints keep answering.
+      handlers.unshift((url) => {
+        if (!url.includes('/api/v1/payments/stripe/intent')) return null;
+
         attempts += 1;
         if (attempts === 1) {
           return jsonResponse({ success: false, message: 'Failed to initialize payment' }, 500);

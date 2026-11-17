@@ -35,6 +35,17 @@ vi.mock("@/lib/api/notifications", () => ({
   }),
 }));
 
+// The header polls the ai visibility alerts, so the hook is mocked. Left
+// alone it keeps a request open and the test never settles.
+vi.mock("@/hooks/useAIVisibilityUnreadCount", () => ({
+  useAIVisibilityUnreadCount: () => ({
+    count: 0,
+    isLoading: false,
+    isError: false,
+    mutate: vi.fn(),
+  }),
+}));
+
 describe("Desktop Navigation Integration", () => {
   const user = userEvent.setup();
 
@@ -69,18 +80,18 @@ describe("Desktop Navigation Integration", () => {
     });
 
     it("INT-002: route change should update active state", async () => {
-      const { rerender } = render(<Header />);
+      const { rerender } = render(<Header userName="Test User" userEmail="test@example.com" />);
 
       // Initially on dashboard
       mockPathname.mockReturnValue("/dashboard");
-      rerender(<Header />);
+      rerender(<Header userName="Test User" userEmail="test@example.com" />);
 
       let dashboardLink = screen.getByRole("link", { name: /dashboard/i });
       expect(dashboardLink).toHaveAttribute("aria-current", "page");
 
       // Navigate to keywords
       mockPathname.mockReturnValue("/keywords");
-      rerender(<Header />);
+      rerender(<Header userName="Test User" userEmail="test@example.com" />);
 
       const keywordsLink = screen.getByRole("link", { name: /keywords/i });
       expect(keywordsLink).toHaveAttribute("aria-current", "page");
@@ -92,7 +103,7 @@ describe("Desktop Navigation Integration", () => {
 
     it("INT-003: unread count should display in badge", async () => {
       mockUnreadCount = 5;
-      render(<Header />);
+      render(<Header userName="Test User" userEmail="test@example.com" />);
 
       const bellButton = screen.getByRole("button", { name: /notifications/i });
       expect(bellButton).toHaveAttribute("aria-label", expect.stringContaining("5"));
@@ -164,7 +175,7 @@ describe("Desktop Navigation Integration", () => {
 
     it("should handle notification badge in both views", () => {
       mockUnreadCount = 10;
-      render(<Header />);
+      render(<Header userName="Test User" userEmail="test@example.com" />);
 
       // Badge should be visible
       const badge = screen.getByText("10");
@@ -230,10 +241,15 @@ describe("Desktop Navigation Integration", () => {
         expect(screen.getByRole("menu")).toBeInTheDocument();
       });
 
-      // Tab should cycle through menu items
-      await user.tab();
+      // The menu keeps the focus while the arrow keys move through the
+      // items.
+      await user.keyboard('{ArrowDown}');
+
       const menuItems = screen.getAllByRole("menuitem");
       expect(menuItems[0]).toHaveFocus();
+
+      await user.keyboard('{ArrowDown}');
+      expect(menuItems[1]).toHaveFocus();
     });
   });
 
@@ -251,17 +267,17 @@ describe("Desktop Navigation Integration", () => {
     });
 
     it("should not cause unnecessary re-renders on pathname change", async () => {
-      const { rerender } = render(<Header />);
+      const { rerender } = render(<Header userName="Test User" userEmail="test@example.com" />);
 
       // Initial render
       mockPathname.mockReturnValue("/dashboard");
-      rerender(<Header />);
+      rerender(<Header userName="Test User" userEmail="test@example.com" />);
 
       // Same path - should not re-render unnecessarily
       const dashboardLink1 = screen.getByRole("link", { name: /dashboard/i });
 
       mockPathname.mockReturnValue("/dashboard");
-      rerender(<Header />);
+      rerender(<Header userName="Test User" userEmail="test@example.com" />);
 
       const dashboardLink2 = screen.getByRole("link", { name: /dashboard/i });
       expect(dashboardLink1).toBe(dashboardLink2);
@@ -274,7 +290,7 @@ describe("Desktop Navigation Integration", () => {
   describe("Error Handling", () => {
     it("should handle missing user gracefully", () => {
       // Should render without errors
-      render(<Header />);
+      render(<Header userName="Test User" userEmail="test@example.com" />);
       expect(screen.getByRole("banner")).toBeInTheDocument();
     });
 
@@ -286,7 +302,7 @@ describe("Desktop Navigation Integration", () => {
 
     it("should handle invalid pathname gracefully", () => {
       mockPathname.mockReturnValue(null);
-      render(<Header />);
+      render(<Header userName="Test User" userEmail="test@example.com" />);
       expect(screen.getByRole("banner")).toBeInTheDocument();
     });
   });
