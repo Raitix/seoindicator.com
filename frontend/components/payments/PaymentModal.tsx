@@ -60,7 +60,12 @@ export function PaymentModal({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   
-  const { createIntent, isLoading: isCreatingIntent, error: intentError } = useCreatePaymentIntent();
+  const {
+    createIntent,
+    isLoading: isCreatingIntent,
+    error: intentError,
+    setError: setIntentError,
+  } = useCreatePaymentIntent();
   const { methods: savedMethods } = usePaymentMethods();
   
   const [paymentIntent, setPaymentIntent] = React.useState<{
@@ -72,18 +77,30 @@ export function PaymentModal({
 
   const processing = externalProcessing || isProcessing;
 
-  // Create payment intent when modal opens
+  // Create payment intent when modal opens.
+  //
+  // The request is made once. A failure is reported to the user, who
+  // retries from the error state, so the effect does not issue the
+  // request again on its own.
   React.useEffect(() => {
-    if (isOpen && !paymentIntent && !isCreatingIntent) {
-      createIntent({
-        packageId: creditPackage.id,
-      }).then((intent) => {
-        if (intent) {
-          setPaymentIntent(intent);
-        }
-      });
+    if (!isOpen) {
+      // The next time the modal opens the intent is created again.
+      setIntentError(null);
+      return;
     }
-  }, [isOpen, creditPackage.id, createIntent, paymentIntent, isCreatingIntent]);
+
+    if (paymentIntent || isCreatingIntent || intentError) {
+      return;
+    }
+
+    createIntent({
+      packageId: creditPackage.id,
+    }).then((intent) => {
+      if (intent) {
+        setPaymentIntent(intent);
+      }
+    });
+  }, [isOpen, creditPackage.id, createIntent, paymentIntent, isCreatingIntent, intentError, setIntentError]);
 
   // Focus trap and accessibility
   React.useEffect(() => {
@@ -266,6 +283,7 @@ export function PaymentModal({
                 className="mt-3"
                 onClick={() => {
                   setError(null);
+                  setIntentError(null);
                   setPaymentIntent(null);
                 }}
               >

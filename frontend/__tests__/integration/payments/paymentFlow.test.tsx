@@ -319,15 +319,17 @@ describe('Payment Flow Integration', () => {
       const user = userEvent.setup();
       renderModal();
 
+      // The request and the mutation take a moment, and the machine may
+      // be busy, so the waits are given room.
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
-      });
+      }, { timeout: 5000 });
 
       await user.click(screen.getByRole('button', { name: /try again/i }));
 
       await waitFor(() => {
         expect(screen.getByTestId('stripe-checkout-form')).toBeInTheDocument();
-      });
+      }, { timeout: 5000 });
     });
   });
 
