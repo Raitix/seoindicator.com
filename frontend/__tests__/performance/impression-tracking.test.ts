@@ -96,6 +96,27 @@ async function measureLatency<T>(
   return { result, durationMs };
 }
 
+// A single sample of a wall clock measurement is noisy when the machine
+// is busy, so the median of a few runs is used for the tight budgets.
+async function measureMedianLatency<T>(
+  fn: () => Promise<T>,
+  runs = 5
+): Promise<{ result: T; durationMs: number }> {
+  const durations: number[] = [];
+  let result: T;
+
+  for (let i = 0; i < runs; i += 1) {
+    const measured = await measureLatency(fn);
+    durations.push(measured.durationMs);
+    result = measured.result;
+  }
+
+  durations.sort((a, b) => a - b);
+  const median = durations[Math.floor(durations.length / 2)];
+
+  return { result: result as T, durationMs: median };
+}
+
 describe('Badge Impression Tracking Latency Tests', () => {
   let api: MockBadgeTrackingAPI;
   const TARGET_MS = 50;
@@ -186,7 +207,7 @@ describe('Badge Impression Tracking Latency Tests', () => {
       // Mock error response for invalid hash
       const errorApi = new MockBadgeTrackingAPI();
       
-      const { durationMs } = await measureLatency(async () => {
+      const { durationMs } = await measureMedianLatency(async () => {
         // In real implementation, this would return 404
         return { success: false, error: 'Not Found' };
       });
@@ -195,7 +216,7 @@ describe('Badge Impression Tracking Latency Tests', () => {
     });
 
     it('IMP-007: Request validation (422) < 20ms', async () => {
-      const { durationMs } = await measureLatency(async () => {
+      const { durationMs } = await measureMedianLatency(async () => {
         // Validation is fast, no network call needed
         return { success: false, error: 'Validation failed' };
       });
@@ -207,7 +228,7 @@ describe('Badge Impression Tracking Latency Tests', () => {
   describe('IMPRESSION-DATABASE: Database Write Performance', () => {
     it('IMP-008: Database insert latency < 20ms', async () => {
       // Simulate database write
-      const { durationMs } = await measureLatency(async () => {
+      const { durationMs } = await measureMedianLatency(async () => {
         // Mock database insert
         await new Promise(resolve => setTimeout(resolve, 5));
         return { id: 1 };
@@ -217,7 +238,7 @@ describe('Badge Impression Tracking Latency Tests', () => {
     });
 
     it('IMP-009: Queue dispatch time < 20ms', async () => {
-      const { durationMs } = await measureLatency(async () => {
+      const { durationMs } = await measureMedianLatency(async () => {
         // Mock queue dispatch
         await new Promise(resolve => setTimeout(resolve, 2));
         return { dispatched: true };

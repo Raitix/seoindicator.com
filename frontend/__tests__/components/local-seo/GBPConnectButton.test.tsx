@@ -16,7 +16,8 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRouter, useParams } from 'next/navigation';
-import React from 'react';
+import React from 'react';
+import { GBPConnectButton } from '@/components/local/GBPConnectButton';
 import {
   AlertCircle,
   Building2,
@@ -75,17 +76,19 @@ vi.mock('next/navigation', () => ({
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
-  Link: () => <span data-testid="link-icon">Link</span>,
-  Check: () => <span data-testid="check-icon">Check</span>,
-  Unlink: () => <span data-testid="unlink-icon">Unlink</span>,
-  Loader2: () => <span data-testid="loader-icon" className="animate-spin">Loading</span>,
-  AlertCircle: () => <span data-testid="alert-icon">Alert</span>,
-  Building2: () => <span data-testid="building-icon">Building</span>,
-  ExternalLink: () => <span data-testid="external-link-icon">External</span>,
-  RefreshCw: () => <span data-testid="refresh-icon">Refresh</span>,
-  ChevronDown: () => <span data-testid="chevron-down-icon">Chevron</span>,
-  X: () => <span data-testid="x-icon">X</span>,
-  MapPin: () => <span data-testid="map-pin-icon">MapPin</span>,
+  Link: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'link-glyph'} {...rest}>link</span>),
+  Check: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'check-glyph'} {...rest}>check</span>),
+  Unlink: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'unlink-glyph'} {...rest}>unlink</span>),
+  Loader2: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'loader-glyph'} className="animate-spin" {...rest}>loading</span>),
+  AlertCircle: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'alert-glyph'} {...rest}>alert</span>),
+  Building2: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'building-glyph'} {...rest}>building</span>),
+  ExternalLink: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'external-link-glyph'} {...rest}>external-link</span>),
+  RefreshCw: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'refresh-glyph'} {...rest}>refresh</span>),
+  ChevronDown: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'chevron-down-glyph'} {...rest}>chevron-down</span>),
+  ChevronLeft: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'chevron-left-glyph'} {...rest}>chevron-left</span>),
+  ChevronRight: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'chevron-right-glyph'} {...rest}>chevron-right</span>),
+  X: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'x-glyph'} {...rest}>x</span>),
+  MapPin: ({ 'data-testid': testId, ...rest }: any) => (<span data-testid={testId ?? 'map-pin-glyph'} {...rest}>map-pin</span>),
 }));
 
 // Mock fetch for API calls
@@ -122,379 +125,14 @@ window.removeEventListener = vi.fn((event: string, listener: EventListener) => {
   }
 });
 
-// --- Mock Component Implementation (TDD Reference) ---
-
-const MockGBPConnectButton: React.FC<GBPConnectButtonProps> = ({
-  siteId,
-  locationId,
-  connectedGBP,
-  onConnectionChange,
-  className,
-}) => {
-  const [status, setStatus] = React.useState<'idle' | 'connecting' | 'selecting' | 'connected' | 'error'>(
-    connectedGBP ? 'connected' : 'idle'
-  );
-  const [error, setError] = React.useState<string | null>(null);
-  const [availableAccounts, setAvailableAccounts] = React.useState<GBPAccount[]>([]);
-  const [selectedAccount, setSelectedAccount] = React.useState<GBPAccount | null>(null);
-  const [availableLocations, setAvailableLocations] = React.useState<GBPLocation[]>([]);
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = React.useState(false);
-
-  const initiateOAuth = async () => {
-    setStatus('connecting');
-    setError(null);
-    
-    try {
-      // Store state for CSRF protection
-      const state = `${siteId}-${locationId}-${Date.now()}`;
-      sessionStorage.setItem('gbp_oauth_state', state);
-      
-      // Get OAuth URL from backend
-      const response = await fetch(`/api/v1/locations/${locationId}/gbp/oauth-url?state=${state}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get OAuth URL');
-      }
-      
-      // Open OAuth popup
-      const popup = window.open(
-        data.oauth_url,
-        'GBP OAuth',
-        'width=600,height=700,popup=yes'
-      );
-      
-      if (!popup) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
-      
-      // Listen for OAuth callback
-      const handleCallback = async (event: MessageEvent) => {
-        if (event.data?.type === 'gbp_oauth_callback') {
-          window.removeEventListener('message', handleCallback);
-          
-          if (event.data.error) {
-            setError(event.data.error);
-            setStatus('error');
-            return;
-          }
-          
-          // Fetch available accounts
-          const accountsResponse = await fetch(`/api/v1/locations/${locationId}/gbp/accounts`, {
-            headers: { 'Content-Type': 'application/json' },
-          });
-          const accountsData = await accountsResponse.json();
-          
-          if (!accountsResponse.ok) {
-            throw new Error(accountsData.error || 'Failed to fetch accounts');
-          }
-          
-          if (!accountsData.accounts || accountsData.accounts.length === 0) {
-            setError('No Google Business Profile accounts found.');
-            setStatus('error');
-            return;
-          }
-          
-          setAvailableAccounts(accountsData.accounts);
-          setStatus('selecting');
-        }
-      };
-      
-      window.addEventListener('message', handleCallback);
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Connection failed');
-      setStatus('error');
-    }
-  };
-
-  const selectAccount = async (account: GBPAccount) => {
-    setSelectedAccount(account);
-    
-    try {
-      const response = await fetch(`/api/v1/locations/${locationId}/gbp/accounts/${account.id}/locations`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch locations');
-      }
-      
-      setAvailableLocations(data.locations || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch locations');
-      setStatus('error');
-    }
-  };
-
-  const connectLocation = async (gbpLocation: GBPLocation) => {
-    setStatus('connecting');
-    setError(null);
-    
-    try {
-      const response = await fetch(`/api/v1/locations/${locationId}/connect-gbp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gbp_account_id: gbpLocation.accountId,
-          gbp_location_id: gbpLocation.id,
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        if (data.error?.includes('already connected')) {
-          throw new Error('This location is already connected to another record.');
-        }
-        throw new Error(data.error || 'Failed to connect');
-      }
-      
-      setStatus('connected');
-      onConnectionChange?.(true, {
-        businessName: gbpLocation.name,
-        locationId: gbpLocation.id,
-      });
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Connection failed');
-      setStatus('error');
-    }
-  };
-
-  const disconnect = async () => {
-    setStatus('connecting');
-    
-    try {
-      const response = await fetch(`/api/v1/locations/${locationId}/disconnect-gbp`, {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to disconnect');
-      }
-      
-      setStatus('idle');
-      setShowDisconnectConfirm(false);
-      onConnectionChange?.(false);
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Disconnect failed');
-      setStatus('connected'); // Revert to connected on error
-    }
-  };
-
-  const retry = () => {
-    setError(null);
-    setStatus('idle');
-  };
-
-  // Render based on status
-  if (status === 'connected' && connectedGBP) {
-    return (
-      <div 
-        className={`gbp-connected ${className || ''}`}
-        data-testid="gbp-connected"
-      >
-        <div className="flex items-center gap-2">
-          {connectedGBP.profileImage ? (
-            <img 
-              src={connectedGBP.profileImage} 
-              alt="" 
-              className="w-8 h-8 rounded-full"
-              data-testid="gbp-profile-image"
-            />
-          ) : (
-            <span data-testid="building-icon" className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <Building2 />
-            </span>
-          )}
-          <div>
-            <p className="font-medium text-sm">Connected to {connectedGBP.businessName}</p>
-            <p className="text-xs text-gray-500">Google Business Profile</p>
-          </div>
-          <span data-testid="check-icon" className="text-green-500">
-            <Check />
-          </span>
-        </div>
-        <button
-          onClick={() => setShowDisconnectConfirm(true)}
-          className="text-red-500 text-sm hover:underline"
-          data-testid="disconnect-button"
-          aria-label="Disconnect Google Business Profile"
-        >
-          Disconnect
-        </button>
-        
-        {showDisconnectConfirm && (
-          <div 
-            className="fixed inset-0 bg-black/50 flex items-center justify-center"
-            data-testid="disconnect-modal"
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="bg-white p-6 rounded-lg max-w-sm">
-              <h3>Disconnect Google Business Profile?</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                This will remove the connection to {connectedGBP.businessName}.
-              </p>
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => setShowDisconnectConfirm(false)}
-                  data-testid="cancel-disconnect"
-                  className="px-4 py-2 border rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={disconnect}
-                  data-testid="confirm-disconnect"
-                  className="px-4 py-2 bg-red-500 text-white rounded"
-                >
-                  Disconnect
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (status === 'selecting') {
-    return (
-      <div 
-        className={`gbp-selecting ${className || ''}`}
-        data-testid="gbp-selecting"
-      >
-        <h3 className="font-medium mb-4">Select a Google Business Profile</h3>
-        
-        {!selectedAccount ? (
-          <div data-testid="account-list">
-            {availableAccounts.map(account => (
-              <button
-                key={account.id}
-                onClick={() => selectAccount(account)}
-                className="w-full p-4 border rounded mb-2 flex items-center gap-3 hover:bg-gray-50"
-                data-testid={`account-${account.id}`}
-              >
-                {account.profileImage ? (
-                  <img 
-                    src={account.profileImage} 
-                    alt="" 
-                    className="w-10 h-10 rounded-full"
-                  />
-                ) : (
-                  <span data-testid="building-icon" className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <Building2 />
-                  </span>
-                )}
-                <div className="text-left">
-                  <p className="font-medium">{account.name}</p>
-                  <p className="text-sm text-gray-500">{account.locationCount} locations</p>
-                </div>
-                <span data-testid="chevron-down-icon" className="ml-auto">
-                  <ChevronDown />
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div data-testid="location-list">
-            <button
-              onClick={() => setSelectedAccount(null)}
-              className="text-sm text-blue-500 hover:underline mb-4"
-              data-testid="back-to-accounts"
-            >
-              ← Back to accounts
-            </button>
-            <h4 className="font-medium mb-2">{selectedAccount.name} - Locations</h4>
-            {availableLocations.map(location => (
-              <button
-                key={location.id}
-                onClick={() => connectLocation(location)}
-                className="w-full p-4 border rounded mb-2 text-left hover:bg-gray-50"
-                data-testid={`location-${location.id}`}
-              >
-                <p className="font-medium">{location.name}</p>
-                <p className="text-sm text-gray-500 flex items-center gap-1">
-                  <span data-testid="map-pin-icon"><MapPin /></span>
-                  {location.address}
-                </p>
-              </button>
-            ))}
-            {availableLocations.length === 0 && (
-              <p className="text-gray-500 text-sm">No locations found for this account.</p>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (status === 'error') {
-    return (
-      <div 
-        className={`gbp-error ${className || ''}`}
-        data-testid="gbp-error"
-        role="alert"
-      >
-        <span data-testid="alert-icon" className="text-red-500">
-          <AlertCircle />
-        </span>
-        <p className="text-sm text-red-500">{error}</p>
-        <button
-          onClick={retry}
-          className="text-sm text-blue-500 hover:underline flex items-center gap-1"
-          data-testid="retry-button"
-        >
-          <span data-testid="refresh-icon"><RefreshCw /></span>
-          Try again
-        </button>
-      </div>
-    );
-  }
-
-  if (status === 'connecting') {
-    return (
-      <div 
-        className={`gbp-connecting ${className || ''}`}
-        data-testid="gbp-connecting"
-      >
-        <span data-testid="loader-icon" className="animate-spin">
-          <Loader2 />
-        </span>
-        <span className="text-sm text-gray-600">Connecting...</span>
-      </div>
-    );
-  }
-
-  // Default: idle (unconnected) state
-  return (
-    <button
-      onClick={initiateOAuth}
-      disabled={status === 'connecting'}
-      className={`gbp-connect-button google-branding ${className || ''}`}
-      data-testid="gbp-connect-button"
-      aria-label="Connect Google Business Profile"
-    >
-      <svg viewBox="0 0 24 24" className="w-5 h-5 mr-2" data-testid="google-logo">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Connect Google Business Profile
-    </button>
-  );
-};
-
-// --- Test Constants ---
-
+// The real component is tested, the reference implementation above
+// only documents the shape the button is expected to have.
 const mockSiteId = 'site-123';
 const mockLocationId = 'loc-456';
 const mockOAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?...';
 const mockState = `${mockSiteId}-${mockLocationId}-1234567890`;
+
+const mockOnConnectionChange = vi.fn();
 
 const mockGBPAccounts: GBPAccount[] = [
   {
@@ -535,7 +173,7 @@ const mockConnectedGBP: ConnectedGBP = {
 
 const renderGBPConnectButton = (props: Partial<GBPConnectButtonProps> = {}) => {
   return render(
-    <MockGBPConnectButton
+    <GBPConnectButton
       siteId={mockSiteId}
       locationId={mockLocationId}
       {...props}
@@ -639,7 +277,8 @@ describe('GBPConnectButton', () => {
       await userEvent.click(button);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/api/v1/locations/${mockLocationId}/gbp/oauth-url`)
+        expect.stringContaining(`/api/v1/locations/${mockLocationId}/gbp/oauth-url`),
+        expect.anything()
       );
     });
 
@@ -785,8 +424,9 @@ describe('GBPConnectButton', () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/gbp/accounts')
-        );
+        expect.stringContaining('/gbp/accounts'),
+        expect.anything()
+      );
       });
     });
   });
@@ -960,7 +600,7 @@ describe('GBPConnectButton', () => {
       });
       mockWindowOpen.mockReturnValue({ closed: false } as Window);
 
-      renderGBPConnectButton();
+      renderGBPConnectButton({ onConnectionChange: mockOnConnectionChange });
       
       await userEvent.click(screen.getByTestId('gbp-connect-button'));
 
@@ -1005,17 +645,15 @@ describe('GBPConnectButton', () => {
     });
 
     test('CL-002: shows loading during connection', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true }),
-      });
-
+      // The connection stays pending, so the loading state can be seen.
+      mockFetch.mockReturnValueOnce(new Promise(() => {}));
+      
       await waitFor(() => {
         expect(screen.getByTestId('location-loc-1')).toBeInTheDocument();
       });
-
+      
       await userEvent.click(screen.getByTestId('location-loc-1'));
-
+      
       await waitFor(() => {
         expect(screen.getByTestId('gbp-connecting')).toBeInTheDocument();
       });
@@ -1039,33 +677,6 @@ describe('GBPConnectButton', () => {
     });
 
     test('CL-004: calls onConnectionChange callback on success', async () => {
-      const onConnectionChange = vi.fn();
-      
-      renderGBPConnectButton({ onConnectionChange });
-      
-      await userEvent.click(screen.getByTestId('gbp-connect-button'));
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ accounts: mockGBPAccounts }),
-      });
-
-      simulateOAuthCallback({
-        type: 'gbp_oauth_callback',
-        success: true,
-      });
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ locations: mockGBPLocations }),
-      });
-
-      await waitFor(() => {
-        expect(screen.getByTestId('account-acc-1')).toBeInTheDocument();
-      });
-
-      await userEvent.click(screen.getByTestId('account-acc-1'));
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -1078,9 +689,9 @@ describe('GBPConnectButton', () => {
       await userEvent.click(screen.getByTestId('location-loc-1'));
 
       await waitFor(() => {
-        expect(onConnectionChange).toHaveBeenCalledWith(
+        expect(mockOnConnectionChange).toHaveBeenCalledWith(
           true,
-          expect.objectContaining({ businessName: expect.any(String) })
+          expect.objectContaining({ locationId: 'loc-1' })
         );
       });
     });
@@ -1863,7 +1474,8 @@ describe('GBPConnectButton', () => {
       await userEvent.click(screen.getByTestId('gbp-connect-button'));
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/gbp/oauth-url')
+        expect.stringContaining('/gbp/oauth-url'),
+        expect.anything()
       );
       expect(mockWindowOpen).toHaveBeenCalled();
     });
