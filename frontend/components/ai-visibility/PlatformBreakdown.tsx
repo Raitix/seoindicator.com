@@ -87,6 +87,38 @@ export function PlatformBreakdown({
   const platforms = Object.keys(platformBreakdown) as PlatformKey[];
   const currentData = platformBreakdown[selectedPlatform];
 
+  // The tabs follow the tabs pattern, the arrow keys move the focus and
+  // the selection from one tab to the next.
+  const tabRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+
+  const selectPlatform = React.useCallback((platform: PlatformKey) => {
+    setSelectedPlatform(platform);
+  }, []);
+
+  const handleTabKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+      const lastIndex = platforms.length - 1;
+      let nextIndex: number | null = null;
+
+      if (event.key === 'ArrowRight') {
+        nextIndex = index === lastIndex ? 0 : index + 1;
+      } else if (event.key === 'ArrowLeft') {
+        nextIndex = index === 0 ? lastIndex : index - 1;
+      } else if (event.key === 'Home') {
+        nextIndex = 0;
+      } else if (event.key === 'End') {
+        nextIndex = lastIndex;
+      }
+
+      if (nextIndex === null) return;
+
+      event.preventDefault();
+      selectPlatform(platforms[nextIndex]);
+      tabRefs.current[nextIndex]?.focus();
+    },
+    [platforms, selectPlatform]
+  );
+
   // Prepare radar chart data
   const radarData = React.useMemo(() => {
     const brandPoint = {
@@ -128,12 +160,17 @@ export function PlatformBreakdown({
         
         {/* Platform Tabs */}
         <div role="tablist" className="flex gap-2">
-          {platforms.map(platform => (
+          {platforms.map((platform, index) => (
             <button
               key={platform}
+              ref={(node) => {
+                tabRefs.current[index] = node;
+              }}
               role="tab"
               aria-selected={selectedPlatform === platform}
-              onClick={() => setSelectedPlatform(platform)}
+              tabIndex={selectedPlatform === platform ? 0 : -1}
+              onClick={() => selectPlatform(platform)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
               className={cn(
                 'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 selectedPlatform === platform
@@ -170,7 +207,7 @@ export function PlatformBreakdown({
                   tick={{ fill: '#94a3b8', fontSize: 10 }}
                 />
                 <Radar
-                  data-testid="radar"
+                  data-testid="radar-brand"
                   name={brandName}
                   dataKey="brand"
                   stroke={BRAND_COLOR}
@@ -178,7 +215,7 @@ export function PlatformBreakdown({
                   fillOpacity={0.3}
                 />
                 <Radar
-                  data-testid="radar"
+                  data-testid="radar-competitors"
                   name="Competitors"
                   dataKey="competitor"
                   stroke={COMPETITOR_COLOR}

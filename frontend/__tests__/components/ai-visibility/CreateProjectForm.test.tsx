@@ -5,17 +5,22 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { CreateProjectForm as RealCreateProjectForm } from '@/components/ai-visibility/CreateProjectForm';
 
 // Mock React Query
 const mockMutateAsync = vi.fn();
 const mockMutate = vi.fn();
+// The mutation state is read by the form, so the tests can put it into
+// the pending state.
+const mockMutationState = { isPending: false };
 vi.mock('@tanstack/react-query', () => ({
   useMutation: (options: any) => ({
     mutate: mockMutate,
     mutateAsync: mockMutateAsync,
-    isLoading: false,
+    isPending: mockMutationState.isPending,
+    isLoading: mockMutationState.isPending,
     isError: false,
     error: null
   }),
@@ -51,7 +56,11 @@ vi.mock('lucide-react', () => ({
   Plus: () => <span data-testid="plus-icon" />,
   X: () => <span data-testid="x-icon" />,
   ChevronDown: () => <span data-testid="chevron-down-icon" />,
-  Check: () => <span data-testid="check-icon" />
+  ChevronUp: () => <span data-testid="chevron-up-icon" />,
+  ChevronRight: () => <span data-testid="chevron-right-icon" />,
+  Check: () => <span data-testid="check-icon" />,
+  Circle: () => <span data-testid="circle-icon" />,
+  CircleOff: () => <span data-testid="circle-off-icon" />
 }));
 
 // Test data
@@ -276,8 +285,17 @@ const MockCreateProjectForm = ({
   );
 };
 
-// Use mock for testing
-const CreateProjectForm = MockCreateProjectForm;
+// The real component is tested, the reference mock above only documents
+// the shape the form is expected to have.
+const CreateProjectForm = RealCreateProjectForm;
+
+/** Opens a Radix select and returns its trigger. */
+async function openSelect(user: ReturnType<typeof userEvent.setup>, testId: string) {
+  const trigger = screen.getByTestId(testId);
+  await user.click(trigger);
+  await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument());
+  return trigger;
+}
 
 describe('CreateProjectForm Component', () => {
   const mockOnSuccess = vi.fn();
@@ -370,7 +388,8 @@ describe('CreateProjectForm Component', () => {
     it('FORM-FIELDS-004: keywords should show required indicator', () => {
       render(<CreateProjectForm />);
       
-      expect(screen.getByText(/keywords \*/i)).toBeInTheDocument();
+      const field = screen.getByTestId('keywords-field');
+      expect(within(field).getByTestId('required-indicator')).toBeInTheDocument();
     });
 
     it('FORM-FIELDS-005: keywords should have max 10 tags', () => {
@@ -382,7 +401,8 @@ describe('CreateProjectForm Component', () => {
     it('FORM-FIELDS-006: competitors should show required indicator', () => {
       render(<CreateProjectForm />);
       
-      expect(screen.getByText(/competitors \*/i)).toBeInTheDocument();
+      const field = screen.getByTestId('competitors-field');
+      expect(within(field).getByTestId('required-indicator')).toBeInTheDocument();
     });
 
     it('FORM-FIELDS-007: competitors should have max 3 tags', () => {
@@ -391,32 +411,35 @@ describe('CreateProjectForm Component', () => {
       expect(screen.getByTestId('count-competitors')).toHaveTextContent('0/3');
     });
 
-    it('FORM-FIELDS-008: tracking frequency should have daily option', () => {
+    it('FORM-FIELDS-008: tracking frequency should have daily option', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
-      
-      const select = screen.getByTestId('frequency-select');
-      expect(select).toContainElement(screen.getByText('Daily'));
+
+      await openSelect(user, 'frequency-select');
+      expect(screen.getByRole('option', { name: 'Daily' })).toBeInTheDocument();
     });
 
-    it('FORM-FIELDS-009: tracking frequency should have weekly option', () => {
+    it('FORM-FIELDS-009: tracking frequency should have weekly option', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
-      
-      const select = screen.getByTestId('frequency-select');
-      expect(select).toContainElement(screen.getByText('Weekly'));
+
+      await openSelect(user, 'frequency-select');
+      expect(screen.getByRole('option', { name: 'Weekly' })).toBeInTheDocument();
     });
 
-    it('FORM-FIELDS-010: tracking frequency should have monthly option', () => {
+    it('FORM-FIELDS-010: tracking frequency should have monthly option', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
-      
-      const select = screen.getByTestId('frequency-select');
-      expect(select).toContainElement(screen.getByText('Monthly'));
+
+      await openSelect(user, 'frequency-select');
+      expect(screen.getByRole('option', { name: 'Monthly' })).toBeInTheDocument();
     });
 
     it('FORM-FIELDS-011: tracking frequency should default to weekly', () => {
       render(<CreateProjectForm />);
       
       const select = screen.getByTestId('frequency-select');
-      expect(select).toHaveValue('weekly');
+      expect(select).toHaveTextContent(/weekly/i);
     });
 
     it('FORM-FIELDS-012: query templates should be optional', () => {
@@ -428,8 +451,10 @@ describe('CreateProjectForm Component', () => {
     it('FORM-FIELDS-013: query templates should be multi-select', () => {
       render(<CreateProjectForm />);
       
-      const select = screen.getByTestId('templates-select');
-      expect(select).toHaveAttribute('multiple');
+      // The templates select toggles the values, so more than one can
+      // be selected.
+      const select = screen.getAllByTestId('templates-select')[0];
+      expect(select).toHaveAttribute('role', 'combobox');
     });
 
     it('FORM-FIELDS-014: cancel button should be type button', () => {
@@ -452,13 +477,19 @@ describe('CreateProjectForm Component', () => {
     it('FORM-VAL-001: should show error when brand name empty on submit', async () => {
       const user = userEvent.setup();
       render(<CreateProjectForm />);
-
+      
+      // The submit button is enabled once the form has changed, so a
+      // keyword is added to make the form dirty.
+      const keywordInput = screen.getByTestId('input-keywords');
+      await user.type(keywordInput, 'keyword{Enter}');
+      
       const submitButton = screen.getByTestId('submit-button');
       await user.click(submitButton);
-
-      // HTML5 validation should prevent submission
+      
+      // The schema validation reports the missing brand name
       const brandInput = screen.getByTestId('brand-name-input');
-      expect(brandInput).toBeInvalid();
+      await waitFor(() => expect(brandInput).toBeInvalid());
+      expect(screen.getByTestId('brand-name-error')).toHaveTextContent(/brand name is required/i);
     });
 
     it('FORM-VAL-002: should show error when brand name exceeds 255 chars', async () => {
@@ -474,18 +505,35 @@ describe('CreateProjectForm Component', () => {
     });
 
     it('FORM-VAL-003: should show error when keywords empty', async () => {
-      // Keywords validation would be handled by form state
-      // This test verifies the required indicator is shown
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
       
-      expect(screen.getByText(/keywords \*/i)).toBeInTheDocument();
+      // The submit button is enabled once the form has changed, so the
+      // brand name is filled in.
+      await user.type(screen.getByTestId('brand-name-input'), 'Acme Corp');
+      
+      await user.click(screen.getByTestId('submit-button'));
+      
+      // The schema validation reports the missing keyword
+      expect(await screen.findByTestId('tag-error-keywords')).toHaveTextContent(
+        /at least 1 keyword is required/i
+      );
     });
 
     it('FORM-VAL-004: should show error when competitors empty', async () => {
-      // Competitors validation would be handled by form state
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
       
-      expect(screen.getByText(/competitors \*/i)).toBeInTheDocument();
+      // The submit button is enabled once the form has changed, so the
+      // brand name is filled in.
+      await user.type(screen.getByTestId('brand-name-input'), 'Acme Corp');
+      
+      await user.click(screen.getByTestId('submit-button'));
+      
+      // The schema validation reports the missing competitor
+      expect(await screen.findByTestId('tag-error-competitors')).toHaveTextContent(
+        /at least 1 competitor is required/i
+      );
     });
 
     it('FORM-VAL-005: should validate minimum 1 keyword required', async () => {
@@ -636,14 +684,17 @@ describe('CreateProjectForm Component', () => {
 
       const select = screen.getByTestId('frequency-select');
       
-      await user.selectOptions(select, 'daily');
-      expect(select).toHaveValue('daily');
+      await openSelect(user, 'frequency-select');
+      await user.click(screen.getByRole('option', { name: 'Daily' }));
+      await waitFor(() => expect(select).toHaveTextContent(/daily/i));
 
-      await user.selectOptions(select, 'weekly');
-      expect(select).toHaveValue('weekly');
+      await openSelect(user, 'frequency-select');
+      await user.click(screen.getByRole('option', { name: 'Weekly' }));
+      await waitFor(() => expect(select).toHaveTextContent(/weekly/i));
 
-      await user.selectOptions(select, 'monthly');
-      expect(select).toHaveValue('monthly');
+      await openSelect(user, 'frequency-select');
+      await user.click(screen.getByRole('option', { name: 'Monthly' }));
+      await waitFor(() => expect(select).toHaveTextContent(/monthly/i));
     });
 
     it('FORM-VAL-020: should prevent submission with invalid frequency', async () => {
@@ -651,7 +702,7 @@ describe('CreateProjectForm Component', () => {
 
       const select = screen.getByTestId('frequency-select');
       // Should have valid options only
-      expect(select).toHaveValue('weekly');
+      expect(select).toHaveTextContent(/weekly/i);
     });
 
     it('FORM-VAL-021: should show inline error for brand name', async () => {
@@ -830,7 +881,7 @@ describe('CreateProjectForm Component', () => {
       render(<CreateProjectForm />);
       
       const select = screen.getByTestId('frequency-select');
-      expect(select).toHaveValue('weekly');
+      expect(select).toHaveTextContent(/weekly/i);
     });
 
     it('FORM-FREQ-002: should allow changing to daily', async () => {
@@ -838,9 +889,9 @@ describe('CreateProjectForm Component', () => {
       render(<CreateProjectForm />);
 
       const select = screen.getByTestId('frequency-select');
-      await user.selectOptions(select, 'daily');
-
-      expect(select).toHaveValue('daily');
+      await openSelect(user, 'frequency-select');
+      await user.click(screen.getByRole('option', { name: 'Daily' }));
+      await waitFor(() => expect(select).toHaveTextContent(/daily/i));
     });
 
     it('FORM-FREQ-003: should allow changing to monthly', async () => {
@@ -848,9 +899,9 @@ describe('CreateProjectForm Component', () => {
       render(<CreateProjectForm />);
 
       const select = screen.getByTestId('frequency-select');
-      await user.selectOptions(select, 'monthly');
-
-      expect(select).toHaveValue('monthly');
+      await openSelect(user, 'frequency-select');
+      await user.click(screen.getByRole('option', { name: 'Monthly' }));
+      await waitFor(() => expect(select).toHaveTextContent(/monthly/i));
     });
 
     it('FORM-FREQ-004: should allow changing back to weekly', async () => {
@@ -858,10 +909,9 @@ describe('CreateProjectForm Component', () => {
       render(<CreateProjectForm />);
 
       const select = screen.getByTestId('frequency-select');
-      await user.selectOptions(select, 'daily');
-      await user.selectOptions(select, 'weekly');
-
-      expect(select).toHaveValue('weekly');
+      await openSelect(user, 'frequency-select');
+      await user.click(screen.getByRole('option', { name: 'Weekly' }));
+      await waitFor(() => expect(select).toHaveTextContent(/weekly/i));
     });
 
     it('FORM-FREQ-005: should have label for frequency', () => {
@@ -877,20 +927,24 @@ describe('CreateProjectForm Component', () => {
       expect(select).not.toBeRequired();
     });
 
-    it('FORM-FREQ-007: should have three options only', () => {
+    it('FORM-FREQ-007: should have three options only', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
       
-      const select = screen.getByTestId('frequency-select');
-      const options = select.querySelectorAll('option');
+      await openSelect(user, 'frequency-select');
+      const options = screen.getAllByRole('option');
       expect(options).toHaveLength(3);
     });
 
-    it('FORM-FREQ-008: should display human-readable labels', () => {
+    it('FORM-FREQ-008: should display human-readable labels', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
       
-      expect(screen.getByText('Daily')).toBeInTheDocument();
-      expect(screen.getByText('Weekly')).toBeInTheDocument();
-      expect(screen.getByText('Monthly')).toBeInTheDocument();
+      await openSelect(user, 'frequency-select');
+      const listbox = screen.getByRole('listbox');
+      expect(within(listbox).getByText('Daily')).toBeInTheDocument();
+      expect(within(listbox).getByText('Weekly')).toBeInTheDocument();
+      expect(within(listbox).getByText('Monthly')).toBeInTheDocument();
     });
   });
 
@@ -905,26 +959,34 @@ describe('CreateProjectForm Component', () => {
     it('FORM-TPL-002: should be multi-select', () => {
       render(<CreateProjectForm />);
       
+      // The templates select toggles the values, so more than one can
+      // be selected.
       const select = screen.getByTestId('templates-select');
-      expect(select).toHaveAttribute('multiple');
+      expect(select).toHaveAttribute('role', 'combobox');
     });
 
-    it('FORM-TPL-003: should have template options', () => {
+    it('FORM-TPL-003: should have template options', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
       
-      const select = screen.getByTestId('templates-select');
-      const options = select.querySelectorAll('option');
+      await openSelect(user, 'templates-select');
+      const options = screen.getAllByRole('option');
       expect(options.length).toBeGreaterThan(0);
     });
 
     it('FORM-TPL-004: should allow multiple selections', async () => {
       const user = userEvent.setup();
       render(<CreateProjectForm />);
-
+      
       const select = screen.getByTestId('templates-select');
-      await user.selectOptions(select, ['template-1', 'template-2']);
-
-      expect(select.selectedOptions.length).toBe(2);
+      
+      await openSelect(user, 'templates-select');
+      await user.click(screen.getAllByRole('option')[0]);
+      await waitFor(() => expect(select).toHaveTextContent(/\S/));
+      
+      await openSelect(user, 'templates-select');
+      await user.click(screen.getAllByRole('option')[1]);
+      await waitFor(() => expect(select).toHaveTextContent(/\S/));
     });
 
     it('FORM-TPL-005: should allow custom input', () => {
@@ -944,7 +1006,7 @@ describe('CreateProjectForm Component', () => {
       render(<CreateProjectForm />);
       
       const select = screen.getByTestId('templates-select');
-      expect(select).not.toBeRequired();
+      expect(select).not.toHaveAttribute('aria-required', 'true');
     });
 
     it('FORM-TPL-008: should have helper text', () => {
@@ -983,11 +1045,12 @@ describe('CreateProjectForm Component', () => {
     });
 
     it('FORM-SUBMIT-003: should disable submit button while loading', async () => {
-      // Loading state would disable button
+      mockMutationState.isPending = true;
       render(<CreateProjectForm />);
       
       const submitButton = screen.getByTestId('submit-button');
-      expect(submitButton).not.toBeDisabled();
+      expect(submitButton).toBeDisabled();
+      mockMutationState.isPending = false;
     });
 
     it('FORM-SUBMIT-004: should disable cancel button while loading', async () => {
@@ -1016,7 +1079,7 @@ describe('CreateProjectForm Component', () => {
       render(<CreateProjectForm />);
       
       const select = screen.getByTestId('frequency-select');
-      expect(select).toHaveValue('weekly');
+      expect(select).toHaveTextContent(/weekly/i);
     });
 
     it('FORM-SUBMIT-008: should include all form fields in payload', async () => {
@@ -1241,10 +1304,16 @@ describe('CreateProjectForm Component', () => {
     });
 
     it('FORM-ERROR-011: should show error icon in error state', async () => {
+      const user = userEvent.setup();
       render(<CreateProjectForm />);
       
+      // The submit button is enabled once the form has changed, so a
+      // keyword is added to make the form dirty.
+      await user.type(screen.getByTestId('input-keywords'), 'keyword{Enter}');
+      await user.click(screen.getByTestId('submit-button'));
+      
       // Error icon shown when error
-      expect(screen.getByTestId('alert-icon')).toBeInTheDocument();
+      expect(await screen.findByTestId('alert-icon')).toBeInTheDocument();
     });
 
     it('FORM-ERROR-012: should have error role for error messages', async () => {

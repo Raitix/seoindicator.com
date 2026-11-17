@@ -132,6 +132,7 @@ export function TagInput({
             onKeyDown={handleKeyDown}
             disabled={disabled}
             maxLength={maxLength}
+            aria-required={required || undefined}
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : undefined}
             data-testid={`input-${id}`}

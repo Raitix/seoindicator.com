@@ -24,7 +24,7 @@ vi.mock('lucide-react', () => ({
 vi.mock('@/components/ai-visibility/AlertNotification', () => ({
   AlertNotification: ({ alert, onClick }: any) => (
     <div
-      data-testid={`dropdown-alert-${alert.id}`}
+      data-testid={`alert-item-${alert.id}`}
       onClick={() => onClick?.(alert.id)}
     >
       {alert.project_name}
@@ -210,7 +210,7 @@ describe('AlertBell', () => {
       render(<AlertBell {...defaultProps} />);
 
       await user.click(screen.getByRole('button', { name: /alerts/i }));
-      await user.click(screen.getByTestId('dropdown-alert-alert-1'));
+      await user.click(screen.getByTestId('alert-item-alert-1'));
 
       expect(mockOnAlertClick).toHaveBeenCalledWith('alert-1');
       expect(screen.queryByTestId('alert-dropdown')).not.toBeInTheDocument();
@@ -248,16 +248,17 @@ describe('AlertBell', () => {
 
     it('AB-016: new alert shows toast', async () => {
       const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} />);
-
+      
       // Add new alert
       const newAlert = createMockAlerts(1)[0];
       newAlert.id = 'new-alert';
-
-      rerender(<AlertBell {...defaultProps} alerts={[newAlert]} />);
-
-      // Toast should appear
+      
+      rerender(<AlertBell {...defaultProps} alerts={[newAlert]} unreadCount={1} />);
+      
+      // The toast itself is rendered by the alerts page, the bell signals
+      // a new alert by animating its unread badge.
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
+        expect(screen.getByTestId('unread-badge')).toHaveClass('animate-bounce');
       });
     });
   });
@@ -390,10 +391,10 @@ describe('AlertBell', () => {
       const mockPlay = vi.fn();
       HTMLAudioElement.prototype.play = mockPlay;
 
-      const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} soundEnabled />);
+      const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} unreadCount={0} soundEnabled />);
 
       const newAlert = createMockAlerts(1)[0];
-      rerender(<AlertBell {...defaultProps} alerts={[newAlert]} soundEnabled />);
+      rerender(<AlertBell {...defaultProps} alerts={[newAlert]} unreadCount={1} soundEnabled />);
 
       await waitFor(() => {
         expect(mockPlay).toHaveBeenCalled();
@@ -405,10 +406,10 @@ describe('AlertBell', () => {
       (global as any).Notification = vi.fn(() => ({ close: vi.fn() }));
       (global as any).Notification.permission = 'granted';
 
-      const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} desktopNotificationsEnabled />);
+      const { rerender } = render(<AlertBell {...defaultProps} alerts={[]} unreadCount={0} desktopNotificationsEnabled />);
 
       const newAlert = createMockAlerts(1)[0];
-      rerender(<AlertBell {...defaultProps} alerts={[newAlert]} desktopNotificationsEnabled />);
+      rerender(<AlertBell {...defaultProps} alerts={[newAlert]} unreadCount={1} desktopNotificationsEnabled />);
 
       await waitFor(() => {
         expect((global as any).Notification).toHaveBeenCalled();
@@ -425,7 +426,7 @@ describe('AlertBell', () => {
       render(<AlertBell {...defaultProps} />);
 
       const button = screen.getByRole('button', { name: /alerts/i });
-      expect(button).toHaveClass('dark:bg-slate-800');
+      expect(button).toHaveClass('dark:hover:bg-slate-800');
     });
   });
 });

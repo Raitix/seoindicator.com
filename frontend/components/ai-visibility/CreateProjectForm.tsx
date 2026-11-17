@@ -233,6 +233,7 @@ export function CreateProjectForm({
           id="brand_name"
           type="text"
           maxLength={255}
+          aria-required="true"
           placeholder="Enter your brand name"
           data-testid="brand-name-input"
           aria-invalid={!!errors.brand_name}
@@ -319,6 +320,7 @@ export function CreateProjectForm({
               disabled={isSubmitting}
             >
               <SelectTrigger
+                id="tracking_frequency"
                 data-testid="frequency-select"
                 className="bg-white dark:bg-slate-800"
               >
@@ -356,6 +358,7 @@ export function CreateProjectForm({
               disabled={isSubmitting}
             >
               <SelectTrigger
+                id="query_templates"
                 data-testid="templates-select"
                 className="bg-white dark:bg-slate-800"
               >
@@ -428,21 +431,6 @@ export function CreateProjectForm({
         </Button>
       </div>
 
-      {/* Hidden inputs for multi-select (to satisfy test expectations) */}
-      <select
-        id="query_templates"
-        name="query_templates"
-        multiple
-        data-testid="templates-select"
-        className="hidden"
-        aria-hidden="true"
-      >
-        {QUERY_TEMPLATES.map((template) => (
-          <option key={template.value} value={template.value}>
-            {template.label}
-          </option>
-        ))}
-      </select>
     </form>
   );
 }

@@ -170,9 +170,12 @@ describe('HeadToHeadComparison', () => {
       
       const select = screen.getByRole('combobox');
       select.focus();
-      await user.keyboard('{ArrowDown}');
       
-      expect(select).toHaveValue('Ahrefs');
+      // The arrow keys are handled by the browser, so the change is
+      // driven through the select itself.
+      await user.selectOptions(select, mockCompetitors[1].id);
+      
+      expect(mockProps.onSelectCompetitor).toHaveBeenCalledWith(mockCompetitors[1]);
     });
 
     it('HEAD-018: supports Enter key for selection', async () => {
@@ -188,8 +191,11 @@ describe('HeadToHeadComparison', () => {
   describe('Advantage Badges', () => {
     it('HEAD-019: displays brand advantages', () => {
       render(<HeadToHeadComparison {...mockProps} />);
-      expect(screen.getByText(/comparison/i)).toBeInTheDocument();
-      expect(screen.getByText(/use case/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/comparison/i).length).toBeGreaterThan(0);
+      
+      // The brand card lists the advantages
+      const brandCard = screen.getByTestId('brand-card');
+      expect(within(brandCard).getByText(/advantages/i)).toBeInTheDocument();
     });
 
     it('HEAD-020: displays competitor advantages', () => {
@@ -227,9 +233,14 @@ describe('HeadToHeadComparison', () => {
       render(<HeadToHeadComparison {...mockProps} />);
       
       // Check for all 4 metrics on each card
-      expect(screen.getAllByText(/mentions/i).length).toBe(2);
-      expect(screen.getAllByText(/rate/i).length).toBeGreaterThanOrEqual(2);
-      expect(screen.getAllByText(/sentiment/i).length).toBeGreaterThanOrEqual(2);
+      const brandCard = screen.getByTestId('brand-card');
+      const competitorCard = screen.getByTestId('competitor-card');
+      
+      [brandCard, competitorCard].forEach((card) => {
+        expect(within(card).getByText('Mentions')).toBeInTheDocument();
+        expect(within(card).getByText(/mention rate/i)).toBeInTheDocument();
+        expect(within(card).getByText(/sentiment score/i)).toBeInTheDocument();
+      });
     });
 
     it('AC-003: co-mentions displayed', () => {

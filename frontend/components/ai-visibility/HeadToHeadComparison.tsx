@@ -100,6 +100,8 @@ export function HeadToHeadComparison({
   return (
     <div
       data-testid="head-to-head-section"
+      role="region"
+      aria-label="Head-to-Head Comparison"
       className={cn('rounded-lg bg-slate-800', className)}
     >
       {/* Header with Competitor Selector */}

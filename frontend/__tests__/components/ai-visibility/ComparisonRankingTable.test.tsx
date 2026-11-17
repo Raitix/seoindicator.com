@@ -242,9 +242,9 @@ describe('ComparisonRankingTable', () => {
         expect(
           cells.some((cell) =>
             cell.querySelector(
-              '[data-testid="trending-up-icon"],
-               [data-testid="trending-down-icon"],
-               [data-testid="minus-icon"]'
+              '[data-testid="trending-up-icon"], ' +
+              '[data-testid="trending-down-icon"], ' +
+              '[data-testid="minus-icon"]'
             )
           )
         ).toBe(true);
