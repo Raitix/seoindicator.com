@@ -7,6 +7,7 @@
  * API functions for fetching and managing audit issues.
  */
 
+import { useCallback, useMemo } from 'react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import type {
   Issue,
@@ -21,6 +22,17 @@ import type {
 } from '@/lib/types/audit-issues';
 
 const API_BASE = '/api/v1';
+
+// The empty results are shared, because a fresh array or object on every
+// render would be a new reference for the effects that depend on them,
+// and those effects would then run on every render.
+const EMPTY_ISSUES: Issue[] = [];
+const EMPTY_SEVERITY_COUNTS: SeverityCounts = {
+  critical: 0,
+  warning: 0,
+  notice: 0,
+  clean: 0,
+};
 
 // ============================================================
 // Normalizers
@@ -160,13 +172,16 @@ export function useAuditIssues(
 
   const { data, error, isLoading, mutate } = useSWR<IssueListResponse>(key, fetcher);
 
+  const issues = data?.data ?? EMPTY_ISSUES;
+  const refetch = useCallback(() => { void mutate(); }, [mutate]);
+
   return {
-    issues: data?.data ?? [],
+    issues,
     meta: data?.meta,
     isLoading,
     error,
     mutate,
-    refetch: () => mutate(),
+    refetch,
   };
 }
 
@@ -178,13 +193,18 @@ export function useAuditSummary(auditId: string, enabled = true) {
 
   const { data, error, isLoading, mutate } = useSWR<{ data: Audit; severityCounts: SeverityCounts }>(key, fetcher);
 
+  const rawAudit = data?.data;
+  const audit = useMemo(() => (rawAudit ? normalizeAudit(rawAudit) : null), [rawAudit]);
+  const severityCounts = data?.severityCounts ?? EMPTY_SEVERITY_COUNTS;
+  const refetch = useCallback(() => { void mutate(); }, [mutate]);
+
   return {
-    audit: data?.data ? normalizeAudit(data.data) : null,
-    severityCounts: data?.severityCounts ?? { critical: 0, warning: 0, notice: 0, clean: 0 },
+    audit,
+    severityCounts,
     isLoading,
     error,
     mutate,
-    refetch: () => mutate(),
+    refetch,
   };
 }
 

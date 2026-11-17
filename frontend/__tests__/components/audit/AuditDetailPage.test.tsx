@@ -39,37 +39,47 @@ afterAll(() => {
 });
 
 // Mock API hooks
+// The results are built once, because a new array or object on every
+// render would be a new reference for the effects that depend on them.
+const mockAudit = {
+  id: 123,
+  status: 'completed',
+  pages_crawled: 100,
+  issues_found: 25,
+  started_at: '2026-03-06T10:00:00Z',
+  completed_at: '2026-03-06T10:30:00Z',
+  site_id: 1,
+};
+
+const mockSeverityCounts = { critical: 10, warning: 10, notice: 5, clean: 75 };
+
+const mockIssues = [
+  {
+    id: 1,
+    url: 'https://example.com/page1',
+    issue_type: { id: 1, name: 'Missing title tag', category: 'Meta' },
+    severity: 'critical',
+    description: 'This page is missing a title tag.',
+    recommendation: 'Add a unique, descriptive title tag.',
+    status: 'open',
+    created_at: '2026-03-06T10:15:00Z',
+    audit_id: 123,
+  },
+];
+
+const mockIssueMeta = { current_page: 1, per_page: 25, total: 1, last_page: 1 };
+
 vi.mock('@/lib/api/audit-issues', () => ({
   useAuditSummary: () => ({
-    audit: {
-      id: 123,
-      status: 'completed',
-      pages_crawled: 100,
-      issues_found: 25,
-      started_at: '2026-03-06T10:00:00Z',
-      completed_at: '2026-03-06T10:30:00Z',
-      site_id: 1,
-    },
-    severityCounts: { critical: 10, warning: 10, notice: 5, clean: 75 },
+    audit: mockAudit,
+    severityCounts: mockSeverityCounts,
     isLoading: false,
     error: null,
     mutate: vi.fn(),
   }),
   useAuditIssues: () => ({
-    issues: [
-      {
-        id: 1,
-        url: 'https://example.com/page1',
-        issue_type: { id: 1, name: 'Missing title tag', category: 'Meta' },
-        severity: 'critical',
-        description: 'This page is missing a title tag.',
-        recommendation: 'Add a unique, descriptive title tag.',
-        status: 'open',
-        created_at: '2026-03-06T10:15:00Z',
-        audit_id: 123,
-      },
-    ],
-    meta: { current_page: 1, per_page: 25, total: 1, last_page: 1 },
+    issues: mockIssues,
+    meta: mockIssueMeta,
     isLoading: false,
     error: null,
     mutate: vi.fn(),
@@ -91,12 +101,12 @@ describe('AuditDetailPage', () => {
 
     it('ADP-RN-002: Renders issue filters', () => {
       render(<AuditDetailPage />);
-      expect(screen.getByText(/filters/i)).toBeInTheDocument();
+      expect(screen.getByTestId('issue-filters')).toBeInTheDocument();
     });
 
     it('ADP-RN-003: Renders issue list', () => {
       render(<AuditDetailPage />);
-      expect(screen.getByText(/issues/i)).toBeInTheDocument();
+      expect(screen.getByTestId('issue-list')).toBeInTheDocument();
     });
 
     it('ADP-RN-004: Displays audit ID in header', () => {
