@@ -166,6 +166,8 @@ export interface HistoryTableProps {
   onRowClick?: (analysis: AnalysisRecord) => void;
   onViewDetails?: (analysis: AnalysisRecord) => void;
   onDelete?: (analysis: AnalysisRecord) => void;
+  /** The analysis whose deletion is in progress */
+  deletingId?: number;
 }
 
 export interface AnalysisDetailsModalProps {

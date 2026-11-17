@@ -46,7 +46,13 @@ export function HistoryFilters({
   ];
 
   // Check if any filters are active
-  const hasActiveFilters = filters.tool || filters.status || filters.from || filters.to;
+  const activeFilterCount = [filters.tool, filters.status, filters.from, filters.to].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
+
+  // The start date must not be after the end date
+  const isDateRangeInvalid = Boolean(
+    filters.from && filters.to && filters.from > filters.to
+  );
 
   // Handle tool change
   const handleToolChange = (value: string) => {
@@ -85,6 +91,7 @@ export function HistoryFilters({
           <SelectTrigger
             className="bg-slate-900 border-slate-700 text-slate-200"
             data-testid="tool-filter"
+            aria-label="Filter by tool"
           >
             <SelectValue placeholder="All Tools" />
           </SelectTrigger>
@@ -111,6 +118,7 @@ export function HistoryFilters({
           <SelectTrigger
             className="bg-slate-900 border-slate-700 text-slate-200"
             data-testid="status-filter"
+            aria-label="Filter by status"
           >
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
@@ -129,6 +137,7 @@ export function HistoryFilters({
       </div>
 
       {/* Date Range Filter */}
+      <div className="flex flex-col gap-1">
       <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -155,8 +164,10 @@ export function HistoryFilters({
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">From</label>
+              <label htmlFor="history-date-from" className="text-sm font-medium text-slate-200">From</label>
               <Input
+                id="history-date-from"
+                aria-label="From date"
                 type="date"
                 value={filters.from || ''}
                 onChange={handleDateFromChange}
@@ -165,8 +176,10 @@ export function HistoryFilters({
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">To</label>
+              <label htmlFor="history-date-to" className="text-sm font-medium text-slate-200">To</label>
               <Input
+                id="history-date-to"
+                aria-label="To date"
                 type="date"
                 value={filters.to || ''}
                 onChange={handleDateToChange}
@@ -177,19 +190,37 @@ export function HistoryFilters({
           </div>
         </PopoverContent>
       </Popover>
+      {isDateRangeInvalid && (
+        <span
+          role="alert"
+          className="text-xs text-red-400"
+          data-testid="date-range-error"
+        >
+          Invalid date range: the start date is after the end date
+        </span>
+      )}
+      </div>
 
       {/* Clear Filters Button */}
       {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClearFilters}
-          className="text-slate-400 hover:text-slate-200"
-          data-testid="clear-filters-button"
-        >
-          <X className="h-4 w-4 mr-1" />
-          Clear Filters
-        </Button>
+        <>
+          <span
+            className="text-xs text-slate-400"
+            data-testid="active-filter-badge"
+          >
+            {activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearFilters}
+            className="text-slate-400 hover:text-slate-200"
+            data-testid="clear-filters-button"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Clear Filters
+          </Button>
+        </>
       )}
     </div>
   );

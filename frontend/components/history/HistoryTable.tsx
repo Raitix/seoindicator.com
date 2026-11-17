@@ -68,7 +68,10 @@ function StatusBadge({ status }: StatusBadgeProps) {
 
 // ==================== Duration Formatter ====================
 
-function formatDuration(ms: number): string {
+function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined) {
+    return "—";
+  }
   if (ms < 1000) {
     return `${ms}ms`;
   }
@@ -127,6 +130,7 @@ export function HistoryTable({
   onRowClick,
   onViewDetails,
   onDelete,
+  deletingId,
 }: HistoryTableProps) {
   // Handle row click
   const handleRowClick = (analysis: AnalysisRecord) => {
@@ -213,7 +217,7 @@ export function HistoryTable({
             >
               {/* Tool Name */}
               <TableCell className="text-slate-200 font-medium">
-                {analysis.toolDisplayName}
+                {analysis.toolDisplayName || analysis.toolName}
               </TableCell>
 
               {/* Input URL */}
@@ -265,6 +269,7 @@ export function HistoryTable({
                     onClick={(e) => handleDelete(e, analysis)}
                     data-testid={`delete-button-${analysis.id}`}
                     aria-label="Delete analysis"
+                    disabled={deletingId === analysis.id}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

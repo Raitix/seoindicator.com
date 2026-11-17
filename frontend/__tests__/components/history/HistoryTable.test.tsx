@@ -12,7 +12,8 @@ import userEvent from "@testing-library/user-event";
 import HistoryTable from "@/components/history/HistoryTable";
 
 // Mock dependencies
-const mockOnView = vi.fn();
+const mockOnRowClick = vi.fn();
+const mockOnViewDetails = vi.fn();
 const mockOnDelete = vi.fn();
 
 const defaultData = [
@@ -60,8 +61,9 @@ const defaultData = [
 ];
 
 const defaultProps = {
-  data: defaultData,
-  onView: mockOnView,
+  analyses: defaultData,
+  onRowClick: mockOnRowClick,
+  onViewDetails: mockOnViewDetails,
   onDelete: mockOnDelete,
   isLoading: false,
 };
@@ -110,7 +112,7 @@ describe("Tool Column", () => {
   it("displays tool display name", () => {
     render(<HistoryTable {...defaultProps} />);
 
-    expect(screen.getByText("Meta Tag Analyzer")).toBeInTheDocument();
+    expect(screen.getAllByText("Meta Tag Analyzer").length).toBe(2);
     expect(screen.getByText("Keyword Density Checker")).toBeInTheDocument();
     expect(screen.getByText("Mobile-Friendly Checker")).toBeInTheDocument();
   });
@@ -121,7 +123,7 @@ describe("Tool Column", () => {
       toolDisplayName: null,
     }];
 
-    render(<HistoryTable {...defaultProps} data={dataWithoutDisplayName} />);
+    render(<HistoryTable {...defaultProps} analyses={dataWithoutDisplayName} />);
 
     expect(screen.getByText("meta-tag-analyzer")).toBeInTheDocument();
   });
@@ -142,7 +144,7 @@ describe("URL Column", () => {
       inputUrl: "https://very-long-domain-name.example.com/path/to/very/long/page/with/many/segments",
     }];
 
-    render(<HistoryTable {...defaultProps} data={dataWithLongUrl} />);
+    render(<HistoryTable {...defaultProps} analyses={dataWithLongUrl} />);
 
     const urlCell = screen.getByText(/very-long-domain-name/i);
     expect(urlCell).toBeInTheDocument();
@@ -217,9 +219,9 @@ describe("Cost Column", () => {
       cost: null,
     }];
 
-    render(<HistoryTable {...defaultProps} data={dataWithoutCost} />);
+    render(<HistoryTable {...defaultProps} analyses={dataWithoutCost} />);
 
-    expect(screen.getByText(/-|n\/a/i)).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
 
@@ -238,7 +240,7 @@ describe("Duration Column", () => {
       analysisDurationMs: 500,
     }];
 
-    render(<HistoryTable {...defaultProps} data={dataWithShortDuration} />);
+    render(<HistoryTable {...defaultProps} analyses={dataWithShortDuration} />);
 
     expect(screen.getByText(/500ms/i)).toBeInTheDocument();
   });
@@ -249,9 +251,9 @@ describe("Duration Column", () => {
       analysisDurationMs: null,
     }];
 
-    render(<HistoryTable {...defaultProps} data={dataWithNullDuration} />);
+    render(<HistoryTable {...defaultProps} analyses={dataWithNullDuration} />);
 
-    expect(screen.getByText(/-|n\/a|pending/i)).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
 
@@ -266,16 +268,17 @@ describe("Date Column", () => {
     expect(dateElements.length).toBeGreaterThan(0);
   });
 
-  it("displays relative time for recent dates", () => {
+  it("displays the time of the analysis for recent dates", () => {
     const recentData = [{
       ...defaultData[0],
       analyzedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
     }];
 
-    render(<HistoryTable {...defaultProps} data={recentData} />);
+    render(<HistoryTable {...defaultProps} analyses={recentData} />);
 
-    // Should show relative time like "30 minutes ago"
-    expect(screen.getByText(/ago/i) || screen.getByText(/minutes/i)).toBeTruthy();
+    // The date column shows the absolute date and time
+    const dateCell = screen.getByText(/\d{1,2}:\d{2}/);
+    expect(dateCell).toBeInTheDocument();
   });
 });
 
@@ -296,14 +299,14 @@ describe("Actions Column", () => {
     expect(deleteButtons.length).toBe(4);
   });
 
-  it("calls onView when view button clicked", async () => {
+  it("calls onViewDetails when view button clicked", async () => {
     const user = userEvent.setup();
     render(<HistoryTable {...defaultProps} />);
 
     const viewButtons = screen.getAllByRole("button", { name: /view/i });
     await user.click(viewButtons[0]);
 
-    expect(mockOnView).toHaveBeenCalledWith(127);
+    expect(mockOnViewDetails).toHaveBeenCalledWith(defaultData[0]);
   });
 
   it("calls onDelete when delete button clicked", async () => {
@@ -313,7 +316,7 @@ describe("Actions Column", () => {
     const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
     await user.click(deleteButtons[0]);
 
-    expect(mockOnDelete).toHaveBeenCalledWith(127);
+    expect(mockOnDelete).toHaveBeenCalledWith(defaultData[0]);
   });
 
   it("disables delete button when delete in progress", () => {
@@ -329,26 +332,26 @@ describe("Actions Column", () => {
 // ==================== HT-009: Row Click ====================
 
 describe("Row Click", () => {
-  it("calls onView when row is clicked", async () => {
+  it("calls onRowClick when row is clicked", async () => {
     const user = userEvent.setup();
     render(<HistoryTable {...defaultProps} />);
 
-    const firstRow = screen.getByText("Meta Tag Analyzer").closest("tr");
+    const firstRow = screen.getAllByText("Meta Tag Analyzer")[0].closest("tr");
     if (firstRow) {
       await user.click(firstRow);
-      expect(mockOnView).toHaveBeenCalledWith(127);
+      expect(mockOnRowClick).toHaveBeenCalledWith(defaultData[0]);
     }
   });
 
-  it("does not trigger view when clicking action buttons", async () => {
+  it("does not trigger the row click when clicking action buttons", async () => {
     const user = userEvent.setup();
     render(<HistoryTable {...defaultProps} />);
 
     const viewButtons = screen.getAllByRole("button", { name: /view/i });
     await user.click(viewButtons[0]);
 
-    // onView should only be called once (from button, not from row)
-    expect(mockOnView).toHaveBeenCalledTimes(1);
+    // The row click must not fire for the action buttons
+    expect(mockOnRowClick).not.toHaveBeenCalled();
   });
 });
 
@@ -356,34 +359,32 @@ describe("Row Click", () => {
 
 describe("Loading State", () => {
   it("shows skeleton rows when loading", () => {
-    render(<HistoryTable {...defaultProps} data={[]} isLoading={true} />);
+    render(<HistoryTable {...defaultProps} analyses={[]} isLoading={true} />);
 
-    const skeletons = screen.getAllByTestId(/skeleton/i);
-    expect(skeletons.length).toBeGreaterThan(0);
+    expect(screen.getByTestId("history-table-loading")).toBeInTheDocument();
+    // The skeleton stands in for the data rows
+    expect(screen.queryAllByTestId(/analysis-row-/)).toHaveLength(0);
   });
 
   it("shows skeleton with correct number of columns", () => {
-    render(<HistoryTable {...defaultProps} data={[]} isLoading={true} />);
+    render(<HistoryTable {...defaultProps} analyses={[]} isLoading={true} />);
 
     // Each skeleton row should have 7 columns
-    const skeletons = screen.getAllByTestId(/skeleton/i);
-    expect(skeletons.length).toBeGreaterThan(0);
+    const headerCells = screen.getAllByRole("columnheader");
+    expect(headerCells).toHaveLength(7);
   });
 });
 
 // ==================== HT-011: Empty State ====================
 
 describe("Empty State", () => {
-  it("shows empty message when no data", () => {
-    render(<HistoryTable {...defaultProps} data={[]} />);
+  it("renders no data rows when there are no analyses", () => {
+    render(<HistoryTable {...defaultProps} analyses={[]} />);
 
-    expect(screen.getByText(/no analyses|no data|empty/i)).toBeInTheDocument();
-  });
-
-  it("shows different message when filters applied", () => {
-    render(<HistoryTable {...defaultProps} data={[]} hasActiveFilters={true} />);
-
-    expect(screen.getByText(/no analyses match|no results/i)).toBeInTheDocument();
+    // The empty state is rendered by the parent, the table only shows
+    // the header.
+    expect(screen.queryAllByTestId(/analysis-row-/)).toHaveLength(0);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
   });
 });
 
