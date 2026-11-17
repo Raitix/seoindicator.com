@@ -90,7 +90,11 @@ export function QuickStatsCards({ stats, isLoading = false, className }: QuickSt
         const trendValue = item.trendKey ? stats[item.trendKey] : null;
 
         return (
-          <Card key={item.key} className="border-slate-800 bg-slate-950/70 text-slate-100 shadow-lg shadow-slate-950/10">
+          <Card
+            key={item.key}
+            data-testid={`stat-${item.key}`}
+            className="border-slate-800 bg-slate-950/70 text-slate-100 shadow-lg shadow-slate-950/10"
+          >
             <CardContent className="px-5 py-4">
               {isLoading ? (
                 <div className="space-y-3">
@@ -102,8 +106,13 @@ export function QuickStatsCards({ stats, isLoading = false, className }: QuickSt
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm text-slate-400">{item.label}</div>
-                      <div className="mt-1 text-2xl font-semibold text-white">{item.format(stats[item.key] as number | null | undefined)}</div>
+                      <div data-testid="stat-label" className="text-sm text-slate-400">{item.label}</div>
+                      <div
+                        data-testid="stat-value"
+                        className="mt-1 text-2xl font-semibold text-white"
+                      >
+                        {item.format(stats[item.key] as number | null | undefined)}
+                      </div>
                     </div>
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
                       <Icon className={cn("h-5 w-5", item.accent)} aria-hidden="true" />

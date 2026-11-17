@@ -56,7 +56,7 @@ describe("LocalSeoAlertDetailModal", () => {
 
     render(<LocalSeoAlertDetailModal alert={alert} isOpen onClose={onClose} />);
 
-    await user.click(screen.getByRole("button", { name: /close/i }));
+    await user.click(screen.getByTestId("close-alert-button"));
 
     expect(onClose).toHaveBeenCalled();
   });

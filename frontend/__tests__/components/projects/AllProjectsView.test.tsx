@@ -9,6 +9,16 @@ vi.mock("@/lib/api/projects", () => ({
   fetchAggregateMetrics: () => mockFetchAggregateMetrics(),
 }));
 
+// The component reads the session from the auth context, so the
+// context is mocked. Without it every render throws.
+vi.mock("@/lib/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: true,
+    isLoading: false,
+  }),
+}));
+
 const mockAggregate: AggregateMetrics = {
   totalProjects: 3,
   totalKeywords: 1500,

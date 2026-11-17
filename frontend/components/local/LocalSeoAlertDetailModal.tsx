@@ -75,7 +75,12 @@ export function LocalSeoAlertDetailModal({
                 </Button>
               ) : null}
 
-              <Button type="button" variant="ghost" onClick={onClose}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                data-testid="close-alert-button"
+              >
                 Close
               </Button>
             </DialogFooter>

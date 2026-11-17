@@ -26,9 +26,12 @@ vi.mock('next/dynamic', () => {
     </div>
   );
 
-  return (importFn: () => Promise<{ default: React.ComponentType; ToolWidget: React.ComponentType }>) => {
-    const Component = importFn();
-    return vi.fn().mockImplementation((props) => <MockToolWidget {...props} />);
+  // The dynamic import is the default export of the module.
+  return {
+    default: (importFn: () => Promise<{ default: React.ComponentType; ToolWidget: React.ComponentType }>) => {
+      void importFn();
+      return vi.fn().mockImplementation((props) => <MockToolWidget {...props} />);
+    },
   };
 });
 
